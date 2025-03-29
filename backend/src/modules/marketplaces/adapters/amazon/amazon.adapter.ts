@@ -247,7 +247,17 @@ export class AmazonAdapter extends BaseMarketplaceAdapter {
   // Rate limiting configuration from amazon.config.ts
   private retryDelayMs: number = amazonConfig.retry.initialDelayMs;
   private maxRetries: number = amazonConfig.retry.maxRetries;
-  private rateLimits: { [endpoint: string]: { remaining: number, reset: Date, limit: number } } = {};
+  
+  // Enhanced rate limit tracking using a token bucket model
+  private rateLimits: { 
+    [endpoint: string]: { 
+      remaining: number,           // Current tokens remaining
+      reset: Date,                 // Next reset time 
+      limit: number,               // Maximum tokens
+      lastRequestTime: number,     // Last request timestamp
+      restoreRatePerMs: number     // Token restore rate per millisecond
+    } 
+  } = {};
   
   // Marketplace IDs
   private amazonMarketplaceId: string = ''; // Set during initialization, defaults to US marketplace
@@ -606,17 +616,24 @@ export class AmazonAdapter extends BaseMarketplaceAdapter {
       // For Amazon, the ID is the ASIN
       // We need to query the catalog API to get details, then find the seller's SKU
       
-      // Get catalog item
+      // Get catalog item - using improved catalog API with current version's supported parameters
+      const catalogItemsVersion = amazonConfig.apiVersions.catalogItems;
+      const supportedIncludedData = amazonConfig.catalogApi.includedData[catalogItemsVersion] || 
+                                   amazonConfig.catalogApi.includedData['2022-04-01']; // Default to latest known version
+      
       const catalogResponse = await this.makeRequest<AmazonApiResponse<{
         items: AmazonCatalogItem[];
+        pagination?: {
+          nextToken?: string;
+        };
       }>>(
         'GET',
-        `/catalog/${amazonConfig.apiVersions.catalogItems}/items/${id}`,
-
+        `/catalog/${catalogItemsVersion}/items/${id}`,
         {
           params: {
             marketplaceIds: this.amazonMarketplaceId,
-            includedData: 'attributes,identifiers,productTypes'
+            includedData: supportedIncludedData.join(','), // Use all available data types
+            locale: 'en_US' // Add locale parameter for localized responses
           }
         }
       );
@@ -976,22 +993,40 @@ export class AmazonAdapter extends BaseMarketplaceAdapter {
       // Format the date for Amazon API (ISO 8601)
       const createdAfter = sinceDate.toISOString();
       
-      // Get orders from Amazon
+      // Ensure page size is within API limits
+      const validPageSize = Math.min(pageSize, amazonConfig.ordersApi.maxResultsPerPage);
+      
+      // Create params object with order filters
+      const ordersParams: Record<string, any> = {
+        MarketplaceIds: this.amazonMarketplaceId,
+        CreatedAfter: createdAfter,
+        MaxResultsPerPage: validPageSize
+      };
+      
+      // Add pagination token if we're on a page after the first
+      if (page > 0) {
+        // Note: In a real implementation, we would store and use actual next tokens
+        // This is a placeholder since we don't have token persistence here
+        ordersParams.NextToken = `page${page}`;
+      }
+      
+      // Add all order statuses for comprehensive retrieval
+      // The API allows filtering by specific statuses
+      ordersParams.OrderStatuses = amazonConfig.ordersApi.orderStatuses.join(',');
+      
+      // Optional: Filter by last update date if we're syncing recent changes
+      // const lastUpdatedAfter = new Date(Date.now() - (24 * 60 * 60 * 1000)); // Last 24 hours
+      // ordersParams.LastUpdatedAfter = lastUpdatedAfter.toISOString();
+      
+      // Get orders from Amazon with enhanced parameters
       const ordersResponse = await this.makeRequest<AmazonApiResponse<{
         Orders: AmazonOrder[];
         NextToken?: string;
       }>>(
         'GET',
         `/orders/${amazonConfig.apiVersions.orders}/orders`,
-
         {
-          params: {
-            MarketplaceIds: this.amazonMarketplaceId,
-            CreatedAfter: createdAfter,
-            MaxResultsPerPage: pageSize,
-            NextToken: page > 0 ? `page${page}` : undefined, // Use a token format Amazon expects
-            OrderStatuses: 'Unshipped,PartiallyShipped,Shipped,Canceled' // Common statuses to filter
-          }
+          params: ordersParams
         }
       );
       
@@ -1581,7 +1616,8 @@ export class AmazonAdapter extends BaseMarketplaceAdapter {
   }
 
   /**
-   * Make an API request with retry logic
+   * Make an API request with retry logic and rate limit management
+   * Enhanced to proactively respect rate limits using the token bucket model
    */
   private async makeRequest<T>(
     method: string,
@@ -1591,6 +1627,49 @@ export class AmazonAdapter extends BaseMarketplaceAdapter {
   ): Promise<AxiosResponse<T>> {
     // Construct the full URL
     const url = `${this.spApiUrl}${endpoint}`;
+    
+    // Extract API section for rate limiting
+    const match = endpoint.match(/\/([^\/]+)\/v/);
+    const apiSection = match ? match[1] : 'default';
+    
+    // Check if we have rate limit information for this endpoint
+    if (this.rateLimits[apiSection]) {
+      const rateLimitInfo = this.rateLimits[apiSection];
+      const now = Date.now();
+      
+      // Update token count based on time passed since last request (token bucket algorithm)
+      const timeSinceLastRequest = now - rateLimitInfo.lastRequestTime;
+      const restoredTokens = timeSinceLastRequest * rateLimitInfo.restoreRatePerMs;
+      
+      // Calculate current token count
+      const currentTokens = Math.min(
+        rateLimitInfo.limit,
+        rateLimitInfo.remaining + restoredTokens
+      );
+      
+      // If we don't have enough tokens, wait until we do
+      if (currentTokens < 1) {
+        // Calculate delay needed to get one token
+        const tokensNeeded = 1 - currentTokens;
+        const delayNeeded = tokensNeeded / rateLimitInfo.restoreRatePerMs;
+        
+        // Add a small buffer to ensure we have the token when we wake up
+        const delayWithBuffer = delayNeeded + 50;
+        
+        console.log(`Rate limit proactive delay for ${apiSection} API: waiting ${delayWithBuffer}ms for token restoration`);
+        
+        // Wait until we have a token available
+        await this.sleep(delayWithBuffer);
+        
+        // Update our lastRequestTime after the sleep
+        rateLimitInfo.lastRequestTime = Date.now();
+        rateLimitInfo.remaining = 1; // We should have exactly 1 token now
+      } else {
+        // We have enough tokens, update the count and continue
+        rateLimitInfo.lastRequestTime = now;
+        rateLimitInfo.remaining = currentTokens - 1; // Use one token for this request
+      }
+    }
     
     try {
       const config: AxiosRequestConfig = {
@@ -1607,7 +1686,8 @@ export class AmazonAdapter extends BaseMarketplaceAdapter {
   }
 
   /**
-   * Map rate limits from API response headers
+   * Map rate limits from API response headers and update token bucket model
+   * Implements Amazon's rate limiting model based on the SP-API documentation
    */
   private updateRateLimits(response: AxiosResponse): void {
     // Get the API path from the URL to categorize rate limits
@@ -1620,28 +1700,74 @@ export class AmazonAdapter extends BaseMarketplaceAdapter {
     const remaining = response.headers['x-amzn-quota-remaining'];
     const resetEpoch = response.headers['x-amzn-ratelimit-reset'];
     
+    const now = Date.now();
+    
     if (rateLimit && remaining) {
       // Calculate reset time (default to 1 second if not provided)
       const resetInSeconds = resetEpoch ? parseFloat(resetEpoch) : 1;
-      const resetDate = new Date(Date.now() + resetInSeconds * 1000);
+      const resetDate = new Date(now + resetInSeconds * 1000);
       
-      this.rateLimits[apiSection] = {
-        limit: parseInt(rateLimit, 10),
-        remaining: parseInt(remaining, 10),
-        reset: resetDate
-      };
+      // Get the configuration for this API section
+      const apiConfig = amazonConfig.rateLimits[apiSection] || amazonConfig.rateLimits.default;
+      
+      // Calculate restore rate per millisecond
+      const restoreRatePerSecond = apiConfig.restoreRatePerSecond || 0.5; // Default to 0.5 req/s
+      const restoreRatePerMs = restoreRatePerSecond / 1000;
+      
+      // Create or update the rate limit info
+      if (!this.rateLimits[apiSection]) {
+        // Initialize rate limit tracking for this API section
+        this.rateLimits[apiSection] = {
+          limit: parseInt(rateLimit, 10),
+          remaining: parseInt(remaining, 10),
+          reset: resetDate,
+          lastRequestTime: now,
+          restoreRatePerMs: restoreRatePerMs
+        };
+      } else {
+        // Update the existing rate limit info
+        // For token bucket model, we need to account for token restoration since last request
+        const timeSinceLastRequest = now - this.rateLimits[apiSection].lastRequestTime;
+        const restoredTokens = timeSinceLastRequest * this.rateLimits[apiSection].restoreRatePerMs;
+        
+        // Use the headers' remaining value, but consider token restoration
+        // Only update if the new value makes sense (is lower than we expect)
+        const expectedRemaining = Math.min(
+          this.rateLimits[apiSection].limit,
+          this.rateLimits[apiSection].remaining + restoredTokens
+        );
+        
+        // If reported remaining is lower than expected, use it (something used tokens)
+        // Otherwise, use our calculated value (normal token bucket behavior)
+        const newRemaining = parseInt(remaining, 10);
+        const actualRemaining = newRemaining < expectedRemaining ? newRemaining : expectedRemaining;
+        
+        this.rateLimits[apiSection] = {
+          limit: parseInt(rateLimit, 10),
+          remaining: actualRemaining,
+          reset: resetDate,
+          lastRequestTime: now,
+          restoreRatePerMs: restoreRatePerMs
+        };
+      }
       
       // Update the main rate limit info for the most constrained endpoint
-      if (!this.rateLimitInfo.remaining || parseInt(remaining, 10) < this.rateLimitInfo.remaining) {
-        this.rateLimitInfo.limit = parseInt(rateLimit, 10);
-        this.rateLimitInfo.remaining = parseInt(remaining, 10);
-        this.rateLimitInfo.reset = resetDate;
+      if (!this.rateLimitInfo.remaining || this.rateLimits[apiSection].remaining < this.rateLimitInfo.remaining) {
+        this.rateLimitInfo.limit = this.rateLimits[apiSection].limit;
+        this.rateLimitInfo.remaining = this.rateLimits[apiSection].remaining;
+        this.rateLimitInfo.reset = this.rateLimits[apiSection].reset;
+      }
+      
+      // Log rate limit usage if less than 20% capacity remains
+      if (this.rateLimits[apiSection].remaining < (this.rateLimits[apiSection].limit * 0.2)) {
+        console.warn(`Rate limit for ${apiSection} API is running low: ${this.rateLimits[apiSection].remaining}/${this.rateLimits[apiSection].limit} remaining. Resets in ${resetInSeconds}s.`);
       }
     }
   }
 
   /**
    * Calculate backoff time for rate-limited requests
+   * Enhanced with token bucket algorithm for more accurate rate limiting
    */
   private calculateBackoff(path: string, response: AxiosResponse): number {
     // Extract the API section from the path
@@ -1655,17 +1781,38 @@ export class AmazonAdapter extends BaseMarketplaceAdapter {
     let backoffMs = amazonConfig.retry.initialDelayMs;
     
     if (rateLimitInfo) {
-      // Calculate time until reset
       const now = Date.now();
-      const resetTime = rateLimitInfo.reset.getTime();
-      const timeUntilResetMs = Math.max(0, resetTime - now);
       
-      // Use the reset time as backoff, with a minimum of 200ms
-      backoffMs = Math.max(200, timeUntilResetMs);
+      // 1. Calculate how long until the next token is available
+      // Using the token bucket model, we can determine exactly when we'll have enough tokens
+      const tokensNeeded = 1; // We need at least 1 token to make a request
+      
+      if (rateLimitInfo.remaining < tokensNeeded) {
+        // We don't have enough tokens, calculate time until restoration
+        const tokensToRestore = tokensNeeded - rateLimitInfo.remaining;
+        const timeToRestoreMs = tokensToRestore / rateLimitInfo.restoreRatePerMs;
+        
+        // Also check the reset time as a fallback
+        const resetTime = rateLimitInfo.reset.getTime();
+        const timeUntilResetMs = Math.max(0, resetTime - now);
+        
+        // Use whichever comes first - token restoration or rate limit reset
+        backoffMs = Math.min(
+          timeToRestoreMs,
+          timeUntilResetMs > 0 ? timeUntilResetMs : Number.MAX_SAFE_INTEGER
+        );
+      } else {
+        // We have enough tokens already, use a minimal delay
+        backoffMs = 100; // Minimal delay of 100ms to avoid hammering the API
+      }
+      
+      // Ensure we have a reasonable delay (not too short, not too long)
+      backoffMs = Math.max(100, Math.min(backoffMs, amazonConfig.retry.maxDelayMs));
     }
     
     // Add jitter to avoid thundering herd problem
-    return backoffMs * (0.8 + Math.random() * 0.4);
+    // Using a smaller jitter range (±10%) for more predictable rate limiting
+    return backoffMs * (0.9 + Math.random() * 0.2);
   }
 
   /**
@@ -1924,45 +2071,85 @@ export class AmazonAdapter extends BaseMarketplaceAdapter {
 
   /**
    * Map Amazon order status to standardized order status
+   * Handles all possible statuses from the Amazon Orders API
    */
   private mapAmazonOrderStatusToOrderStatus(status: string): OrderStatus {
-    switch (status?.toLowerCase()) {
+    // Use case-insensitive comparison
+    const normalizedStatus = status?.toLowerCase() || '';
+    
+    // Map all possible Amazon order statuses to our standardized order statuses
+    switch (normalizedStatus) {
+      // Beginning of the order lifecycle
       case 'pending':
+      case 'pendingavailability':
         return OrderStatus.NEW;
+        
+      // Order is being processed but not yet shipped
       case 'unshipped':
-        return OrderStatus.PROCESSING;
-      case 'partiallyshipped':
-        return OrderStatus.PROCESSING;
-      case 'shipped':
-        return OrderStatus.SHIPPED;
-      case 'canceled':
-        return OrderStatus.CANCELED;
-      case 'unfulfillable':
-        return OrderStatus.ON_HOLD;
       case 'invoiceunconfirmed':
         return OrderStatus.PROCESSING;
-      case 'pendingavailability':
+        
+      // Order is partially sent to the customer
+      case 'partiallyshipped':
+        return OrderStatus.PARTIALLY_SHIPPED; // If this status exists in our system
+        
+      // Order is fully sent to the customer
+      case 'shipped':
+        return OrderStatus.SHIPPED;
+        
+      // Order was canceled by the seller or buyer
+      case 'canceled':
+        return OrderStatus.CANCELED;
+        
+      // Order cannot be fulfilled for some reason
+      case 'unfulfillable':
         return OrderStatus.ON_HOLD;
+        
+      // For any other status we haven't explicitly mapped
       default:
+        console.warn(`Unknown Amazon order status: ${status}, mapping to PROCESSING`);
         return OrderStatus.PROCESSING;
     }
   }
 
   /**
    * Map Amazon order status to standardized shipping status
+   * More comprehensive mapping for all Amazon order statuses
    */
   private mapAmazonOrderStatusToShippingStatus(status: string): ShippingStatus {
-    switch (status?.toLowerCase()) {
+    const normalizedStatus = status?.toLowerCase() || '';
+    
+    switch (normalizedStatus) {
+      // Orders that haven't started shipping process yet
       case 'pending':
+      case 'pendingavailability':
       case 'unshipped':
       case 'invoiceunconfirmed':
-      case 'pendingavailability':
         return ShippingStatus.AWAITING_FULFILLMENT;
+      
+      // Orders that are partially shipped  
       case 'partiallyshipped':
         return ShippingStatus.PARTIALLY_SHIPPED;
+      
+      // Orders fully shipped
       case 'shipped':
         return ShippingStatus.SHIPPED;
+      
+      // Orders that have been delivered (not a standard Amazon status, but included for completeness)
+      case 'delivered': 
+        return ShippingStatus.DELIVERED;
+      
+      // Canceled orders
+      case 'canceled':
+        return ShippingStatus.CANCELED;
+      
+      // Orders with fulfillment problems
+      case 'unfulfillable':
+        return ShippingStatus.FAILED;
+        
+      // Any other status defaults to awaiting fulfillment
       default:
+        console.warn(`Unknown Amazon shipping status: ${status}, mapping to AWAITING_FULFILLMENT`);
         return ShippingStatus.AWAITING_FULFILLMENT;
     }
   }

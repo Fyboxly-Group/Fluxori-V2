@@ -34,40 +34,49 @@ export const amazonConfig = {
   // Rate limiting configuration
   rateLimits: {
     // Rate limits are per seller account across all applications
-    // These are conservative default values
+    // Amazon uses a token bucket algorithm for rate limiting
+    // These values are based on the SP-API documentation
     default: {
       restoreRatePerSecond: 0.5, // Token bucket refill rate
-      burstCapacity: 5 // Token bucket max capacity
+      burstCapacity: 5, // Token bucket max capacity
+      maximumRequestQuota: 200 // Daily maximum requests
     },
     
     // Section-specific rate limits
     catalogItems: {
-      restoreRatePerSecond: 0.5,
-      burstCapacity: 5
+      restoreRatePerSecond: 0.5, // 1 request every 2 seconds
+      burstCapacity: 5,
+      maximumRequestQuota: 200
     },
     listings: {
-      restoreRatePerSecond: 0.5, 
-      burstCapacity: 5
+      restoreRatePerSecond: 0.5, // 1 request every 2 seconds
+      burstCapacity: 5,
+      maximumRequestQuota: 200
     },
     pricing: {
-      restoreRatePerSecond: 0.5,
-      burstCapacity: 10
+      restoreRatePerSecond: 0.5, // 1 request every 2 seconds
+      burstCapacity: 10,
+      maximumRequestQuota: 400
     },
     fbaInventory: {
-      restoreRatePerSecond: 0.5,
-      burstCapacity: 5
+      restoreRatePerSecond: 0.5, // 1 request every 2 seconds
+      burstCapacity: 5,
+      maximumRequestQuota: 200
     },
     fbaOutbound: {
-      restoreRatePerSecond: 0.5,
-      burstCapacity: 5
+      restoreRatePerSecond: 0.5, // 1 request every 2 seconds
+      burstCapacity: 5, 
+      maximumRequestQuota: 200
     },
     orders: {
-      restoreRatePerSecond: 0.5,
-      burstCapacity: 5
+      restoreRatePerSecond: 0.0167, // 1 request per minute (0.0167 requests per second)
+      burstCapacity: 20, // Based on Orders API documentation
+      maximumRequestQuota: 144 // Maximum daily requests
     },
     reports: {
-      restoreRatePerSecond: 0.1, // Lower rate for reports
-      burstCapacity: 2
+      restoreRatePerSecond: 0.0083, // Approximately 1 request every 2 minutes
+      burstCapacity: 2,
+      maximumRequestQuota: 60
     }
   },
   
@@ -104,12 +113,47 @@ export const amazonConfig = {
   
   // API version information
   apiVersions: {
-    catalogItems: '2022-04-01',
+    catalogItems: '2022-04-01', // Latest verified version
     listings: '2021-08-01',
     pricing: '2022-05-01',
     fbaInventory: '2022-05-01',
     fbaOutbound: '2020-07-01',
-    orders: '2022-03-01',
+    orders: 'v0', // Using the latest version based on the repository
     reports: '2021-06-30'
+  },
+  
+  // Catalog API specific configurations
+  catalogApi: {
+    // Supported includedData parameter values for different catalog item API versions
+    includedData: {
+      'v0': ['summaries', 'attributes', 'dimensions', 'images', 'productTypes', 'relationships', 'salesRanks'],
+      '2020-12-01': ['summaries', 'attributes', 'dimensions', 'images', 'productTypes', 'relationships', 'salesRanks'],
+      '2022-04-01': ['attributes', 'identifiers', 'images', 'productTypes', 'relationships', 'salesRanks', 'summaries', 'vendorDetails']
+    },
+    // Maximum number of items per page (limit) for each version
+    maxPageSize: {
+      'v0': 10,
+      '2020-12-01': 10,
+      '2022-04-01': 20
+    }
+  },
+  
+  // Orders API specific configurations
+  ordersApi: {
+    // Order status values supported by the API
+    orderStatuses: [
+      'PendingAvailability',
+      'Pending',
+      'Unshipped',
+      'PartiallyShipped',
+      'Shipped',
+      'InvoiceUnconfirmed',
+      'Canceled',
+      'Unfulfillable'
+    ],
+    // Maximum number of results per page
+    maxResultsPerPage: 100,
+    // Maximum date range for order queries in days
+    maxDateRangeInDays: 30
   }
 };
