@@ -1,0 +1,152 @@
+import {
+  MarketplaceAdapterFactory,
+  MarketplaceCredentials,
+  StockUpdatePayload,
+  PriceUpdatePayload,
+  StatusUpdatePayload,
+  ProductStatus,
+  CredentialManager
+} from '../index';
+
+/**
+ * This file demonstrates how to use the marketplace adapter abstraction.
+ * It is not meant to be run directly, but serves as documentation.
+ */
+
+/**
+ * Example function demonstrating how to use the marketplace adapter
+ */
+async function marketplaceAdapterExample(): Promise<void> {
+  // Get the marketplace adapter factory instance
+  const factory = MarketplaceAdapterFactory.getInstance();
+  
+  // Initialize credentials for Takealot
+  const takealotCredentials: MarketplaceCredentials = {
+    apiKey: 'your-api-key',
+    apiSecret: 'your-api-secret',
+    sellerId: 'your-seller-id'
+  };
+  
+  try {
+    // Create and initialize a Takealot adapter
+    const takealotAdapter = await factory.createAdapter('takealot', takealotCredentials);
+    
+    // Test the connection
+    const connectionStatus = await takealotAdapter.testConnection();
+    
+    if (connectionStatus.connected) {
+      console.log(`Connected to ${takealotAdapter.marketplaceName} successfully!`);
+      
+      // Get a product by SKU
+      const productResult = await takealotAdapter.getProductBySku('PROD-123456');
+      
+      if (productResult.success && productResult.data) {
+        console.log('Product details:', productResult.data);
+        
+        // Update stock for the product
+        const stockUpdates: StockUpdatePayload[] = [
+          { sku: 'PROD-123456', quantity: 100 }
+        ];
+        
+        const stockUpdateResult = await takealotAdapter.updateStock(stockUpdates);
+        
+        if (stockUpdateResult.success && stockUpdateResult.data) {
+          console.log('Stock update successful for:', stockUpdateResult.data.successful);
+          
+          if (stockUpdateResult.data.failed.length > 0) {
+            console.log('Stock update failed for:', stockUpdateResult.data.failed);
+          }
+        }
+        
+        // Update price for the product
+        const priceUpdates: PriceUpdatePayload[] = [
+          { sku: 'PROD-123456', price: 299.99 }
+        ];
+        
+        const priceUpdateResult = await takealotAdapter.updatePrices(priceUpdates);
+        
+        if (priceUpdateResult.success && priceUpdateResult.data) {
+          console.log('Price update successful for:', priceUpdateResult.data.successful);
+        }
+        
+        // Update status for the product
+        const statusUpdates: StatusUpdatePayload[] = [
+          { sku: 'PROD-123456', status: ProductStatus.ACTIVE }
+        ];
+        
+        const statusUpdateResult = await takealotAdapter.updateStatus(statusUpdates);
+        
+        if (statusUpdateResult.success && statusUpdateResult.data) {
+          console.log('Status update successful for:', statusUpdateResult.data.successful);
+        }
+      } else {
+        console.error('Failed to get product:', productResult.error);
+      }
+      
+      // Get categories
+      const categoriesResult = await takealotAdapter.getCategories();
+      
+      if (categoriesResult.success && categoriesResult.data) {
+        console.log('Categories:', categoriesResult.data);
+        
+        // Get attributes for a specific category
+        if (categoriesResult.data.length > 0) {
+          const categoryId = categoriesResult.data[0].id;
+          const attributesResult = await takealotAdapter.getCategoryAttributes(categoryId);
+          
+          if (attributesResult.success && attributesResult.data) {
+            console.log(`Attributes for category ${categoryId}:`, attributesResult.data);
+          }
+        }
+      }
+      
+      // Get recent orders
+      const sinceDate = new Date();
+      sinceDate.setDate(sinceDate.getDate() - 7); // Orders from the last 7 days
+      
+      const recentOrders = await takealotAdapter.getRecentOrders(sinceDate, 0, 10);
+      console.log(`Recent orders: ${recentOrders.data.length} of ${recentOrders.total}`);
+      
+      // Close the adapter when done
+      await takealotAdapter.close();
+    } else {
+      console.error(`Failed to connect to ${takealotAdapter.marketplaceName}: ${connectionStatus.message}`);
+    }
+  } catch (error) {
+    const errorMessage = error && typeof error === 'object' && 'message' in error
+      ? (error as Error).message
+      : 'Unknown error';
+    console.error('Error using marketplace adapter:', errorMessage);
+  }
+}
+
+/**
+ * Example function demonstrating how to use the credential manager
+ */
+function credentialManagerExample(): void {
+  // Get the credential manager instance
+  const credentialManager = CredentialManager.getInstance();
+  
+  // Original credentials
+  const credentials: MarketplaceCredentials = {
+    apiKey: 'api-key-1234567890',
+    apiSecret: 'very-secret-api-secret',
+    sellerId: 'seller-123'
+  };
+  
+  // Encrypt credentials for storage
+  const encryptedCredentials = credentialManager.encryptCredentials(credentials, 'takealot');
+  console.log('Encrypted credentials:', encryptedCredentials);
+  
+  // Decrypt credentials for use
+  const decryptedCredentials = credentialManager.decryptCredentials(encryptedCredentials);
+  console.log('Decrypted credentials:', decryptedCredentials);
+  
+  // Mask credentials for logging
+  const maskedCredentials = credentialManager.maskCredentials(credentials);
+  console.log('Masked credentials for logging:', maskedCredentials);
+}
+
+// This is just example code, not meant to be executed directly
+// marketplaceAdapterExample().catch(console.error);
+// credentialManagerExample();

@@ -1,0 +1,56 @@
+
+> fluxori-frontend@0.1.0 typecheck
+> tsc --noEmit
+
+src/app/ai-customer-service/page.tsx(20,12): error TS2604: JSX element type 'Breadcrumb' does not have any construct or call signatures.
+src/app/ai-customer-service/page.tsx(20,12): error TS2786: 'Breadcrumb' cannot be used as a JSX component.
+  Its type 'typeof import("/home/tarquin_stapa/Fluxori-V2/frontend/node_modules/@chakra-ui/react/dist/types/components/breadcrumb/namespace")' is not a valid JSX element type.
+src/app/ai-customer-service/page.tsx(24,29): error TS2322: Type '{ children: Element; isCurrentPage: true; }' is not assignable to type 'IntrinsicAttributes & BreadcrumbItemProps & RefAttributes<HTMLElement>'.
+  Property 'isCurrentPage' does not exist on type 'IntrinsicAttributes & BreadcrumbItemProps & RefAttributes<HTMLElement>'. Did you mean '_currentPage'?
+src/features/ai-cs-agent/api/conversation.api.ts(64,26): error TS2339: Property 'data' does not exist on type 'ProcessMessageResponse'.
+src/features/ai-cs-agent/api/conversation.api.ts(79,9): error TS2353: Object literal may only specify known properties, and 'params' does not exist in type 'RequestInit'.
+src/features/ai-cs-agent/api/conversation.api.ts(81,26): error TS2339: Property 'data' does not exist on type 'Conversation[]'.
+src/features/ai-cs-agent/api/conversation.api.ts(93,26): error TS2339: Property 'data' does not exist on type 'Conversation'.
+src/features/ai-cs-agent/api/conversation.api.ts(105,26): error TS2339: Property 'data' does not exist on type 'Conversation'.
+src/features/ai-cs-agent/components/AICustomerServiceDemo.tsx(94,24): error TS2604: JSX element type 'Switch' does not have any construct or call signatures.
+src/features/ai-cs-agent/components/AICustomerServiceDemo.tsx(94,24): error TS2786: 'Switch' cannot be used as a JSX component.
+  Its type 'typeof import("/home/tarquin_stapa/Fluxori-V2/frontend/node_modules/@chakra-ui/react/dist/types/components/switch/namespace")' is not a valid JSX element type.
+src/features/ai-cs-agent/components/ConversationList.tsx(4,26): error TS2307: Cannot find module '@tanstack/react-query' or its corresponding type declarations.
+src/features/ai-cs-agent/components/ConversationList.tsx(11,10): error TS2305: Module '"@chakra-ui/react/stack"' has no exported member 'Flex'.
+src/features/ai-cs-agent/components/ConversationList.tsx(139,10): error TS2604: JSX element type 'List' does not have any construct or call signatures.
+src/features/ai-cs-agent/components/ConversationList.tsx(139,10): error TS2786: 'List' cannot be used as a JSX component.
+  Its type 'typeof import("/home/tarquin_stapa/Fluxori-V2/frontend/node_modules/@chakra-ui/react/dist/types/components/list/namespace")' is not a valid JSX element type.
+src/features/ai-cs-agent/components/ConversationList.tsx(140,22): error TS7006: Parameter 'conversation' implicitly has an 'any' type.
+src/features/ai-cs-agent/components/FloatingChatButton.tsx(9,41): error TS2307: Cannot find module 'framer-motion' or its corresponding type declarations.
+src/features/ai-cs-agent/hooks/useConversation.ts(2,55): error TS2307: Cannot find module '@tanstack/react-query' or its corresponding type declarations.
+src/features/ai-cs-agent/hooks/useConversation.ts(110,20): error TS2345: Argument of type '(prev: ConversationState) => { conversationId: string | undefined; messages: Message[]; isLoading: boolean; isError: boolean; error: Error | null; isEscalated: boolean; escalationReason: string | null; isTyping: boolean; }' is not assignable to parameter of type 'SetStateAction<ConversationState>'.
+  Type '(prev: ConversationState) => { conversationId: string | undefined; messages: Message[]; isLoading: boolean; isError: boolean; error: Error | null; isEscalated: boolean; escalationReason: string | null; isTyping: boolean; }' is not assignable to type '(prevState: ConversationState) => ConversationState'.
+    Call signature return types '{ conversationId: string | undefined; messages: Message[]; isLoading: boolean; isError: boolean; error: Error | null; isEscalated: boolean; escalationReason: string | null; isTyping: boolean; }' and 'ConversationState' are incompatible.
+      The types of 'conversationId' are incompatible between these types.
+        Type 'string | undefined' is not assignable to type 'string | null'.
+          Type 'undefined' is not assignable to type 'string | null'.
+src/features/ai-cs-agent/hooks/useConversation.ts(372,17): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/features/inventory/api/inventory.api.ts(96,22): error TS2353: Object literal may only specify known properties, and 'params' does not exist in type 'RequestInit'.
+src/features/inventory/components/InventoryDetail.tsx(130,45): error TS7006: Parameter 'tag' implicitly has an 'any' type.
+src/features/inventory/components/InventoryDetail.tsx(130,50): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/features/inventory/components/InventoryDetail.tsx(202,47): error TS7006: Parameter 'image' implicitly has an 'any' type.
+src/features/inventory/components/InventoryDetail.tsx(202,54): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/features/inventory/components/MarketplacePush.tsx(172,26): error TS7006: Parameter 'marketplace' implicitly has an 'any' type.
+src/features/inventory/hooks/useInventory.ts(1,55): error TS2307: Cannot find module '@tanstack/react-query' or its corresponding type declarations.
+src/features/inventory/hooks/useInventory.ts(28,16): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/features/inventory/hooks/useInventory.ts(37,16): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/features/inventory/hooks/useInventory.ts(69,19): error TS7006: Parameter '_' implicitly has an 'any' type.
+src/features/inventory/hooks/useInventory.ts(69,24): error TS7031: Binding element 'id' implicitly has an 'any' type.
+src/features/inventory/hooks/useInventory.ts(115,19): error TS7006: Parameter '_' implicitly has an 'any' type.
+src/features/inventory/hooks/useInventory.ts(115,24): error TS7031: Binding element 'id' implicitly has an 'any' type.
+src/features/inventory/hooks/useInventory.ts(140,16): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/features/inventory/hooks/useInventory.ts(149,16): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/features/inventory/hooks/useInventory.ts(158,16): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/features/inventory/hooks/useInventory.ts(170,19): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/features/inventory/hooks/useInventory.ts(170,27): error TS7031: Binding element 'marketplaceId' implicitly has an 'any' type.
+src/features/inventory/hooks/useInventory.ts(186,31): error TS7031: Binding element 'marketplaceId' implicitly has an 'any' type.
+src/features/inventory/pages/InventoryDetailPage.tsx(25,14): error TS2604: JSX element type 'Breadcrumb' does not have any construct or call signatures.
+src/features/inventory/pages/InventoryDetailPage.tsx(25,14): error TS2786: 'Breadcrumb' cannot be used as a JSX component.
+  Its type 'typeof import("/home/tarquin_stapa/Fluxori-V2/frontend/node_modules/@chakra-ui/react/dist/types/components/breadcrumb/namespace")' is not a valid JSX element type.
+src/features/inventory/pages/InventoryDetailPage.tsx(29,31): error TS2322: Type '{ children: Element; isCurrentPage: true; }' is not assignable to type 'IntrinsicAttributes & BreadcrumbItemProps & RefAttributes<HTMLElement>'.
+  Property 'isCurrentPage' does not exist on type 'IntrinsicAttributes & BreadcrumbItemProps & RefAttributes<HTMLElement>'. Did you mean '_currentPage'?

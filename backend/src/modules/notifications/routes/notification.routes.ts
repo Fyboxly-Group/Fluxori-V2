@@ -1,0 +1,183 @@
+import { Router } from 'express';
+import { NotificationController } from '../controllers/notification.controller';
+import { authenticate } from '../../../middleware/auth.middleware';
+
+const router = Router();
+
+/**
+ * @swagger
+ * tags:
+ *   name: Notifications
+ *   description: Notification management
+ */
+
+/**
+ * @swagger
+ * /api/notifications:
+ *   get:
+ *     summary: Get user notifications
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: Maximum number of notifications to return
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *         description: Starting position
+ *       - in: query
+ *         name: includeRead
+ *         schema:
+ *           type: boolean
+ *           default: true
+ *         description: Whether to include read notifications
+ *     responses:
+ *       200:
+ *         description: List of notifications
+ *       401:
+ *         description: Unauthorized
+ */
+router.get('/', authenticate, NotificationController.getUserNotifications);
+
+/**
+ * @swagger
+ * /api/notifications/unread-count:
+ *   get:
+ *     summary: Get unread notification count
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Unread notification count
+ *       401:
+ *         description: Unauthorized
+ */
+router.get('/unread-count', authenticate, NotificationController.getUnreadCount);
+
+/**
+ * @swagger
+ * /api/notifications/{id}/read:
+ *   patch:
+ *     summary: Mark notification as read
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Notification ID
+ *     responses:
+ *       200:
+ *         description: Notification marked as read
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Notification not found
+ */
+router.patch('/:id/read', authenticate, NotificationController.markAsRead);
+
+/**
+ * @swagger
+ * /api/notifications/mark-all-read:
+ *   patch:
+ *     summary: Mark all notifications as read
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: All notifications marked as read
+ *       401:
+ *         description: Unauthorized
+ */
+router.patch('/mark-all-read', authenticate, NotificationController.markAllAsRead);
+
+/**
+ * @swagger
+ * /api/notifications/{id}:
+ *   delete:
+ *     summary: Delete a notification
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Notification ID
+ *     responses:
+ *       200:
+ *         description: Notification deleted
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Notification not found
+ */
+router.delete('/:id', authenticate, NotificationController.deleteNotification);
+
+/**
+ * @swagger
+ * /api/notifications/clear-all:
+ *   delete:
+ *     summary: Clear all notifications
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: All notifications cleared
+ *       401:
+ *         description: Unauthorized
+ */
+router.delete('/clear-all', authenticate, NotificationController.clearAllNotifications);
+
+/**
+ * @swagger
+ * /api/notifications/test:
+ *   post:
+ *     summary: Send test notification to self (dev only)
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - message
+ *             properties:
+ *               title:
+ *                 type: string
+ *               message:
+ *                 type: string
+ *               type:
+ *                 type: string
+ *                 enum: [alert, info, success, warning, error, sync_status, system]
+ *               category:
+ *                 type: string
+ *                 enum: [inventory, marketplace, shipping, system, task, ai, security, billing]
+ *     responses:
+ *       201:
+ *         description: Test notification sent
+ *       401:
+ *         description: Unauthorized
+ */
+router.post('/test', authenticate, NotificationController.sendTestNotification);
+
+export { router as notificationRoutes };

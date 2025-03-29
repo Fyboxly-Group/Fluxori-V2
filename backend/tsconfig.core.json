@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/modules/credits/**/*.ts",
+    "src/modules/marketplaces/**/*.ts"
+  ],
+  "exclude": [
+    "**/*.test.ts",
+    "node_modules",
+    "dist"
+  ],
+  "compilerOptions": {
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "useUnknownInCatchVariables": false,
+    "skipLibCheck": true,
+    "strict": false
+  }
+}

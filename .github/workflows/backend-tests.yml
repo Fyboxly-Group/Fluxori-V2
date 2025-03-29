@@ -1,0 +1,61 @@
+name: Backend Tests
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: backend/package-lock.json
+        
+    - name: Install dependencies
+      run: |
+        cd backend
+        npm ci
+      
+    - name: Run linting
+      run: |
+        cd backend
+        npm run lint
+        
+    - name: Run unit tests
+      run: |
+        cd backend
+        npm run test:unit
+        
+    - name: Run integration tests
+      run: |
+        cd backend
+        npm run test:integration
+        
+    - name: Generate coverage report
+      run: |
+        cd backend
+        npm run test:ci
+      
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-report
+        path: backend/coverage/
+        
+    - name: Check test coverage thresholds
+      run: |
+        cd backend
+        npx jest --collectCoverage --coverageThreshold='{"global":{"branches":70,"functions":70,"lines":70,"statements":70}}' || exit 1

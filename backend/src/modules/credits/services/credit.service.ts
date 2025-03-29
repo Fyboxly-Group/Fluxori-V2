@@ -1,0 +1,373 @@
+import mongoose from 'mongoose';
+import { 
+  CreditBalance, 
+  CreditTransaction, 
+  CreditTransactionType,
+  ICreditBalanceDocument,
+  ICreditTransactionDocument,
+  MONTHLY_CREDITS,
+  SubscriptionTier
+} from '../models/credit.model';
+
+export class InsufficientCreditsError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'InsufficientCreditsError';
+  }
+}
+
+export class CreditService {
+  /**
+   * Get credit balance for a user or organization
+   * @param userId User ID
+   * @param organizationId Optional organization ID
+   * @returns Credit balance object
+   */
+  public static async getBalance(userId: string, organizationId?: string): Promise<ICreditBalanceDocument> {
+    const balance = await CreditBalance.findOne({
+      userId,
+      ...(organizationId && { organizationId })
+    });
+
+    if (!balance) {
+      throw new Error('Credit balance not found');
+    }
+
+    return balance;
+  }
+
+  /**
+   * Initialize a new credit balance for a user or organization
+   * @param userId User ID
+   * @param tier Subscription tier
+   * @param organizationId Optional organization ID
+   * @param initialBalance Optional initial balance (defaults to monthly allocation for tier)
+   * @returns Newly created credit balance
+   */
+  public static async initializeBalance(
+    userId: string, 
+    tier: SubscriptionTier, 
+    organizationId?: string,
+    initialBalance?: number
+  ): Promise<ICreditBalanceDocument> {
+    const balance = initialBalance ?? MONTHLY_CREDITS[tier];
+
+    const creditBalance = new CreditBalance({
+      userId,
+      organizationId,
+      balance,
+      tier,
+      lastUpdated: new Date()
+    });
+
+    await creditBalance.save();
+
+    // Create initial allocation transaction
+    await this.createTransaction(
+      userId,
+      balance,
+      CreditTransactionType.ALLOCATION,
+      'Initial subscription allocation',
+      balance,
+      organizationId
+    );
+
+    return creditBalance;
+  }
+
+  /**
+   * Add credits to a user or organization balance
+   * @param userId User ID
+   * @param amount Amount to add (positive number)
+   * @param type Transaction type (ALLOCATION or PURCHASE)
+   * @param description Transaction description
+   * @param organizationId Optional organization ID
+   * @param referenceId Optional reference ID (e.g., order ID)
+   * @returns Updated credit balance
+   */
+  public static async addCredits(
+    userId: string,
+    amount: number,
+    type: CreditTransactionType.ALLOCATION | CreditTransactionType.PURCHASE,
+    description: string,
+    organizationId?: string,
+    referenceId?: string
+  ): Promise<ICreditBalanceDocument> {
+    if (amount <= 0) {
+      throw new Error('Amount must be a positive number');
+    }
+
+    if (type !== CreditTransactionType.ALLOCATION && type !== CreditTransactionType.PURCHASE) {
+      throw new Error('Invalid transaction type for adding credits');
+    }
+
+    try {
+      // Try to use MongoDB transaction for atomicity if supported
+      const supportsTransactions = mongoose.connection.db?.admin ? true : false;
+      let session = null;
+      
+      if (supportsTransactions) {
+        try {
+          session = await mongoose.startSession();
+          session.startTransaction();
+        } catch (error) {
+          // If transactions aren't supported (e.g. in tests), continue without them
+          console.warn('MongoDB transactions not supported, proceeding without transaction support');
+          session = null;
+        }
+      }
+
+      try {
+        // Get current balance or initialize one if it doesn't exist
+        let creditBalance: ICreditBalanceDocument;
+        try {
+          creditBalance = await this.getBalance(userId, organizationId);
+        } catch (error) {
+          // If balance not found, initialize a default one
+          creditBalance = await this.initializeBalance(userId, SubscriptionTier.EXPLORER, organizationId);
+        }
+
+        // Update balance
+        const newBalance = creditBalance.balance + amount;
+        
+        creditBalance.balance = newBalance;
+        creditBalance.lastUpdated = new Date();
+        
+        if (session) {
+          await creditBalance.save({ session });
+        } else {
+          await creditBalance.save();
+        }
+
+        // Record transaction
+        await this.createTransaction(
+          userId,
+          amount,
+          type,
+          description,
+          newBalance,
+          organizationId,
+          referenceId,
+          session
+        );
+
+        if (session) {
+          await session.commitTransaction();
+        }
+        
+        return creditBalance;
+      } catch (error) {
+        if (session) {
+          await session.abortTransaction();
+        }
+        throw error;
+      } finally {
+        if (session) {
+          session.endSession();
+        }
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Deduct credits from a user or organization balance
+   * @param userId User ID
+   * @param amount Amount to deduct (positive number)
+   * @param description Transaction description
+   * @param organizationId Optional organization ID
+   * @param referenceId Optional reference ID (e.g., feature ID)
+   * @returns Updated credit balance
+   * @throws InsufficientCreditsError if balance is insufficient
+   */
+  public static async deductCredits(
+    userId: string,
+    amount: number,
+    description: string,
+    organizationId?: string,
+    referenceId?: string
+  ): Promise<ICreditBalanceDocument> {
+    if (amount <= 0) {
+      throw new Error('Amount must be a positive number');
+    }
+
+    try {
+      // Try to use MongoDB transaction for atomicity if supported
+      const supportsTransactions = mongoose.connection.db?.admin ? true : false;
+      let session = null;
+      
+      if (supportsTransactions) {
+        try {
+          session = await mongoose.startSession();
+          session.startTransaction();
+        } catch (error) {
+          // If transactions aren't supported (e.g. in tests), continue without them
+          console.warn('MongoDB transactions not supported, proceeding without transaction support');
+          session = null;
+        }
+      }
+
+      try {
+        // Get current balance
+        const creditBalance = await this.getBalance(userId, organizationId);
+
+        // Check if balance is sufficient
+        if (creditBalance.balance < amount) {
+          throw new InsufficientCreditsError(
+            `Insufficient credits. Required: ${amount}, Available: ${creditBalance.balance}`
+          );
+        }
+
+        // Update balance
+        const newBalance = creditBalance.balance - amount;
+        
+        creditBalance.balance = newBalance;
+        creditBalance.lastUpdated = new Date();
+        
+        if (session) {
+          await creditBalance.save({ session });
+        } else {
+          await creditBalance.save();
+        }
+
+        // Record transaction (negative amount for deduction)
+        await this.createTransaction(
+          userId,
+          -amount, // Negative amount for deduction
+          CreditTransactionType.USAGE,
+          description,
+          newBalance,
+          organizationId,
+          referenceId,
+          session
+        );
+
+        if (session) {
+          await session.commitTransaction();
+        }
+        
+        return creditBalance;
+      } catch (error) {
+        if (session) {
+          await session.abortTransaction();
+        }
+        throw error;
+      } finally {
+        if (session) {
+          session.endSession();
+        }
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Update a user's subscription tier
+   * @param userId User ID
+   * @param newTier New subscription tier
+   * @param organizationId Optional organization ID
+   * @returns Updated credit balance
+   */
+  public static async updateSubscriptionTier(
+    userId: string,
+    newTier: SubscriptionTier,
+    organizationId?: string
+  ): Promise<ICreditBalanceDocument> {
+    const creditBalance = await this.getBalance(userId, organizationId);
+    
+    creditBalance.tier = newTier;
+    creditBalance.lastUpdated = new Date();
+    await creditBalance.save();
+    
+    return creditBalance;
+  }
+
+  /**
+   * Add monthly credit allocation based on subscription tier
+   * @param userId User ID
+   * @param organizationId Optional organization ID
+   * @returns Updated credit balance
+   */
+  public static async addMonthlyAllocation(
+    userId: string,
+    organizationId?: string
+  ): Promise<ICreditBalanceDocument> {
+    const creditBalance = await this.getBalance(userId, organizationId);
+    const allocationAmount = MONTHLY_CREDITS[creditBalance.tier];
+    
+    return await this.addCredits(
+      userId,
+      allocationAmount,
+      CreditTransactionType.ALLOCATION,
+      `Monthly ${creditBalance.tier} subscription allocation`,
+      organizationId
+    );
+  }
+
+  /**
+   * Get transaction history for a user or organization
+   * @param userId User ID
+   * @param organizationId Optional organization ID
+   * @param limit Optional limit of transactions (default 50)
+   * @param offset Optional offset for pagination (default 0)
+   * @returns Array of credit transactions
+   */
+  public static async getTransactionHistory(
+    userId: string,
+    organizationId?: string,
+    limit: number = 50,
+    offset: number = 0
+  ): Promise<ICreditTransactionDocument[]> {
+    return CreditTransaction.find({
+      userId,
+      ...(organizationId && { organizationId })
+    })
+    .sort({ timestamp: -1 })
+    .skip(offset)
+    .limit(limit);
+  }
+
+  /**
+   * Create a new credit transaction
+   * @param userId User ID
+   * @param amount Transaction amount (positive for addition, negative for deduction)
+   * @param type Transaction type
+   * @param description Transaction description
+   * @param newBalance New balance after transaction
+   * @param organizationId Optional organization ID
+   * @param referenceId Optional reference ID
+   * @param session Optional MongoDB session for transactions
+   * @returns New credit transaction document
+   */
+  private static async createTransaction(
+    userId: string,
+    amount: number,
+    type: CreditTransactionType,
+    description: string,
+    newBalance: number,
+    organizationId?: string,
+    referenceId?: string,
+    session?: mongoose.ClientSession | null
+  ): Promise<ICreditTransactionDocument> {
+    const transaction = new CreditTransaction({
+      userId,
+      organizationId,
+      timestamp: new Date(),
+      amount,
+      type,
+      description,
+      newBalance,
+      referenceId
+    });
+
+    if (session) {
+      await transaction.save({ session });
+    } else {
+      await transaction.save();
+    }
+
+    return transaction;
+  }
+}

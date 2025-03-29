@@ -1,0 +1,299 @@
+import mongoose, { Document, Model, Schema } from 'mongoose';
+
+export type ShipmentStatus = 'pending' | 'processing' | 'shipped' | 'in-transit' | 'out-for-delivery' | 'delivered' | 'failed' | 'returned';
+export type ShipmentType = 'inbound' | 'outbound';
+
+export interface IShipment {
+  shipmentNumber: string;
+  type: ShipmentType;
+  courier: string;
+  trackingNumber: string;
+  trackingUrl?: string;
+  status: ShipmentStatus;
+  origin: {
+    name: string;
+    address: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+    phone: string;
+  };
+  destination: {
+    name: string;
+    address: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+    phone: string;
+  };
+  items: {
+    product: mongoose.Types.ObjectId;
+    sku: string;
+    name: string;
+    quantity: number;
+  }[];
+  purchaseOrder?: mongoose.Types.ObjectId;
+  order?: mongoose.Types.ObjectId;
+  estimatedDeliveryDate?: Date;
+  shippedDate?: Date;
+  deliveredDate?: Date;
+  weight?: number;
+  weightUnit?: 'kg' | 'g' | 'lb' | 'oz';
+  dimensions?: {
+    length: number;
+    width: number;
+    height: number;
+    unit: 'cm' | 'in' | 'mm';
+  };
+  shippingCost?: number;
+  notes?: string;
+  deliveryInstructions?: string;
+  signatureRequired: boolean;
+  documents?: {
+    title: string;
+    fileUrl: string;
+    fileType: string;
+    uploadedBy: mongoose.Types.ObjectId;
+    uploadedAt: Date;
+    category: 'invoice' | 'packing-slip' | 'bill-of-lading' | 'customs' | 'insurance' | 'receipt' | 'other';
+  }[];
+  trackingHistory?: {
+    status: string;
+    location?: string;
+    timestamp: Date;
+    description?: string;
+  }[];
+  createdBy: mongoose.Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface IShipmentDocument extends IShipment, Document {}
+
+const shipmentSchema = new Schema<IShipmentDocument>(
+  {
+    shipmentNumber: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+    },
+    type: {
+      type: String,
+      enum: ['inbound', 'outbound'],
+      required: true,
+    },
+    courier: {
+      type: String,
+      required: true,
+    },
+    trackingNumber: {
+      type: String,
+      required: true,
+    },
+    trackingUrl: {
+      type: String,
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'processing', 'shipped', 'in-transit', 'out-for-delivery', 'delivered', 'failed', 'returned'],
+      default: 'pending',
+    },
+    origin: {
+      name: {
+        type: String,
+        required: true,
+      },
+      address: {
+        type: String,
+        required: true,
+      },
+      city: {
+        type: String,
+        required: true,
+      },
+      state: {
+        type: String,
+        required: true,
+      },
+      postalCode: {
+        type: String,
+        required: true,
+      },
+      country: {
+        type: String,
+        required: true,
+      },
+      phone: {
+        type: String,
+        required: true,
+      },
+    },
+    destination: {
+      name: {
+        type: String,
+        required: true,
+      },
+      address: {
+        type: String,
+        required: true,
+      },
+      city: {
+        type: String,
+        required: true,
+      },
+      state: {
+        type: String,
+        required: true,
+      },
+      postalCode: {
+        type: String,
+        required: true,
+      },
+      country: {
+        type: String,
+        required: true,
+      },
+      phone: {
+        type: String,
+        required: true,
+      },
+    },
+    items: [{
+      product: {
+        type: Schema.Types.ObjectId,
+        ref: 'InventoryItem',
+        required: true,
+      },
+      sku: {
+        type: String,
+        required: true,
+      },
+      name: {
+        type: String,
+        required: true,
+      },
+      quantity: {
+        type: Number,
+        required: true,
+        min: 1,
+      },
+    }],
+    purchaseOrder: {
+      type: Schema.Types.ObjectId,
+      ref: 'PurchaseOrder',
+    },
+    order: {
+      type: Schema.Types.ObjectId,
+      ref: 'Order',
+    },
+    estimatedDeliveryDate: {
+      type: Date,
+    },
+    shippedDate: {
+      type: Date,
+    },
+    deliveredDate: {
+      type: Date,
+    },
+    weight: {
+      type: Number,
+    },
+    weightUnit: {
+      type: String,
+      enum: ['kg', 'g', 'lb', 'oz'],
+      default: 'kg',
+    },
+    dimensions: {
+      length: Number,
+      width: Number,
+      height: Number,
+      unit: {
+        type: String,
+        enum: ['cm', 'in', 'mm'],
+        default: 'cm',
+      },
+    },
+    shippingCost: {
+      type: Number,
+    },
+    notes: {
+      type: String,
+    },
+    deliveryInstructions: {
+      type: String,
+    },
+    signatureRequired: {
+      type: Boolean,
+      default: false,
+    },
+    documents: [{
+      title: {
+        type: String,
+        required: true,
+      },
+      fileUrl: {
+        type: String,
+        required: true,
+      },
+      fileType: {
+        type: String,
+        required: true,
+      },
+      uploadedBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+      },
+      uploadedAt: {
+        type: Date,
+        default: Date.now,
+      },
+      category: {
+        type: String,
+        enum: ['invoice', 'packing-slip', 'bill-of-lading', 'customs', 'insurance', 'receipt', 'other'],
+        default: 'other',
+      },
+    }],
+    trackingHistory: [{
+      status: {
+        type: String,
+        required: true,
+      },
+      location: {
+        type: String,
+      },
+      timestamp: {
+        type: Date,
+        required: true,
+      },
+      description: {
+        type: String,
+      },
+    }],
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+// Index for efficient querying
+shipmentSchema.index({ shipmentNumber: 1 });
+shipmentSchema.index({ trackingNumber: 1 });
+shipmentSchema.index({ type: 1 });
+shipmentSchema.index({ status: 1 });
+shipmentSchema.index({ estimatedDeliveryDate: 1 });
+shipmentSchema.index({ purchaseOrder: 1 });
+shipmentSchema.index({ order: 1 });
+shipmentSchema.index({ 'items.product': 1 });
+
+const Shipment = mongoose.model<IShipmentDocument>('Shipment', shipmentSchema);
+
+export default Shipment;

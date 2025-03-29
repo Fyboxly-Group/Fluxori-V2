@@ -1,0 +1,149 @@
+import { Router } from 'express';
+import { MarketplaceProductController } from '../controllers/marketplace-product.controller';
+import { authenticate } from '../../../middleware/auth.middleware';
+
+const router = Router();
+
+/**
+ * @swagger
+ * /products/{productId}/push/{marketplaceId}:
+ *   post:
+ *     summary: Push product updates to a marketplace
+ *     description: Updates a product's price, stock, or status on a connected marketplace
+ *     tags: [Marketplace]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: productId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the product to update
+ *       - in: path
+ *         name: marketplaceId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the marketplace to push to (e.g., takealot)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               price:
+ *                 type: number
+ *                 description: The selling price to update
+ *               rrp:
+ *                 type: number
+ *                 description: The recommended retail price (RRP) to update
+ *               stock:
+ *                 type: number
+ *                 description: The stock quantity to update
+ *               status:
+ *                 type: string
+ *                 enum: [active, inactive]
+ *                 description: The product status to update
+ *     responses:
+ *       200:
+ *         description: Updates pushed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: All requested updates were pushed successfully
+ *                 details:
+ *                   type: object
+ *                   properties:
+ *                     price:
+ *                       type: object
+ *                       properties:
+ *                         success:
+ *                           type: boolean
+ *                           example: true
+ *                     stock:
+ *                       type: object
+ *                       properties:
+ *                         success:
+ *                           type: boolean
+ *                           example: true
+ *                     status:
+ *                       type: object
+ *                       properties:
+ *                         success:
+ *                           type: boolean
+ *                           example: true
+ *       400:
+ *         description: Bad request or push failed
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Product not found
+ *       500:
+ *         description: Server error
+ */
+router.post('/products/:productId/push/:marketplaceId', authenticate, MarketplaceProductController.pushProductUpdates);
+
+/**
+ * @swagger
+ * /marketplaces/connected:
+ *   get:
+ *     summary: Get connected marketplaces
+ *     description: Returns a list of marketplaces connected to the user's account
+ *     tags: [Marketplace]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of connected marketplaces
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         example: takealot
+ *                       name:
+ *                         type: string
+ *                         example: Takealot
+ *                       status:
+ *                         type: string
+ *                         example: connected
+ *                       lastSynced:
+ *                         type: string
+ *                         format: date-time
+ *                       features:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *                         example: [price, stock, status]
+ *                       logo:
+ *                         type: string
+ *                         example: https://www.takealot.com/favicon.ico
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.get('/marketplaces/connected', authenticate, MarketplaceProductController.getConnectedMarketplaces);
+
+export default router;

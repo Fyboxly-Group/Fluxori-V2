@@ -1,0 +1,144 @@
+import { IMarketplaceAdapter } from '../adapters/interfaces/marketplace-adapter.interface';
+import { MarketplaceCredentials } from '../models/marketplace.models';
+
+/**
+ * Factory service for creating and managing marketplace adapters
+ */
+export class MarketplaceAdapterFactory {
+  private static instance: MarketplaceAdapterFactory;
+  private adapterRegistry: Map<string, new () => IMarketplaceAdapter> = new Map();
+  private activeAdapters: Map<string, IMarketplaceAdapter> = new Map();
+
+  /**
+   * Private constructor to enforce singleton pattern
+   */
+  private constructor() {}
+
+  /**
+   * Get the singleton instance
+   */
+  public static getInstance(): MarketplaceAdapterFactory {
+    if (!MarketplaceAdapterFactory.instance) {
+      MarketplaceAdapterFactory.instance = new MarketplaceAdapterFactory();
+    }
+    return MarketplaceAdapterFactory.instance;
+  }
+
+  /**
+   * Register a marketplace adapter class
+   * @param marketplaceId - Unique identifier for the marketplace
+   * @param adapterClass - The adapter class to register
+   */
+  public registerAdapter(marketplaceId: string, adapterClass: new () => IMarketplaceAdapter): void {
+    this.adapterRegistry.set(marketplaceId.toLowerCase(), adapterClass);
+  }
+
+  /**
+   * Create and initialize a marketplace adapter
+   * @param marketplaceId - Unique identifier for the marketplace
+   * @param credentials - Credentials for the marketplace
+   * @returns Initialized adapter instance
+   */
+  public async createAdapter(
+    marketplaceId: string,
+    credentials: MarketplaceCredentials
+  ): Promise<IMarketplaceAdapter> {
+    const normalizedId = marketplaceId.toLowerCase();
+    
+    // Check if adapter is registered
+    const AdapterClass = this.adapterRegistry.get(normalizedId);
+    if (!AdapterClass) {
+      throw new Error(`No adapter registered for marketplace: ${marketplaceId}`);
+    }
+    
+    // Create adapter instance
+    const adapter = new AdapterClass();
+    
+    // Initialize adapter with credentials
+    await adapter.initialize(credentials);
+    
+    // Store active adapter
+    this.activeAdapters.set(normalizedId, adapter);
+    
+    return adapter;
+  }
+
+  /**
+   * Get an active adapter by marketplace ID
+   * @param marketplaceId - Unique identifier for the marketplace
+   * @returns Active adapter instance
+   */
+  public getAdapter(marketplaceId: string): IMarketplaceAdapter {
+    const normalizedId = marketplaceId.toLowerCase();
+    
+    const adapter = this.activeAdapters.get(normalizedId);
+    
+    if (!adapter) {
+      throw new Error(`No active adapter found for marketplace: ${marketplaceId}. Call createAdapter() first.`);
+    }
+    
+    return adapter;
+  }
+
+  /**
+   * Check if an adapter is registered
+   * @param marketplaceId - Unique identifier for the marketplace
+   * @returns True if adapter is registered
+   */
+  public hasAdapter(marketplaceId: string): boolean {
+    return this.adapterRegistry.has(marketplaceId.toLowerCase());
+  }
+
+  /**
+   * Check if an adapter is active (created and initialized)
+   * @param marketplaceId - Unique identifier for the marketplace
+   * @returns True if adapter is active
+   */
+  public isAdapterActive(marketplaceId: string): boolean {
+    return this.activeAdapters.has(marketplaceId.toLowerCase());
+  }
+
+  /**
+   * Get all registered marketplace IDs
+   * @returns Array of registered marketplace IDs
+   */
+  public getRegisteredMarketplaces(): string[] {
+    return Array.from(this.adapterRegistry.keys());
+  }
+
+  /**
+   * Get all active marketplace IDs
+   * @returns Array of active marketplace IDs
+   */
+  public getActiveMarketplaces(): string[] {
+    return Array.from(this.activeAdapters.keys());
+  }
+
+  /**
+   * Close and remove an active adapter
+   * @param marketplaceId - Unique identifier for the marketplace
+   * @returns True if adapter was closed successfully
+   */
+  public async closeAdapter(marketplaceId: string): Promise<boolean> {
+    const normalizedId = marketplaceId.toLowerCase();
+    
+    const adapter = this.activeAdapters.get(normalizedId);
+    
+    if (adapter) {
+      await adapter.close();
+      this.activeAdapters.delete(normalizedId);
+      return true;
+    }
+    
+    return false;
+  }
+
+  /**
+   * Close all active adapters
+   */
+  public async closeAllAdapters(): Promise<void> {
+    const promises = Array.from(this.activeAdapters.values()).map(adapter => adapter.close());
+    await Promise.all(promises);
+    this.activeAdapters.clear();
+  }
+}
