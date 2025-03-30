@@ -1,0 +1,46 @@
+/**
+ * Factory for creating Sales API module
+ */
+
+import { SalesModule } from './sales';
+import { ModuleRegistry } from '../core/module-registry';
+import { getDefaultModuleVersion } from '../core/module-definitions';
+
+/**
+ * Factory for creating Sales API module
+ */
+export class SalesModuleFactory {
+  /**
+   * Create a Sales module and register it with the provided registry
+   * @param makeApiRequest Function to make API requests
+   * @param marketplaceId Marketplace ID
+   * @param registry Module registry to register with
+   * @param apiVersion Optional API version (uses default if not provided)
+   * @returns The created module
+   */
+  public static createSalesModule(
+    makeApiRequest: <T>(
+      method: string,
+      endpoint: string,
+      options?: any
+    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
+    marketplaceId: string,
+    registry: ModuleRegistry,
+    apiVersion?: string
+  ): SalesModule {
+    // Use provided version or get the default
+    const version = apiVersion || getDefaultModuleVersion('sales') || 'v1';
+    
+    // Create the module
+    const module = new SalesModule(
+      version,
+      makeApiRequest,
+      marketplaceId
+    );
+    
+    // Register the module
+    registry.registerModule(module);
+    
+    return module;
+  }
+}

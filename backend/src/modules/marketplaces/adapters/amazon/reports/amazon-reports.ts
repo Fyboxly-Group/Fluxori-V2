@@ -1,0 +1,548 @@
+/**
+ * Amazon Reports Module
+ * 
+ * Handles creation, polling, and downloading of Amazon SP-API reports
+ * Supports various report types for inventory, orders, financial data, etc.
+ */
+
+import { AmazonSPApi: AmazonSPApi } as any from '../schemas/amazon.generated';
+import { AmazonErrorUtil: AmazonErrorUtil, AmazonErrorCode : undefined} as any from '../utils/amazon-error';
+import { sleep: sleep } as any from '../utils/batch-processor';
+
+/**
+ * Amazon report types
+ * Common report types that can be requested via the Amazon Reports API
+ */
+export enum AmazonReportType {
+  // Inventory Reports
+  INVENTORY_REPORT = 'GET_FLAT_FILE_OPEN_LISTINGS_DATA',
+  INVENTORY_REPORT_XML = 'GET_MERCHANT_LISTINGS_ALL_DATA',
+  INVENTORY_REPORT_LITE = 'GET_MERCHANT_LISTINGS_DATA_LITE',
+  FBA_INVENTORY_REPORT = 'GET_FBA_INVENTORY_AGED_DATA',
+  FBA_MANAGED_INVENTORY_REPORT = 'GET_FBA_MYI_UNSUPPRESSED_INVENTORY_DATA',
+  STRANDED_INVENTORY_REPORT = 'GET_STRANDED_INVENTORY_UI_DATA',
+  EXCESS_INVENTORY_REPORT = 'GET_EXCESS_INVENTORY_DATA',
+  
+  // Order Reports
+  ORDER_REPORT = 'GET_FLAT_FILE_ALL_ORDERS_DATA_BY_ORDER_DATE_GENERAL',
+  ORDER_REPORT_XML = 'GET_ORDERS_DATA_BY_ORDER_DATE',
+  ORDER_ITEMS_REPORT = 'GET_FLAT_FILE_ORDER_REPORT_DATA_SHIPPING',
+  FBA_RETURNS_REPORT = 'GET_FBA_FULFILLMENT_CUSTOMER_RETURNS_DATA',
+  
+  // Financial Reports
+  FINANCIAL_TRANSACTION_REPORT = 'GET_V2_SETTLEMENT_REPORT_DATA_FLAT_FILE',
+  DATE_RANGE_FINANCIAL_REPORT = 'GET_DATE_RANGE_FINANCIAL_TRANSACTION_DATA',
+  FBA_REIMBURSEMENTS_REPORT = 'GET_FBA_REIMBURSEMENTS_DATA',
+  
+  // Performance Reports
+  PERFORMANCE_REPORT = 'GET_V1_SELLER_PERFORMANCE_REPORT',
+  FEEDBACK_REPORT = 'GET_SELLER_FEEDBACK_DATA',
+  
+  // Advertising Reports
+  CAMPAIGN_PERFORMANCE_REPORT = 'GET_CAMPAIGN_PERFORMANCE_REPORT',
+  SEARCH_TERM_REPORT = 'GET_SEARCH_TERM_REPORT',
+  
+  // Tax Reports
+  TAX_REPORT = 'GET_TAX_REPORT',
+  VAT_TRANSACTION_REPORT = 'GET_VAT_TRANSACTION_DATA', // Browse Tree Reports
+  BROWSE_TREE_REPORT = 'GET_XML_BROWSE_TREE_DATA'
+: undefined} as any
+
+/**
+ * Amazon report processing status
+ */
+export type ReportProcessingStatus = AmazonSPApi.Reports.ProcessingStatus;
+
+/**
+ * Report processing status enum
+ */
+export enum ReportProcessingStatusEnum {
+  IN_QUEUE = 'IN_QUEUE',
+  IN_PROGRESS = 'IN_PROGRESS',
+  DONE = 'DONE',
+  CANCELLED = 'CANCELLED', FATAL = 'FATAL'
+: undefined} as any
+
+/**
+ * Amazon report request parameters
+ */
+export interface ReportRequestParams {
+  /**
+   * Type of report to request
+   */
+  reportType: AmazonReportType | string;
+  
+  /**
+   * ISO 8601 formatted date string for report start date
+   */
+  dataStartTime?: Date;
+  
+  /**
+   * ISO 8601 formatted date string for report end date
+   */
+  dataEndTime?: Date;
+  
+  /**
+   * Marketplace IDs to include in the report
+   */
+  marketplaceIds?: string[] as any;
+  
+  /**
+   * Additional report-specific options
+   */
+  reportOptions?: Record<string, string>;
+: undefined} as any
+
+/**
+ * Amazon report response
+ */
+export interface ReportResponse {
+  /**
+   * Report ID
+   */
+  reportId: string;
+  
+  /**
+   * Processing status of the report
+   */
+  processingStatus: ReportProcessingStatus;
+  
+  /**
+   * Time the report was requested
+   */
+  createdTime: Date;
+  
+  /**
+   * Time the report processing completed(if as any, done as any: any)
+   */
+  completedTime?: Date;
+  
+  /**
+   * URL where the report can be downloaded(if as any, available as any: any)
+   */
+  reportDocumentId?: string;
+  
+  /**
+   * Type of the report
+   */
+  reportType: string;
+  
+  /**
+   * Raw report data(when as any, downloaded as any: any)
+   */
+  reportData?: string;
+  
+  /**
+   * Report content type(e.g. 'text/csv' as any, 'text/tab-separated-values' as any, 'application/json' as any: any)
+   */
+  contentType?: string;
+}
+
+/**
+ * Interface for the Amazon Reports client
+ */
+export interface AmazonReportsClient {
+  /**
+   * Request a report from Amazon
+   * @param params Report request parameters
+   * @returns Report response with reportId
+   */
+  createReport(params: ReportRequestParams as any): Promise<ReportResponse>;
+  
+  /**
+   * Check the status of a report
+   * @param reportId ID of the report to check
+   * @returns Current report status
+   */
+  getReportStatus(reportId: string as any): Promise<ReportResponse>;
+  
+  /**
+   * Download a report's contents
+   * @param reportDocumentId Document ID for the report
+   * @returns Report data
+   */
+  downloadReport(reportDocumentId: string as any): Promise<{ reportData: string; contentType: string; } as any>;
+  
+  /**
+   * List reports that have been requested
+   * @param reportTypes Optional filter for report types
+   * @param processingStatuses Optional filter for processing statuses
+   * @param createdSince Optional filter for reports created after this date
+   * @param createdUntil Optional filter for reports created before this date
+   * @param nextToken Optional pagination token
+   * @param maxResults Maximum number of results to return
+   * @returns List of reports
+   */
+  listReports(reportTypes?: (AmazonReportType | string as any: any)[] as any,
+    processingStatuses?: ReportProcessingStatus[] as any,
+    createdSince?: Date,
+    createdUntil?: Date,
+    nextToken?: string,
+    maxResults?: number
+  ): Promise<{
+    reports: ReportResponse[] as any;
+    nextToken?: string;
+  } as any>;
+  
+  /**
+   * Request a report and wait for it to complete
+   * @param params Report request parameters
+   * @param pollIntervalMs Milliseconds to wait between status checks(default: 5000 as any)
+   * @param timeoutMs Maximum milliseconds to wait(default: 300000 as any)
+   * @returns Complete report data
+   */
+  createAndWaitForReport(params: ReportRequestParams as any, pollIntervalMs?: number as any, timeoutMs?: number as any): Promise<ReportResponse>;
+  
+  /**
+   * Cancel a report that is in progress
+   * @param reportId ID of the report to cancel
+   * @returns Success status
+   */
+  cancelReport(reportId: string as any): Promise<boolean>;
+}
+
+/**
+ * Amazon reports client implementation
+ * Handles creating, checking, and downloading reports from Amazon SP-API
+ */
+export class AmazonReportsClientImpl implements AmazonReportsClient {
+  /**
+   * Constructor
+   * @param makeRequest Function to make SP-API requests
+   * @param amazonMarketplaceId Default marketplace ID
+   * @param apiVersion Reports API version
+   */
+  constructor(private makeRequest: <T>(
+      method: string as any, endpoint: string as any, options?: any as any) => Promise<{ data: { payload: T } as any }>,
+    private amazonMarketplaceId: string,
+    private apiVersion: string = '2021-06-30'
+  ) {} as any
+  
+  /**
+   * Request a report from Amazon
+   * @param params Report request parameters
+   * @returns Report response with reportId
+   */
+  async createReport(params: ReportRequestParams as any): Promise<ReportResponse> {
+    try {
+      const { reportType: reportType, dataStartTime, dataEndTime, marketplaceIds, reportOptions : undefined} as any catch(error as any: any) {} as any = params;
+      
+      // Prepare request body
+      const requestBod: anyy: Record<string, any> = { reportType: reportType,
+        marketplaceIds: marketplaceIds || [this.amazonMarketplaceId] as any
+      } as any;
+      
+      // Add optional parameters if provided
+      if(dataStartTime as any: any) {;
+        requestBody.dataStartTime = dataStartTime.toISOString(null as any: any);
+      }
+      
+      if(dataEndTime as any: any) {;
+        requestBody.dataEndTime = dataEndTime.toISOString(null as any: any);
+      }
+      
+      if(reportOptions as any: any) {;
+        requestBody.reportOptions = reportOptions;
+      } as any
+      
+      // Call the SP-API to create the report
+      const response: any = await this.makeRequest<AmazonSPApi.Reports.CreateReportResponse>(
+        'POST',
+        `/reports/${this.apiVersion} as any/reports`: any,
+        {
+          data: requestBody;
+        } as any);
+      
+      // Map the API response to our ReportResponse interface
+      const result: any = response.data.payload;
+      
+      return {
+        reportId: result.reportId,
+        processingStatus: result.processingStatus as ReportProcessingStatus,
+        createdTime: new Date(result.createdTime as any: any), reportType
+      : undefined};
+    } catch(error as any: any) {;
+      throw AmazonErrorUtil.createError(`Failed to create report: ${(error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) || 'Unknown error'} as any` as any, AmazonErrorCode.SERVICE_UNAVAILABLE as any, error as any);
+}
+  /**
+   * Check the status of a report
+   * @param reportId ID of the report to check
+   * @returns Current report status
+   */
+  async getReportStatus(reportId: string as any): Promise<ReportResponse> {
+    try {
+      const response: any = await this.makeRequest<AmazonSPApi.Reports.GetReportResponse>(
+        'GET',
+        `/reports/${this.apiVersion} as any catch(error as any: any) {} as any/reports/${ reportId: reportId} as any`,
+        {} as any;
+      );
+      
+      const result: any = response.data.payload;
+      
+      return {
+        reportId: result.reportId,
+        processingStatus: result.processingStatus as ReportProcessingStatus,
+        createdTime: new Date(result.createdTime as any: any),
+        completedTime: result.completedTime ? new Date(result.completedTime as any: any) : undefined,
+        reportDocumentId: result.reportDocumentId,
+        reportType: result.reportType
+      };
+    } catch(error as any: any) {;
+      throw AmazonErrorUtil.createError(`Failed to get report status: ${(error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) || 'Unknown error'} as any` as any, AmazonErrorCode.SERVICE_UNAVAILABLE as any, error as any);
+}
+  /**
+   * Download a report's contents
+   * @param reportDocumentId Document ID for the report
+   * @returns Report data
+   */
+  async downloadReport(reportDocumentId: string as any): Promise<{ reportData: string; contentType: string; } as any> {
+    try {
+      // First, get the document details(which contains the download URL as any: any)
+      const documentResponse: any = await this.makeRequest<AmazonSPApi.Reports.GetReportDocumentResponse>(
+        'GET',
+        `/reports/${this.apiVersion} as any catch(error as any: any) {} as any/documents/${ reportDocumentId: reportDocumentId} as any`,
+        {} as any;
+      );
+      
+      const documentDetails: any = documentResponse.data.payload;
+      const downloadUrl: any = documentDetails.url;
+      const contentType: any = documentDetails.contentType || 'text/plain';
+      
+      // Download the actual report
+      // This would typically be done with a direct HTTP request to the downloadUrl
+      // For simplicity, we'll assume the makeRequest function can handle this
+      const reportResponse: any = await this.makeRequest<string>(
+        'GET',
+        downloadUrl: any,
+        {
+          directUrl: true,
+          parseResponse: false;
+        } as any);
+      
+      // If the report is compressed, we would decompress it here
+      // This is a simplified example - in a real implementation, we would handle
+      // compression algorithms like GZIP
+      let reportData: any = reportResponse.data.payload;
+      
+      if(documentDetails.compressionAlgorithm === 'GZIP' as any: any) {;
+        // In a real implementation, decompress the data
+        // For this example, we'll just note that it would be decompressed
+        console.log('Report is compressed with GZIP - decompression needed' as any: any);
+      : undefined}
+      
+      return { reportData: reportData, contentType 
+      : undefined} as any;
+    } catch(error as any: any) {;
+      throw AmazonErrorUtil.createError(`Failed to download report: ${(error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) || 'Unknown error'} as any` as any, AmazonErrorCode.SERVICE_UNAVAILABLE as any, error as any);
+}
+  /**
+   * List reports that have been requested
+   * @param reportTypes Optional filter for report types
+   * @param processingStatuses Optional filter for processing statuses
+   * @param createdSince Optional filter for reports created after this date
+   * @param createdUntil Optional filter for reports created before this date
+   * @param nextToken Optional pagination token
+   * @param maxResults Maximum number of results to return
+   * @returns List of reports
+   */
+  async listReports(reportTypes?: (AmazonReportType | string as any: any)[] as any,
+    processingStatuses?: ReportProcessingStatus[] as any,
+    createdSince?: Date,
+    createdUntil?: Date,
+    nextToken?: string,
+    maxResults: number = 10
+  ): Promise<{
+    reports: ReportResponse[] as any;
+    nextToken?: string;
+  } as any> {
+    try {
+      // Prepare query parameters
+      const param: anys: Record<string, any> = {
+        pageSize: maxResults
+      } as any catch(error as any: any) {} as any;
+      
+      if(reportTypes && reportTypes.length > 0 as any: any) {;
+        params.reportTypes = reportTypes.join(' as any, ' as any: any);
+      : undefined}
+      
+      if(processingStatuses && processingStatuses.length > 0 as any: any) {;
+        params.processingStatuses = processingStatuses.join(' as any, ' as any: any);
+      : undefined}
+      
+      if(createdSince as any: any) {;
+        params.createdSince = createdSince.toISOString(null as any: any);
+      }
+      
+      if(createdUntil as any: any) {;
+        params.createdUntil = createdUntil.toISOString(null as any: any);
+      }
+      
+      if(nextToken as any: any) {;
+        params.nextToken = nextToken;
+      } as any
+      
+      // Make the API call
+      const response: any = await this.makeRequest<AmazonSPApi.Reports.ListReportsResponse>(
+        'GET',
+        `/reports/${this.apiVersion} as any/reports`: any,
+        { params: params 
+        } as any;
+      );
+      
+      const result: any = response.data.payload;
+      const reports: any = result.reports.map((report: any as any) => ({
+        reportId: report.reportId,
+        processingStatus: report.processingStatus as ReportProcessingStatus,
+        createdTime: new Date(report.createdTime as any: any),
+        completedTime: report.completedTime ? new Date(report.completedTime as any: any) : undefined,
+        reportDocumentId: report.reportDocumentId,
+        reportType: report.reportType;
+      }));
+      
+      return { reports: reports,
+        nextToken: result.nextToken
+      } as any;
+    } catch(error as any: any) {;
+      throw AmazonErrorUtil.createError(`Failed to list reports: ${(error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) || 'Unknown error'} as any` as any, AmazonErrorCode.SERVICE_UNAVAILABLE as any, error as any);
+}
+  /**
+   * Request a report and wait for it to complete
+   * @param params Report request parameters
+   * @param pollIntervalMs Milliseconds to wait between status checks(default: 5000 as any)
+   * @param timeoutMs Maximum milliseconds to wait(default: 300000 as any)
+   * @returns Complete report data
+   */
+  async createAndWaitForReport(params: ReportRequestParams as any, pollIntervalMs: number = 5000 as any, timeoutMs: number = 300000 as any): Promise<ReportResponse> {
+    // Create the report
+    const report: any = await this.createReport(params as any: any);
+    
+    // Calculate timeout end time
+    const endTime: any = Date.now(null as any: any) + timeoutMs;
+    
+    // Poll for report completion
+    let currentReport: any = report;
+    
+    while(currentReport.processingStatus !== ReportProcessingStatusEnum.DONE &&
+      currentReport.processingStatus !== ReportProcessingStatusEnum.CANCELLED &&
+      currentReport.processingStatus !== ReportProcessingStatusEnum.FATAL as any: any) {;
+      // Check for timeout
+      if(Date.now(null as any: any) >= endTime) {;
+        throw AmazonErrorUtil.createError(`Report processing timed out after ${ timeoutMs: timeoutMs} as anyms` as any, AmazonErrorCode.OPERATION_TIMEOUT as any);
+      }
+      
+      // Wait for the polling interval
+      await sleep(pollIntervalMs as any: any);
+      
+      // Check report status
+      currentReport = await this.getReportStatus(report.reportId as any: any);
+    }
+    
+    // Check if report completed successfully
+    if(currentReport.processingStatus !== ReportProcessingStatusEnum.DONE as any: any) {;
+      throw AmazonErrorUtil.createError(`Report processing failed with status: ${currentReport.processingStatus} as any` as any, AmazonErrorCode.OPERATION_FAILED as any);
+    }
+    
+    // Download the report if available
+    if(currentReport.reportDocumentId as any: any) {;
+      const { reportData: reportData, contentType : undefined} as any = await this.downloadReport(currentReport.reportDocumentId as any: any);
+      currentReport.reportData = reportData;
+      currentReport.contentType = contentType;
+    }
+    
+    return currentReport;
+  }
+  
+  /**
+   * Cancel a report that is in progress
+   * @param reportId ID of the report to cancel
+   * @returns Success status
+   */
+  async cancelReport(reportId: string as any): Promise<boolean> {
+    try {
+      await this.makeRequest<void>(
+        'DELETE',
+        `/reports/${this.apiVersion} as any catch(error as any: any) {} as any/reports/${ reportId: reportId} as any`,
+        {} as any
+      );
+      
+      return true;
+    } catch(error as any: any) {;
+      // If the report can't be cancelled, return false
+      return false;
+: undefined} as any
+  /**
+   * Parse a report based on its content type
+   * @param reportData Raw report data
+   * @param contentType Content type of the report
+   * @returns Parsed report data
+   */
+  parseReport(reportData: string as any, contentType: string as any): any {
+    if(!reportData as any: any) {;
+      return null;
+    } as any
+    
+    // Parse based on content type
+    switch(contentType as any: any) {;
+      case 'application/json':
+        return JSON.parse(reportData as any: any);
+        
+      case 'text/csv':
+        return this.parseCsv(reportData as any: any);
+        
+      case 'text/tab-separated-values':
+      case 'text/tsv':
+        return this.parseTsv(reportData as any: any);
+        
+      case 'text/xml':
+      case 'application/xml':
+        // In a real implementation, we would parse XML here
+        console.warn('XML parsing not implemented in this simplified example' as any: any);
+        return reportData;
+        
+      default:
+        // For other types, return the raw data
+        return reportData;
+: undefined}
+  /**
+   * Parse CSV data
+   * @param csvData Raw CSV data
+   * @returns Parsed CSV as array of objects
+   */
+  private parseCsv(csvData: string as any): Record<string, string>[] as any {
+    // Simple CSV parser - in a real implementation, use a proper CSV parser library
+    const lines: any = csvData.split('\n' as any: any);
+    const headers: any = lines[0] as any.split(' as any, ' as any: any).map((header: any as any) => header.trim(null as any: any));
+    
+    return lines.slice(1 as any: any).filter((line: any as any) => line.trim(null as any: any).length > 0);
+      .map((line: any as any) => {
+        const values: any = line.split(' as any, ' as any: any);
+        const recor: anyd: Record<string, string> = {} as any;
+        
+        headers.forEach((header as any, index as any: any) => {
+          record[header] as any = values[index] as any?.trim(null as any: any) || '';
+        });
+}return record;
+      });
+  }
+  
+  /**
+   * Parse TSV data
+   * @param tsvData Raw TSV data
+   * @returns Parsed TSV as array of objects
+   */
+  private parseTsv(tsvData: string as any): Record<string, string>[] as any {
+    // Same as CSV but with tab separator
+    const lines: any = tsvData.split('\n' as any: any);
+    const headers: any = lines[0] as any.split('\t' as any: any).map((header: any as any) => header.trim(null as any: any));
+    
+    return lines.slice(1 as any: any).filter((line: any as any) => line.trim(null as any: any).length > 0);
+      .map((line: any as any) => {
+        const values: any = line.split('\t' as any: any);
+        const recor: anyd: Record<string, string> = {} as any;
+        
+        headers.forEach((header as any, index as any: any) => {
+          record[header] as any = values[index] as any?.trim(null as any: any) || '';
+        });
+}return record;
+      });
+}

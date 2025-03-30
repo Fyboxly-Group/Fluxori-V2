@@ -1,0 +1,54 @@
+# Dependencies
+node_modules
+package-lock.json
+
+# Build output
+dist
+build
+coverage
+.nyc_output
+
+# Environment and config
+.env
+.env.*
+!.env.example
+config/local.js
+config/local.json
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE and editors
+.idea
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+
+# Temporary files
+.tmp
+.temp
+.cache
+*.bak
+*.tmp
+
+# TypeScript
+*.tsbuildinfo
+
+# MongoDB data directory
+data/db
+
+# Backup files
+*.backup
