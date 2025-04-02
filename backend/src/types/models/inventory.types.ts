@@ -1,4 +1,3 @@
-// @ts-nocheck - Added by final-ts-fix.js
 import { Types, Model } from 'mongoose';
 import { MongooseDocument } from '../utils/mongoose-document';
 
@@ -6,10 +5,10 @@ import { MongooseDocument } from '../utils/mongoose-document';
  * Base interface for Inventory (raw data)
  */
 export interface IInventory {
-  warehouseId?: any;
-  type?: Types.ObjectId;
-  ref?: any;
-  required: any;
+  warehouseId?: Types.ObjectId;
+  type?: string;
+  ref?: string;
+  required: boolean;
   // _id is provided by MongooseDocument
   createdAt?: Date;
   updatedAt?: Date;

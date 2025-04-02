@@ -1,4 +1,3 @@
-// @ts-nocheck - Added by final-ts-fix.js
 import { Types, Model } from 'mongoose';
 import { MongooseDocument } from '../utils/mongoose-document';
 
@@ -6,9 +5,9 @@ import { MongooseDocument } from '../utils/mongoose-document';
  * Base interface for Purchase-order (raw data)
  */
 export interface IPurchaseOrder {
-  itemId?: any;
-  type?: Types.ObjectId;
-  ref?: any;
+  itemId?: Types.ObjectId;
+  type?: string;
+  ref?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

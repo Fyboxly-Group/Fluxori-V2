@@ -1,4 +1,3 @@
-// @ts-nocheck - Added by final-ts-fix.js
 /**
  * Utility types for Mongoose used throughout the application
  */
@@ -7,15 +6,15 @@ import mongoose, { Document, Model, Schema } from 'mongoose';
 /**
  * Type for a document before it is saved to the database
  */
-export interface CreateDocumentType<T> {
-  [key: string]: any;
-}
+export type CreateDocumentType<T> = Partial<Omit<T, '_id'>> & {
+  [key: string]: unknown;
+};
 
 /**
  * Type for a document update
  */
-export interface UpdateDocumentType<T> {
-  [key: string]: any;
+export type UpdateDocumentType<T> = Partial<T> & {
+  [key: string]: unknown;
 }
 
 /**
