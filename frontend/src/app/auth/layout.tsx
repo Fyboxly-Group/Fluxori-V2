@@ -1,9 +1,18 @@
+/// <reference path="../../types/module-declarations.d.ts" />
 'use client'
 
-import { Box } from '@chakra-ui/react/box'
-import { Flex } from '@chakra-ui/react/flex'
-import { useColorMode } from '@chakra-ui/react/color-mode'
-import { IconButton } from '@chakra-ui/react/button'
+import React from 'react';
+;
+import { useColorMode } from '@/components/stubs/ChakraStubs';;
+;
+;
+;
+
+// Fix for Next.js module resolution
+import { ChakraProvider } from "@chakra-ui/react";
+import { Box, IconButton, Flex } from '@/utils/chakra/components';
+
+;
 
 // Placeholder for icons
 const SunIcon = () => <Box>☀️</Box>
@@ -21,7 +30,7 @@ export default function AuthLayout({
       {/* Color mode toggle */}
       <IconButton
         aria-label={`Switch to ${colorMode === 'light' ? 'dark' : 'light'} mode`}
-        icon={colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
+        icon={colorMode === 'light' ? <MoonIcon   /> : <SunIcon />}
         position="absolute"
         top="4"
         right="4"

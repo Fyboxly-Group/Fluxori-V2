@@ -1,0 +1,78 @@
+// TypeScript fixed
+import mongoose, { Document, Schema, Model } from 'mongoose';
+import type { XeroConfig } from '../types';
+import * as mongoose from "mongoose";
+
+/**
+ * Document interface for Mongoose
+ */
+export interface IXeroConfigDocument extends XeroConfig, Document {}
+
+
+export interface IXeroConfigModel extends mongoose.Model<IXeroConfigDocument> {
+
+}
+
+
+/**
+ * Model type for XeroConfig
+ */
+export type XeroConfigModel = Model<IXeroConfigDocument>;
+
+/**
+ * Mongoose schema definition
+ */
+const xeroConfigSchema = new Schema<IXeroConfigDocument>(
+  {
+    defaultAccountCode: {
+      type: String,
+      trim: true,
+    },
+    defaultTaxType: {
+      type: String,
+      trim: true,
+    },
+    autoSyncInvoices: {
+      type: Boolean,
+      default: true,
+    },
+    autoSyncContacts: {
+      type: Boolean,
+      default: true,
+    },
+    autoSyncPayments: {
+      type: Boolean,
+      default: false, // More complex, so off by default
+    },
+    invoiceNumberPrefix: {
+      type: String,
+      trim: true,
+    },
+    invoiceTemplate: {
+      type: String,
+      trim: true,
+    },
+    defaultDueDays: {
+      type: Number,
+      default: 30,
+    },
+    categoryAccountMappings: {
+      type: Map,
+      of: String,
+    },
+    productAccountMappings: {
+      type: Map,
+      of: String,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+/**
+ * Create and export the model
+ */
+const XeroConfig = mongoose.model<IXeroConfigDocument>('XeroConfig', xeroConfigSchema);
+
+export default XeroConfig;

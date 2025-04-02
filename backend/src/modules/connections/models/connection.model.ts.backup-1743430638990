@@ -1,0 +1,168 @@
+// @ts-nocheck
+import mongoose, { Document, Schema, Model } from 'mongoose';
+import * as crypto from 'crypto';
+
+/**
+ * Marketplace type enum
+ */
+export enum MarketplaceType {
+  TAKEALOT = 'takealot',
+  AMAZON = 'amazon',
+  AMAZON_US = 'amazon_us',
+  AMAZON_UK = 'amazon_uk',
+  AMAZON_EU = 'amazon_eu',
+  SHOPIFY = 'shopify',
+  XERO = 'xero',
+}
+
+/**
+ * Connection status enum
+ */
+export enum ConnectionStatus {
+  CONNECTED = 'connected',
+  DISCONNECTED = 'disconnected',
+  ERROR = 'error',
+  PENDING = 'pending',
+  EXPIRED = 'expired',
+}
+
+/**
+ * Sync status enum
+ */
+export enum SyncStatus {
+  SUCCESS = 'success',
+  ERROR = 'error',
+  IN_PROGRESS = 'in_progress',
+}
+
+/**
+ * Authentication type enum
+ */
+export enum AuthenticationType {
+  API_KEY = 'api_key',
+  OAUTH = 'oauth',
+  JWT = 'jwt',
+  USERNAME_PASSWORD = 'username_password',
+}
+
+/**
+ * Marketplace connection interface
+ */
+export interface IMarketplaceConnection {
+  userId: mongoose.Types.ObjectId;
+  organizationId: mongoose.Types.ObjectId;
+  marketplaceId: string;
+  marketplaceName: string;
+  authenticationType: AuthenticationType;
+  credentialReference: string; // Reference to the credential in Secret Manager
+  credentialMetadata?: {
+    storeId?: string;
+    sellerId?: string;
+    accountId?: string;
+    tenantId?: string;
+    [key: string]: any;
+  };
+  status: ConnectionStatus;
+  syncStatus?: SyncStatus;
+  lastChecked?: Date;
+  lastSyncedAt?: Date;
+  lastError?: string;
+  expiresAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Document interface for Mongoose
+ */
+export interface IMarketplaceConnectionDocument extends IMarketplaceConnection, Document {}
+
+/**
+ * Model type
+ */
+export type MarketplaceConnectionModel = Model<IMarketplaceConnectionDocument>;
+
+/**
+ * Mongoose schema definition
+ */
+const marketplaceConnectionSchema = new Schema<IMarketplaceConnectionDocument>(
+  {
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    organizationId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Organization',
+      required: true,
+    },
+    marketplaceId: {
+      type: String,
+      required: true,
+      enum: Object.values(MarketplaceType),
+    },
+    marketplaceName: {
+      type: String,
+      required: true,
+    },
+    authenticationType: {
+      type: String,
+      required: true,
+      enum: Object.values(AuthenticationType),
+    },
+    credentialReference: {
+      type: String,
+      required: true,
+    },
+    credentialMetadata: {
+      type: Schema.Types.Mixed,
+    },
+    status: {
+      type: String,
+      enum: Object.values(ConnectionStatus),
+      default: ConnectionStatus.PENDING,
+    },
+    syncStatus: {
+      type: String,
+      enum: Object.values(SyncStatus),
+    },
+    lastChecked: {
+      type: Date,
+    },
+    lastSyncedAt: {
+      type: Date,
+    },
+    lastError: {
+      type: String,
+    },
+    expiresAt: {
+      type: Date,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+// Prevent duplicate connections for the same user/organization and marketplace
+marketplaceConnectionSchema.index(
+  { userId: 1, organizationId: 1, marketplaceId: 1 },
+  { unique: true }
+);
+
+// Indexes for efficient querying
+marketplaceConnectionSchema.index({ userId: 1 });
+marketplaceConnectionSchema.index({ organizationId: 1 });
+marketplaceConnectionSchema.index({ status: 1 });
+marketplaceConnectionSchema.index({ marketplaceId: 1 });
+
+/**
+ * Create and export the model
+ */
+const MarketplaceConnection = mongoose.model<IMarketplaceConnectionDocument>(
+  'MarketplaceConnection',
+  marketplaceConnectionSchema
+);
+
+export default MarketplaceConnection;

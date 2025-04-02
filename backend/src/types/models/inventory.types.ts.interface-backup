@@ -1,0 +1,28 @@
+import { Document, Types, Model } from 'mongoose';
+
+/**
+ * Base interface for Inventory (raw data)
+ */
+export interface IInventory {
+  warehouseId?: any;
+  type?: Types.ObjectId;
+  ref?: any;
+  required: any;
+  _id?: Types.ObjectId;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+/**
+ * Document interface for Inventory (includes Document methods)
+ */
+export interface IInventoryDocument extends Document, IInventory {
+  // Add document-specific methods here
+}
+
+/**
+ * Model interface for Inventory (includes static methods)
+ */
+export interface IInventoryModel extends Model<IInventoryDocument> {
+  // Add static model methods here
+}

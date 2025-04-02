@@ -1,0 +1,15 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "🔍 Running TypeScript validation..."
+
+# Run TypeScript validator
+node scripts/typescript-validator.js
+
+# Only if TypeScript validation succeeds, run lint-staged
+if [ $? -eq 0 ]; then
+  npx lint-staged
+else
+  echo "❌ TypeScript validation failed, commit rejected"
+  exit 1
+fi

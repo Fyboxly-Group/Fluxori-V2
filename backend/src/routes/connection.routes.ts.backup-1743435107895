@@ -1,0 +1,11 @@
+// TypeScript checked
+import express from 'express';
+import { connectionRoutes } from '../modules/connections';
+import * as connectionController from '../controllers/e.controller';
+
+const router = express.Router();
+
+// Delegate all routes to the module router
+router.use('/', e.controller.connectionRoutes);
+
+export default router;

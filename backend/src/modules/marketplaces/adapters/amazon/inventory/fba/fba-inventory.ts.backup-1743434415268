@@ -1,0 +1,22 @@
+// @ts-nocheck
+import { Injectable } from '../../../../../../decorators/injectable.decorator';
+import { Types } from 'mongoose';
+
+/**
+ * FBA Inventory Service
+ */
+@Injectable()
+export class FBAInventory {
+  /**
+   * Constructor
+   */
+  constructor() {}
+  
+  /**
+   * Get inventory levels
+   */
+  async getInventoryLevels(skus?: string[]): Promise<any[]> {
+    // Placeholder implementation
+    return [];
+  }
+}

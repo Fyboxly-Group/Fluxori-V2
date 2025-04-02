@@ -1,0 +1,455 @@
+/**
+ * Script to rebuild the milestone.controller.ts file
+ * Implementing proper TypeScript with controller methods
+ */
+const fs = require('fs');
+const path = require('path');
+
+// File paths
+const targetFile = path.join(__dirname, '../src/controllers/milestone.controller.ts');
+const backupFile = path.join(__dirname, '../src/controllers/milestone.controller.ts.bak');
+
+// Backup the original file
+if (fs.existsSync(targetFile)) {
+  console.log('Creating backup of original file...');
+  fs.copyFileSync(targetFile, backupFile);
+}
+
+// Define the rebuilt controller content
+const newControllerContent = `import { Request, Response, NextFunction } from 'express';
+import { StatusCodes } from 'http-status-codes';
+import mongoose from 'mongoose';
+import Milestone, { MilestoneStatus } from '../models/milestone.model';
+import Project from '../models/project.model';
+import Task from '../models/task.model';
+import Activity from '../models/activity.model';
+import { IUserDocument } from '../models/user.model';
+
+// Define authenticated request type
+type AuthenticatedRequest = Request & {
+  user?: IUserDocument & {
+    id: string;
+    organizationId: string;
+    role?: string;
+  };
+};
+
+/**
+ * Get all milestones for a project
+ */
+export const getProjectMilestones = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const organizationId = req.user?.organizationId;
+    const projectId = req.params.projectId;
+    
+    if (!userId || !organizationId) {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: 'Unauthorized - User not authenticated'
+      });
+      return;
+    }
+    
+    // Verify project exists and belongs to organization
+    const project = await Project.findOne({
+      _id: projectId,
+      organizationId
+    });
+    
+    if (!project) {
+      res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Project not found'
+      });
+      return;
+    }
+    
+    // Parse query parameters for filtering
+    const status = req.query.status as string;
+    
+    // Build query filters
+    const filter: any = { 
+      project: projectId,
+      organizationId
+    };
+    
+    if (status) {
+      filter.status = status;
+    }
+    
+    // Get milestones
+    const milestones = await Milestone.find(filter)
+      .sort({ dueDate: 1 })
+      .populate('completedBy', 'firstName lastName');
+    
+    res.status(StatusCodes.OK).json({
+      success: true,
+      data: milestones
+    });
+  } catch (error) {
+    console.error('Error getting project milestones:', error);
+    next(error);
+  }
+};
+
+/**
+ * Get a single milestone by ID
+ */
+export const getMilestoneById = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const organizationId = req.user?.organizationId;
+    const milestoneId = req.params.id;
+    
+    if (!userId || !organizationId) {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: 'Unauthorized - User not authenticated'
+      });
+      return;
+    }
+    
+    // Get milestone with associated tasks
+    const milestone = await Milestone.findOne({
+      _id: milestoneId,
+      organizationId
+    }).populate('tasks');
+    
+    if (!milestone) {
+      res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Milestone not found'
+      });
+      return;
+    }
+    
+    res.status(StatusCodes.OK).json({
+      success: true,
+      data: milestone
+    });
+  } catch (error) {
+    console.error('Error getting milestone:', error);
+    next(error);
+  }
+};
+
+/**
+ * Create a new milestone
+ */
+export const createMilestone = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const organizationId = req.user?.organizationId;
+    const milestoneData = req.body;
+    
+    if (!userId || !organizationId) {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: 'Unauthorized - User not authenticated'
+      });
+      return;
+    }
+    
+    // Validate required fields
+    if (!milestoneData.title || !milestoneData.project || !milestoneData.dueDate) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'Title, project ID, and due date are required'
+      });
+      return;
+    }
+    
+    // Verify project exists and belongs to organization
+    const project = await Project.findOne({
+      _id: milestoneData.project,
+      organizationId
+    });
+    
+    if (!project) {
+      res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Project not found'
+      });
+      return;
+    }
+    
+    // Create milestone
+    const milestone = await Milestone.create({
+      ...milestoneData,
+      organizationId,
+      createdBy: userId
+    });
+    
+    // Log activity
+    await Activity.create({
+      type: 'milestone_create',
+      description: \`Created milestone "\${milestone.title}" for project "\${project.name}"\`,
+      details: {
+        milestoneId: milestone._id,
+        projectId: project._id,
+        dueDate: milestone.dueDate
+      },
+      userId,
+      organizationId
+    });
+    
+    res.status(StatusCodes.CREATED).json({
+      success: true,
+      message: 'Milestone created successfully',
+      data: milestone
+    });
+  } catch (error) {
+    console.error('Error creating milestone:', error);
+    next(error);
+  }
+};
+
+/**
+ * Update a milestone
+ */
+export const updateMilestone = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const organizationId = req.user?.organizationId;
+    const milestoneId = req.params.id;
+    const updateData = req.body;
+    
+    if (!userId || !organizationId) {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: 'Unauthorized - User not authenticated'
+      });
+      return;
+    }
+    
+    // Find the milestone
+    const milestone = await Milestone.findOne({
+      _id: milestoneId,
+      organizationId
+    });
+    
+    if (!milestone) {
+      res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Milestone not found'
+      });
+      return;
+    }
+    
+    // Check for status change to "completed"
+    const statusChanged = updateData.status && updateData.status !== milestone.status;
+    const completedNow = statusChanged && updateData.status === MilestoneStatus.COMPLETED;
+    
+    if (completedNow && !updateData.completedDate) {
+      updateData.completedDate = new Date();
+      updateData.completedBy = userId;
+    }
+    
+    // Update the milestone
+    const updatedMilestone = await Milestone.findByIdAndUpdate(
+      milestoneId,
+      updateData,
+      { new: true, runValidators: true }
+    );
+    
+    // Log activity
+    await Activity.create({
+      type: 'milestone_update',
+      description: \`Updated milestone "\${milestone.title}"\`,
+      details: {
+        milestoneId: milestone._id,
+        projectId: milestone.project,
+        changes: updateData
+      },
+      userId,
+      organizationId
+    });
+    
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'Milestone updated successfully',
+      data: updatedMilestone
+    });
+  } catch (error) {
+    console.error('Error updating milestone:', error);
+    next(error);
+  }
+};
+
+/**
+ * Delete a milestone
+ */
+export const deleteMilestone = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const organizationId = req.user?.organizationId;
+    const milestoneId = req.params.id;
+    
+    if (!userId || !organizationId) {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: 'Unauthorized - User not authenticated'
+      });
+      return;
+    }
+    
+    // Find the milestone
+    const milestone = await Milestone.findOne({
+      _id: milestoneId,
+      organizationId
+    });
+    
+    if (!milestone) {
+      res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Milestone not found'
+      });
+      return;
+    }
+    
+    // Check if there are tasks associated with this milestone
+    const hasAssociatedTasks = milestone.tasks && milestone.tasks.length > 0;
+    
+    if (hasAssociatedTasks) {
+      // Disassociate tasks from the milestone by updating them
+      await Task.updateMany(
+        { _id: { $in: milestone.tasks } },
+        { $unset: { milestone: "" } }
+      );
+    }
+    
+    // Delete the milestone
+    await Milestone.findByIdAndDelete(milestoneId);
+    
+    // Log activity
+    await Activity.create({
+      type: 'milestone_delete',
+      description: \`Deleted milestone "\${milestone.title}"\`,
+      details: {
+        milestoneId: milestone._id,
+        projectId: milestone.project,
+        title: milestone.title
+      },
+      userId,
+      organizationId
+    });
+    
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'Milestone deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting milestone:', error);
+    next(error);
+  }
+};
+
+/**
+ * Add a task to a milestone
+ */
+export const addTaskToMilestone = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const organizationId = req.user?.organizationId;
+    const milestoneId = req.params.id;
+    const taskId = req.body.taskId;
+    
+    if (!userId || !organizationId) {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: 'Unauthorized - User not authenticated'
+      });
+      return;
+    }
+    
+    if (!taskId) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'Task ID is required'
+      });
+      return;
+    }
+    
+    // Find the milestone
+    const milestone = await Milestone.findOne({
+      _id: milestoneId,
+      organizationId
+    });
+    
+    if (!milestone) {
+      res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Milestone not found'
+      });
+      return;
+    }
+    
+    // Find the task
+    const task = await Task.findOne({
+      _id: taskId,
+      organizationId
+    });
+    
+    if (!task) {
+      res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Task not found'
+      });
+      return;
+    }
+    
+    // Check if task is already in milestone
+    if (milestone.tasks && milestone.tasks.some(t => t.toString() === taskId)) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'Task is already associated with this milestone'
+      });
+      return;
+    }
+    
+    // Add task to milestone
+    if (!milestone.tasks) {
+      milestone.tasks = [];
+    }
+    milestone.tasks.push(new mongoose.Types.ObjectId(taskId));
+    await milestone.save();
+    
+    // Update task to reference milestone
+    // Using updateOne instead of direct property access due to the property not being in the interface
+    await Task.updateOne(
+      { _id: taskId },
+      { $set: { milestone: new mongoose.Types.ObjectId(milestoneId) } }
+    );
+    
+    // Log activity
+    await Activity.create({
+      type: 'milestone_add_task',
+      description: \`Added task "\${task.title}" to milestone "\${milestone.title}"\`,
+      details: {
+        milestoneId: milestone._id,
+        taskId: task._id
+      },
+      userId,
+      organizationId
+    });
+    
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'Task added to milestone successfully',
+      data: {
+        milestone,
+        task
+      }
+    });
+  } catch (error) {
+    console.error('Error adding task to milestone:', error);
+    next(error);
+  }
+};`;
+
+// Write the new file
+console.log('Writing new controller file...');
+fs.writeFileSync(targetFile, newControllerContent);
+
+console.log('Successfully rebuilt milestone.controller.ts');

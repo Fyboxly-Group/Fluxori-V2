@@ -1,0 +1,213 @@
+// @ts-nocheck
+// Marketplace Product Controller
+import { Request, Response } from 'express';
+import { ProductPushService, ProductUpdateData, ProductPushResult } from '../services/product-push.service';
+import { MarketplaceCredentialsService } from '../services/marketplace-credentials.service';
+import { ApiError } from '../../../middleware/error.middleware';
+import InventoryItem from '../../../models/inventory.model';
+import mongoose from 'mongoose';
+
+// Import the extended Express Request interface with user property
+import '../../../middleware/auth.middleware';
+
+/**
+ * Controller for marketplace product operations
+ */
+export class MarketplaceProductController {
+  /**
+   * Push product updates to a marketplace
+   * @route POST /api/products/:productId/push/:marketplaceId
+   * @param req - Express request
+   * @param res - Express response
+   */
+  static async pushProductUpdates(req: Request, res: Response): Promise<void> {
+    try {
+      const { productId, marketplaceId } = req.params;
+      const { price, rrp, stock, status } = req.body;
+      
+      // Ensure user is authenticated
+      if(!req.user || !req.user?.id) {
+        throw new ApiError(401, 'Unauthorized');
+      }
+      
+      // Validate that the product exists and the user has access to it
+      const product = await InventoryItem.findById(productId ? new mongoose.Types.ObjectId(productId) : null);
+      if(!product) {
+        res.status(404).json({
+          success: false,
+          message: `Product with ID ${productId} not found`
+        });
+        return;
+      }
+      
+      // Check if product belongs to the user
+      if(product.createdBy.toString() !== req.user?.id && req.user?.role !== 'admin') {
+        res.status(403).json({
+          success: false,
+          message: 'You do not have permission to push updates for this product'
+        });
+        return;
+      }
+      
+      // Ensure at least one update field is provided
+      if(price === undefined && rrp === undefined && stock === undefined && status === undefined) {
+        res.status(400).json({
+          success: false,
+          message: 'At least one update field(price, rrp, stock, status) must be provided'
+        });
+        return;
+      }
+      
+      // Process status update
+      let normalizedStatus: 'active' | 'inactive' | undefined;
+      if(status !== undefined) {
+        if(status === true || status === 'active' || status === 'true') {
+          normalizedStatus = 'active';
+        } else if(status === false || status === 'inactive' || status === 'false') {
+          normalizedStatus = 'inactive';
+        } else {
+          res.status(400).json({
+            success: false,
+            message: 'Status must be "active", "inactive", true, or false'
+          });
+          return;
+        }
+      }
+      
+      // Push updates to marketplace
+      const pushService = ProductPushService.getInstance();
+      const result = await pushService.pushProductUpdate(
+        productId,
+        marketplaceId,
+        req.user?.id,
+        {
+          price: price !== undefined ? Number(price) : undefined,
+          rrp: rrp !== undefined ? Number(rrp) : undefined,
+          stock: stock !== undefined ? Number(stock) : undefined,
+          status: normalizedStatus
+        });
+      
+      // Return result to client
+      res.status(result.success ? 200 : 400).json(result);
+    } catch (error) {
+      console.error('Error in pushProductUpdates:', error);
+      const statusCode = error && typeof error === 'object' && 'statusCode' in error 
+        ? (error as { statusCode: number }).statusCode
+        : 500;
+      const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+      
+      res.status(statusCode).json({
+        success: false,
+        message: errorMessage
+      });
+    }
+  }
+
+  /**
+   * Get a list of available marketplaces for the user
+   * @route GET /api/marketplaces/connected
+   * @param req - Express request
+   * @param res - Express response
+   */
+  static async getConnectedMarketplaces(req: Request, res: Response): Promise<void> {
+    try {
+      // Ensure user is authenticated
+      if(!req.user || !req.user?.id) {
+        throw new ApiError(401, 'Unauthorized');
+      }
+      
+      // Get marketplace credentials service
+      const credentialsService = MarketplaceCredentialsService.getInstance();
+      
+      // Define all supported marketplaces
+      const availableMarketplaces = [
+        {
+          id: 'takealot',
+          name: 'Takealot',
+          features: ['price', 'stock', 'status'],
+          logo: 'https://www.takealot.com/favicon.ico',
+          region: 'South Africa'
+        },
+        {
+          id: 'amazon_us',
+          name: 'Amazon US',
+          features: ['price', 'stock', 'status'],
+          logo: 'https://www.amazon.com/favicon.ico',
+          region: 'United States'
+        },
+        {
+          id: 'shopify',
+          name: 'Shopify',
+          features: ['price', 'stock', 'status'],
+          logo: 'https://cdn.shopify.com/shopifycloud/brochure/assets/favicon-8d2a5e992bd04968b7c0c531a85a8258b3263349040586409743b7fa9cd8b254.png',
+          region: 'Global'
+        }
+      ];
+      
+      // Find which marketplaces the user has connected (has credentials for)
+      const connectedMarketplaces: Array<{
+        id: string;
+        name: string;
+        features: string[];
+        logo: string;
+        region: string;
+        status: string;
+        lastSynced: string;
+      }> = [];
+      
+      for (const marketplace of availableMarketplaces) {
+        const isConnected = await credentialsService.hasCredentials(req.user.id, marketplace.id);
+        
+        if (isConnected) {
+          connectedMarketplaces.push({
+            ...marketplace,
+            status: 'connected',
+            lastSynced: new Date(Date.now() - Math.floor(Math.random() * 72) * 60 * 60 * 1000).toISOString(), // Random time in last 3 days
+          });
+        }
+      }
+      
+      res.status(200).json({
+        success: true,
+        data: connectedMarketplaces
+      });
+    } catch (error) {
+      console.error('Error in getConnectedMarketplaces:', error);
+      const statusCode = error && typeof error === 'object' && 'statusCode' in error 
+        ? (error as { statusCode: number }).statusCode
+        : 500;
+      const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+      
+      res.status(statusCode).json({
+        success: false,
+        message: errorMessage
+      });
+    }
+  }
+}
+
+/**
+ * pushProductUpdates method placeholder
+ */
+export const pushProductUpdates = async (req, res) => {
+  try {
+    // TODO: Implement pushProductUpdates functionality
+    return res.status(200).json({ message: 'pushProductUpdates functionality not implemented yet' });
+  } catch (error) {
+    console.error('Error in pushProductUpdates:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * getConnectedMarketplaces method placeholder
+ */
+export const getConnectedMarketplaces = async (req, res) => {
+  try {
+    // TODO: Implement getConnectedMarketplaces functionality
+    return res.status(200).json({ message: 'getConnectedMarketplaces functionality not implemented yet' });
+  } catch (error) {
+    console.error('Error in getConnectedMarketplaces:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};

@@ -7,7 +7,8 @@
 export { NotificationBell } from './components/NotificationBell';
 export { NotificationCenter } from './components/NotificationCenter';
 export { NotificationList } from './components/NotificationList';
-export { useToastNotifications } from './components/ToastNotification';
+export { default as ToastNotification } from './components/ToastNotification';
+export { useToastNotifications } from '@/components/stubs/ChakraStubs';
 export { NotificationDemo } from './components/NotificationDemo';
 
 // Export hooks

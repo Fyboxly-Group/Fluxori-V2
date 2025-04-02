@@ -1,128 +1,147 @@
-'use client'
+/// <reference path="../../types/module-declarations.d.ts" />
+import React, { useState } from 'react';
+import { createToaster } from '@/utils/chakra-utils';
+import { Card  } from '@/utils/chakra-compat';
+import { CardHeader  } from '@/utils/chakra-compat';
+import { CardBody  } from '@/utils/chakra-compat';
+import { CardFooter  } from '@/utils/chakra-compat';
+import { Box  } from '@/utils/chakra-compat';
+import { Flex  } from '@/utils/chakra-compat';
+import { Stack  } from '@/utils/chakra-compat';
+import { Button  } from '@/utils/chakra-compat';
+import { Text  } from '@/utils/chakra-compat';
+import { Heading  } from '@/utils/chakra-compat';
+import { FormControl  } from '@/utils/chakra-compat';
+import { FormLabel  } from '@/utils/chakra-compat';
+import { Input  } from '@/utils/chakra-compat';
+import { useColorMode } from '@/components/stubs/ChakraStubs';;
+import { useToast  } from '@/utils/chakra-compat';
+import { ResponsiveValue } from '../../utils/chakra-utils';
 
-import { Box } from '@chakra-ui/react/box'
-import { Button } from '@chakra-ui/react/button'
-import { Heading } from '@chakra-ui/react/heading'
-import { Flex } from '@chakra-ui/react/flex'
-import { Text } from '@chakra-ui/react/text'
-import { Input } from '@chakra-ui/react/input'
-import { FormControl, FormLabel, FormErrorMessage } from '@chakra-ui/react/form-control'
-import { Card, CardBody, CardHeader, CardFooter } from '@chakra-ui/react/card'
-import { useColorMode } from '@chakra-ui/react/color-mode'
-import { useState } from 'react'
-import { createToaster } from '@chakra-ui/react/toast'
-
-interface FormValues {
-  name: string
-  email: string
+// Props interface
+interface ChakraV3ExampleProps {
+  title?: string;
+  subtitle?: string;
+  onSubmit?: (data: any) => void;
+  onCancel?: () => void;
+  loading?: boolean;
+  initialValues?: Record<string, any>;
+  showHeader?: boolean;
+  showFooter?: boolean;
+  children?: React.ReactNode;
+  colorScheme?: string;
+  variant?: string;
+  size?: string;
+  width?: ResponsiveValue<string | number>;
+  maxWidth?: ResponsiveValue<string | number>;
+  p?: ResponsiveValue<number | string>;
+  m?: ResponsiveValue<number | string>;
+  [key: string]: any;
 }
 
-interface FormErrors {
-  name?: string
-  email?: string
-}
-
-export function ChakraV3Example() {
-  const { colorMode } = useColorMode()
-  const [loading, setLoading] = useState(false)
-  const [values, setValues] = useState<FormValues>({ name: '', email: '' })
-  const [errors, setErrors] = useState<FormErrors>({})
-  const toast = createToaster()
-
-  const validateForm = (): boolean => {
-    const newErrors: FormErrors = {}
-    
-    if (!values.name.trim()) {
-      newErrors.name = 'Name is required'
-    }
-    
-    if (!values.email.trim()) {
-      newErrors.email = 'Email is required'
-    } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)) {
-      newErrors.email = 'Invalid email address'
-    }
-    
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
+// Example component showcasing Chakra UI V3 patterns
+export function ChakraV3Example({ title = 'Chakra UI v3 Example', onSubmit }: ChakraV3ExampleProps) {
+  // Component state
+  const [formData, setFormData] = useState({
+    name: '',
+    email: ''
+  });
+  
+  // Use Chakra hooks
+  const { colorMode } = useColorMode();
+  const toast = useToast();
+  
+  // Handle form change
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setValues(prev => ({ ...prev, [name]: value }))
-  }
-
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value
+    });
+  };
+  
+  // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     
-    if (!validateForm()) return
+    if (!formData.name || !formData.email) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please fill out all fields',
+        status: 'error',
+        duration: 3000,
+        isClosable: true
+      });
+      return;
+    }
     
-    setLoading(true)
+    // Call onSubmit if provided
+    if (onSubmit) {
+      onSubmit(formData);
+    }
     
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false)
-      toast.show({
-        title: 'Form submitted',
-        description: 'Your form has been submitted successfully',
-        status: 'success',
-      })
-      setValues({ name: '', email: '' })
-    }, 1500)
-  }
-
+    // Show success toast
+    toast({
+      title: 'Form Submitted',
+      description: 'Thank you for your submission',
+      status: 'success',
+      duration: 3000,
+      isClosable: true
+    });
+  };
+  
   return (
-    <Card 
-      maxW="md" 
-      mx="auto"
-      bg={colorMode === 'light' ? 'white' : 'gray.700'}
-    >
-      <CardHeader>
-        <Heading size="lg">Contact Form</Heading>
-        <Text mt={2} color={colorMode === 'light' ? 'gray.600' : 'gray.300'}>
-          Example form using Chakra UI v3
+    <Card width="100%" shadow="md">
+      <CardHeader borderBottomWidth="1px" py={4}>
+        <Heading size="md" textAlign="center">{title}</Heading>
+        <Text color={colorMode === 'dark' ? 'gray.400' : 'gray.600'} fontSize="sm">
+          Fill out the form below
         </Text>
       </CardHeader>
       
-      <CardBody>
+      <CardBody py={6}>
         <form onSubmit={handleSubmit}>
           <Flex direction="column" gap={4}>
-            <FormControl isInvalid={!!errors.name}>
+            <FormControl required>
               <FormLabel htmlFor="name">Name</FormLabel>
               <Input
                 id="name"
                 name="name"
-                value={values.name}
+                value={formData.name}
                 onChange={handleChange}
                 placeholder="Enter your name"
-              />
-              <FormErrorMessage>{errors.name}</FormErrorMessage>
+               />
             </FormControl>
             
-            <FormControl isInvalid={!!errors.email}>
+            <FormControl required>
               <FormLabel htmlFor="email">Email</FormLabel>
               <Input
                 id="email"
                 name="email"
                 type="email"
-                value={values.email}
+                value={formData.email}
                 onChange={handleChange}
                 placeholder="Enter your email"
-              />
-              <FormErrorMessage>{errors.email}</FormErrorMessage>
+               />
+            </FormControl>
+            
+            <FormControl>
+              <Flex justify="flex-end">
+                {/* No loading prop in v3, use loading instead */}
+                <Button type="submit" colorScheme="blue" loading={false}>
+                  Submit
+                </Button>
+              </Flex>
             </FormControl>
           </Flex>
         </form>
       </CardBody>
       
-      <CardFooter>
-        <Button 
-          loading={loading} 
-          onClick={handleSubmit}
-          w="full"
-        >
-          Submit
-        </Button>
+      <CardFooter borderTopWidth="1px" py={4} justifyContent="center">
+        <Button variant="ghost" size="sm">Need Help?</Button>
       </CardFooter>
     </Card>
-  )
+  );
 }
+
+export default ChakraV3Example;

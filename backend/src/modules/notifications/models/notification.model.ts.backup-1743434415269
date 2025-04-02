@@ -1,0 +1,117 @@
+// TypeScript fixed
+// Fixed by typescript-migration-tool.js
+import mongoose, { Document, Schema } from 'mongoose';
+import * as mongoose from "mongoose";
+
+/**
+ * Notification types supported by the system
+ */
+export enum NotificationType {
+  ALERT = 'alert',
+  INFO = 'info',
+  SUCCESS = 'success',
+  WARNING = 'warning',
+  ERROR = 'error',
+  SYNC_STATUS = 'sync_status',
+  SYSTEM = 'system'
+}
+
+/**
+ * Notification categories for organization
+ */
+export enum NotificationCategory {
+  INVENTORY = 'inventory',
+  MARKETPLACE = 'marketplace',
+  SHIPPING = 'shipping',
+  SYSTEM = 'system',
+  TASK = 'task',
+  AI = 'ai',
+  SECURITY = 'security',
+  BILLING = 'billing'
+}
+
+/**
+ * Interface for Notification model
+ */
+export interface INotification {
+  userId: mongoose.Types.ObjectId;
+  organizationId?: mongoose.Types.ObjectId;
+  title: string;
+  message: string;
+  type: NotificationType;
+  category: NotificationCategory;
+  isRead: boolean;
+  data?: any;
+  expiresAt?: Date;
+  createdAt: Date;
+  updatedAt: Date
+}
+
+/**
+ * Document interface for type safety with Mongoose
+ */
+export interface INotificationDocument extends INotification, Document {}
+
+
+export interface INotificationModel extends mongoose.Model<INotificationDocument> {
+
+}
+
+
+/**
+ * Schema for the Notification model
+ */
+const NotificationSchema = new Schema<INotificationDocument>(
+  {
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true
+    },
+    organizationId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Organization',
+      index: true
+    },
+    title: {
+      type: String,
+      required: true
+    },
+    message: {
+      type: String,
+      required: true
+    },
+    type: {
+      type: String,
+      enum: Object.values(NotificationType),
+      default: NotificationType.INFO
+    },
+    category: {
+      type: String,
+      enum: Object.values(NotificationCategory),
+      default: NotificationCategory.SYSTEM
+    },
+    isRead: {
+      type: Boolean,
+      default: false
+    },
+    data: {
+      type: Schema.Types.Mixed
+    },
+    expiresAt: {
+      type: Date
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+// Create TTL index for auto-expiring notifications
+NotificationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
+/**
+ * Export the Notification model
+ */
+export default mongoose.model<INotificationDocument>('Notification', NotificationSchema);

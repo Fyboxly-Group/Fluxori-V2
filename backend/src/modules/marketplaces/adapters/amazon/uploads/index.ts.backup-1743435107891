@@ -1,0 +1,3 @@
+// Adapter exports
+export { default as UploadsModule } from './uploads';
+export { default as UploadsModuleFactory } from './uploads-factory';

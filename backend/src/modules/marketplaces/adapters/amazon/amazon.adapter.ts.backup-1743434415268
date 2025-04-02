@@ -1,0 +1,30 @@
+// @ts-nocheck
+import { Injectable } from '../../../../decorators/injectable.decorator';
+import { Types } from 'mongoose';
+
+/**
+ * Amazon Adapter Service
+ */
+@Injectable()
+export class AmazonAdapter {
+  /**
+   * Constructor
+   */
+  constructor() {}
+  
+  /**
+   * Get products
+   */
+  async getProducts(options?: any): Promise<any[]> {
+    // Placeholder implementation
+    return [];
+  }
+  
+  /**
+   * Get orders
+   */
+  async getOrders(options?: any): Promise<any[]> {
+    // Placeholder implementation
+    return [];
+  }
+}

@@ -54,7 +54,7 @@ async function fetchApi<T>(
 
     // Handle unsuccessful responses
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
+      const errorData = await response.json().catch((_: any) => ({}))
       const errorMsg = errorData.message || response.statusText
       throw new Error(errorMsg)
     }

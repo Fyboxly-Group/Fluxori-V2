@@ -1,0 +1,124 @@
+// TypeScript fixed
+import mongoose, { Schema, Document, Model } from 'mongoose';
+
+/**
+ * International Trade interfaces
+ */
+export interface IInternationalTrade {
+  userId: mongoose.Types.ObjectId;
+  organizationId?: mongoose.Types.ObjectId;
+  status?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+/**
+ * International Trade Document interface
+ */
+export interface IInternationalTradeDocument extends IInternationalTrade, Document {}
+
+/**
+ * International Trade Model interface
+ */
+export interface IInternationalTradeModel extends Model<IInternationalTradeDocument> {}
+
+// Define interfaces for the shipment and customs declaration
+export interface IInternationalShipment extends Document {
+  _id: mongoose.Types.ObjectId;
+  shipmentId?: string; // Alternative ID for external systems
+  userId: mongoose.Types.ObjectId;
+  organizationId: mongoose.Types.ObjectId;
+  origin: {
+    address: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  };
+  destination: {
+    address: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  };
+  packageDetails: {
+    weight: number;
+    weightUnit: string;
+    dimensions: {
+      length: number;
+      width: number;
+      height: number;
+      unit: string;
+    };
+  };
+  items: Array<{
+    description: string;
+    quantity: number;
+    value: number;
+    hsCode?: string;
+    originCountry?: string;
+  }>;
+  carrier?: string;
+  service?: string;
+  trackingNumber?: string;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ICustomsDeclaration extends Document {
+  shipmentId: mongoose.Types.ObjectId;
+  userId: mongoose.Types.ObjectId;
+  organizationId: mongoose.Types.ObjectId;
+  declarationType: string;
+  exporterDetails: {
+    name: string;
+    taxId?: string;
+    address: string;
+  };
+  importerDetails: {
+    name: string;
+    taxId?: string;
+    address: string;
+  };
+  items: Array<{
+    description: string;
+    hsCode: string;
+    quantity: number;
+    unitValue: number;
+    totalValue: number;
+    netWeight: number;
+    originCountry: string;
+  }>;
+  totalValue: number;
+  currency: string;
+  incoterm: string;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Placeholder schemas - these would be actual mongoose schemas in implementation
+const InternationalShipmentSchema = new Schema({
+  userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
+  // Other fields would be defined here in actual implementation
+  status: { type: String, default: 'draft' },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+const CustomsDeclarationSchema = new Schema({
+  shipmentId: { type: Schema.Types.ObjectId, ref: 'InternationalShipment', required: true },
+  userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
+  // Other fields would be defined here in actual implementation
+  status: { type: String, default: 'draft' },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+// Export models (these are placeholders - would be actual models in implementation)
+export const InternationalShipment = mongoose.model<IInternationalShipment>('InternationalShipment', InternationalShipmentSchema);
+export const CustomsDeclaration = mongoose.model<ICustomsDeclaration>('CustomsDeclaration', CustomsDeclarationSchema);

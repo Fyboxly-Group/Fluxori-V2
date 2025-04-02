@@ -1,0 +1,28 @@
+import { Document, Types, Model } from 'mongoose';
+
+/**
+ * Base interface for Order (raw data)
+ */
+export interface IOrder {
+  street?: any;
+  type?: string;
+  required: any;
+  trim?: any;
+  _id?: Types.ObjectId;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+/**
+ * Document interface for Order (includes Document methods)
+ */
+export interface IOrderDocument extends Document, IOrder {
+  // Add document-specific methods here
+}
+
+/**
+ * Model interface for Order (includes static methods)
+ */
+export interface IOrderModel extends Model<IOrderDocument> {
+  // Add static model methods here
+}

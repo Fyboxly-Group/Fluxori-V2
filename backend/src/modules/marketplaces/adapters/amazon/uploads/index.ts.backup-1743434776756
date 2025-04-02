@@ -1,0 +1,6 @@
+// TypeScript checked
+/**
+ * Export uploads module and factory for external use
+ */
+export { default as UploadsModule } from "./uploads";
+export { default as UploadsModuleFactory } from "./uploads-factory";

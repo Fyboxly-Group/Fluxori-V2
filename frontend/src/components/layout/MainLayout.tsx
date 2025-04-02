@@ -1,17 +1,26 @@
+/// <reference path="../../types/module-declarations.d.ts" />
 'use client'
 
-import { Box } from '@chakra-ui/react/box'
-import { Flex } from '@chakra-ui/react/flex'
-import { useColorMode } from '@chakra-ui/react/color-mode'
+import React from 'react';
+;
+import { useColorMode } from '@/components/stubs/ChakraStubs';;
+
+// Props interface is defined below
+;
 import { ReactNode, useState } from 'react'
 import { Navbar } from './Navbar'
 import { Sidebar } from './Sidebar'
-import { IconButton } from '@chakra-ui/react/button'
+import { ResponsiveValue } from '../../utils/chakra-utils';
+import { Box  } from '@/utils/chakra-compat';
+import { Flex  } from '@/utils/chakra-compat';
+import { IconButton  } from '@/utils/chakra-compat';
 
 // Placeholder for menu icon
 const MenuIcon = () => <Box>☰</Box> 
 
 type MainLayoutProps = {
+  children: React.ReactNode;
+  children: React.ReactNode;
   children: ReactNode
   showSidebar?: boolean
 }
@@ -57,7 +66,7 @@ export function MainLayout({ children, showSidebar = true }: MainLayoutProps) {
         {showSidebar && (
           <IconButton
             aria-label="Toggle sidebar"
-            icon={<MenuIcon />}
+            icon={<MenuIcon   />}
             position="fixed"
             bottom="4"
             left="4"
@@ -72,7 +81,7 @@ export function MainLayout({ children, showSidebar = true }: MainLayoutProps) {
         <Box 
           as="main" 
           flex="1"
-          p={{ base: 4, md: 6 }}
+          p={{ base: 4, md: 6 } as ResponsiveValue<number>}
           ml={{ base: 0, md: showSidebar ? '0' : '0' }}
           transition="margin-left 0.2s"
         >

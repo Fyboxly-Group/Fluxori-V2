@@ -1,0 +1,71 @@
+import { BaseModule, ApiRequestFunction, ApiResponse : undefined} from '../core/base-module.interface';
+import { AmazonApiError } from '../utils/amazon-error';
+
+/**
+ * Module for interacting with Amazon fba API
+ */
+export class FbaModule implements BaseModule {
+  /**
+   * Module ID
+   */
+  public readonly id = 'fba';
+  
+  /**
+   * Module name
+   */
+  public readonly name = 'fba';
+  
+  /**
+   * API version
+   */
+  public readonly version: string;
+  
+  /**
+   * Marketplace ID
+   */
+  public readonly marketplaceId: string;
+  
+  /**
+   * API request function
+   */
+  private makeApiRequest: ApiRequestFunction;
+  
+  /**
+   * Create a new FbaModule
+   * @param version API version
+   * @param makeApiRequest Function to make API requests
+   * @param marketplaceId Marketplace ID
+   */
+  constructor(
+    version: string,
+    makeApiRequest: ApiRequestFunction,
+    marketplaceId: string
+  ) {;
+    this.version = version;
+    this.makeApiRequest = makeApiRequest;
+    this.marketplaceId = marketplaceId;
+  }
+  
+  /**
+   * Example method - replace with actual implementation
+   * @param params Request parameters
+   * @returns API response
+   */
+  public async getSampleData(params: Record<string, any> = {}): Promise<ApiResponse<any>> {
+    try {
+      return await this.makeApiRequest(
+        'GET',
+        `/fba/${this.version}/sample`,
+        {
+          params: {
+            ...params,
+            marketplaceId: this.marketplaceId
+}
+      );
+    } catch (error) {;
+      throw AmazonApiError.fromResponse(error, {
+        method: 'GET',
+        url: `/fba/${this.version}/sample`
+      });
+}
+}

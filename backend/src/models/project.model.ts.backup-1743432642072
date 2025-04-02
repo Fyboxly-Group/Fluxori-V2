@@ -1,0 +1,270 @@
+// TypeScript fixed
+import mongoose, { Document, Model, Schema } from 'mongoose';
+import * as mongoose from "mongoose";
+
+export enum ProjectStatus {
+  PLANNING = 'planning',
+  ACTIVE = 'active',
+  ON_HOLD = 'on-hold',
+  COMPLETED = 'completed',
+  CANCELLED = 'cancelled'
+}
+
+export enum ProjectPhase {
+  DISCOVERY = 'discovery',
+  DESIGN = 'design',
+  IMPLEMENTATION = 'implementation',
+  TESTING = 'testing',
+  DEPLOYMENT = 'deployment',
+  MAINTENANCE = 'maintenance'
+}
+
+export enum DocumentCategory {
+  PROPOSAL = 'proposal',
+  CONTRACT = 'contract',
+  SPECIFICATION = 'specification',
+  REPORT = 'report',
+  OTHER = 'other'
+}
+
+/**
+ * Interface for Key Result
+ */
+export interface IKeyResult {
+  description: string;
+  target: number;
+  current: number;
+  unit: string;
+  isComplete: boolean;
+}
+
+/**
+ * Interface for Project Stakeholder
+ */
+export interface IStakeholder {
+  user: mongoose.Types.ObjectId;
+  role: string;
+  isExternal: boolean;
+}
+
+/**
+ * Interface for Project Document
+ */
+export interface IProjectDocument {
+  title: string;
+  fileUrl: string;
+  uploadedBy: mongoose.Types.ObjectId;
+  uploadedAt: Date;
+  category: DocumentCategory | string;
+}
+
+
+export interface IProjectModel extends mongoose.Model<IProjectDocument> {
+
+}
+
+
+/**
+ * Static methods for Project model
+ */
+export interface IProjectStatics {
+  // Add static methods as needed
+}
+
+/**
+ * Methods for Project model
+ */
+export interface IProjectMethods {
+  // Add methods as needed
+}
+
+export interface IProject {
+  name: string;
+  description?: string;
+  customer: mongoose.Types.ObjectId;
+  accountManager: mongoose.Types.ObjectId;
+  status: ProjectStatus | string;
+  phase: ProjectPhase | string;
+  startDate: Date;
+  targetCompletionDate?: Date;
+  actualCompletionDate?: Date;
+  budget?: number;
+  costToDate?: number;
+  objectives: string[];
+  keyResults: IKeyResult[];
+  businessValue: string;
+  stakeholders: IStakeholder[];
+  documents: IProjectDocument[];
+  tags?: string[];
+  organizationId: mongoose.Types.ObjectId;
+  createdBy: mongoose.Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Document interface for type safety with Mongoose
+ */
+export interface IProjectDocumentType extends IProject, Document, IProjectMethods {}
+
+/**
+ * Type for Project model with statics
+ */
+export type ProjectModel = Model<IProjectDocumentType> & IProjectStatics;
+
+const keyResultSchema = new Schema({
+  description: { 
+    type: String, 
+    required: true 
+  },
+  target: { 
+    type: Number, 
+    required: true 
+  },
+  current: { 
+    type: Number, 
+    default: 0 
+  },
+  unit: { 
+    type: String, 
+    required: true 
+  },
+  isComplete: { 
+    type: Boolean, 
+    default: false 
+  }
+}, { _id: false });
+
+const stakeholderSchema = new Schema({
+  user: { 
+    type: Schema.Types.ObjectId, 
+    ref: 'User', 
+    required: true 
+  },
+  role: { 
+    type: String, 
+    required: true 
+  },
+  isExternal: { 
+    type: Boolean, 
+    default: false 
+  }
+}, { _id: false });
+
+const documentSchema = new Schema({
+  title: { 
+    type: String, 
+    required: true 
+  },
+  fileUrl: { 
+    type: String, 
+    required: true 
+  },
+  uploadedBy: { 
+    type: Schema.Types.ObjectId, 
+    ref: 'User', 
+    required: true 
+  },
+  uploadedAt: { 
+    type: Date, 
+    default: Date.now 
+  },
+  category: { 
+    type: String, 
+    enum: Object.values(DocumentCategory),
+    default: DocumentCategory.OTHER
+  }
+}, { _id: true });
+
+const projectSchema = new Schema<IProjectDocumentType, ProjectModel, IProjectMethods>(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    description: {
+      type: String,
+      trim: true
+    },
+    customer: {
+      type: Schema.Types.ObjectId,
+      ref: 'Customer',
+      required: true
+    },
+    accountManager: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    status: {
+      type: String,
+      enum: Object.values(ProjectStatus),
+      default: ProjectStatus.PLANNING
+    },
+    phase: {
+      type: String,
+      enum: Object.values(ProjectPhase),
+      default: ProjectPhase.DISCOVERY
+    },
+    startDate: {
+      type: Date,
+      required: true
+    },
+    targetCompletionDate: {
+      type: Date
+    },
+    actualCompletionDate: {
+      type: Date
+    },
+    budget: {
+      type: Number
+    },
+    costToDate: {
+      type: Number,
+      default: 0
+    },
+    objectives: [{
+      type: String,
+      trim: true
+    }],
+    keyResults: [keyResultSchema],
+    businessValue: {
+      type: String,
+      trim: true
+    },
+    stakeholders: [stakeholderSchema],
+    documents: [documentSchema],
+    tags: [{
+      type: String,
+      trim: true
+    }],
+    organizationId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Organization',
+      required: true
+    },
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+// Indexes for efficient querying
+projectSchema.index({ customer: 1 });
+projectSchema.index({ accountManager: 1 });
+projectSchema.index({ status: 1 });
+projectSchema.index({ phase: 1 });
+projectSchema.index({ startDate: 1 });
+projectSchema.index({ targetCompletionDate: 1 });
+projectSchema.index({ 'stakeholders.user': 1 });
+projectSchema.index({ organizationId: 1 });
+
+const Project = mongoose.model<IProjectDocumentType, ProjectModel>('Project', projectSchema);
+
+export default Project;

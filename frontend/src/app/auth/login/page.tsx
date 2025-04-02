@@ -1,21 +1,34 @@
+/// <reference path="../../types/module-declarations.d.ts" />
 'use client'
 
-import { useState } from 'react'
-import { Box } from '@chakra-ui/react/box'
-import { VStack, HStack } from '@chakra-ui/react/stack'
-import { Heading } from '@chakra-ui/react/heading'
-import { Text } from '@chakra-ui/react/text'
-import { Input } from '@chakra-ui/react/input'
-import { Button } from '@chakra-ui/react/button'
-import { FormControl, FormLabel, FormErrorMessage } from '@chakra-ui/react/form-control'
-import { Checkbox } from '@chakra-ui/react/checkbox'
-import { Divider } from '@chakra-ui/react/divider'
-import { Card, CardHeader, CardBody, CardFooter } from '@chakra-ui/react/card'
-import { useColorMode } from '@chakra-ui/react/color-mode'
-import { createToaster } from '@chakra-ui/react/toast'
+import React, { useState } from 'react'
+import { Divider, FormErrorMessage, useColorMode, createToaster } from '@/utils/chakra-compat'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
+import { ResponsiveValue } from '../../../utils/chakra-utils';
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+
+// Fix for Next.js module resolution
+import { ChakraProvider } from "@chakra-ui/react";
+import { Card, CardHeader, Heading, Text, CardBody, VStack, FormControl, FormLabel, Input, Box, HStack, Link as ChakraLink, Button, CardFooter } from '@/utils/chakra/components';
+import { Checkbox } from '@/components/stubs/ChakraStubs';
+
+
 
 type FormData = {
   email: string
@@ -82,7 +95,7 @@ export default function Login() {
 
   return (
     <Card 
-      width={{ base: 'full', sm: '400px' }}
+      width={{ base: 'full', sm: '400px' } as ResponsiveValue<number>}
       bg={colorMode === 'light' ? 'white' : 'gray.800'}
       boxShadow="lg"
     >
@@ -96,7 +109,7 @@ export default function Login() {
       <CardBody>
         <form onSubmit={handleSubmit}>
           <VStack gap={4}>
-            <FormControl isInvalid={!!errors.email}>
+            <FormControl invalid={!!errors.email}>
               <FormLabel htmlFor="email">Email</FormLabel>
               <Input
                 id="email"
@@ -105,11 +118,11 @@ export default function Login() {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="your.email@example.com"
-              />
+                />
               <FormErrorMessage>{errors.email}</FormErrorMessage>
             </FormControl>
             
-            <FormControl isInvalid={!!errors.password}>
+            <FormControl invalid={!!errors.password}>
               <FormLabel htmlFor="password">Password</FormLabel>
               <Input
                 id="password"
@@ -118,15 +131,15 @@ export default function Login() {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="••••••••"
-              />
+                />
               <FormErrorMessage>{errors.password}</FormErrorMessage>
             </FormControl>
             
             <Box width="100%">
               <HStack justify="space-between">
                 <Checkbox 
-                  isChecked={rememberMe} 
-                  onChange={(e) => setRememberMe(e.target.checked)}
+                  checked={rememberMe} 
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRememberMe(e.target.checked)}
                 >
                   Remember me
                 </Checkbox>
@@ -155,7 +168,7 @@ export default function Login() {
         </form>
       </CardBody>
       
-      <Divider />
+      <Divider   />
       
       <CardFooter justifyContent="center">
         <Text>

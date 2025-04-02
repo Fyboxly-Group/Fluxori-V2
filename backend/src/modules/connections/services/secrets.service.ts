@@ -1,0 +1,246 @@
+/// <reference path="../../../types/declarations/secret-manager.d.ts" />
+
+// Properly typed version of secrets.service.ts
+import * as crypto from 'crypto';
+import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
+import { AccessSecretVersionResponse } from '@google-cloud/secret-manager';
+import { MarketplaceCredentials } from '../../marketplaces/models/marketplace.models';
+
+/**
+ * Service for securely managing marketplace credentials
+ * Provides both SecretManager-based and encrypted DB-based implementations
+ */
+class SecretManagerService {
+  private secretClient!: SecretManagerServiceClient;
+  private useSecretManager: boolean;
+  private encryptionKey: Buffer;
+  private readonly algorithm = 'aes-256-gcm';
+
+  constructor() {
+    // Check if we should use Secret Manager or fall back to DB encryption
+    this.useSecretManager = process.env.USE_SECRET_MANAGER === 'true';
+    
+    // Initialize the encryption key for DB-based encryption
+    const key = process.env.ENCRYPTION_KEY || 'a-very-secure-32-char-encryption-key';
+    this.encryptionKey = Buffer.from(key, 'utf-8');
+
+    // Initialize Secret Manager client if needed
+    if (this.useSecretManager) {
+      this.secretClient = new SecretManagerServiceClient();
+    }
+  }
+
+  /**
+   * Store credentials securely, either in Secret Manager or encrypted in reference string
+   * @param userId - User ID
+   * @param organizationId - Organization ID
+   * @param marketplaceId - Marketplace ID
+   * @param credentials - Marketplace credentials to store
+   * @returns Reference string to the stored credential
+   */
+  public async storeCredentials(
+    userId: string,
+    organizationId: string,
+    marketplaceId: string,
+    credentials: MarketplaceCredentials
+  ): Promise<string> {
+    // Create a unique ID for this credential
+    const credentialId = `${userId}-${organizationId}-${marketplaceId}-${Date.now()}`;
+    
+    if (this.useSecretManager) {
+      await this.storeInSecretManager(credentialId, credentials);
+      return credentialId;
+    } else {
+      // If not using Secret Manager, encrypt and return the encrypted string
+      return this.encryptCredentials(credentials);
+    }
+  }
+
+  /**
+   * Retrieve credentials using the reference
+   * @param reference - Reference to the credential
+   * @returns Retrieved credentials
+   */
+  public async getCredentials(reference: string): Promise<MarketplaceCredentials> {
+    if (this.useSecretManager) {
+      return this.getFromSecretManager(reference);
+    } else {
+      // If not using Secret Manager, decrypt the reference string
+      return this.decryptCredentials(reference);
+    }
+  }
+
+  /**
+   * Delete credentials securely
+   * @param reference - Reference to the credential
+   * @returns Success flag
+   */
+  public async deleteCredentials(reference: string): Promise<boolean> {
+    if (this.useSecretManager) {
+      await this.deleteFromSecretManager(reference);
+      return true;
+    } else {
+      // For encrypted DB credentials, nothing to do as they'll be removed with the connection
+      return true;
+    }
+  }
+
+  /**
+   * Store credentials in GCP Secret Manager
+   * @param secretId - Unique ID for the secret
+   * @param credentials - Credentials to store
+   */
+  private async storeInSecretManager(
+    secretId: string,
+    credentials: MarketplaceCredentials
+  ): Promise<void> {
+    const projectId = process.env.GCP_PROJECT_ID;
+    
+    if (!projectId) {
+      throw new Error('GCP_PROJECT_ID environment variable is not set');
+    }
+
+    // Create a fully qualified secret ID
+    const parent = `projects/${projectId}`;
+    const secretPath = `${parent}/secrets/${secretId}`;
+
+    try {
+      // Create the secret
+      await this.secretClient.createSecret({
+        parent,
+        secretId,
+        secret: {
+          replication: {
+            automatic: {},
+          },
+        },
+      });
+
+      // Add the secret version with credentials
+      await this.secretClient.addSecretVersion({
+        parent: secretPath,
+        payload: {
+          data: Buffer.from(JSON.stringify(credentials)),
+        },
+      });
+    } catch (error) {
+      console.error('Error storing credentials in Secret Manager:', error);
+      throw new Error('Failed to securely store credentials');
+    }
+  }
+
+  /**
+   * Retrieve credentials from GCP Secret Manager
+   * @param secretId - Secret ID to retrieve
+   * @returns Retrieved credentials
+   */
+  private async getFromSecretManager(secretId: string): Promise<MarketplaceCredentials> {
+    const projectId = process.env.GCP_PROJECT_ID;
+    
+    if (!projectId) {
+      throw new Error('GCP_PROJECT_ID environment variable is not set');
+    }
+
+    // Create a fully qualified secret version path
+    const name = `projects/${projectId}/secrets/${secretId}/versions/latest`;
+
+    try {
+      // Access the secret version with type assertion for TypeScript
+      const [version] = await this.secretClient.accessSecretVersion({ name }) as unknown as [AccessSecretVersionResponse];
+      
+      if (!version.payload?.data) {
+        throw new Error('No data found in secret');
+      }
+
+      // Parse the JSON string back to an object
+      const credentials = JSON.parse(version.payload.data.toString()) as MarketplaceCredentials;
+      return credentials;
+    } catch (error) {
+      console.error('Error retrieving credentials from Secret Manager:', error);
+      throw new Error('Failed to retrieve secure credentials');
+    }
+  }
+
+  /**
+   * Delete a secret from GCP Secret Manager
+   * @param secretId - Secret ID to delete
+   */
+  private async deleteFromSecretManager(secretId: string): Promise<void> {
+    const projectId = process.env.GCP_PROJECT_ID;
+    
+    if (!projectId) {
+      throw new Error('GCP_PROJECT_ID environment variable is not set');
+    }
+
+    // Create a fully qualified secret path
+    const name = `projects/${projectId}/secrets/${secretId}`;
+
+    try {
+      // Delete the secret and all its versions
+      await this.secretClient.deleteSecret({ name });
+    } catch (error) {
+      console.error('Error deleting secret from Secret Manager:', error);
+      throw new Error('Failed to delete secure credentials');
+    }
+  }
+
+  /**
+   * Encrypt credentials for storage in database
+   * @param credentials - Credentials to encrypt
+   * @returns Encrypted string
+   */
+  private encryptCredentials(credentials: MarketplaceCredentials): string {
+    // Generate a random initialization vector
+    const iv = crypto.randomBytes(16);
+    
+    // Create a cipher with our key and IV
+    const cipher = crypto.createCipheriv(this.algorithm, this.encryptionKey, iv);
+    
+    // Encrypt the credentials JSON
+    const credentialsBuffer = Buffer.from(JSON.stringify(credentials), 'utf8');
+    let encrypted = cipher.update(credentialsBuffer);
+    encrypted = Buffer.concat([encrypted, cipher.final()]);
+    
+    // Get the authentication tag
+    const authTag = cipher.getAuthTag();
+    
+    // Combine IV, authTag, and ciphertext as base64 string
+    const result = Buffer.concat([iv, authTag, encrypted]).toString('base64');
+    return result;
+  }
+
+  /**
+   * Decrypt credentials from encrypted string
+   * @param encryptedData - Encrypted credential string
+   * @returns Decrypted credentials
+   */
+  private decryptCredentials(encryptedData: string): MarketplaceCredentials {
+    try {
+      // Convert back from base64
+      const encryptedBuffer = Buffer.from(encryptedData, 'base64');
+      
+      // Extract IV, authTag, and ciphertext
+      const iv = encryptedBuffer.subarray(0, 16);
+      const authTag = encryptedBuffer.subarray(16, 32);
+      const ciphertext = encryptedBuffer.subarray(32);
+      
+      // Create a decipher
+      const decipher = crypto.createDecipheriv(this.algorithm, this.encryptionKey, iv);
+      
+      // Set the auth tag
+      decipher.setAuthTag(authTag);
+      
+      // Decrypt
+      let decrypted = decipher.update(ciphertext);
+      decrypted = Buffer.concat([decrypted, decipher.final()]);
+      
+      // Parse the JSON
+      return JSON.parse(decrypted.toString('utf8'));
+    } catch (error) {
+      console.error('Error decrypting credentials:', error);
+      throw new Error('Failed to decrypt credentials');
+    }
+  }
+}
+
+export default new SecretManagerService();

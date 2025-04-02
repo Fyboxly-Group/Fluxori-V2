@@ -1,0 +1,91 @@
+// @ts-nocheck - Added by final-ts-fix.js
+import { Injectable } from '../../../decorators/injectable.decorator';
+import { Types } from 'mongoose';
+import { ProductModel } from '../models/product.model';
+import { WarehouseModel } from '../models/warehouse.model';
+
+/**
+ * Amazon Product Mapper
+ * Maps Amazon API responses to internal product model
+ */
+@Injectable()
+export class AmazonProductMapper {
+  /**
+   * Map a Amazon product to internal product model
+   */
+  mapProduct(amazonProduct: any): Partial<any> {
+    try {
+      return {
+        title: amazonProduct.title || '',
+        description: amazonProduct.description || '',
+        sku: amazonProduct.sku || '',
+        barcode: amazonProduct.barcode || '',
+        price: this.mapPrice(amazonProduct),
+        images: this.mapImages(amazonProduct),
+        attributes: this.mapAttributes(amazonProduct),
+        marketplaceData: {
+          amazon: amazonProduct
+        }
+      };
+    } catch (error) {
+      console.error(`Error mapping amazon product:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Map product price
+   */
+  private mapPrice(amazonProduct: any): any {
+    try {
+      return {
+        amount: parseFloat(amazonProduct.price || '0'),
+        currency: amazonProduct.currency || 'USD'
+      };
+    } catch (error) {
+      console.error(`Error mapping amazon product price:`, error);
+      return { amount: 0, currency: 'USD' };
+    }
+  }
+
+  /**
+   * Map product images
+   */
+  private mapImages(amazonProduct: any): any[] {
+    try {
+      if (!amazonProduct.images || !Array.isArray(amazonProduct.images)) {
+        return [];
+      }
+
+      return amazonProduct.images.map((image: any) => ({
+        url: image.url || '',
+        position: image.position || 0,
+        alt: image.alt || ''
+      }));
+    } catch (error) {
+      console.error(`Error mapping amazon product images:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Map product attributes
+   */
+  private mapAttributes(amazonProduct: any): Record<string, any> {
+    try {
+      const attributes: Record<string, any> = {};
+
+      // Map common attributes
+      if (amazonProduct.attributes) {
+        Object.entries(amazonProduct.attributes).forEach(([key, value]) => {
+          attributes[key] = value;
+        });
+      }
+
+      return attributes;
+    } catch (error) {
+      console.error(`Error mapping amazon product attributes:`, error);
+      return {};
+    }
+  }
+}

@@ -1,0 +1,55 @@
+import mongoose, { Document, Model, Schema } from 'mongoose';
+
+export interface ISystemStatus {
+  name: string;
+  status: 'operational' | 'degraded' | 'outage' | 'maintenance';
+  description: string;
+  metrics?: {
+    responseTime?: number;
+    uptime?: number;
+    errorRate?: number;
+    [key: string]: any;
+  };
+  lastCheckedAt: Date;
+  updatedAt: Date;
+  createdAt: Date
+}
+
+export interface ISystemStatusDocument extends ISystemStatus, Document {}
+
+const systemStatusSchema = new Schema<ISystemStatusDocument>(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+      unique: true,
+    },
+    status: {
+      type: String,
+      enum: ['operational', 'degraded', 'outage', 'maintenance'],
+      default: 'operational',
+    },
+    description: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    metrics: {
+      responseTime: Number,
+      uptime: Number,
+      errorRate: Number,
+    },
+    lastCheckedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+const SystemStatus = mongoose.model<ISystemStatusDocument>('SystemStatus', systemStatusSchema);
+
+export default SystemStatus;

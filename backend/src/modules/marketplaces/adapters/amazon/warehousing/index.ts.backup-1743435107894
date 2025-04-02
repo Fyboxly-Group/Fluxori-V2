@@ -1,0 +1,3 @@
+// Adapter exports
+export { default as WarehousingModule } from './warehousing';
+export { default as WarehousingModuleFactory } from './warehousing-factory';

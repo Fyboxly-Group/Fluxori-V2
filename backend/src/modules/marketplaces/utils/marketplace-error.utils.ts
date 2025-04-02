@@ -1,0 +1,543 @@
+// @ts-nocheck - Added by final-ts-fix.js
+/**
+ * Marketplace-specific error handling utilities
+ */
+import { 
+  AppError, 
+  ErrorCategory, 
+  ErrorSeverity,
+  MarketplaceError
+} from '../../../utils/error.utils';
+
+/**
+ * Marketplace error codes for specific error situations
+ */
+export enum MarketplaceErrorCode {
+  // General marketplace errors
+  UNKNOWN_ERROR = 'MARKETPLACE_UNKNOWN_ERROR',
+  INITIALIZATION_FAILED = 'MARKETPLACE_INITIALIZATION_FAILED',
+  CONNECTION_FAILED = 'MARKETPLACE_CONNECTION_FAILED',
+  
+  // Authentication/credential errors
+  AUTHENTICATION_FAILED = 'MARKETPLACE_AUTHENTICATION_FAILED',
+  CREDENTIALS_EXPIRED = 'MARKETPLACE_CREDENTIALS_EXPIRED',
+  CREDENTIALS_INVALID = 'MARKETPLACE_CREDENTIALS_INVALID',
+  
+  // API limit errors
+  RATE_LIMIT_EXCEEDED = 'MARKETPLACE_RATE_LIMIT_EXCEEDED',
+  QUOTA_EXCEEDED = 'MARKETPLACE_QUOTA_EXCEEDED',
+  
+  // Data errors
+  VALIDATION_FAILED = 'MARKETPLACE_VALIDATION_FAILED',
+  DATA_NOT_FOUND = 'MARKETPLACE_DATA_NOT_FOUND',
+  DATA_FORMAT_ERROR = 'MARKETPLACE_DATA_FORMAT_ERROR',
+  
+  // Synchronization errors
+  SYNC_FAILED = 'MARKETPLACE_SYNC_FAILED',
+  PARTIAL_SYNC = 'MARKETPLACE_PARTIAL_SYNC',
+  
+  // Timeout errors
+  REQUEST_TIMEOUT = 'MARKETPLACE_REQUEST_TIMEOUT',
+  
+  // Marketplace-specific status codes
+  MARKETPLACE_UNAVAILABLE = 'MARKETPLACE_UNAVAILABLE',
+  MARKETPLACE_MAINTENANCE = 'MARKETPLACE_MAINTENANCE',
+  
+  // Product errors
+  PRODUCT_NOT_FOUND = 'MARKETPLACE_PRODUCT_NOT_FOUND',
+  PRODUCT_CREATION_FAILED = 'MARKETPLACE_PRODUCT_CREATION_FAILED',
+  PRODUCT_UPDATE_FAILED = 'MARKETPLACE_PRODUCT_UPDATE_FAILED',
+  
+  // Order errors
+  ORDER_NOT_FOUND = 'MARKETPLACE_ORDER_NOT_FOUND',
+  ORDER_PROCESSING_FAILED = 'MARKETPLACE_ORDER_PROCESSING_FAILED',
+  
+  // Inventory errors
+  INVENTORY_UPDATE_FAILED = 'MARKETPLACE_INVENTORY_UPDATE_FAILED'
+}
+
+/**
+ * Extended marketplace error class with marketplace-specific fields
+ */
+export class MarketplaceApiError extends MarketplaceError {
+  /**
+   * Create a marketplace API error
+   * 
+   * @param marketplaceId Marketplace identifier (e.g., 'amazon', 'shopify')
+   * @param message Error message
+   * @param code Error code
+   * @param statusCode HTTP status code
+   * @param details Additional error details
+   * @param originalError Original error being wrapped
+   */
+  constructor(
+    marketplaceId: string,
+    message: string,
+    code: MarketplaceErrorCode = MarketplaceErrorCode.UNKNOWN_ERROR,
+    statusCode = 502,
+    details?: Partial<{
+      transient: boolean;
+      retryable: boolean;
+      retryAfter: number;
+      context: Record<string, any>;
+      suggestion: string;
+    }>,
+    originalError?: Error
+  ) {
+    super(
+      marketplaceId,
+      message,
+      statusCode,
+      {
+        code,
+        severity: statusCode >= 500 ? ErrorSeverity.ERROR : ErrorSeverity.WARNING,
+        ...details
+      },
+      originalError
+    );
+  }
+  
+  /**
+   * Create a rate limit error
+   */
+  static rateLimit(
+    marketplaceId: string,
+    message = 'Marketplace API rate limit exceeded',
+    retryAfter = 60000,
+    details?: Record<string, any>,
+    originalError?: Error
+  ): MarketplaceApiError {
+    return new MarketplaceApiError(
+      marketplaceId,
+      message,
+      MarketplaceErrorCode.RATE_LIMIT_EXCEEDED,
+      429,
+      {
+        transient: true,
+        retryable: true,
+        retryAfter,
+        context: details,
+        suggestion: 'The marketplace request rate limit was exceeded. Please try again later.'
+      },
+      originalError
+    );
+  }
+  
+  /**
+   * Create an authentication error
+   */
+  static authentication(
+    marketplaceId: string,
+    message = 'Marketplace authentication failed',
+    details?: Record<string, any>,
+    originalError?: Error
+  ): MarketplaceApiError {
+    return new MarketplaceApiError(
+      marketplaceId,
+      message,
+      MarketplaceErrorCode.AUTHENTICATION_FAILED,
+      401,
+      {
+        transient: false,
+        retryable: false,
+        context: details,
+        suggestion: 'Please check your marketplace credentials and try again.'
+      },
+      originalError
+    );
+  }
+  
+  /**
+   * Create a credentials expired error
+   */
+  static credentialsExpired(
+    marketplaceId: string,
+    message = 'Marketplace credentials have expired',
+    details?: Record<string, any>,
+    originalError?: Error
+  ): MarketplaceApiError {
+    return new MarketplaceApiError(
+      marketplaceId,
+      message,
+      MarketplaceErrorCode.CREDENTIALS_EXPIRED,
+      401,
+      {
+        transient: false,
+        retryable: false,
+        context: details,
+        suggestion: 'Please reconnect your marketplace account to refresh credentials.'
+      },
+      originalError
+    );
+  }
+  
+  /**
+   * Create a not found error
+   */
+  static notFound(
+    marketplaceId: string,
+    resourceType: string,
+    resourceId?: string,
+    details?: Record<string, any>,
+    originalError?: Error
+  ): MarketplaceApiError {
+    const message = resourceId
+      ? `Marketplace ${resourceType} with ID ${resourceId} not found`
+      : `Marketplace ${resourceType} not found`;
+      
+    return new MarketplaceApiError(
+      marketplaceId,
+      message,
+      resourceType === 'product'
+        ? MarketplaceErrorCode.PRODUCT_NOT_FOUND
+        : resourceType === 'order'
+          ? MarketplaceErrorCode.ORDER_NOT_FOUND
+          : MarketplaceErrorCode.DATA_NOT_FOUND,
+      404,
+      {
+        transient: false,
+        retryable: false,
+        context: { resourceType, resourceId, ...details },
+      },
+      originalError
+    );
+  }
+  
+  /**
+   * Create a validation error
+   */
+  static validation(
+    marketplaceId: string,
+    message = 'Marketplace data validation failed',
+    errors?: Record<string, string[]>,
+    details?: Record<string, any>,
+    originalError?: Error
+  ): MarketplaceApiError {
+    const error = new MarketplaceApiError(
+      marketplaceId,
+      message,
+      MarketplaceErrorCode.VALIDATION_FAILED,
+      422,
+      {
+        transient: false,
+        retryable: false,
+        context: details,
+        suggestion: 'Please check your data format and try again.'
+      },
+      originalError
+    );
+    
+    if (errors) {
+      error.setValidationErrors(errors);
+    }
+    
+    return error;
+  }
+  
+  /**
+   * Create a marketplace unavailable error
+   */
+  static unavailable(
+    marketplaceId: string,
+    message = 'Marketplace is currently unavailable',
+    retryAfter = 300000, // 5 minutes
+    details?: Record<string, any>,
+    originalError?: Error
+  ): MarketplaceApiError {
+    return new MarketplaceApiError(
+      marketplaceId,
+      message,
+      MarketplaceErrorCode.MARKETPLACE_UNAVAILABLE,
+      503,
+      {
+        transient: true,
+        retryable: true,
+        retryAfter,
+        context: details,
+        suggestion: 'The marketplace is currently unavailable. Please try again later.'
+      },
+      originalError
+    );
+  }
+  
+  /**
+   * Create a network error
+   */
+  static network(
+    marketplaceId: string,
+    message = 'Network error connecting to marketplace',
+    details?: Record<string, any>,
+    originalError?: Error
+  ): MarketplaceApiError {
+    return new MarketplaceApiError(
+      marketplaceId,
+      message,
+      MarketplaceErrorCode.CONNECTION_FAILED,
+      503,
+      {
+        transient: true,
+        retryable: true,
+        retryAfter: 5000,
+        context: details,
+        suggestion: 'Network connectivity issue when connecting to the marketplace. Please try again.'
+      },
+      originalError
+    );
+  }
+  
+  /**
+   * Create a timeout error
+   */
+  static timeout(
+    marketplaceId: string,
+    message = 'Marketplace request timed out',
+    details?: Record<string, any>,
+    originalError?: Error
+  ): MarketplaceApiError {
+    return new MarketplaceApiError(
+      marketplaceId,
+      message,
+      MarketplaceErrorCode.REQUEST_TIMEOUT,
+      504,
+      {
+        transient: true,
+        retryable: true,
+        retryAfter: 5000,
+        context: details,
+        suggestion: 'The marketplace request timed out. Please try again later.'
+      },
+      originalError
+    );
+  }
+  
+  /**
+   * Create a sync failed error
+   */
+  static syncFailed(
+    marketplaceId: string,
+    message = 'Marketplace synchronization failed',
+    partial = false,
+    details?: Record<string, any>,
+    originalError?: Error
+  ): MarketplaceApiError {
+    return new MarketplaceApiError(
+      marketplaceId,
+      message,
+      partial ? MarketplaceErrorCode.PARTIAL_SYNC : MarketplaceErrorCode.SYNC_FAILED,
+      500,
+      {
+        transient: true,
+        retryable: true,
+        context: { partial, ...details },
+        suggestion: partial 
+          ? 'The synchronization partially succeeded. Some data may need to be manually reconciled.'
+          : 'Marketplace synchronization failed. Please check logs and try again.'
+      },
+      originalError
+    );
+  }
+  
+  /**
+   * Extract marketplace API error from an unknown error
+   */
+  static fromError(
+    marketplaceId: string,
+    error: any,
+    defaultMessage = 'Marketplace operation failed'
+  ): MarketplaceApiError {
+    // If already a MarketplaceApiError, return it
+    if (error instanceof MarketplaceApiError) {
+      return error;
+    }
+    
+    // Handle Axios errors
+    if (error.isAxiosError) {
+      const statusCode = error.response?.status || 500;
+      const responseData = error.response?.data || {};
+      const errorMessage = responseData?.message || error.message || defaultMessage;
+      
+      // Rate limit errors
+      if (statusCode === 429 || responseData?.rateLimitExceeded) {
+        const retryAfter = parseInt(error.response?.headers?.['retry-after'], 10) * 1000 || 60000;
+        return MarketplaceApiError.rateLimit(
+          marketplaceId,
+          errorMessage,
+          retryAfter,
+          {
+            response: responseData,
+            requestUrl: error.config?.url,
+            requestMethod: error.config?.method
+          },
+          error
+        );
+      }
+      
+      // Authentication errors
+      if (statusCode === 401) {
+        if (responseData?.expired || responseData?.token_expired) {
+          return MarketplaceApiError.credentialsExpired(
+            marketplaceId,
+            errorMessage,
+            {
+              response: responseData,
+              requestUrl: error.config?.url,
+              requestMethod: error.config?.method
+            },
+            error
+          );
+        }
+        
+        return MarketplaceApiError.authentication(
+          marketplaceId,
+          errorMessage,
+          {
+            response: responseData,
+            requestUrl: error.config?.url,
+            requestMethod: error.config?.method
+          },
+          error
+        );
+      }
+      
+      // Not found errors
+      if (statusCode === 404) {
+        const resourceType = guessResourceTypeFromUrl(error.config?.url || '');
+        return MarketplaceApiError.notFound(
+          marketplaceId,
+          resourceType,
+          undefined,
+          {
+            response: responseData,
+            requestUrl: error.config?.url,
+            requestMethod: error.config?.method
+          },
+          error
+        );
+      }
+      
+      // Validation errors
+      if (statusCode === 400 || statusCode === 422) {
+        const validationErrors = responseData.errors || responseData.validationErrors;
+        return MarketplaceApiError.validation(
+          marketplaceId,
+          errorMessage,
+          validationErrors,
+          {
+            response: responseData,
+            requestUrl: error.config?.url,
+            requestMethod: error.config?.method
+          },
+          error
+        );
+      }
+      
+      // Network errors
+      if (!error.response || error.code === 'ECONNABORTED' || error.code === 'ECONNREFUSED') {
+        return MarketplaceApiError.network(
+          marketplaceId,
+          errorMessage,
+          {
+            code: error.code,
+            requestUrl: error.config?.url,
+            requestMethod: error.config?.method
+          },
+          error
+        );
+      }
+      
+      // Timeout errors
+      if (error.code === 'ETIMEDOUT' || error.message?.includes('timeout')) {
+        return MarketplaceApiError.timeout(
+          marketplaceId,
+          errorMessage,
+          {
+            requestUrl: error.config?.url,
+            requestMethod: error.config?.method
+          },
+          error
+        );
+      }
+      
+      // Service unavailable errors
+      if (statusCode === 503) {
+        return MarketplaceApiError.unavailable(
+          marketplaceId,
+          errorMessage,
+          parseInt(error.response?.headers?.['retry-after'], 10) * 1000 || 300000,
+          {
+            response: responseData,
+            requestUrl: error.config?.url,
+            requestMethod: error.config?.method
+          },
+          error
+        );
+      }
+      
+      // Default error
+      return new MarketplaceApiError(
+        marketplaceId,
+        errorMessage,
+        MarketplaceErrorCode.UNKNOWN_ERROR,
+        statusCode,
+        {
+          transient: statusCode >= 500,
+          retryable: statusCode >= 500,
+          context: {
+            response: responseData,
+            requestUrl: error.config?.url,
+            requestMethod: error.config?.method
+          }
+        },
+        error
+      );
+    }
+    
+    // Handle AmazonApiError
+    if (error.name === 'AmazonApiError') {
+      return new MarketplaceApiError(
+        marketplaceId,
+        error.message,
+        `AMAZON_${error.errorCode}`,
+        error.statusCode,
+        {
+          transient: error.statusCode >= 500 || error.statusCode === 429,
+          retryable: error.statusCode >= 500 || error.statusCode === 429,
+          context: {
+            amazonErrorCode: error.errorCode,
+            details: error.details,
+            request: error.request
+          }
+        },
+        error
+      );
+    }
+    
+    // Generic error fallback
+    return new MarketplaceApiError(
+      marketplaceId,
+      error.message || defaultMessage,
+      MarketplaceErrorCode.UNKNOWN_ERROR,
+      500,
+      {
+        transient: true,
+        retryable: true,
+        context: { originalError: error }
+      },
+      error
+    );
+  }
+}
+
+/**
+ * Helper function to guess resource type from URL
+ */
+function guessResourceTypeFromUrl(url: string): string {
+  const lowerUrl = url.toLowerCase();
+  
+  if (lowerUrl.includes('product')) return 'product';
+  if (lowerUrl.includes('order')) return 'order';
+  if (lowerUrl.includes('inventory')) return 'inventory';
+  if (lowerUrl.includes('customer')) return 'customer';
+  
+  return 'resource';
+}

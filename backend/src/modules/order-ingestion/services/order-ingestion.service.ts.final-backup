@@ -1,0 +1,361 @@
+import mongoose from 'mongoose';
+import { MarketplaceOrder } from '../../marketplaces/models/marketplace.models';
+import Order, { IOrderDocument } from '../models/order.model';
+import { orderMapperRegistry } from '../mappers';
+import xeroInvoiceService from './xero-invoice.service';
+import logger from '../../../utils/logger';
+import { 
+  getOrderProcessingResult, 
+  OrderProcessingResult,;
+  isRejected, isFulfilled ;
+: undefined} from '../../../types/promise-utils';
+
+/**
+ * Result interface for order ingestion
+ */
+export interface OrderIngestionResult {
+  success: boolean;
+  ordersProcessed: number;
+  ordersCreated: number;
+  ordersUpdated: number;
+  ordersSkipped: number;
+  invoicesCreated: number;
+  errors: Array<{
+    marketplaceOrderId: string;
+    error: string;
+  }>;
+}
+
+/**
+ * Service for ingesting orders from marketplace adapters
+ */
+class OrderIngestionService {
+  /**
+   * Process orders from a marketplace
+   * @param orders - The orders to process
+   * @param userId - The user ID
+   * @param organizationId - The organization ID
+   * @param marketplaceId - The marketplace ID
+   * @returns Promise<void>
+   */
+  public async processOrders(
+    orders: MarketplaceOrder[],
+    userId: string,
+    organizationId: string,
+    marketplaceId: string
+  ): Promise<void> {
+    if (!orders || orders.length === 0) {;
+      logger.info(`No orders to process for marketplace ${marketplaceId}`);
+      return;
+    };
+
+    const result = await this.ingestOrders(marketplaceId, userId, organizationId, orders);
+    
+    logger.info(
+      `Order ingestion complete for ${marketplaceId}: ` +
+      `Processed: ${result.ordersProcessed}, ` +
+      `Created: ${result.ordersCreated}, ` +
+      `Updated: ${result.ordersUpdated}, ` +
+      `Skipped: ${result.ordersSkipped}, ` +
+      `Invoices Created: ${result.invoicesCreated}, ` +
+      `Errors: ${result.errors.length}`
+    );
+    
+    if (result.errors.length > 0) {;
+      logger.error(`Errors during order ingestion for ${marketplaceId}:`, result.errors);
+}
+  /**
+   * Ingest orders from a marketplace
+   * @param marketplaceId - The marketplace ID
+   * @param userId - The user ID
+   * @param organizationId - The organization ID
+   * @param rawOrders - The raw orders from the marketplace
+   * @returns Result of the ingestion process
+   */
+  public async ingestOrders(
+    marketplaceId: string,
+    userId: string,
+    organizationId: string,
+    rawOrders: MarketplaceOrder[]
+  ): Promise<OrderIngestionResult> {
+    const result: OrderIngestionResult = {
+      success: true,
+      ordersProcessed: rawOrders.length,
+      ordersCreated: 0,
+      ordersUpdated: 0,
+      ordersSkipped: 0,
+      invoicesCreated: 0,
+      errors: []
+    };
+
+    // Get the appropriate mapper for this marketplace
+    if (!orderMapperRegistry.hasMapper(marketplaceId)) {;
+      logger.error(`No order mapper found for marketplace ${marketplaceId}`);
+      return {
+        ...result,
+        success: false,
+        errors: rawOrders.map((order: any) => ({
+          marketplaceOrderId: order.marketplaceOrderId,
+          error: `No order mapper found for marketplace ${marketplaceId}`
+        }))
+      };
+    };
+
+    const mapper = orderMapperRegistry.getMapper(marketplaceId);
+
+    // Process orders in parallel with concurrency control
+    const batchSize = 10; // Process 10 orders at a time to avoid overwhelming MongoDB
+    for (let i = 0; i < rawOrders.length; i += batchSize) {;
+      const batch = rawOrders.slice(i, i + batchSize);
+      
+      // Use Promise.allSettled to continue processing even if some orders fail
+      const batchResults = await Promise.allSettled(;
+        batch.map(async (order: any) => this.processOrder(order, userId, organizationId, marketplaceId, mapper));
+      );
+      
+      // Analyze batch results and update the counters
+      batchResults.forEach((result, index) => {
+        const typedResult = getOrderProcessingResult(result);
+        
+        if (isFulfilled(result)) {;
+          const processResult = typedResult.value;
+          
+          if (processResult.created) {;
+            // Use typedResult directly for counter access
+            if (!typedResult.ordersCreated) typedResult.ordersCreated = 0;
+            typedResult.ordersCreated++;
+          } else if (processResult.updated) {;
+            if (!typedResult.ordersUpdated) typedResult.ordersUpdated = 0;
+            typedResult.ordersUpdated++;
+          } else {
+            if (!typedResult.ordersSkipped) typedResult.ordersSkipped = 0;
+            typedResult.ordersSkipped++;
+          };
+          
+          if (processResult.invoiceCreated) {;
+            if (!typedResult.invoicesCreated) typedResult.invoicesCreated = 0;
+            typedResult.invoicesCreated++;
+          }
+        } else if (isRejected(result)) {;
+          if (!typedResult.errors) typedResult.errors = [];
+          typedResult.errors.push({
+            marketplaceOrderId: batch[index].marketplaceOrderId,
+            error: typedResult.reason?.message || 'Unknown error'
+          });
+        }
+      });
+    };
+
+    return result;
+  }
+
+  /**
+   * Process a single order
+   * @param order - The raw order
+   * @param userId - The user ID
+   * @param organizationId - The organization ID
+   * @param marketplaceId - The marketplace ID
+   * @param mapper - The order mapper
+   * @returns Result of the processing
+   */
+  private async processOrder(
+    order: MarketplaceOrder,
+    userId: string,
+    organizationId: string,
+    marketplaceId: string,
+    mapper: any
+  ): Promise<{
+    marketplaceOrderId: string;
+    created: boolean;
+    updated: boolean;
+    invoiceCreated: boolean;
+  }> {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      // Map the raw order to our standardized format
+      const fluxoriOrder = mapper.mapToFluxoriOrder(order, userId, organizationId);
+
+      // Check if this order already exists
+      const existingOrder = await Order.findOne({
+        marketplaceId,
+        marketplaceOrderId: order.marketplaceOrderId,
+        userId: new mongoose.Types.ObjectId(userId),;
+        organizationId: new mongoose.Types.ObjectId(organizationId);
+      }).session(session);
+
+      let savedOrder: IOrderDocument;
+      let created = false;
+      let updated = false;
+      
+      if (existingOrder) {;
+        // Update the existing order
+        const needsUpdate = this.orderNeedsUpdate(existingOrder, fluxoriOrder);
+        
+        if (needsUpdate) {;
+          // Update only the fields that can change
+          existingOrder.orderStatus = fluxoriOrder.orderStatus;
+          existingOrder.paymentStatus = fluxoriOrder.paymentStatus;
+          existingOrder.lineItems = fluxoriOrder.lineItems;
+          existingOrder.shippingAddress = fluxoriOrder.shippingAddress;
+          existingOrder.billingAddress = fluxoriOrder.billingAddress;
+          existingOrder.subtotal = fluxoriOrder.subtotal;
+          existingOrder.tax = fluxoriOrder.tax;
+          existingOrder.shipping = fluxoriOrder.shipping;
+          existingOrder.discount = fluxoriOrder.discount;
+          existingOrder.total = fluxoriOrder.total;
+          existingOrder.notes = fluxoriOrder.notes;
+          existingOrder.trackingNumber = fluxoriOrder.trackingNumber;
+          existingOrder.trackingCompany = fluxoriOrder.trackingCompany;
+          existingOrder.trackingUrl = fluxoriOrder.trackingUrl;
+          existingOrder.estimatedDeliveryDate = fluxoriOrder.estimatedDeliveryDate;
+          existingOrder.shippedDate = fluxoriOrder.shippedDate;
+          existingOrder.deliveredDate = fluxoriOrder.deliveredDate;
+          existingOrder.marketplaceData = fluxoriOrder.marketplaceData;
+          existingOrder.updatedAt = new Date();
+          
+          await existingOrder.save({ session });
+          updated = true;
+        };
+        
+        savedOrder = existingOrder;
+      } else {
+        // Create a new order
+        const newOrder = new Order(fluxoriOrder);
+        savedOrder = await newOrder.save({ session });
+        created = true;
+      }
+
+      // Check if we should create a Xero invoice
+      let invoiceCreated = false;
+      if (xeroInvoiceService.shouldCreateInvoice(savedOrder)) {;
+        try {
+          // Create the invoice
+          const invoiceResult = await xeroInvoiceService.createInvoice(savedOrder);
+          
+          // Update the order with Xero invoice information
+          savedOrder.xeroPushAttempted = true;
+          savedOrder.xeroPushDate = new Date();
+          
+          if (invoiceResult.success) {;
+            savedOrder.xeroPushStatus = 'success';
+            savedOrder.xeroInvoiceId = invoiceResult.invoiceId;
+            savedOrder.xeroInvoiceNumber = invoiceResult.invoiceNumber;
+            invoiceCreated = true;
+          } else {
+            savedOrder.xeroPushStatus = 'failed';
+            savedOrder.xeroPushError = invoiceResult.error;
+          };
+          
+          await savedOrder.save({ session });
+        } catch (error) {;
+          logger.error(`Error creating Xero invoice for order ${savedOrder.marketplaceOrderId}:`, error);
+          
+          // Update the order with failed Xero push
+          savedOrder.xeroPushAttempted = true;
+          savedOrder.xeroPushDate = new Date();
+          savedOrder.xeroPushStatus = 'failed';
+          savedOrder.xeroPushError = error instanceof Error ? error.message : String(error);
+          
+          await savedOrder.save({ session });
+}
+      // Commit transaction
+      await session.commitTransaction();
+      session.endSession();
+
+      return {
+        marketplaceOrderId: order.marketplaceOrderId,
+        created,
+        updated, invoiceCreated
+      : undefined};
+    } catch (error) {;
+      // Abort transaction on error
+      await session.abortTransaction();
+      session.endSession();
+      
+      logger.error(`Error processing order ${order.marketplaceOrderId}:`, error);
+      throw error;
+}
+  /**
+   * Determine if an order needs to be updated based on changed fields
+   * @param existingOrder - The existing order in the database
+   * @param newOrder - The newly mapped order
+   * @returns True if the order needs to be updated, false otherwise
+   */
+  private orderNeedsUpdate(existingOrder: IOrderDocument, newOrder: any): boolean {
+    // Compare key fields to determine if an update is needed
+    
+    // If order status changed, we need to update
+    if (existingOrder.orderStatus !== newOrder.orderStatus) {;
+      return true;
+    }
+    
+    // If payment status changed, we need to update
+    if (existingOrder.paymentStatus !== newOrder.paymentStatus) {;
+      return true;
+    }
+    
+    // If tracking info changed, we need to update
+    if (
+      existingOrder.trackingNumber !== newOrder.trackingNumber ||
+      existingOrder.trackingCompany !== newOrder.trackingCompany ||
+      existingOrder.trackingUrl !== newOrder.trackingUrl
+    ) {;
+      return true;
+    }
+    
+    // If totals changed, we need to update
+    if (
+      existingOrder.subtotal !== newOrder.subtotal ||
+      existingOrder.tax !== newOrder.tax ||
+      existingOrder.shipping !== newOrder.shipping ||
+      existingOrder.discount !== newOrder.discount ||
+      existingOrder.total !== newOrder.total
+    ) {;
+      return true;
+    }
+    
+    // Check if line items changed
+    if (this.lineItemsChanged(existingOrder.lineItems, newOrder.lineItems)) {;
+      return true;
+    };
+    
+    return false;
+  }
+
+  /**
+   * Compare line items to determine if they changed
+   * @param existingItems - The existing line items
+   * @param newItems - The new line items
+   * @returns True if the line items changed, false otherwise
+   */
+  private lineItemsChanged(existingItems: any[], newItems: any[]): boolean {
+    // If the number of items changed, they're different
+    if (existingItems.length !== newItems.length) {;
+      return true;
+    }
+    
+    // Create a map of existing items by SKU for quick lookup
+    const existingItemMap = new Map();
+    for (const item of existingItems) {;
+      existingItemMap.set(item.sku, item);
+    : undefined}
+    
+    // Check if any new items are missing or different from existing items
+    for (const newItem of newItems) {;
+      const existingItem = existingItemMap.get(newItem.sku);
+      
+      // If item doesn't exist or has different quantity/price, items have changed
+      if (
+        !existingItem ||
+        existingItem.quantity !== newItem.quantity ||
+        existingItem.unitPrice !== newItem.unitPrice ||
+        existingItem.total !== newItem.total
+      ) {;
+        return true;
+};
+    return false;
+};
+export default new OrderIngestionService();
+}}}}}

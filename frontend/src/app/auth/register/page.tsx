@@ -1,20 +1,32 @@
+/// <reference path="../../types/module-declarations.d.ts" />
 'use client'
 
-import { useState } from 'react'
-import { Box } from '@chakra-ui/react/box'
-import { VStack } from '@chakra-ui/react/stack'
-import { Heading } from '@chakra-ui/react/heading'
-import { Text } from '@chakra-ui/react/text'
-import { Input } from '@chakra-ui/react/input'
-import { Button } from '@chakra-ui/react/button'
-import { FormControl, FormLabel, FormErrorMessage } from '@chakra-ui/react/form-control'
-import { Checkbox } from '@chakra-ui/react/checkbox'
-import { Divider } from '@chakra-ui/react/divider'
-import { Card, CardHeader, CardBody, CardFooter } from '@chakra-ui/react/card'
-import { useColorMode } from '@chakra-ui/react/color-mode'
-import { createToaster } from '@chakra-ui/react/toast'
+import React, { useState } from 'react'
+import { Divider, FormErrorMessage, useColorMode, createToaster } from '@/utils/chakra-compat'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { ResponsiveValue } from '../../../utils/chakra-utils';
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+
+// Fix for Next.js module resolution
+import { ChakraProvider } from "@chakra-ui/react";
+import { Card, CardHeader, Heading, Text, CardBody, VStack, FormControl, FormLabel, Input, Box, Link as ChakraLink, Button, CardFooter } from '@/utils/chakra/components';
+import { Checkbox } from '@/components/stubs/ChakraStubs';
+
+
 
 type FormData = {
   name: string
@@ -118,7 +130,7 @@ export default function Register() {
 
   return (
     <Card 
-      width={{ base: 'full', sm: '450px' }}
+      width={{ base: 'full', sm: '450px' } as ResponsiveValue<number>}
       bg={colorMode === 'light' ? 'white' : 'gray.800'}
       boxShadow="lg"
     >
@@ -132,7 +144,7 @@ export default function Register() {
       <CardBody>
         <form onSubmit={handleSubmit}>
           <VStack gap={4}>
-            <FormControl isInvalid={!!errors.name}>
+            <FormControl invalid={!!errors.name}>
               <FormLabel htmlFor="name">Full Name</FormLabel>
               <Input
                 id="name"
@@ -140,11 +152,11 @@ export default function Register() {
                 value={formData.name}
                 onChange={handleChange}
                 placeholder="John Doe"
-              />
+                />
               <FormErrorMessage>{errors.name}</FormErrorMessage>
             </FormControl>
             
-            <FormControl isInvalid={!!errors.email}>
+            <FormControl invalid={!!errors.email}>
               <FormLabel htmlFor="email">Email</FormLabel>
               <Input
                 id="email"
@@ -153,11 +165,11 @@ export default function Register() {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="your.email@example.com"
-              />
+                />
               <FormErrorMessage>{errors.email}</FormErrorMessage>
             </FormControl>
             
-            <FormControl isInvalid={!!errors.password}>
+            <FormControl invalid={!!errors.password}>
               <FormLabel htmlFor="password">Password</FormLabel>
               <Input
                 id="password"
@@ -166,11 +178,11 @@ export default function Register() {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="••••••••"
-              />
+                />
               <FormErrorMessage>{errors.password}</FormErrorMessage>
             </FormControl>
             
-            <FormControl isInvalid={!!errors.confirmPassword}>
+            <FormControl invalid={!!errors.confirmPassword}>
               <FormLabel htmlFor="confirmPassword">Confirm Password</FormLabel>
               <Input
                 id="confirmPassword"
@@ -179,15 +191,15 @@ export default function Register() {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 placeholder="••••••••"
-              />
+                />
               <FormErrorMessage>{errors.confirmPassword}</FormErrorMessage>
             </FormControl>
             
-            <FormControl isInvalid={!!errors.terms}>
+            <FormControl invalid={!!errors.terms}>
               <Box width="100%" mt={2}>
                 <Checkbox 
-                  isChecked={termsAccepted} 
-                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                  checked={termsAccepted} 
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTermsAccepted(e.target.checked)}
                 >
                   <Text fontSize="sm">
                     I agree to the{' '}
@@ -232,7 +244,7 @@ export default function Register() {
         </form>
       </CardBody>
       
-      <Divider />
+      <Divider   />
       
       <CardFooter justifyContent="center">
         <Text>

@@ -20,7 +20,7 @@ const resources = {
 const interpolate = (text: string, params?: Record<string, string | number>): string => {
   if (!params) return text
   
-  return Object.entries(params).reduce((result, [key, value]) => {
+  return Object.entries(params).reduce((result: any, [key, value]: [string, string | number]) => {
     const regex = new RegExp(`{{\\s*${key}\\s*}}`, 'g')
     return result.replace(regex, String(value))
   }, text)
@@ -29,7 +29,7 @@ const interpolate = (text: string, params?: Record<string, string | number>): st
 // Get nested translation value by key path
 const getNestedValue = (obj: any, path: string): string => {
   const keys = path.split('.')
-  return keys.reduce((o, key) => (o && o[key] !== undefined ? o[key] : undefined), obj)
+  return keys.reduce((o: any, key: any) => (o && o[key] !== undefined ? o[key] : undefined), obj)
 }
 
 // Create i18n instance

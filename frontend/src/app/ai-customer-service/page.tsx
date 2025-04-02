@@ -1,21 +1,29 @@
+/// <reference path="../../types/module-declarations.d.ts" />
 'use client';
 
-import { Box } from '@chakra-ui/react/box';
-import { Text } from '@chakra-ui/react/text';
-import { Heading } from '@chakra-ui/react/heading';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink } from '@chakra-ui/react/breadcrumb';
-import { VStack } from '@chakra-ui/react/stack';
-import { useColorMode } from '@chakra-ui/react/color-mode';
+import React from 'react';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink } from '@/utils/chakra-compat';
+import { useColorMode } from '@/components/stubs/ChakraStubs';;;
 import Link from 'next/link';
 
 import { AICustomerServiceDemo } from '@/features/ai-cs-agent/components/AICustomerServiceDemo';
+;
+;
+;
+;
+
+// Fix for Next.js module resolution
+import { ChakraProvider } from "@chakra-ui/react";
+import { Box, VStack, Heading, Text } from '@/utils/chakra/components';
+
+
 
 export default function AICustomerServicePage() {
   const { colorMode } = useColorMode();
   
   return (
     <Box p={6}>
-      <VStack align="stretch" spacing={6}>
+      <VStack align="stretch" gap={6}>
         <Box>
           <Breadcrumb fontSize="sm" mb={2}>
             <BreadcrumbItem>

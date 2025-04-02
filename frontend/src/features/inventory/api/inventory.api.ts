@@ -37,7 +37,7 @@ export interface InventoryItem {
   };
   barcode?: string;
   images?: string[];
-  isActive: boolean;
+  active: boolean;
   tags?: string[];
   variations?: {
     name: string;

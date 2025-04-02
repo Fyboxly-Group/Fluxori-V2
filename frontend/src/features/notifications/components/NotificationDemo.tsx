@@ -2,25 +2,45 @@
  * Notification Demo Component
  * Demonstrates the notification system with test controls
  */
+/// <reference path="../../types/module-declarations.d.ts" />
 
+
+import React from 'react';
 import { useState } from 'react';
-import { Box } from '@chakra-ui/react/box';
-import { Button } from '@chakra-ui/react/button';
-import { ButtonGroup } from '@chakra-ui/react/button-group';
-import { VStack, HStack } from '@chakra-ui/react/stack';
-import { Card, CardBody, CardHeader, CardFooter } from '@chakra-ui/react/card';
-import { Heading } from '@chakra-ui/react/heading';
-import { Text } from '@chakra-ui/react/text';
-import { Select } from '@chakra-ui/react/select';
-import { Input } from '@chakra-ui/react/input';
-import { Textarea } from '@chakra-ui/react/textarea';
-import { FormControl, FormLabel } from '@chakra-ui/react/form-control';
-import { Divider } from '@chakra-ui/react/divider';
-import { createToaster } from '@chakra-ui/react/toast';
+import { Divider } from '@/utils/chakra-compat';;;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
 import { NotificationBell } from './NotificationBell';
 import { NotificationCenter } from './NotificationCenter';
 import { NotificationType, NotificationCategory } from '../api/notification.api';
 import { useNotifications } from '../hooks/useNotifications';
+import { VStack  } from '@/utils/chakra-compat';
+import { HStack  } from '@/utils/chakra-compat';
+import { Heading  } from '@/utils/chakra-compat';
+import { Card  } from '@/utils/chakra-compat';
+import { CardHeader  } from '@/utils/chakra-compat';
+import { CardBody  } from '@/utils/chakra-compat';
+import { FormControl  } from '@/utils/chakra-compat';
+import { FormLabel  } from '@/utils/chakra-compat';
+import { Input  } from '@/utils/chakra-compat';
+import { Textarea  } from '@/utils/chakra-compat';
+import { Select  } from '@/utils/chakra-compat';
+import { CardFooter  } from '@/utils/chakra-compat';
+import { Button  } from '@/utils/chakra-compat';
+import { Box  } from '@/utils/chakra-compat';
+import { Text  } from '@/utils/chakra-compat';
+
+interface NotificationDemoProps {}
 
 export function NotificationDemo() {
   // State for the test notification
@@ -50,25 +70,25 @@ export function NotificationDemo() {
   };
 
   return (
-    <VStack spacing={8} align="stretch">
+    <VStack gap={8} align="stretch">
       <HStack justify="space-between">
         <Heading size="lg">Notification System Demo</Heading>
         <NotificationBell />
       </HStack>
       
-      <HStack spacing={6} align="flex-start">
+      <HStack gap={6} align="flex-start">
         <Card flex="1">
           <CardHeader>
             <Heading size="md">Create Test Notification</Heading>
           </CardHeader>
           
           <CardBody>
-            <VStack spacing={4}>
+            <VStack gap={4}>
               <FormControl>
                 <FormLabel>Title</FormLabel>
                 <Input 
                   value={title} 
-                  onChange={(e) => setTitle(e.target.value)} 
+                  onChange={(e: any) => setTitle(e.target.value)} 
                   placeholder="Notification title" 
                 />
               </FormControl>
@@ -77,7 +97,7 @@ export function NotificationDemo() {
                 <FormLabel>Message</FormLabel>
                 <Textarea 
                   value={message} 
-                  onChange={(e) => setMessage(e.target.value)} 
+                  onChange={(e: any) => setMessage(e.target.value)} 
                   placeholder="Notification message" 
                   rows={3} 
                 />
@@ -87,9 +107,9 @@ export function NotificationDemo() {
                 <FormLabel>Type</FormLabel>
                 <Select 
                   value={type} 
-                  onChange={(e) => setType(e.target.value as NotificationType)}
+                  onChange={(e: any) => setType(e.target.value as NotificationType)}
                 >
-                  {Object.values(NotificationType).map((value) => (
+                  {Object.values(NotificationType).map((value: any) => (
                     <option key={value} value={value}>
                       {value}
                     </option>
@@ -101,9 +121,9 @@ export function NotificationDemo() {
                 <FormLabel>Category</FormLabel>
                 <Select 
                   value={category} 
-                  onChange={(e) => setCategory(e.target.value as NotificationCategory)}
+                  onChange={(e: any) => setCategory(e.target.value as NotificationCategory)}
                 >
-                  {Object.values(NotificationCategory).map((value) => (
+                  {Object.values(NotificationCategory).map((value: any) => (
                     <option key={value} value={value}>
                       {value}
                     </option>
@@ -129,7 +149,7 @@ export function NotificationDemo() {
               <Heading size="md">How It Works</Heading>
             </CardHeader>
             <CardBody>
-              <VStack align="stretch" spacing={4}>
+              <VStack align="stretch" gap={4}>
                 <Text>
                   The notification system provides real-time updates from the backend via WebSockets.
                 </Text>
@@ -138,7 +158,7 @@ export function NotificationDemo() {
                   <strong>Features:</strong>
                 </Text>
                 
-                <VStack align="stretch" spacing={2} pl={4}>
+                <VStack align="stretch" gap={2} pl={4}>
                   <Text>• Real-time notifications via WebSocket</Text>
                   <Text>• Notification bell with unread count</Text>
                   <Text>• Notification center for managing all notifications</Text>
@@ -148,7 +168,7 @@ export function NotificationDemo() {
                   <Text>• Notification clearing</Text>
                 </VStack>
                 
-                <Divider />
+                <Divider   />
                 
                 <Text fontSize="sm" color="gray.600">
                   Note: This demo showcases the UI components. In a real implementation, 

@@ -1,27 +1,27 @@
 /**
  * Notification Bell Component
- * Displays a bell icon with an unread count badge
+ * Displays notification count and popover with notifications
  */
+/// <reference path="../../types/module-declarations.d.ts" />
 
-import { useState } from 'react';
-import { IconButton } from '@chakra-ui/react/button';
-import { Box } from '@chakra-ui/react/box';
-import { Text } from '@chakra-ui/react/text';
-import { Badge } from '@chakra-ui/react/badge';
-import { 
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-  PopoverHeader,
-  PopoverBody,
-  PopoverFooter,
-  PopoverArrow,
-  PopoverCloseButton
-} from '@chakra-ui/react/popover';
-import { HStack } from '@chakra-ui/react/stack';
-import { Button } from '@chakra-ui/react/button';
-import { ButtonGroup } from '@chakra-ui/react/button-group';
-import { BellIcon } from '@chakra-ui/icons';
+
+import React, { useState } from 'react';
+import { IconButton  } from '@/utils/chakra-compat';
+import { Box  } from '@/utils/chakra-compat';
+import { Text  } from '@/utils/chakra-compat';
+import { Badge  } from '@/utils/chakra-compat';
+import { Popover  } from '@/utils/chakra-compat';
+import { PopoverTrigger  } from '@/utils/chakra-compat';
+import { PopoverContent  } from '@/utils/chakra-compat';
+import { PopoverHeader  } from '@/utils/chakra-compat';
+import { PopoverBody  } from '@/utils/chakra-compat';
+import { PopoverFooter  } from '@/utils/chakra-compat';
+import { PopoverArrow  } from '@/utils/chakra-compat';
+import { PopoverCloseButton } from '@/components/stubs/ChakraStubs';;
+import { HStack  } from '@/utils/chakra-compat';
+import { Button  } from '@/utils/chakra-compat';
+import { ButtonGroup  } from '@/utils/chakra-compat';
+import { Bell } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 import { NotificationList } from './NotificationList';
 
@@ -30,22 +30,22 @@ interface NotificationBellProps {
 }
 
 export function NotificationBell({ maxDisplayCount = 99 }: NotificationBellProps) {
-  // State
+  // State for popover
   const [isOpen, setIsOpen] = useState(false);
   
-  // Notifications
+  // Notifications from context
   const { 
     unreadCount, 
     notifications, 
-    isLoading, 
+    loading, 
     markAllAsRead, 
     clearAllNotifications 
   } = useNotifications();
   
-  // Display count (with limit)
+  // Display count calculation
   const displayCount = unreadCount > maxDisplayCount ? `${maxDisplayCount}+` : unreadCount;
   
-  // Toggle popover
+  // Handle toggle popover
   const handleToggle = () => {
     setIsOpen(!isOpen);
   };
@@ -55,7 +55,7 @@ export function NotificationBell({ maxDisplayCount = 99 }: NotificationBellProps
     await markAllAsRead();
   };
   
-  // Handle clear all
+  // Handle clear all notifications
   const handleClearAll = async () => {
     await clearAllNotifications();
   };
@@ -71,7 +71,7 @@ export function NotificationBell({ maxDisplayCount = 99 }: NotificationBellProps
         <Box position="relative" display="inline-block">
           <IconButton
             aria-label="Notifications"
-            icon={<BellIcon />}
+            icon={<Bell size={18}  />}
             variant="ghost"
             onClick={handleToggle}
             size="md"
@@ -114,29 +114,29 @@ export function NotificationBell({ maxDisplayCount = 99 }: NotificationBellProps
         </PopoverHeader>
         
         <PopoverBody p={0} maxHeight="350px" overflowY="auto">
-          <NotificationList 
+          <NotificationList
             notifications={notifications} 
-            isLoading={isLoading} 
+            isLoading={loading}
             onClose={() => setIsOpen(false)}
           />
         </PopoverBody>
         
         <PopoverFooter>
           <ButtonGroup size="sm" width="full" justifyContent="space-between">
-            <Button 
-              variant="ghost" 
-              isDisabled={unreadCount === 0}
+            <Button
+              variant="ghost"
+              disabled={unreadCount === 0}
               onClick={handleMarkAllAsRead}
             >
-              Mark all as read
+              Mark All Read
             </Button>
-            <Button 
-              variant="ghost" 
-              colorScheme="red" 
-              isDisabled={notifications.length === 0}
+            <Button
+              variant="ghost"
+              colorScheme="red"
+              disabled={notifications.length === 0}
               onClick={handleClearAll}
             >
-              Clear all
+              Clear All
             </Button>
           </ButtonGroup>
         </PopoverFooter>
@@ -144,3 +144,5 @@ export function NotificationBell({ maxDisplayCount = 99 }: NotificationBellProps
     </Popover>
   );
 }
+
+export default NotificationBell;

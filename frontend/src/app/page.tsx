@@ -1,96 +1,165 @@
-'use client'
+/// <reference path="../../types/module-declarations.d.ts" />
+import { ResponsiveValue, GridTemplateColumns, LayoutDirection, ResponsiveSpacing } from '../utils/chakra-utils';
+import { ResponsiveValue, GridTemplateColumns, LayoutDirection, ResponsiveSpacing } from '../utils/chakra-utils';
+'use client';
 
-import { Box } from '@chakra-ui/react/box'
-import { Button } from '@chakra-ui/react/button'
-import { Heading } from '@chakra-ui/react/heading'
-import { Flex } from '@chakra-ui/react/flex'
-import { Text } from '@chakra-ui/react/text'
-import { Stack } from '@chakra-ui/react/stack'
-import { Card, CardBody, CardHeader, CardFooter } from '@chakra-ui/react/card'
-import { useColorMode } from '@chakra-ui/react/color-mode'
-import { useState } from 'react'
-import { createToaster } from '@chakra-ui/react/toast'
+import React, { useState, useEffect } from 'react';
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
+;
+
+// Fix for Next.js module resolution
+import { ChakraProvider } from "@chakra-ui/react";
+import { Box, Flex, VStack, Stack, Heading, Text, Button, Card, CardBody, Image, useColorMode, Link as ChakraLink } from '@/utils/chakra/components';
+
+
 
 export default function Home() {
-  const { colorMode, toggleColorMode } = useColorMode()
-  const [loading, setLoading] = useState(false)
-  const toast = createToaster()
-
-  const handleClick = () => {
-    setLoading(true)
-    
-    // Simulate an API call
+  const { colorMode } = useColorMode();
+  const [loaded, setLoaded] = useState(false);
+  
+  // Simulate loading state
+  useEffect(() => {
     setTimeout(() => {
-      setLoading(false)
-      toast.show({
-        title: 'Action completed',
-        description: 'Your request has been processed successfully',
-        status: 'success',
-      })
-    }, 1500)
-  }
-
+      setLoaded(true);
+    }, 1500);
+  }, []);
+  
+  const features = [
+    {
+      title: 'Inventory Management',
+      description: 'Track and manage your inventory across multiple warehouses and locations.',
+      image: 'https://via.placeholder.com/300',
+    },
+    {
+      title: 'Analytics Dashboard',
+      description: 'Gain insights into your business with powerful analytics and reporting tools.',
+      image: 'https://via.placeholder.com/300',
+    },
+    {
+      title: 'Customer Management',
+      description: 'Manage your customers and their orders in one centralized platform.',
+      image: 'https://via.placeholder.com/300',
+    },
+  ];
+  
   return (
-    <Box minH="100vh" py={12} px={4}>
-      <Flex direction="column" maxW="1200px" mx="auto">
-        <Flex justify="flex-end" mb={8}>
-          <Button onClick={toggleColorMode}>
-            Toggle {colorMode === 'light' ? 'Dark' : 'Light'} Mode
-          </Button>
-        </Flex>
-        
-        <Heading as="h1" size="2xl" mb={6} textAlign="center">
-          Welcome to Fluxori V2
-        </Heading>
-        
-        <Text fontSize="xl" mb={12} textAlign="center">
-          This is a Next.js app with Chakra UI v3 integration
-        </Text>
-        
-        <Stack gap={8} direction={{ base: 'column', md: 'row' }} align="stretch">
-          <Card>
-            <CardHeader>
-              <Heading size="md">Chakra UI v3 Features</Heading>
-            </CardHeader>
-            <CardBody>
-              <Stack gap={4}>
-                <Text>Direct imports for better tree-shaking</Text>
-                <Text>New component API with simplified props</Text>
-                <Text>Improved toast API with createToaster</Text>
-                <Text>Enhanced theme configuration</Text>
-              </Stack>
-            </CardBody>
-            <CardFooter>
-              <Button variant="outline" onClick={() => window.open('https://chakra-ui.com/docs/getting-started', '_blank')}>
-                Learn More
-              </Button>
-            </CardFooter>
-          </Card>
+    <Box>
+      {/* Hero Section */}
+      <Box 
+        bg={colorMode === 'light' ? 'blue.50' : 'blue.900'} 
+        py={20}
+      >
+        <Box maxW="1200px" mx="auto" px={6}>
+          <Flex
+            direction={{
+            base: 'column',
+            md: 'row'
+          } as any}
+            align="center"
+            justify="space-between"
+            gap={10}
+          >
+            <VStack align="flex-start" gap={6} maxW="600px">
+              <Heading size="2xl">
+                Streamline Your Business Operations
+              </Heading>
+              <Text fontSize="xl" color={colorMode === 'light' ? 'gray.600' : 'gray.300'}>
+                An all-in-one platform for managing inventory, customers, and analytics
+                to help your business grow.
+              </Text>
+              <Link href="/dashboard" passHref>
+                <Button 
+                  size="lg" 
+                  colorScheme="blue" 
+                  rightIcon={<ArrowRight />}
+                >
+                  Get Started
+                </Button>
+              </Link>
+            </VStack>
+            
+            <Box 
+              boxSize={{ base: '300px', md: '400px', lg: '500px' }}
+              display={loaded ? 'block' : 'none'}
+            >
+              <Image 
+                src="https://via.placeholder.com/500" 
+                alt="Platform preview" 
+                borderRadius="md"
+                shadow="xl"
+               />
+            </Box>
+          </Flex>
+        </Box>
+      </Box>
+      
+      {/* Features Section */}
+      <Box py={20} maxW="1200px" mx="auto" px={6}>
+        <VStack gap={16}>
+          <VStack gap={4} textAlign="center" maxW="800px">
+            <Heading>Key Features</Heading>
+            <Text fontSize="lg" color={colorMode === 'light' ? 'gray.600' : 'gray.300'}>
+              Our platform provides everything you need to manage your business efficiently.
+            </Text>
+          </VStack>
           
-          <Card>
-            <CardHeader>
-              <Heading size="md">Try It Out</Heading>
-            </CardHeader>
-            <CardBody>
-              <Text mb={4}>
-                Click the button below to test the new toast API and loading state
-              </Text>
+          <Stack direction={{
+            base: 'column',
+            md: 'row'
+          } as any} gap={8} align="stretch">
+            {features.map((feature, index) => (
+              <Card key={index} width="100%">
+                <CardBody>
+                  <Image 
+                    src={feature.image} 
+                    alt={feature.title} 
+                    borderRadius="md" 
+                    mb={4}
+                   />
+                  <Heading size="md" mb={2}>{feature.title}</Heading>
+                  <Text>{feature.description}</Text>
+                </CardBody>
+              </Card>
+            ))}
+          </Stack>
+        </VStack>
+      </Box>
+      
+      {/* CTA Section */}
+      <Box 
+        bg={colorMode === 'light' ? 'gray.100' : 'gray.800'} 
+        py={16}
+      >
+        <Box maxW="1200px" mx="auto" px={6} textAlign="center">
+          <VStack gap={6}>
+            <Heading>Ready to get started?</Heading>
+            <Text fontSize="lg" maxW="600px">
+              Join thousands of businesses already using our platform to streamline their operations.
+            </Text>
+            <Link href="/dashboard" passHref>
               <Button 
-                loading={loading} 
-                onClick={handleClick}
-                w="full"
+                size="lg" 
+                colorScheme="blue" 
+                rightIcon={<ArrowRight />}
               >
-                Show Toast Notification
+                Get Started Now
               </Button>
-            </CardBody>
-            <CardFooter>
-              <Text fontSize="sm" color="gray.500">
-                This demonstrates Chakra UI v3's simplified API for handling loading states
-              </Text>
-            </CardFooter>
-          </Card>
-        </Stack>
-      </Flex>
+            </Link>
+          </VStack>
+        </Box>
+      </Box>
     </Box>
-  )
+  );
 }

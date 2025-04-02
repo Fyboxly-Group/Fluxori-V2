@@ -1,0 +1,15 @@
+// @ts-nocheck
+import { Types } from 'mongoose';
+
+/**
+ * FedEx Adapter for shipping API
+ */
+export class FedExAdapter {
+  /**
+   * Get shipping rates
+   */
+  async getShippingRates(shipmentData: any): Promise<any[]> {
+    // Placeholder implementation
+    return [{ carrier: 'FedEx', rate: 27.99 }];
+  }
+}

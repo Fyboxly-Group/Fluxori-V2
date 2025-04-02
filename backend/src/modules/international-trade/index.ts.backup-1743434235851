@@ -1,0 +1,16 @@
+// @ts-nocheck
+import { ComplianceService } from './services/compliance.service';
+import { ShippingRateService } from './services/shipping-rate.service';
+import { DHLAdapter } from './adapters/dhl/dhl.adapter';
+import { FedExAdapter } from './adapters/fedex/fedex.adapter';
+
+// Export services
+export { ComplianceService };
+export { ShippingRateService };
+
+// Export adapters
+export { DHLAdapter };
+export { FedExAdapter };
+
+// Type exports
+export type { IInternationalTrade, IInternationalTradeDocument, IInternationalTradeModel } from './models/international-trade.model';

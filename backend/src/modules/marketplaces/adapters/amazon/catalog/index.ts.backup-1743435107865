@@ -1,0 +1,6 @@
+// TypeScript checked
+/**
+ * Export catalog module and factory for external use
+ */
+export { default as CatalogModule } from "./catalog";
+export { default as CatalogModuleFactory } from "./catalog-factory";

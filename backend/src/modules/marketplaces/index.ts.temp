@@ -1,0 +1,43 @@
+// Re-export models
+export * from './models/marketplace.models';
+
+// Re-export interfaces
+export type { IMarketplaceAdapter } from './adapters/interfaces/marketplace-adapter.interface';
+
+// Re-export base adapter
+export { BaseMarketplaceAdapter } from './adapters/common/base-marketplace-adapter';
+
+// Re-export services
+export { MarketplaceAdapterFactory } from './services/marketplace-adapter-factory.service';
+export { MarketplaceSyncService } from './services/marketplace-sync.service';
+export { ProductPushService } from './services/product-push.service';
+
+// Re-export utility classes
+export { CredentialManager } from './utils/credential-manager';
+
+// Re-export concrete adapters
+export { TakealotAdapter } from './adapters/takealot/takealot.adapter';
+export { ShopifyAdapter } from './adapters/shopify/shopify.adapter';
+
+// Initialize factory and register adapters
+import { MarketplaceAdapterFactory } from './services/marketplace-adapter-factory.service';
+import { TakealotAdapter } from './adapters/takealot/takealot.adapter';
+import { ShopifyAdapter } from './adapters/shopify/shopify.adapter';
+import marketplaceProductRoutes from './routes/marketplace-product.routes';
+
+// Export routes
+export { default as marketplaceProductRoutes } from './routes/marketplace-product.routes';
+
+// Register adapters with the factory
+const factory = MarketplaceAdapterFactory.getInstance();
+factory.registerAdapter('takealot', TakealotAdapter);
+factory.registerAdapter('shopify', ShopifyAdapter);
+
+/**
+ * Initialize marketplace module
+ * This function should be called during application startup
+ */
+export function initializeMarketplaceModule(): void {
+  console.log('Marketplace module initialized');
+  console.log(`Registered marketplaces: ${factory.getRegisteredMarketplaces().join(', ')}`);
+}

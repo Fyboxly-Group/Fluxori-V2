@@ -1,29 +1,70 @@
+/// <reference path="../../types/module-declarations.d.ts" />
 'use client';
 
-import { useState } from 'react';
-import { Box } from '@chakra-ui/react/box';
-import { Text } from '@chakra-ui/react/text';
-import { Heading } from '@chakra-ui/react/heading';
-import { Card, CardHeader, CardBody } from '@chakra-ui/react/card';
-import { Button } from '@chakra-ui/react/button';
-import { Tabs, TabList, Tab, TabPanels, TabPanel } from '@chakra-ui/react/tabs';
-import { Switch } from '@chakra-ui/react/switch';
-import { FormControl, FormLabel } from '@chakra-ui/react/form-control';
-import { Grid, GridItem } from '@chakra-ui/react/grid';
-import { VStack, HStack } from '@chakra-ui/react/stack';
-import { Alert, AlertIcon, AlertTitle, AlertDescription } from '@chakra-ui/react/alert';
-import { useColorMode } from '@chakra-ui/react/color-mode';
-import { createToaster } from '@chakra-ui/react/toast';
-
+import React, { useState, useEffect } from 'react';
+import { Box  } from '@/utils/chakra-compat';
+import { Button  } from '@/utils/chakra-compat';
+import { Card  } from '@/utils/chakra-compat';
+import { CardHeader  } from '@/utils/chakra-compat';
+import { CardBody  } from '@/utils/chakra-compat';
+import { Heading  } from '@/utils/chakra-compat';
+import { Text  } from '@/utils/chakra-compat';
+import { Flex  } from '@/utils/chakra-compat';
+import { Grid  } from '@/utils/chakra-compat';
+import { GridItem  } from '@/utils/chakra-compat';
+import { HStack  } from '@/utils/chakra-compat';
+import { VStack  } from '@/utils/chakra-compat';
+import { FormControl  } from '@/utils/chakra-compat';
+import { FormLabel  } from '@/utils/chakra-compat';
+import { Switch  } from '@/utils/chakra-compat';
+import { useColorMode } from '@/components/stubs/ChakraStubs';;
 import { AIChatInterface } from './AIChatInterface';
+import { ChatHistory } from './ChatHistory';
+import { ResponsiveValue } from '@/utils/chakra-utils';
+
+// Mock createToaster function until proper implementation is available
+
+//  function until proper implementation is available
+const createToaster = () => {
+  return {
+    show: (options: any) => {
+      console.log('Toast:', options);
+    }
+  };
+};
+;;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+
 import { ConversationList } from './ConversationList';
+import { Alert  } from '@/utils/chakra-compat';
+import { Tabs  } from '@/utils/chakra-compat';
+import { Tab  } from '@/utils/chakra-compat';
+import { AlertIcon  } from '@/utils/chakra-compat';
+import { AlertTitle  } from '@/utils/chakra-compat';
+import { AlertDescription  } from '@/utils/chakra-compat';
+import { TabList  } from '@/utils/chakra-compat';
+import { TabPanels  } from '@/utils/chakra-compat';
+import { TabPanel  } from '@/utils/chakra-compat';
+
+interface AICustomerServiceDemoProps {}
 
 /**
  * Demo component to showcase the AI Customer Service Agent features
  */
 export function AICustomerServiceDemo() {
   const { colorMode } = useColorMode();
-  const toast = createToaster();
+  const toast = createToasterFallback();
   
   // State
   const [selectedConversationId, setSelectedConversationId] = useState<string | undefined>(undefined);
@@ -77,14 +118,14 @@ export function AICustomerServiceDemo() {
       </CardHeader>
       
       <CardBody p={4}>
-        <Grid templateColumns={{ base: '1fr', lg: '300px 1fr' }} gap={4} height="100%">
+        <Grid templateColumns={{ base: '1fr', lg: '300px 1fr' } as ResponsiveValue<string>} gap={4} height="100%">
           {/* Sidebar with conversation list and settings */}
           <GridItem>
-            <VStack align="stretch" height="100%" spacing={6}>
+            <VStack align="stretch" height="100%" gap={6}>
               {/* Settings section */}
               <Card variant="outline">
                 <CardBody>
-                  <VStack align="start" spacing={4}>
+                  <VStack align="start" gap={4}>
                     <Heading size="sm">Settings</Heading>
                     
                     <FormControl display="flex" alignItems="center">
@@ -94,7 +135,7 @@ export function AICustomerServiceDemo() {
                       <Switch
                         id="websocket-toggle"
                         colorScheme="blue"
-                        isChecked={useWebSocket}
+                        checked={useWebSocket}
                         onChange={handleWebSocketToggle}
                       />
                     </FormControl>
@@ -111,7 +152,7 @@ export function AICustomerServiceDemo() {
               {/* Escalation info */}
               {escalationInfo && escalationInfo.isEscalated && (
                 <Alert status="warning" borderRadius="md">
-                  <AlertIcon />
+                  <AlertIcon   />
                   <Box>
                     <AlertTitle>Escalation Required</AlertTitle>
                     <AlertDescription fontSize="sm">

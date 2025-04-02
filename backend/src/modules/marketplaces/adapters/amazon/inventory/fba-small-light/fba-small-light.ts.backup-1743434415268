@@ -1,0 +1,22 @@
+// @ts-nocheck
+import { Injectable } from '../../../../../../decorators/injectable.decorator';
+import { Types } from 'mongoose';
+
+/**
+ * FBA Small Light Service
+ */
+@Injectable()
+export class FBASmallLight {
+  /**
+   * Constructor
+   */
+  constructor() {}
+  
+  /**
+   * Get small and light eligibility
+   */
+  async getEligibility(skus: string[]): Promise<any[]> {
+    // Placeholder implementation
+    return [];
+  }
+}

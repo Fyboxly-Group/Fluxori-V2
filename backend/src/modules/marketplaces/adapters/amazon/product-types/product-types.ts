@@ -1,0 +1,17 @@
+// Automatically generated adapter module
+// BaseMarketplaceAdapter stub
+class BaseMarketplaceAdapter {};
+
+/**
+ * Amazon product-types adapter implementation
+ */
+class ProductTypesModule extends BaseMarketplaceAdapter {
+  constructor() {
+    super();
+    // Implementation details
+  }
+  
+  // Module-specific methods would go here
+}
+
+export default ProductTypesModule;

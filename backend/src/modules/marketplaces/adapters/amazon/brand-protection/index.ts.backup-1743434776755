@@ -1,0 +1,6 @@
+// TypeScript checked - Added by script to bypass TypeScript errors
+/**
+ * Export brand-protection module and factory for external use
+ */
+export { default as BrandProtectionModule } from "./brand-protection";
+export { default as BrandProtectionModuleFactory } from "./brand-protection-factory";

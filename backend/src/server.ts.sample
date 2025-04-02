@@ -1,0 +1,73 @@
+import app from './app';
+import connectDB from './db';
+import config from './config';
+import logger from './utils/logger';
+import SystemStatusService from './services/system-status.service';
+import { initializeSchedulers, stopSchedulers } from './schedulers';
+
+/**
+ * Start the server and initialize required components
+ */
+const startServer = async () => {
+  try {
+    logger.info(`Starting Fluxori API in ${config.nodeEnv} mode`);
+    
+    // Connect to MongoDB
+    await connectDB();
+    logger.info('MongoDB connection established');
+    
+    // Initialize system components
+    await SystemStatusService.initializeSystemComponents();
+    logger.info('System components initialized');
+    
+    // Initialize schedulers
+    const schedulers = initializeSchedulers();
+    logger.info('Schedulers initialized');
+    
+    // Start the server
+    const server = app.listen(config.port, () => {
+      logger.info(`Server running on port ${config.port}`);
+    });
+    
+    // Handle graceful shutdown
+    const gracefulShutdown = (signal: string) => {
+      logger.info(`Received ${signal}. Shutting down gracefully...`);
+      
+      // Stop schedulers
+      stopSchedulers(schedulers);
+      logger.info('Schedulers stopped');
+      
+      server.close(() => {
+        logger.info('HTTP server closed');
+        process.exit(0);
+      });
+      
+      // Force-close after 10 seconds
+      setTimeout(() => {
+        logger.error('Force-closing the process after timeout');
+        process.exit(1);
+      }, 10000);
+    };
+    
+    // Listen for termination signals
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+    
+    // Handle uncaught exceptions and unhandled rejections
+    process.on('uncaughtException', (err) => {
+      logger.error('Uncaught exception:', err);
+      process.exit(1);
+    });
+    
+    process.on('unhandledRejection', (reason, promise) => {
+      logger.error('Unhandled rejection at:', promise, 'reason:', reason);
+      process.exit(1);
+    });
+    
+  } catch (error) {
+    logger.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();

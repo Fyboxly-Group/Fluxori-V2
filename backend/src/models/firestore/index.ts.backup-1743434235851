@@ -1,0 +1,19 @@
+/**
+ * Firestore Models Index
+ * 
+ * This file exports all Firestore schema interfaces and utilities
+ * for easy import throughout the application.
+ */
+
+// Export order schemas
+export * from './order.schema';
+
+// Export inventory schemas
+export * from './inventory.schema';
+
+// Re-export services
+export { OrderService } from '../../services/firestore/order.service';
+export { InventoryService } from '../../services/firestore/inventory.service';
+
+// Export Firestore configuration
+export { db, ordersCollection, inventoryCollection } from '../../config/firestore';

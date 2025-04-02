@@ -1,0 +1,2034 @@
+[
+  {
+    "path": "src/modules/connections/models/connection.model.ts",
+    "module": "connections",
+    "fileType": "model",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "mongoose, { Document, Schema, Model }",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "* as crypto",
+        "importPath": "crypto"
+      }
+    ],
+    "importCount": 2,
+    "anyTypeCount": 1,
+    "isMongooseModel": true,
+    "controllerMethodCount": 0,
+    "lineCount": 168
+  },
+  {
+    "path": "src/models/warehouse.model.ts",
+    "module": "core",
+    "fileType": "model",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "mongoose, { Document, Model, Schema }",
+        "importPath": "mongoose"
+      }
+    ],
+    "importCount": 1,
+    "anyTypeCount": 0,
+    "isMongooseModel": true,
+    "controllerMethodCount": 0,
+    "lineCount": 335
+  },
+  {
+    "path": "src/models/user.model.ts",
+    "module": "core",
+    "fileType": "model",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "mongoose, { Document, Model, Schema }",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "* as bcrypt",
+        "importPath": "bcryptjs"
+      }
+    ],
+    "importCount": 2,
+    "anyTypeCount": 1,
+    "isMongooseModel": true,
+    "controllerMethodCount": 0,
+    "lineCount": 98
+  },
+  {
+    "path": "src/models/user.model.test.ts",
+    "module": "core",
+    "fileType": "model",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [],
+    "importCount": 0,
+    "anyTypeCount": 1,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 12
+  },
+  {
+    "path": "src/models/task.model.ts",
+    "module": "core",
+    "fileType": "model",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "mongoose, { Document, Model, Schema }",
+        "importPath": "mongoose"
+      }
+    ],
+    "importCount": 1,
+    "anyTypeCount": 0,
+    "isMongooseModel": true,
+    "controllerMethodCount": 0,
+    "lineCount": 228
+  },
+  {
+    "path": "src/models/task.model.test.ts",
+    "module": "core",
+    "fileType": "model",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [],
+    "importCount": 0,
+    "anyTypeCount": 1,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 12
+  },
+  {
+    "path": "src/models/system-status.model.test.ts",
+    "module": "core",
+    "fileType": "model",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [],
+    "importCount": 0,
+    "anyTypeCount": 1,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 12
+  },
+  {
+    "path": "src/models/supplier.model.ts",
+    "module": "core",
+    "fileType": "model",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "mongoose, { Document, Model, Schema }",
+        "importPath": "mongoose"
+      }
+    ],
+    "importCount": 1,
+    "anyTypeCount": 0,
+    "isMongooseModel": true,
+    "controllerMethodCount": 0,
+    "lineCount": 136
+  },
+  {
+    "path": "src/models/supplier.model.test.ts",
+    "module": "core",
+    "fileType": "model",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [],
+    "importCount": 0,
+    "anyTypeCount": 1,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 12
+  },
+  {
+    "path": "src/models/shipment.model.ts",
+    "module": "core",
+    "fileType": "model",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "mongoose, { Document, Model, Schema }",
+        "importPath": "mongoose"
+      }
+    ],
+    "importCount": 1,
+    "anyTypeCount": 0,
+    "isMongooseModel": true,
+    "controllerMethodCount": 0,
+    "lineCount": 371
+  },
+  {
+    "path": "src/models/shipment.model.test.ts",
+    "module": "core",
+    "fileType": "model",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [],
+    "importCount": 0,
+    "anyTypeCount": 1,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 12
+  },
+  {
+    "path": "src/models/shipment-alert.model.test.ts",
+    "module": "core",
+    "fileType": "model",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [],
+    "importCount": 0,
+    "anyTypeCount": 1,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 12
+  },
+  {
+    "path": "src/models/purchase-order.model.ts",
+    "module": "core",
+    "fileType": "model",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "mongoose, { Document, Model, Schema }",
+        "importPath": "mongoose"
+      }
+    ],
+    "importCount": 1,
+    "anyTypeCount": 0,
+    "isMongooseModel": true,
+    "controllerMethodCount": 0,
+    "lineCount": 162
+  },
+  {
+    "path": "src/models/purchase-order.model.test.ts",
+    "module": "core",
+    "fileType": "model",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [],
+    "importCount": 0,
+    "anyTypeCount": 1,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 12
+  },
+  {
+    "path": "src/models/project.model.ts",
+    "module": "core",
+    "fileType": "model",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "mongoose, { Document, Model, Schema }",
+        "importPath": "mongoose"
+      }
+    ],
+    "importCount": 1,
+    "anyTypeCount": 0,
+    "isMongooseModel": true,
+    "controllerMethodCount": 0,
+    "lineCount": 263
+  },
+  {
+    "path": "src/models/project.model.test.ts",
+    "module": "core",
+    "fileType": "model",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [],
+    "importCount": 0,
+    "anyTypeCount": 1,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 12
+  },
+  {
+    "path": "src/models/order.model.ts",
+    "module": "core",
+    "fileType": "model",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "mongoose, { Document, Model, Schema }",
+        "importPath": "mongoose"
+      }
+    ],
+    "importCount": 1,
+    "anyTypeCount": 1,
+    "isMongooseModel": true,
+    "controllerMethodCount": 0,
+    "lineCount": 461
+  },
+  {
+    "path": "src/models/milestone.model.ts",
+    "module": "core",
+    "fileType": "model",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "mongoose, { Document, Model, Schema }",
+        "importPath": "mongoose"
+      }
+    ],
+    "importCount": 1,
+    "anyTypeCount": 0,
+    "isMongooseModel": true,
+    "controllerMethodCount": 0,
+    "lineCount": 160
+  },
+  {
+    "path": "src/models/milestone.model.test.ts",
+    "module": "core",
+    "fileType": "model",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [],
+    "importCount": 0,
+    "anyTypeCount": 1,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 12
+  },
+  {
+    "path": "src/models/inventory.model.ts",
+    "module": "core",
+    "fileType": "model",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "mongoose, { Document, Model, Schema }",
+        "importPath": "mongoose"
+      }
+    ],
+    "importCount": 1,
+    "anyTypeCount": 0,
+    "isMongooseModel": true,
+    "controllerMethodCount": 0,
+    "lineCount": 230
+  },
+  {
+    "path": "src/models/inventory.model.test.ts",
+    "module": "core",
+    "fileType": "model",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [],
+    "importCount": 0,
+    "anyTypeCount": 1,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 12
+  },
+  {
+    "path": "src/models/inventory-stock.model.ts",
+    "module": "core",
+    "fileType": "model",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "mongoose, { Document, Model, Schema }",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "{ TypedSchema, PreHookCallback, PostHookCallback }",
+        "importPath": "../types/mongo-util-types"
+      }
+    ],
+    "importCount": 2,
+    "anyTypeCount": 0,
+    "isMongooseModel": true,
+    "controllerMethodCount": 0,
+    "lineCount": 119
+  },
+  {
+    "path": "src/models/inventory-alert.model.ts",
+    "module": "core",
+    "fileType": "model",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "mongoose, { Document, Model, Schema }",
+        "importPath": "mongoose"
+      }
+    ],
+    "importCount": 1,
+    "anyTypeCount": 0,
+    "isMongooseModel": true,
+    "controllerMethodCount": 0,
+    "lineCount": 132
+  },
+  {
+    "path": "src/models/inventory-alert.model.test.ts",
+    "module": "core",
+    "fileType": "model",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [],
+    "importCount": 0,
+    "anyTypeCount": 1,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 12
+  },
+  {
+    "path": "src/models/customer.model.ts",
+    "module": "core",
+    "fileType": "model",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "mongoose, { Document, Model, Schema }",
+        "importPath": "mongoose"
+      }
+    ],
+    "importCount": 1,
+    "anyTypeCount": 0,
+    "isMongooseModel": true,
+    "controllerMethodCount": 0,
+    "lineCount": 202
+  },
+  {
+    "path": "src/models/customer.model.test.ts",
+    "module": "core",
+    "fileType": "model",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [],
+    "importCount": 0,
+    "anyTypeCount": 1,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 12
+  },
+  {
+    "path": "src/models/activity.model.ts",
+    "module": "core",
+    "fileType": "model",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "mongoose, { Document, Model, Schema }",
+        "importPath": "mongoose"
+      }
+    ],
+    "importCount": 1,
+    "anyTypeCount": 0,
+    "isMongooseModel": true,
+    "controllerMethodCount": 0,
+    "lineCount": 97
+  },
+  {
+    "path": "src/models/activity.model.test.ts",
+    "module": "core",
+    "fileType": "model",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [],
+    "importCount": 0,
+    "anyTypeCount": 1,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 12
+  },
+  {
+    "path": "src/modules/connections/controllers/connection.controller.ts",
+    "module": "connections",
+    "fileType": "controller",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "{ Request, Response }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "{ StatusCodes }",
+        "importPath": "http-status-codes"
+      },
+      {
+        "importStatement": "connectionService",
+        "importPath": "../services/connection.service"
+      },
+      {
+        "importStatement": "MarketplaceConnection, { \n  AuthenticationType, \n  ConnectionStatus, \n  MarketplaceType,\n  SyncStatus\n}",
+        "importPath": "../models/connection.model"
+      },
+      {
+        "importStatement": "{ MarketplaceCredentials }",
+        "importPath": "../../marketplaces/models/marketplace.models"
+      }
+    ],
+    "importCount": 5,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 365
+  },
+  {
+    "path": "src/controllers/webhook.controller.ts",
+    "module": "core",
+    "fileType": "controller",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "{ Request, Response, NextFunction }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "{ StatusCodes }",
+        "importPath": "http-status-codes"
+      },
+      {
+        "importStatement": "Activity",
+        "importPath": "../models/activity.model"
+      },
+      {
+        "importStatement": "{ TakealotWebhookHandler }",
+        "importPath": "../modules/marketplaces/adapters/takealot/takealot-webhook-handler"
+      }
+    ],
+    "importCount": 4,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 2,
+    "lineCount": 70
+  },
+  {
+    "path": "src/controllers/warehouse.controller.ts",
+    "module": "core",
+    "fileType": "controller",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "{ Request, Response, NextFunction }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "{ StatusCodes }",
+        "importPath": "http-status-codes"
+      },
+      {
+        "importStatement": "mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "Warehouse, { WarehouseStatus, WarehouseType }",
+        "importPath": "../models/warehouse.model"
+      },
+      {
+        "importStatement": "Inventory",
+        "importPath": "../models/inventory.model"
+      },
+      {
+        "importStatement": "Activity",
+        "importPath": "../models/activity.model"
+      },
+      {
+        "importStatement": "{ IUserDocument }",
+        "importPath": "../models/user.model"
+      }
+    ],
+    "importCount": 7,
+    "anyTypeCount": 1,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 515
+  },
+  {
+    "path": "src/controllers/upload.controller.test.ts",
+    "module": "core",
+    "fileType": "controller",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "{ Request, Response, NextFunction }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "* as UploadController",
+        "importPath": "./upload.controller"
+      },
+      {
+        "importStatement": "mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "{ StatusCodes }",
+        "importPath": "http-status-codes"
+      }
+    ],
+    "importCount": 4,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 111
+  },
+  {
+    "path": "src/controllers/task.controller.test.ts",
+    "module": "core",
+    "fileType": "controller",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "{ Request, Response, NextFunction }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "* as TaskController",
+        "importPath": "./task.controller"
+      },
+      {
+        "importStatement": "mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "{ StatusCodes }",
+        "importPath": "http-status-codes"
+      }
+    ],
+    "importCount": 4,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 111
+  },
+  {
+    "path": "src/controllers/shipment.controller.ts",
+    "module": "core",
+    "fileType": "controller",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "{ Request, Response, NextFunction }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "{ StatusCodes }",
+        "importPath": "http-status-codes"
+      },
+      {
+        "importStatement": "mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "Shipment, { ShipmentStatus, ShipmentType }",
+        "importPath": "../models/shipment.model"
+      },
+      {
+        "importStatement": "Inventory",
+        "importPath": "../models/inventory.model"
+      },
+      {
+        "importStatement": "Customer",
+        "importPath": "../models/customer.model"
+      },
+      {
+        "importStatement": "Supplier",
+        "importPath": "../models/supplier.model"
+      },
+      {
+        "importStatement": "Activity",
+        "importPath": "../models/activity.model"
+      },
+      {
+        "importStatement": "{ IUserDocument }",
+        "importPath": "../models/user.model"
+      }
+    ],
+    "importCount": 9,
+    "anyTypeCount": 1,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 506
+  },
+  {
+    "path": "src/controllers/shipment.controller.test.ts",
+    "module": "core",
+    "fileType": "controller",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "{ Request, Response, NextFunction }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "* as ShipmentController",
+        "importPath": "./shipment.controller"
+      },
+      {
+        "importStatement": "mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "{ StatusCodes }",
+        "importPath": "http-status-codes"
+      }
+    ],
+    "importCount": 4,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 111
+  },
+  {
+    "path": "src/controllers/rag_retrieval.controller.ts",
+    "module": "core",
+    "fileType": "controller",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [],
+    "importCount": 0,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 19
+  },
+  {
+    "path": "src/controllers/project.controller.ts",
+    "module": "core",
+    "fileType": "controller",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "{ Request, Response, NextFunction }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "{ StatusCodes }",
+        "importPath": "http-status-codes"
+      },
+      {
+        "importStatement": "mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "Project, { ProjectStatus, ProjectPhase }",
+        "importPath": "../models/project.model"
+      },
+      {
+        "importStatement": "Task",
+        "importPath": "../models/task.model"
+      },
+      {
+        "importStatement": "Customer",
+        "importPath": "../models/customer.model"
+      },
+      {
+        "importStatement": "Activity",
+        "importPath": "../models/activity.model"
+      },
+      {
+        "importStatement": "{ IUserDocument }",
+        "importPath": "../models/user.model"
+      }
+    ],
+    "importCount": 8,
+    "anyTypeCount": 1,
+    "isMongooseModel": false,
+    "controllerMethodCount": 7,
+    "lineCount": 518
+  },
+  {
+    "path": "src/controllers/project.controller.test.ts",
+    "module": "core",
+    "fileType": "controller",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "{ Request, Response, NextFunction }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "* as ProjectController",
+        "importPath": "./project.controller"
+      },
+      {
+        "importStatement": "mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "{ StatusCodes }",
+        "importPath": "http-status-codes"
+      }
+    ],
+    "importCount": 4,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 111
+  },
+  {
+    "path": "src/controllers/milestone.controller.ts",
+    "module": "core",
+    "fileType": "controller",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "{ Request, Response, NextFunction }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "{ StatusCodes }",
+        "importPath": "http-status-codes"
+      },
+      {
+        "importStatement": "mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "Milestone, { MilestoneStatus }",
+        "importPath": "../models/milestone.model"
+      },
+      {
+        "importStatement": "Project",
+        "importPath": "../models/project.model"
+      },
+      {
+        "importStatement": "Task",
+        "importPath": "../models/task.model"
+      },
+      {
+        "importStatement": "Activity",
+        "importPath": "../models/activity.model"
+      },
+      {
+        "importStatement": "{ IUserDocument }",
+        "importPath": "../models/user.model"
+      }
+    ],
+    "importCount": 8,
+    "anyTypeCount": 1,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 432
+  },
+  {
+    "path": "src/controllers/milestone.controller.test.ts",
+    "module": "core",
+    "fileType": "controller",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "{ Request, Response, NextFunction }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "* as MilestoneController",
+        "importPath": "./milestone.controller"
+      },
+      {
+        "importStatement": "mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "{ StatusCodes }",
+        "importPath": "http-status-codes"
+      }
+    ],
+    "importCount": 4,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 111
+  },
+  {
+    "path": "src/controllers/inventory.controller.ts",
+    "module": "core",
+    "fileType": "controller",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "{ Request, Response, NextFunction }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "{ StatusCodes }",
+        "importPath": "http-status-codes"
+      },
+      {
+        "importStatement": "mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "Inventory",
+        "importPath": "../models/inventory.model"
+      },
+      {
+        "importStatement": "Activity",
+        "importPath": "../models/activity.model"
+      },
+      {
+        "importStatement": "{ IUserDocument }",
+        "importPath": "../models/user.model"
+      }
+    ],
+    "importCount": 6,
+    "anyTypeCount": 1,
+    "isMongooseModel": false,
+    "controllerMethodCount": 5,
+    "lineCount": 391
+  },
+  {
+    "path": "src/controllers/inventory.controller.test.ts",
+    "module": "core",
+    "fileType": "controller",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "{ Request, Response, NextFunction }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "* as InventoryController",
+        "importPath": "./inventory.controller"
+      },
+      {
+        "importStatement": "mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "{ StatusCodes }",
+        "importPath": "http-status-codes"
+      }
+    ],
+    "importCount": 4,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 111
+  },
+  {
+    "path": "src/controllers/inventory-stock.controller.ts",
+    "module": "core",
+    "fileType": "controller",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "{ Request, Response, NextFunction }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "{ StatusCodes }",
+        "importPath": "http-status-codes"
+      },
+      {
+        "importStatement": "mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "Inventory",
+        "importPath": "../models/inventory.model"
+      },
+      {
+        "importStatement": "Activity",
+        "importPath": "../models/activity.model"
+      },
+      {
+        "importStatement": "{ IUserDocument }",
+        "importPath": "../models/user.model"
+      }
+    ],
+    "importCount": 6,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 296
+  },
+  {
+    "path": "src/controllers/inventory-alert.controller.ts",
+    "module": "core",
+    "fileType": "controller",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "{ Request, Response, NextFunction }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "{ StatusCodes }",
+        "importPath": "http-status-codes"
+      },
+      {
+        "importStatement": "mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "Inventory",
+        "importPath": "../models/inventory.model"
+      },
+      {
+        "importStatement": "InventoryAlert",
+        "importPath": "../models/inventory-alert.model"
+      },
+      {
+        "importStatement": "Activity",
+        "importPath": "../models/activity.model"
+      },
+      {
+        "importStatement": "{ IUserDocument }",
+        "importPath": "../models/user.model"
+      }
+    ],
+    "importCount": 7,
+    "anyTypeCount": 1,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 304
+  },
+  {
+    "path": "src/controllers/inventory-alert.controller.test.ts",
+    "module": "core",
+    "fileType": "controller",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "{ Request, Response, NextFunction }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "* as InventoryAlertController",
+        "importPath": "./inventoryalert.controller"
+      },
+      {
+        "importStatement": "mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "{ StatusCodes }",
+        "importPath": "http-status-codes"
+      }
+    ],
+    "importCount": 4,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 111
+  },
+  {
+    "path": "src/controllers/international_trade.controller.ts",
+    "module": "core",
+    "fileType": "controller",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [],
+    "importCount": 0,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 19
+  },
+  {
+    "path": "src/controllers/express.ts",
+    "module": "core",
+    "fileType": "controller",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [],
+    "importCount": 0,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 62
+  },
+  {
+    "path": "src/controllers/example.controller.ts",
+    "module": "core",
+    "fileType": "controller",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "{ Request, Response, NextFunction }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "{ AuthenticatedRequest, TypedResponse, getTypedResponse, ControllerMethod, AuthControllerMethod }",
+        "importPath": "../types/express-extensions"
+      },
+      {
+        "importStatement": "{ StatusCodes }",
+        "importPath": "http-status-codes"
+      }
+    ],
+    "importCount": 3,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 138
+  },
+  {
+    "path": "src/controllers/dashboard.controller.ts",
+    "module": "core",
+    "fileType": "controller",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "{ Request, Response, NextFunction }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "Project",
+        "importPath": "../models/project.model"
+      },
+      {
+        "importStatement": "Inventory",
+        "importPath": "../models/inventory.model"
+      },
+      {
+        "importStatement": "Shipment",
+        "importPath": "../models/shipment.model"
+      },
+      {
+        "importStatement": "Customer",
+        "importPath": "../models/customer.model"
+      },
+      {
+        "importStatement": "Supplier",
+        "importPath": "../models/supplier.model"
+      },
+      {
+        "importStatement": "PurchaseOrder",
+        "importPath": "../models/purchase-order.model"
+      },
+      {
+        "importStatement": "Task",
+        "importPath": "../models/task.model"
+      },
+      {
+        "importStatement": "Activity",
+        "importPath": "../models/activity.model"
+      },
+      {
+        "importStatement": "{ ISupplier }",
+        "importPath": "../models/supplier.model"
+      },
+      {
+        "importStatement": "{ IPurchaseOrder }",
+        "importPath": "../models/purchase-order.model"
+      },
+      {
+        "importStatement": "mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "{ IUserDocument }",
+        "importPath": "../models/user.model"
+      }
+    ],
+    "importCount": 13,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 3,
+    "lineCount": 209
+  },
+  {
+    "path": "src/controllers/dashboard.controller.test.ts",
+    "module": "core",
+    "fileType": "controller",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "{ Request, Response, NextFunction }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "* as DashboardController",
+        "importPath": "./dashboard.controller"
+      },
+      {
+        "importStatement": "mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "{ StatusCodes }",
+        "importPath": "http-status-codes"
+      }
+    ],
+    "importCount": 4,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 111
+  },
+  {
+    "path": "src/controllers/customer.controller.ts",
+    "module": "core",
+    "fileType": "controller",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "{ Request, Response, NextFunction }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "{ StatusCodes }",
+        "importPath": "http-status-codes"
+      },
+      {
+        "importStatement": "Customer",
+        "importPath": "../models/customer.model"
+      },
+      {
+        "importStatement": "Order",
+        "importPath": "../models/order.model"
+      },
+      {
+        "importStatement": "Project",
+        "importPath": "../models/project.model"
+      }
+    ],
+    "importCount": 5,
+    "anyTypeCount": 1,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 293
+  },
+  {
+    "path": "src/controllers/customer.controller.test.ts",
+    "module": "core",
+    "fileType": "controller",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "{ Request, Response, NextFunction }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "* as CustomerController",
+        "importPath": "./customer.controller"
+      },
+      {
+        "importStatement": "mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "{ StatusCodes }",
+        "importPath": "http-status-codes"
+      }
+    ],
+    "importCount": 4,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 111
+  },
+  {
+    "path": "src/controllers/auth.controller.ts",
+    "module": "core",
+    "fileType": "controller",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "{ Request, Response, NextFunction }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "{ AuthenticatedRequest, TypedResponse, getTypedResponse, ControllerMethod, AuthControllerMethod }",
+        "importPath": "../types/express-extensions"
+      },
+      {
+        "importStatement": "Project",
+        "importPath": "../models/project.model"
+      },
+      {
+        "importStatement": "Inventory",
+        "importPath": "../models/inventory.model"
+      },
+      {
+        "importStatement": "Shipment",
+        "importPath": "../models/shipment.model"
+      },
+      {
+        "importStatement": "Customer",
+        "importPath": "../models/customer.model"
+      },
+      {
+        "importStatement": "Supplier",
+        "importPath": "../models/supplier.model"
+      },
+      {
+        "importStatement": "PurchaseOrder",
+        "importPath": "../models/purchase-order.model"
+      },
+      {
+        "importStatement": "Task",
+        "importPath": "../models/task.model"
+      },
+      {
+        "importStatement": "Activity",
+        "importPath": "../models/activity.model"
+      }
+    ],
+    "importCount": 10,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 26
+  },
+  {
+    "path": "src/controllers/auth.controller.test.ts",
+    "module": "core",
+    "fileType": "controller",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "{ Request, Response, NextFunction }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "* as AuthController",
+        "importPath": "./auth.controller"
+      },
+      {
+        "importStatement": "mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "{ StatusCodes }",
+        "importPath": "http-status-codes"
+      }
+    ],
+    "importCount": 4,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 111
+  },
+  {
+    "path": "src/controllers/analytics.controller.ts",
+    "module": "core",
+    "fileType": "controller",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "{ Request, Response, NextFunction }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "{ AuthenticatedRequest, TypedResponse, getTypedResponse, ControllerMethod, AuthControllerMethod }",
+        "importPath": "../types/express-extensions"
+      },
+      {
+        "importStatement": "Project",
+        "importPath": "../models/project.model"
+      },
+      {
+        "importStatement": "Inventory",
+        "importPath": "../models/inventory.model"
+      },
+      {
+        "importStatement": "Shipment",
+        "importPath": "../models/shipment.model"
+      },
+      {
+        "importStatement": "Customer",
+        "importPath": "../models/customer.model"
+      },
+      {
+        "importStatement": "Supplier",
+        "importPath": "../models/supplier.model"
+      },
+      {
+        "importStatement": "PurchaseOrder",
+        "importPath": "../models/purchase-order.model"
+      },
+      {
+        "importStatement": "Task",
+        "importPath": "../models/task.model"
+      },
+      {
+        "importStatement": "Activity",
+        "importPath": "../models/activity.model"
+      }
+    ],
+    "importCount": 10,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 26
+  },
+  {
+    "path": "src/controllers/analytics.controller.test.ts",
+    "module": "core",
+    "fileType": "controller",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "{ Request, Response, NextFunction }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "* as AnalyticsController",
+        "importPath": "./analytics.controller"
+      },
+      {
+        "importStatement": "mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "{ StatusCodes }",
+        "importPath": "http-status-codes"
+      }
+    ],
+    "importCount": 4,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 111
+  },
+  {
+    "path": "src/middleware/validation.middleware.ts",
+    "module": "core",
+    "fileType": "middleware",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "{ Request, Response, NextFunction }",
+        "importPath": "express"
+      }
+    ],
+    "importCount": 1,
+    "anyTypeCount": 1,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 21
+  },
+  {
+    "path": "src/middleware/error.middleware.ts",
+    "module": "core",
+    "fileType": "middleware",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "{ Request, Response, NextFunction }",
+        "importPath": "express"
+      }
+    ],
+    "importCount": 1,
+    "anyTypeCount": 1,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 96
+  },
+  {
+    "path": "src/middleware/error.middleware.test.ts",
+    "module": "core",
+    "fileType": "middleware",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [],
+    "importCount": 0,
+    "anyTypeCount": 1,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 12
+  },
+  {
+    "path": "src/middleware/auth.middleware.ts",
+    "module": "core",
+    "fileType": "middleware",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "{ Request, Response, NextFunction }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "* as jwt",
+        "importPath": "jsonwebtoken"
+      },
+      {
+        "importStatement": "User, { IUserDocument }",
+        "importPath": "../models/user.model"
+      }
+    ],
+    "importCount": 3,
+    "anyTypeCount": 1,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 143
+  },
+  {
+    "path": "src/middleware/admin.middleware.ts",
+    "module": "core",
+    "fileType": "middleware",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [],
+    "importCount": 0,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 13
+  },
+  {
+    "path": "src/routes/upload.routes.test.ts",
+    "module": "core",
+    "fileType": "route",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "* as request",
+        "importPath": "supertest"
+      },
+      {
+        "importStatement": "{ Express }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "* as mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "* as jwt",
+        "importPath": "jsonwebtoken"
+      },
+      {
+        "importStatement": "* as config",
+        "importPath": "../config"
+      }
+    ],
+    "importCount": 5,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 27
+  },
+  {
+    "path": "src/routes/task.routes.test.ts",
+    "module": "core",
+    "fileType": "route",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "* as request",
+        "importPath": "supertest"
+      },
+      {
+        "importStatement": "{ Express }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "* as mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "* as jwt",
+        "importPath": "jsonwebtoken"
+      },
+      {
+        "importStatement": "* as config",
+        "importPath": "../config"
+      }
+    ],
+    "importCount": 5,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 27
+  },
+  {
+    "path": "src/routes/shipment.routes.test.ts",
+    "module": "core",
+    "fileType": "route",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "* as request",
+        "importPath": "supertest"
+      },
+      {
+        "importStatement": "{ Express }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "* as mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "* as jwt",
+        "importPath": "jsonwebtoken"
+      },
+      {
+        "importStatement": "* as config",
+        "importPath": "../config"
+      }
+    ],
+    "importCount": 5,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 27
+  },
+  {
+    "path": "src/routes/project.routes.test.ts",
+    "module": "core",
+    "fileType": "route",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "* as request",
+        "importPath": "supertest"
+      },
+      {
+        "importStatement": "{ Express }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "* as mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "* as jwt",
+        "importPath": "jsonwebtoken"
+      },
+      {
+        "importStatement": "* as config",
+        "importPath": "../config"
+      }
+    ],
+    "importCount": 5,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 27
+  },
+  {
+    "path": "src/routes/milestone.routes.test.ts",
+    "module": "core",
+    "fileType": "route",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "* as request",
+        "importPath": "supertest"
+      },
+      {
+        "importStatement": "{ Express }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "* as mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "{ Types, ObjectId }",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "{ Document, Model }",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "* as jwt",
+        "importPath": "jsonwebtoken"
+      },
+      {
+        "importStatement": "* as config",
+        "importPath": "../config"
+      }
+    ],
+    "importCount": 7,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 141
+  },
+  {
+    "path": "src/routes/inventory.routes.test.ts",
+    "module": "core",
+    "fileType": "route",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "* as request",
+        "importPath": "supertest"
+      },
+      {
+        "importStatement": "{ Express }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "* as mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "{ Types, ObjectId }",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "{ Document, Model }",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "* as jwt",
+        "importPath": "jsonwebtoken"
+      },
+      {
+        "importStatement": "* as config",
+        "importPath": "../config"
+      }
+    ],
+    "importCount": 7,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 189
+  },
+  {
+    "path": "src/routes/inventory-alert.routes.test.ts",
+    "module": "core",
+    "fileType": "route",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "* as request",
+        "importPath": "supertest"
+      },
+      {
+        "importStatement": "{ Express }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "* as mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "{ Types, ObjectId }",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "{ Document, Model }",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "* as jwt",
+        "importPath": "jsonwebtoken"
+      },
+      {
+        "importStatement": "* as config",
+        "importPath": "../config"
+      }
+    ],
+    "importCount": 7,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 219
+  },
+  {
+    "path": "src/routes/dashboard.routes.test.ts",
+    "module": "core",
+    "fileType": "route",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "* as request",
+        "importPath": "supertest"
+      },
+      {
+        "importStatement": "{ Express }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "* as mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "{ Types, ObjectId }",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "{ Document, Model }",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "* as jwt",
+        "importPath": "jsonwebtoken"
+      },
+      {
+        "importStatement": "* as config",
+        "importPath": "../config"
+      }
+    ],
+    "importCount": 7,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 159
+  },
+  {
+    "path": "src/routes/customer.routes.test.ts",
+    "module": "core",
+    "fileType": "route",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "* as request",
+        "importPath": "supertest"
+      },
+      {
+        "importStatement": "{ Express }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "* as mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "{ Types, ObjectId }",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "{ Document, Model }",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "* as jwt",
+        "importPath": "jsonwebtoken"
+      },
+      {
+        "importStatement": "* as config",
+        "importPath": "../config"
+      }
+    ],
+    "importCount": 7,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 143
+  },
+  {
+    "path": "src/routes/auth.routes.test.ts",
+    "module": "core",
+    "fileType": "route",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "* as request",
+        "importPath": "supertest"
+      },
+      {
+        "importStatement": "{ Express }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "* as mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "{ Types, ObjectId }",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "{ Document, Model }",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "* as jwt",
+        "importPath": "jsonwebtoken"
+      },
+      {
+        "importStatement": "* as config",
+        "importPath": "../config"
+      }
+    ],
+    "importCount": 7,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 219
+  },
+  {
+    "path": "src/routes/analytics.routes.test.ts",
+    "module": "core",
+    "fileType": "route",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "* as request",
+        "importPath": "supertest"
+      },
+      {
+        "importStatement": "{ Express }",
+        "importPath": "express"
+      },
+      {
+        "importStatement": "* as mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "{ Types, ObjectId }",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "{ Document, Model }",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "* as jwt",
+        "importPath": "jsonwebtoken"
+      },
+      {
+        "importStatement": "* as config",
+        "importPath": "../config"
+      }
+    ],
+    "importCount": 7,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 146
+  },
+  {
+    "path": "src/modules/connections/services/secrets.service.ts",
+    "module": "connections",
+    "fileType": "service",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "* as crypto",
+        "importPath": "crypto"
+      },
+      {
+        "importStatement": "{ SecretManagerServiceClient }",
+        "importPath": "@google-cloud/secret-manager"
+      },
+      {
+        "importStatement": "{ AccessSecretVersionResponse }",
+        "importPath": "@google-cloud/secret-manager"
+      },
+      {
+        "importStatement": "{ MarketplaceCredentials }",
+        "importPath": "../../marketplaces/models/marketplace.models"
+      }
+    ],
+    "importCount": 4,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 247
+  },
+  {
+    "path": "src/modules/connections/services/connection.service.ts",
+    "module": "connections",
+    "fileType": "service",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "mongoose",
+        "importPath": "mongoose"
+      },
+      {
+        "importStatement": "MarketplaceConnection, {\n  AuthenticationType,\n  ConnectionStatus,\n  IMarketplaceConnectionDocument,\n  MarketplaceType,\n}",
+        "importPath": "../models/connection.model"
+      },
+      {
+        "importStatement": "secretsService",
+        "importPath": "./secrets.service"
+      },
+      {
+        "importStatement": "{ MarketplaceCredentials }",
+        "importPath": "../../marketplaces/models/marketplace.models"
+      },
+      {
+        "importStatement": "{ MarketplaceAdapterFactory }",
+        "importPath": "../../marketplaces/adapters/marketplace-adapter.factory"
+      },
+      {
+        "importStatement": "{ IMarketplaceAdapter }",
+        "importPath": "../../marketplaces/adapters/interfaces/marketplace-adapter.interface"
+      },
+      {
+        "importStatement": "{ toObjectId }",
+        "importPath": "../../../types/mongo-util-types"
+      }
+    ],
+    "importCount": 7,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 403
+  },
+  {
+    "path": "src/modules/connections/utils/credential-provider.ts",
+    "module": "connections",
+    "fileType": "utility",
+    "priority": "high",
+    "hasNoCheck": true,
+    "imports": [
+      {
+        "importStatement": "connectionService, { ConnectionServiceWithDirectAccess }",
+        "importPath": "../services/connection.service"
+      },
+      {
+        "importStatement": "{ MarketplaceCredentials }",
+        "importPath": "../../marketplaces/models/marketplace.models"
+      }
+    ],
+    "importCount": 2,
+    "anyTypeCount": 0,
+    "isMongooseModel": false,
+    "controllerMethodCount": 0,
+    "lineCount": 25
+  }
+]

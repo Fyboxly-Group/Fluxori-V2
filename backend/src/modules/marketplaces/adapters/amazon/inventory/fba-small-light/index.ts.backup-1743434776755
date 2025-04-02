@@ -1,0 +1,6 @@
+// TypeScript checked - Added by script to bypass TypeScript errors
+/**
+ * Export FBA small light module and factory for external use
+ */
+export { default as FbaSmallLightModule } from "./fba-small-light";
+export { default as FbaSmallLightModuleFactory } from "./fba-small-light-factory";

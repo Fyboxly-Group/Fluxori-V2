@@ -1,0 +1,60 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Common validation functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(resource) {
+      return isSignedIn() && (resource.data.userId == request.auth.uid || resource.data.orgId == resource.data.get(/databases/$(database)/documents/users/$(request.auth.uid)).orgId);
+    }
+    
+    function belongsToOrg(orgId) {
+      return isSignedIn() && (orgId == resource.data.get(/databases/$(database)/documents/users/$(request.auth.uid)).orgId);
+    }
+    
+    function incomingBelongsToUser() {
+      return isSignedIn() && request.resource.data.userId == request.auth.uid;
+    }
+    
+    function incomingBelongsToOrg(orgId) {
+      return isSignedIn() && request.resource.data.orgId == orgId;
+    }
+    
+    // Orders collection rules
+    match /orders/{orderId} {
+      // Allow read if the document belongs to the user or user's organization
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || belongsToOrg(resource.data.orgId));
+      
+      // Allow create if the user is setting userId to their own ID
+      allow create: if incomingBelongsToUser() || incomingBelongsToOrg(get(/databases/$(database)/documents/users/$(request.auth.uid)).orgId);
+      
+      // Allow update if the user owns the document and is not changing the userId
+      allow update: if isOwner(resource) && request.resource.data.userId == resource.data.userId && request.resource.data.orgId == resource.data.orgId;
+      
+      // Allow delete if the user owns the document
+      allow delete: if isOwner(resource);
+    }
+    
+    // Inventory collection rules
+    match /inventory/{inventoryId} {
+      // Allow read if the document belongs to the user or user's organization
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || belongsToOrg(resource.data.orgId));
+      
+      // Allow create if the user is setting userId to their own ID
+      allow create: if incomingBelongsToUser() || incomingBelongsToOrg(get(/databases/$(database)/documents/users/$(request.auth.uid)).orgId);
+      
+      // Allow update if the user owns the document and is not changing the userId
+      allow update: if isOwner(resource) && request.resource.data.userId == resource.data.userId && request.resource.data.orgId == resource.data.orgId;
+      
+      // Allow delete if the user owns the document
+      allow delete: if isOwner(resource);
+    }
+    
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

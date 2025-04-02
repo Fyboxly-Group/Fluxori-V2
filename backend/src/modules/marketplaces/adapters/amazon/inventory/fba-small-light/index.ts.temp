@@ -1,0 +1,9 @@
+/**
+ * FBA Small and Light API Module
+ * 
+ * Provides functionality for managing products in Amazon's Small and Light program,
+ * which offers lower fulfillment costs for small, lightweight, low-cost items.prop
+ */
+
+export * from './fba-small-light';
+export * from './fba-small-light-factory';

@@ -1,0 +1,21 @@
+// @ts-nocheck
+import { BaseModule } from '../../base-module';
+
+/**
+ * CatalogFactory creates and configures the CatalogModule
+ */
+export class CatalogFactory {
+  /**
+   * Creates a new CatalogModule instance
+   * 
+   * @param config Module configuration
+   * @returns A configured CatalogModule instance
+   */
+  static createCatalogModule(config: any): BaseModule {
+    return {
+      id: 'catalog',
+      name: 'catalog',
+      version: '1.0.0'
+    };
+  }
+}

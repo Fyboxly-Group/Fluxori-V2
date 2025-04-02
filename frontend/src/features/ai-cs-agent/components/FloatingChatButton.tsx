@@ -1,28 +1,33 @@
+/// <reference path="../../types/module-declarations.d.ts" />
 'use client';
 
+import React from 'react';
 import { useState, useRef, useEffect } from 'react';
-import { Box } from '@chakra-ui/react/box';
-import { IconButton } from '@chakra-ui/react/button';
-import { Portal } from '@chakra-ui/react/portal';
-import { useColorMode } from '@chakra-ui/react/color-mode';
-import { useDisclosure } from '@chakra-ui/react/hooks';
 import { motion, AnimatePresence } from 'framer-motion';
-
+import { Box  } from '@/utils/chakra-compat';
+import { Portal  } from '@/utils/chakra-compat';
+import { IconButton  } from '@/utils/chakra-compat';
+import { useDisclosure } from '@/components/stubs/ChakraStubs';;
+import { useColorMode } from '@/components/stubs/ChakraStubs';;
 import { AIChatInterface } from './AIChatInterface';
 
 // Chat icon component
 const ChatIcon = () => (
-  <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-  </svg>
+  <Box p="1" borderRadius="full">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+    </svg>
+  </Box>
 );
 
 // Close icon component
 const CloseIcon = () => (
-  <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="18" y1="6" x2="6" y2="18"></line>
-    <line x1="6" y1="6" x2="18" y2="18"></line>
-  </svg>
+  <Box p="1" borderRadius="full">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
+  </Box>
 );
 
 interface FloatingChatButtonProps {
@@ -30,20 +35,21 @@ interface FloatingChatButtonProps {
   position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
   size?: 'sm' | 'md' | 'lg';
   zIndex?: number;
-  chatWidth?: string | number;
-  chatHeight?: string | number;
+  chatWidth?: string;
+  chatHeight?: string;
+  organizationId?: string;
+  initialConversationId?: string;
 }
 
-/**
- * A floating chat button that opens an AI chat interface
- */
 export function FloatingChatButton({
   userId,
   position = 'bottom-right',
   size = 'md',
   zIndex = 100,
   chatWidth = '350px',
-  chatHeight = '600px'
+  chatHeight = '600px',
+  organizationId,
+  initialConversationId
 }: FloatingChatButtonProps) {
   const { colorMode } = useColorMode();
   const { isOpen, onToggle, onClose } = useDisclosure();
@@ -65,7 +71,7 @@ export function FloatingChatButton({
     }
   };
   
-  // Define chat position based on button position
+  // Define chat position based on the position prop
   const getChatPosition = () => {
     switch (position) {
       case 'bottom-right':
@@ -81,7 +87,7 @@ export function FloatingChatButton({
     }
   };
   
-  // Size mapping
+  // Size mapping for different button sizes
   const sizeMapping = {
     sm: { buttonSize: '40px', iconSize: '16px' },
     md: { buttonSize: '50px', iconSize: '20px' },
@@ -89,13 +95,13 @@ export function FloatingChatButton({
   };
   
   // Close chat when clicking outside
-  useEffect(() => {
+  useEffect((_: any) => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
-        isOpen &&
+        open && 
         buttonRef.current &&
         !buttonRef.current.contains(event.target as Node) &&
-        !(event.target as Element).closest('.ai-chat-container')
+        !(event.target as HTMLElement).closest('.ai-chat-container')
       ) {
         onClose();
       }
@@ -123,8 +129,8 @@ export function FloatingChatButton({
       >
         <IconButton
           ref={buttonRef}
-          aria-label={isOpen ? 'Close chat' : 'Open chat'}
-          icon={isOpen ? <CloseIcon /> : <ChatIcon />}
+          aria-label={open ? 'Close chat' : 'Open chat'}
+          icon={open ? <CloseIcon  /> : <ChatIcon />}
           onClick={onToggle}
           colorScheme="blue"
           size="lg"
@@ -139,13 +145,12 @@ export function FloatingChatButton({
       {/* Chat Interface Portal */}
       <Portal>
         <AnimatePresence>
-          {isOpen && (
+          {open && (
             <motion.div
               className="ai-chat-container"
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              transition={{ duration: 0.3 }}
               style={{
                 position: 'fixed',
                 ...getChatPosition(),
@@ -153,7 +158,7 @@ export function FloatingChatButton({
                 width: chatWidth,
                 height: chatHeight,
                 maxHeight: '80vh',
-                boxShadow: colorMode === 'light' 
+                boxShadow: colorMode === 'light'
                   ? '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
                   : '0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2)',
                 borderRadius: '12px',
@@ -168,6 +173,8 @@ export function FloatingChatButton({
                 onEscalation={handleEscalation}
                 title="Customer Support"
                 welcomeMessage="👋 Hi there! How can I help you today?"
+                organizationId={organizationId}
+                initialConversationId={initialConversationId}
               />
             </motion.div>
           )}

@@ -1,0 +1,6 @@
+// TypeScript checked
+/**
+ * Export orders module and factory for external use
+ */
+export { default as OrdersModule } from "./orders";
+export { default as OrdersModuleFactory } from "./orders-factory";

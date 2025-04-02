@@ -1,0 +1,141 @@
+// TypeScript fixed
+import mongoose, { Schema, Document } from 'mongoose';
+
+import * as crypto from 'crypto';
+/**
+ * Xero connection status
+ */
+export type XeroConnectionStatus = 'connected' | 'disconnected' | 'expired';
+
+/**
+ * Xero connection interface
+ */
+export interface IXeroConnection {
+  userId: mongoose.Types.ObjectId;
+  organizationId: mongoose.Types.ObjectId;
+  tenantId: string;
+  tenantName: string;
+  refreshToken: string;
+  tokenSetExpiresAt: Date;
+  status: XeroConnectionStatus;
+  lastSyncedAt?: Date;
+  lastError?: string;
+  additionalData?: Record<string, any>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Document interface for Mongoose
+ */
+export interface IXeroConnectionDocument extends IXeroConnection, Document {}
+
+
+export interface IXeroConnectionModel extends mongoose.Model<IXeroConnectionDocument> {
+
+}
+
+
+/**
+ * Model type for XeroConnection
+ */
+export type XeroConnectionModel = Model<IXeroConnectionDocument>;
+
+/**
+ * Encryption utilities for sensitive data
+ */
+const encryptValue = (value: string): string => {
+  const algorithm = 'aes-256-cbc';
+  const key = Buffer.from(process.env.ENCRYPTION_KEY || 'a-very-secure-32-char-encryption-key', 'utf-8');
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv(algorithm, key, iv);
+  let encrypted = cipher.update(value, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  return `${iv.toString('hex')}:${encrypted}`;
+};
+
+const decryptValue = (value: string): string => {
+  const algorithm = 'aes-256-cbc';
+  const key = Buffer.from(process.env.ENCRYPTION_KEY || 'a-very-secure-32-char-encryption-key', 'utf-8');
+  const parts = value.split(':');
+  const iv = Buffer.from(parts[0], 'hex');
+  const encryptedText = parts[1];
+  const decipher = crypto.createDecipheriv(algorithm, key, iv);
+  let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+  return decrypted;
+};
+
+/**
+ * Mongoose schema definition
+ */
+const xeroConnectionSchema = new Schema<IXeroConnectionDocument>(
+  {
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    organizationId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Organization',
+      required: true,
+    },
+    tenantId: {
+      type: String,
+      required: true,
+    },
+    tenantName: {
+      type: String,
+      required: true,
+    },
+    refreshToken: {
+      type: String,
+      required: true,
+      set: encryptValue,
+      get: decryptValue,
+    },
+    tokenSetExpiresAt: {
+      type: Date,
+      required: true,
+    },
+    status: {
+      type: String,
+      enum: ['connected', 'disconnected', 'expired'],
+      default: 'connected',
+    },
+    lastSyncedAt: {
+      type: Date,
+    },
+    lastError: {
+      type: String,
+    },
+    additionalData: {
+      type: Map,
+      of: Schema.Types.Mixed,
+    },
+  },
+  {
+    timestamps: true,
+    toJSON: {
+      getters: true,
+      transform: (doc, ret) => {
+        delete ret.refreshToken;
+        return ret;
+      },
+    },
+  }
+);
+
+// Indexes for efficient querying
+xeroConnectionSchema.index({ userId: 1 });
+xeroConnectionSchema.index({ organizationId: 1 });
+xeroConnectionSchema.index({ status: 1 });
+xeroConnectionSchema.index({ tenantId: 1 }, { unique: true });
+
+/**
+ * Create and export the model
+ */
+const XeroConnection = mongoose.model<IXeroConnectionDocument>('XeroConnection', xeroConnectionSchema);
+
+export default XeroConnection;

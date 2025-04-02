@@ -1,0 +1,80 @@
+// TypeScript fixed
+import mongoose, { Schema, Document, Types } from 'mongoose';
+import * as mongoose from "mongoose";
+
+/**
+ * Warehouse type enum
+ */
+enum WarehouseType {
+  OWN = 'own',
+  THIRD_PARTY = 'third_party',
+  MARKETPLACE = 'marketplace'
+}
+
+/**
+ * Warehouse location interface
+ */
+interface WarehouseLocation {
+  address: string;
+  city: string;
+  state: string;
+  country: string;
+  postalCode: string;
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+  };
+}
+
+/**
+ * Warehouse document interface
+ */
+export interface IWarehouseDocument extends Document {
+  name: string;
+  type: WarehouseType;
+  location: WarehouseLocation;
+  isActive: boolean;
+  organizationId: Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+
+export interface IWarehouseModel extends mongoose.Model<IWarehouseDocument> {
+
+}
+
+
+/**
+ * Warehouse schema
+ */
+const WarehouseSchema = new Schema({
+  name: { type: String, required: true },
+  type: { 
+    type: String, 
+    enum: Object.values(WarehouseType),
+    default: WarehouseType.OWN,
+    required: true 
+  },
+  location: {
+    address: { type: String, required: true },
+    city: { type: String, required: true },
+    state: { type: String, required: true },
+    country: { type: String, required: true },
+    postalCode: { type: String, required: true },
+    coordinates: {
+      latitude: { type: Number },
+      longitude: { type: Number }
+    }
+  },
+  isActive: { type: Boolean, default: true },
+  organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
+}, { 
+  timestamps: true,
+  collection: 'warehouses'
+});
+
+/**
+ * Warehouse model
+ */
+export const WarehouseModel = mongoose.model<IWarehouseDocument>('Warehouse', WarehouseSchema);

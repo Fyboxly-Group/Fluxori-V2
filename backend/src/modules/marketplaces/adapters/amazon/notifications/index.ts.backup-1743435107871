@@ -1,0 +1,6 @@
+// TypeScript checked
+/**
+ * Export notifications module and factory for external use
+ */
+export { default as NotificationsModule } from "./notifications";
+export { default as NotificationsModuleFactory } from "./notifications-factory";

@@ -1,0 +1,149 @@
+// @ts-nocheck
+import { Request, Response } from 'express';
+import { XeroAuthService } from "../services/xero-auth.service";
+const xeroAuthService = new XeroAuthService();
+
+/**
+ * Controller for Xero authentication endpoints
+ */
+class XeroAuthController {
+  /**
+   * Initiate OAuth flow by redirecting to Xero authorization page
+   * 
+   * @param req - Express request
+   * @param res - Express response
+   */
+  public async initiateAuth(req: Request, res: Response): Promise<void> {
+    try {
+      const { userId, organizationId, redirectUrl } = req.query;
+      
+      // Validate required parameters
+      if(!userId || !organizationId) {
+        res.status(400).json({
+          success: false,
+          message: 'Missing required parameters: userId and organizationId',
+        });
+        return;
+      }
+      
+      // Get authorization URL
+      const authUrl = xeroAuthService.getAuthorizationUrl(
+        userId as string,
+        organizationId as string,
+        redirectUrl as string || `${req.protocol}://${req.get('host')}/api/xero/auth/success`
+      );
+      
+      // Redirect to Xero authorization page
+      res.redirect(authUrl);
+    } catch(error) {
+      console.error('Error initiating Xero auth:', error);
+      res.status(500).json({
+        success: false,
+        message: `Error initiating Xero authentication: ${error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)}`,
+      });
+    }
+  }
+
+  /**
+   * Handle callback from Xero after user authorizes the app
+   * 
+   * @param req - Express request
+   * @param res - Express response
+   */
+  public async handleCallback(req: Request, res: Response): Promise<void> {
+    try {
+      const { code, state } = req.query;
+      
+      if(!code || !state) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid callback: missing code or state',
+        });
+        return;
+      }
+      
+      // Exchange code for token
+      const { tokenResponse, decodedState } = await xeroAuthService.exchangeCodeForToken(
+        code as string,
+        state as string
+      );
+      
+      // Store connection in database
+      await xeroAuthService.storeConnection(
+        decodedState.userId,
+        decodedState.organizationId,
+        tokenResponse
+      );
+      
+      // Redirect to the original redirect URL or success page
+      res.redirect(decodedState.redirectUrl || '/api/xero/auth/success');
+    } catch(error) {
+      console.error('Error handling Xero callback:', error);
+      res.status(500).json({
+        success: false,
+        message: `Error handling Xero callback: ${error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)}`,
+      });
+    }
+  }
+
+  /**
+   * Simple success page after successful authorization
+   * 
+   * @param req - Express request
+   * @param res - Express response
+   */
+  public authSuccess(req: Request, res: Response): void {
+    res.status(200).send(`
+      <html>
+        <body style="font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; text-align: center;">
+          <div>
+            <h1>Xero Connection Successful</h1>
+            <p>Your Fluxori account has been successfully connected to Xero.</p>
+            <p>You can close this window and return to Fluxori.</p>
+            <script>
+              // Close this window after 5 seconds
+              setTimeout(function() {
+                window.close();
+              }, 5000);
+            </script>
+          </div>
+        </body>
+      </html>
+    `);
+  }
+
+  /**
+   * Disconnect Xero integration
+   * 
+   * @param req - Express request
+   * @param res - Express response
+   */
+  public async disconnect(req: Request, res: Response): Promise<void> {
+    try {
+      const { userId, organizationId } = req.body;
+      
+      if(!userId || !organizationId) {
+        res.status(400).json({
+          success: false,
+          message: 'Missing required parameters: userId and organizationId',
+        });
+        return;
+      }
+      
+      const success = await xeroAuthService.disconnectXero(userId, organizationId);
+      
+      res.status(200).json({
+        success,
+        message: success ? 'Xero disconnected successfully' : 'No active Xero connection found',
+      });
+    } catch(error) {
+      console.error('Error disconnecting Xero:', error);
+      res.status(500).json({
+        success: false,
+        message: `Error disconnecting Xero: ${error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)}`,
+      });
+    }
+  }
+}
+
+export default new XeroAuthController();

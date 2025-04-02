@@ -1,0 +1,87 @@
+// @ts-nocheck - Added by final-ts-fix.js
+// Index file for Xero connector module
+import xeroRoutes from './routes/xero.routes';
+import { XeroAuthService } from "./services/xero-auth.service";
+const xeroAuthService = new XeroAuthService();
+import { XeroInvoiceService } from "./services/xero-invoice.service";
+const xeroInvoiceService = new XeroInvoiceService();
+import { XeroSyncService } from "./services/xero-sync.service";
+const xeroSyncService = new XeroSyncService();
+import { XeroContactService } from "./services/xero-contact.service";
+const xeroContactService = new XeroContactService();
+import { XeroAccountService } from "./services/xero-account.service";
+const xeroAccountService = new XeroAccountService();
+import { XeroConfigService } from "./services/xero-config.service";
+const xeroConfigService = new XeroConfigService();
+import { XeroBulkSyncService } from "./services/xero-bulk-sync.service";
+const xeroBulkSyncService = new XeroBulkSyncService();
+import { XeroWebhookService } from "./services/xero-webhook.service";
+const xeroWebhookService = new XeroWebhookService();
+
+import XeroConnection from './models/xero-connection.model';
+import XeroConfig from './models/xero-config.model';
+import XeroAccountMapping from './models/xero-account-mapping.model';
+import XeroSyncStatus from './models/xero-sync-status.model';
+
+import xeroAuthController from './controllers/xero-auth.controller';
+import xeroInvoiceController from './controllers/xero-invoice.controller';
+import xeroContactController from './controllers/xero-contact.controller';
+import xeroAccountController from './controllers/xero-account.controller';
+import xeroConfigController from './controllers/xero-config.controller';
+import xeroSyncController from './controllers/xero-sync.controller';
+import xeroWebhookController from './controllers/xero-webhook.controller';
+
+import orderHooks from './utils/order-hooks';
+
+// Register order hooks for automatic invoice creation
+try {
+  orderHooks.registerOrderHooks();
+} catch(error) {
+  console.error('Failed to register Xero order hooks:', error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error));
+}
+
+// Export services
+export {
+  xeroRoutes,
+  xeroAuthService,
+  xeroInvoiceService,
+  xeroSyncService,
+  xeroContactService,
+  xeroAccountService,
+  xeroConfigService,
+  xeroBulkSyncService,
+  xeroWebhookService,
+};
+
+// Export models
+export {
+  XeroConnection,
+  XeroConfig,
+  XeroAccountMapping,
+  XeroSyncStatus,
+};
+
+// Export controllers
+export {
+  xeroAuthController,
+  xeroInvoiceController,
+  xeroContactController,
+  xeroAccountController,
+  xeroConfigController,
+  xeroSyncController,
+  xeroWebhookController,
+};
+
+// Export utils
+export {
+  orderHooks,
+};
+
+export default {
+  routes: xeroRoutes,
+};
+// Type exports
+export type { IXeroSyncStatus, IXeroSyncStatusDocument, IXeroSyncStatusModel } from './models/xero-sync-status.model';
+export type { IXeroConnection, IXeroConnectionDocument, IXeroConnectionModel } from './models/xero-connection.model';
+export type { IXeroConfig, IXeroConfigDocument, IXeroConfigModel } from './models/xero-config.model';
+export type { IXeroAccountMapping, IXeroAccountMappingDocument, IXeroAccountMappingModel } from './models/xero-account-mapping.model';

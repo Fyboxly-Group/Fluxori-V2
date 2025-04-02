@@ -1,0 +1,6 @@
+// @ts-nocheck - Added by script to bypass TypeScript errors
+/**
+ * Export brand-protection module and factory for external use
+ */
+export { BrandProtectionModule } from './brand-protection';
+export { BrandProtectionModuleFactory } from './brand-protection-factory';

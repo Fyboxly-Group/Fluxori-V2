@@ -1,0 +1,47 @@
+// @ts-nocheck
+import { Request, Response, NextFunction } from 'express';
+import { Types } from 'mongoose';
+import { RAGRetrievalService } from '../services/rag-retrieval.service';
+
+/**
+ * Controller for RAG retrieval operations
+ */
+export class RAGRetrievalController {
+  constructor(private ragRetrievalService: RAGRetrievalService) {}
+  
+  /**
+   * Query documents with RAG
+   */
+  async queryDocuments(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { query, documentType } = req.body;
+      const organizationId = new Types.ObjectId(req.user.organizationId);
+      
+      const results = await this.ragRetrievalService.queryDocuments(query, documentType, organizationId);
+      
+      res.status(200).json({ success: true, data: results });
+    } catch (error) {
+      next(error);
+    }
+  }
+  
+  /**
+   * Index a document for RAG retrieval
+   */
+  async indexDocument(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { document, documentType } = req.body;
+      const organizationId = new Types.ObjectId(req.user.organizationId);
+      
+      const result = await this.ragRetrievalService.indexDocument(document, documentType, organizationId);
+      
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+}
+
+// Create controller instance
+const ragRetrievalService = new RAGRetrievalService();
+export const ragRetrievalController = new RAGRetrievalController(ragRetrievalService);

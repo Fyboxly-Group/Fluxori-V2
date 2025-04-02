@@ -1,0 +1,28 @@
+import { Document, Types, Model } from 'mongoose';
+
+/**
+ * Base interface for Milestone (raw data)
+ */
+export interface IMilestone {
+  name?: any;
+  type?: string;
+  required: any;
+  trim?: any;
+  _id?: Types.ObjectId;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+/**
+ * Document interface for Milestone (includes Document methods)
+ */
+export interface IMilestoneDocument extends Document, IMilestone {
+  // Add document-specific methods here
+}
+
+/**
+ * Model interface for Milestone (includes static methods)
+ */
+export interface IMilestoneModel extends Model<IMilestoneDocument> {
+  // Add static model methods here
+}

@@ -1,0 +1,19 @@
+import { Injectable } from '../../../decorators/injectable.decorator';
+import { Types } from 'mongoose';
+import { AccountingAPI } from 'xero-node';
+import { XeroAuthService } from './xero-auth.service';
+
+/**
+ * XeroBulkSync.service for interacting with Xero
+ */
+@Injectable()
+export class XeroBulkSync.service {
+  constructor(private xeroAuthService: XeroAuthService) {}
+  
+  /**
+   * Get client for the given organizationId
+   */
+  async getClient(organizationId: Types.ObjectId): Promise<AccountingAPI> {
+    return this.xeroAuthService.getClient(organizationId);
+  }
+}

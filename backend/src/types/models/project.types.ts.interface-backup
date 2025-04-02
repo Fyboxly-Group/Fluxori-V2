@@ -1,0 +1,27 @@
+import { Document, Types, Model } from 'mongoose';
+
+/**
+ * Base interface for Project (raw data)
+ */
+export interface IProject {
+  description?: any;
+  type?: string;
+  required: any;
+  _id?: Types.ObjectId;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+/**
+ * Document interface for Project (includes Document methods)
+ */
+export interface IProjectDocument extends Document, IProject {
+  // Add document-specific methods here
+}
+
+/**
+ * Model interface for Project (includes static methods)
+ */
+export interface IProjectModel extends Model<IProjectDocument> {
+  // Add static model methods here
+}

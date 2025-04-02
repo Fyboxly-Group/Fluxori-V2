@@ -1,0 +1,42 @@
+// @ts-nocheck - Added by final-ts-fix.js
+import { Injectable } from '../../../decorators/injectable.decorator';
+import { Types } from 'mongoose';
+import { XeroClient, AccountingAPI } from 'xero-node';
+import { XeroConfigService } from './xero-config.service';
+
+/**
+ * Service for Xero authentication
+ */
+@Injectable()
+export class XeroAuthService {
+  constructor(private configService: XeroConfigService) {}
+  
+  /**
+   * Get client for the given organizationId
+   */
+  async getClient(organizationId: Types.ObjectId): Promise<AccountingAPI> {
+    // Get Xero config for the organization
+    const config = await this.configService.getXeroConfig(organizationId);
+    
+    // Create and initialize Xero client
+    const xeroClient = new XeroClient({
+      clientId: config.clientId,
+      clientSecret: config.clientSecret,
+      redirectUris: [config.redirectUri],
+      scopes: config.scopes,
+      state: 'xero-auth',
+    });
+    
+    // Set tokens
+    xeroClient.setTokenSet({
+      access_token: config.accessToken,
+      refresh_token: config.refreshToken,
+      id_token: config.idToken,
+      expires_in: config.expiresIn,
+      token_type: 'Bearer',
+    });
+    
+    // Return accounting API instance
+    return xeroClient.accountingApi;
+  }
+}

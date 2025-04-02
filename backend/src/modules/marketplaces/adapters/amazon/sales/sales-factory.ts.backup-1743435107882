@@ -1,0 +1,21 @@
+// @ts-nocheck
+import { BaseModule } from '../../base-module';
+
+/**
+ * SalesFactory creates and configures the SalesModule
+ */
+export class SalesFactory {
+  /**
+   * Creates a new SalesModule instance
+   * 
+   * @param config Module configuration
+   * @returns A configured SalesModule instance
+   */
+  static createSalesModule(config: any): BaseModule {
+    return {
+      id: 'sales',
+      name: 'sales',
+      version: '1.0.0'
+    };
+  }
+}

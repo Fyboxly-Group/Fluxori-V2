@@ -1,0 +1,35 @@
+// @ts-nocheck
+import { Request, Response, NextFunction } from 'express';
+import { Types } from 'mongoose';
+
+/**
+ * Get notifications for user
+ */
+export const getNotifications = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // Placeholder implementation
+    return res.status(200).json({ success: true, notifications: [] });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Mark notification as read
+ */
+export const markAsRead = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // Placeholder implementation
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Export controller
+ */
+export const NotificationController = {
+  getNotifications,
+  markAsRead
+};

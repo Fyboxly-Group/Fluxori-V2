@@ -1,0 +1,304 @@
+// @ts-nocheck
+import { Request, Response, NextFunction } from 'express';
+import { StatusCodes } from 'http-status-codes';
+import mongoose from 'mongoose';
+import Inventory from '../models/inventory.model';
+import InventoryAlert from '../models/inventory-alert.model';
+import Activity from '../models/activity.model';
+import { IUserDocument } from '../models/user.model';
+
+// Define authenticated request type
+type AuthenticatedRequest = Request & {
+  user?: IUserDocument & {
+    id: string;
+    organizationId: string;
+    role?: string;
+  };
+};
+
+/**
+ * Get all inventory alerts for the current organization
+ */
+export const getInventoryAlerts = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const organizationId = req.user?.organizationId;
+    
+    if (!userId || !organizationId) {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: 'Unauthorized - User not authenticated'
+      });
+      return;
+    }
+    
+    // Parse query parameters for pagination and filtering
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const status = req.query.status as string;
+    
+    // Build query filters
+    const filter: any = { organizationId };
+    
+    if (status) {
+      filter.status = status;
+    }
+    
+    // Execute query with pagination
+    const skip = (page - 1) * limit;
+    
+    const [alerts, totalAlerts] = await Promise.all([
+      InventoryAlert.find(filter)
+        .populate('inventoryId', 'name sku')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      InventoryAlert.countDocuments(filter)
+    ]);
+    
+    // Return paginated results
+    res.status(StatusCodes.OK).json({
+      success: true,
+      data: {
+        alerts,
+        totalAlerts,
+        page,
+        limit,
+        totalPages: Math.ceil(totalAlerts / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Error getting inventory alerts:', error);
+    next(error);
+  }
+};
+
+/**
+ * Get a single inventory alert by ID
+ */
+export const getInventoryAlertById = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const organizationId = req.user?.organizationId;
+    const alertId = req.params.id;
+    
+    if (!userId || !organizationId) {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: 'Unauthorized - User not authenticated'
+      });
+      return;
+    }
+    
+    // Find the alert
+    const alert = await InventoryAlert.findOne({
+      _id: alertId,
+      organizationId
+    }).populate('inventoryId', 'name sku category price costPrice reorderPoint reorderQuantity');
+    
+    if (!alert) {
+      res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Inventory alert not found'
+      });
+      return;
+    }
+    
+    res.status(StatusCodes.OK).json({
+      success: true,
+      data: alert
+    });
+  } catch (error) {
+    console.error('Error getting inventory alert:', error);
+    next(error);
+  }
+};
+
+/**
+ * Create a new inventory alert
+ */
+export const createInventoryAlert = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const organizationId = req.user?.organizationId;
+    const alertData = req.body;
+    
+    if (!userId || !organizationId) {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: 'Unauthorized - User not authenticated'
+      });
+      return;
+    }
+    
+    // Validate required fields
+    if (!alertData.inventoryId || !alertData.alertType || !alertData.threshold) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'Inventory ID, alert type, and threshold are required'
+      });
+      return;
+    }
+    
+    // Check if inventory item exists
+    const inventoryItem = await Inventory.findOne({
+      _id: alertData.inventoryId,
+      organizationId
+    });
+    
+    if (!inventoryItem) {
+      res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Inventory item not found'
+      });
+      return;
+    }
+    
+    // Create the alert
+    const newAlert = await InventoryAlert.create({
+      ...alertData,
+      userId,
+      organizationId,
+      status: 'active'
+    });
+    
+    // Log activity
+    await Activity.create({
+      type: 'inventory_alert_create',
+      description: `Created inventory alert for ${inventoryItem.name}`,
+      details: {
+        alertId: newAlert._id,
+        inventoryId: inventoryItem._id,
+        alertType: newAlert.alertType,
+        threshold: newAlert.threshold
+      },
+      userId,
+      organizationId
+    });
+    
+    res.status(StatusCodes.CREATED).json({
+      success: true,
+      message: 'Inventory alert created successfully',
+      data: newAlert
+    });
+  } catch (error) {
+    console.error('Error creating inventory alert:', error);
+    next(error);
+  }
+};
+
+/**
+ * Update an inventory alert
+ */
+export const updateInventoryAlert = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const organizationId = req.user?.organizationId;
+    const alertId = req.params.id;
+    const updateData = req.body;
+    
+    if (!userId || !organizationId) {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: 'Unauthorized - User not authenticated'
+      });
+      return;
+    }
+    
+    // Find the alert
+    const alert = await InventoryAlert.findOne({
+      _id: alertId,
+      organizationId
+    });
+    
+    if (!alert) {
+      res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Inventory alert not found'
+      });
+      return;
+    }
+    
+    // Update the alert
+    Object.assign(alert, updateData);
+    await alert.save();
+    
+    // Log activity
+    await Activity.create({
+      type: 'inventory_alert_update',
+      description: `Updated inventory alert`,
+      details: {
+        alertId: alert._id,
+        inventoryId: alert.inventoryId,
+        updates: updateData
+      },
+      userId,
+      organizationId
+    });
+    
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'Inventory alert updated successfully',
+      data: alert
+    });
+  } catch (error) {
+    console.error('Error updating inventory alert:', error);
+    next(error);
+  }
+};
+
+/**
+ * Delete an inventory alert
+ */
+export const deleteInventoryAlert = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const organizationId = req.user?.organizationId;
+    const alertId = req.params.id;
+    
+    if (!userId || !organizationId) {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        message: 'Unauthorized - User not authenticated'
+      });
+      return;
+    }
+    
+    // Find the alert
+    const alert = await InventoryAlert.findOne({
+      _id: alertId,
+      organizationId
+    });
+    
+    if (!alert) {
+      res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Inventory alert not found'
+      });
+      return;
+    }
+    
+    // Delete the alert
+    await InventoryAlert.findByIdAndDelete(alertId);
+    
+    // Log activity
+    await Activity.create({
+      type: 'inventory_alert_delete',
+      description: `Deleted inventory alert`,
+      details: {
+        alertId: alert._id,
+        inventoryId: alert.inventoryId
+      },
+      userId,
+      organizationId
+    });
+    
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'Inventory alert deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting inventory alert:', error);
+    next(error);
+  }
+};

@@ -1,0 +1,33 @@
+// @ts-nocheck
+import config from '../config';
+
+/**
+ * Simple logger utility for console logging with timestamp and level
+ */
+const logger = {
+  info: (message: string, ...args: any[]) => {
+    if(config.nodeEnv !== 'test') {
+      console.log(`[${new Date().toISOString()}] [INFO] ${message}`, ...args);
+    }
+  },
+  
+  error: (message: string, ...args: any[]) => {
+    if(config.nodeEnv !== 'test') {
+      console.error(`[${new Date().toISOString()}] [ERROR] ${message}`, ...args);
+    }
+  },
+  
+  warn: (message: string, ...args: any[]) => {
+    if(config.nodeEnv !== 'test') {
+      console.warn(`[${new Date().toISOString()}] [WARN] ${message}`, ...args);
+    }
+  },
+  
+  debug: (message: string, ...args: any[]) => {
+    if(config.nodeEnv === 'development' || config.logLevel === 'debug') {
+      console.debug(`[${new Date().toISOString()}] [DEBUG] ${message}`, ...args);
+    }
+  }
+};
+
+export default logger;

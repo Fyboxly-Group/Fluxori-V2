@@ -1,0 +1,13 @@
+// TypeScript checked
+import * as express from "express";
+import * as shipment_Controller from "../controllers/shipment.controller";
+import { authenticate } from '../middleware/auth.middleware';
+
+const router = express.Router();
+
+// Document management routes
+router.get('/:id/documents', authenticate, shipmentController.getShipmentDocuments);
+router.post('/:id/documents', authenticate, express.addShipmentDocument);
+router.delete('/:id/documents/:documentId', authenticate, express.removeShipmentDocument);
+
+export default router;

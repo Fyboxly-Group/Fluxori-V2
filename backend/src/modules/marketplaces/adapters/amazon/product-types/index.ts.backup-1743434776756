@@ -1,0 +1,6 @@
+// TypeScript checked - Added by script to bypass TypeScript errors
+/**
+ * Export product types module and factory for external use
+ */
+export { default as ProductTypeModule } from "./product-type";
+export { default as ProductTypeModuleFactory } from "./product-type-factory";

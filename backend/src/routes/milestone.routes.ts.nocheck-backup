@@ -1,0 +1,43 @@
+// @ts-nocheck
+import { Router, Request, Response, NextFunction } from 'express';
+import { authenticate } from '../middleware/auth.middleware';
+import * as milestoneController from '../controllers/milestone.controller';
+
+const router = Router();
+
+/**
+ * @route GET /api/milestones
+ * @desc Get all milestones
+ * @access Private
+ */
+router.get('/', authenticate, milestoneController.getMilestones);
+
+/**
+ * @route GET /api/milestones/:id
+ * @desc Get milestone by ID
+ * @access Private
+ */
+router.get('/:id', authenticate, milestoneController.getMilestoneById);
+
+/**
+ * @route POST /api/milestones
+ * @desc Create a new milestone
+ * @access Private
+ */
+router.post('/', authenticate, milestoneController.createMilestone);
+
+/**
+ * @route PUT /api/milestones/:id
+ * @desc Update milestone by ID
+ * @access Private
+ */
+router.put('/:id', authenticate, milestoneController.updateMilestone);
+
+/**
+ * @route DELETE /api/milestones/:id
+ * @desc Delete milestone by ID
+ * @access Private
+ */
+router.delete('/:id', authenticate, milestoneController.deleteMilestone);
+
+export default router;

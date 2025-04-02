@@ -1,0 +1,183 @@
+/**
+ * Script to rebuild the milestone.model.ts file
+ * Creating a complete model implementation
+ */
+const fs = require('fs');
+const path = require('path');
+
+// File paths
+const targetFile = path.join(__dirname, '../src/models/milestone.model.ts');
+const backupFile = path.join(__dirname, '../src/models/milestone.model.ts.bak');
+
+// Backup the original file
+if (fs.existsSync(targetFile)) {
+  console.log('Creating backup of original file...');
+  fs.copyFileSync(targetFile, backupFile);
+}
+
+// Define the rebuilt model content
+const newModelContent = `import mongoose, { Document, Model, Schema } from 'mongoose';
+
+export enum MilestoneStatus {
+  PLANNED = 'planned',
+  IN_PROGRESS = 'in-progress',
+  COMPLETED = 'completed',
+  DELAYED = 'delayed',
+  CANCELLED = 'cancelled'
+}
+
+/**
+ * Static methods for Milestone model
+ */
+export interface IMilestoneStatics {
+  // Add static methods as needed
+}
+
+/**
+ * Methods for Milestone model
+ */
+export interface IMilestoneMethods {
+  // Add methods as needed
+}
+
+export interface IMilestone {
+  title: string;
+  description?: string;
+  project: mongoose.Types.ObjectId;
+  status: MilestoneStatus | string;
+  dueDate: Date;
+  completedDate?: Date;
+  completedBy?: mongoose.Types.ObjectId;
+  priority?: number;
+  tasks?: mongoose.Types.ObjectId[];
+  deliverables?: string[];
+  attachments?: {
+    name: string;
+    fileUrl: string;
+    uploadedBy: mongoose.Types.ObjectId;
+    uploadedAt: Date;
+  }[];
+  notifyStakeholders?: boolean;
+  organizationId: mongoose.Types.ObjectId;
+  createdBy: mongoose.Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface IMilestoneDocument extends IMilestone, Document, IMilestoneMethods {}
+
+/**
+ * Type for Milestone model with statics
+ */
+export type MilestoneModel = Model<IMilestoneDocument> & IMilestoneStatics;
+
+const attachmentSchema = new Schema({
+  name: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  fileUrl: {
+    type: String,
+    required: true
+  },
+  uploadedBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  uploadedAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
+const milestoneSchema = new Schema<IMilestoneDocument, MilestoneModel, IMilestoneMethods>(
+  {
+    title: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    description: {
+      type: String,
+      trim: true
+    },
+    project: {
+      type: Schema.Types.ObjectId,
+      ref: 'Project',
+      required: true
+    },
+    status: {
+      type: String,
+      enum: Object.values(MilestoneStatus),
+      default: MilestoneStatus.PLANNED
+    },
+    dueDate: {
+      type: Date,
+      required: true
+    },
+    completedDate: {
+      type: Date
+    },
+    completedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    priority: {
+      type: Number,
+      default: 0
+    },
+    tasks: [{
+      type: Schema.Types.ObjectId,
+      ref: 'Task'
+    }],
+    deliverables: [{
+      type: String,
+      trim: true
+    }],
+    attachments: [attachmentSchema],
+    notifyStakeholders: {
+      type: Boolean,
+      default: true
+    },
+    organizationId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Organization',
+      required: true
+    },
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+// Indexes for efficient querying
+milestoneSchema.index({ project: 1 });
+milestoneSchema.index({ status: 1 });
+milestoneSchema.index({ dueDate: 1 });
+milestoneSchema.index({ organizationId: 1 });
+milestoneSchema.index({ 'tasks': 1 });
+
+// Pre-save hook to update status if completed
+milestoneSchema.pre('save', function(next) {
+  if (this.isModified('completedDate') && this.completedDate && this.status !== MilestoneStatus.COMPLETED) {
+    this.status = MilestoneStatus.COMPLETED;
+  }
+  next();
+});
+
+const Milestone = mongoose.model<IMilestoneDocument, MilestoneModel>('Milestone', milestoneSchema);
+
+export default Milestone;`;
+
+// Write the new file
+console.log('Writing new model file...');
+fs.writeFileSync(targetFile, newModelContent);
+
+console.log('Successfully rebuilt milestone.model.ts');

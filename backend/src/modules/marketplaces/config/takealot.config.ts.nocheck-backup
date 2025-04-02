@@ -1,0 +1,31 @@
+// @ts-nocheck
+/**
+ * Takealot marketplace configuration
+ * In production, these values would come from environment variables or GCP Secret Manager
+ */
+
+interface TakealotConfig {
+  apiBaseUrl: string;
+  apiVersion: string;
+  defaultTimeout: number; // Milliseconds
+  maxRetries: number;
+  initialRetryDelay: number; // Milliseconds
+}
+
+// Load configuration from environment variables or use defaults
+export const takealotConfig: TakealotConfig = {
+  apiBaseUrl: process.env.TAKEALOT_API_BASE_URL || 'https://seller-api.takealot.com',
+  apiVersion: process.env.TAKEALOT_API_VERSION || 'v1',
+  defaultTimeout: parseInt(process.env.TAKEALOT_API_TIMEOUT || '30000', 10),
+  maxRetries: parseInt(process.env.TAKEALOT_API_MAX_RETRIES || '3', 10),
+  initialRetryDelay: parseInt(process.env.TAKEALOT_API_RETRY_DELAY || '1000', 10)
+};
+
+// Re-export for direct use
+export const {
+  apiBaseUrl,
+  apiVersion,
+  defaultTimeout,
+  maxRetries,
+  initialRetryDelay
+} = takealotConfig;

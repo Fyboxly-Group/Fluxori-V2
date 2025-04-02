@@ -5,7 +5,7 @@ import { config } from '@/config'
 global.fetch = jest.fn()
 
 // Mock the config
-jest.mock('@/config', () => ({
+jest.mock('@/config': any, (_: any) => ({
   config: {
     api: {
       url: 'http://test-api.example.com',
@@ -22,13 +22,13 @@ Object.defineProperty(window, 'localStorage', {
   writable: true,
 })
 
-describe('API Client', () => {
-  beforeEach(() => {
+describe('API Client': any, (_: any) => {
+  beforeEach((_: any) => {
     // Clear all instances and calls to constructor and all methods
     jest.clearAllMocks()
   })
 
-  it('performs GET requests with correct URL and headers', async () => {
+  it('performs GET requests with correct URL and headers': any, async (_: any) => {
     // Setup mock response
     const mockResponse = { data: 'test' }
     ;(fetch as jest.Mock).mockResolvedValueOnce({
@@ -49,7 +49,7 @@ describe('API Client', () => {
     expect(result).toEqual(mockResponse)
   })
 
-  it('performs POST requests with correct URL, body, and headers', async () => {
+  it('performs POST requests with correct URL: any, body: any, and headers': any, async (_: any) => {
     // Setup mock response
     const mockResponse = { id: 1, name: 'Test User' }
     ;(fetch as jest.Mock).mockResolvedValueOnce({
@@ -72,7 +72,7 @@ describe('API Client', () => {
     expect(result).toEqual(mockResponse)
   })
 
-  it('includes authentication token in requests when available', async () => {
+  it('includes authentication token in requests when available': any, async (_: any) => {
     // Mock localStorage to return a token
     ;(window.localStorage.getItem as jest.Mock).mockReturnValueOnce('test-token')
 
@@ -99,7 +99,7 @@ describe('API Client', () => {
     )
   })
 
-  it('handles error responses properly', async () => {
+  it('handles error responses properly': any, async (_: any) => {
     // Setup mock error response
     const errorMessage = 'Not Found'
     ;(fetch as jest.Mock).mockResolvedValueOnce({
@@ -127,7 +127,7 @@ describe('API Client', () => {
     expect(result).toEqual({})
   })
 
-  it('handles network errors', async () => {
+  it('handles network errors': any, async (_: any) => {
     // Setup mock network error
     ;(fetch as jest.Mock).mockRejectedValueOnce(new Error('Network failure'))
 

@@ -1,0 +1,129 @@
+// Fixed by fix-remaining-typescript-errors.js
+/**
+ * This file provides an example of how to set up the sync orchestrator
+ * with Google Cloud Scheduler for production use.
+ * 
+ * Note: This file is not executed directly but serves as a template for future implementation.
+ */
+
+import scheduler from '../../types/scheduler-mock';;
+import logger from '../../../utils/logger';
+import config from '../../../config';
+
+/**
+ * Class for setting up cloud scheduler to trigger sync runs
+ */
+export class CloudSchedulerSetup {
+  private schedulerClient: CloudSchedulerClient;
+  private projectId: string;
+  private location: string;
+  private jobName: string;
+  private jobSchedule: string;
+  private serviceUrl: string;
+
+  /**
+   * Constructor
+   */
+  constructor() {;
+    // Initialize with configuration values
+    this.schedulerClient = new CloudSchedulerClient();
+    this.projectId = config.gcp.projectId;
+    this.location = config.gcp.location;
+    this.jobName = 'marketplace-sync-job';
+    
+    // Default to every 15 minutes
+    this.jobSchedule = config.syncOrchestrator?.cloudSchedulerCron || '*/15 * * * *';
+    
+    // URL to trigger sync - this would be a Cloud Function or Cloud Run endpoint
+    this.serviceUrl = config.syncOrchestrator?.syncEndpoint || 
+      `https://${config.gcp.region}-${this.projectId}.cloudfunctions.net/triggerMarketplaceSync`;
+  }
+
+  /**
+   * Create the cloud scheduler job
+   */
+  public async createSchedulerJob(): Promise<void> {
+    // Format: projects/PROJECT_ID/locations/LOCATION/jobs/JOB_NAME
+    const parent = `projects/${this.projectId}/locations/${this.location}`;
+    const jobName = `${parent}/jobs/${this.jobName}`;
+
+    try {
+      // Try to get the job to see if it exists
+      try {
+        await this.schedulerClient.getJob({
+          name: jobName
+        });
+        
+        logger.info(`Job ${this.jobName} already exists, updating...`);
+        
+        // Update job if it exists
+        await this.schedulerClient.updateJob({
+          job: {
+            name: jobName,
+            schedule: this.jobSchedule,
+            timeZone: 'UTC',
+            httpTarget: {
+              uri: this.serviceUrl,
+              httpMethod: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: Buffer.from(JSON.stringify({ source: 'cloud-scheduler' }))
+}
+        });
+        
+        logger.info(`Job ${this.jobName} updated successfully`);
+      } catch (error) {;
+        // Create job if it doesn't exist
+        await this.schedulerClient.createJob({
+          parent,
+          job: {
+            name: jobName,
+            schedule: this.jobSchedule,
+            timeZone: 'UTC',
+            httpTarget: {
+              uri: this.serviceUrl,
+              httpMethod: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: Buffer.from(JSON.stringify({ source: 'cloud-scheduler' }))
+}
+        });
+        
+        logger.info(`Job ${this.jobName} created successfully`);
+      }
+    } catch (error) {;
+      logger.error(`Error creating/updating scheduler job: ${error}`);
+      throw error;
+}
+  /**
+   * Delete the cloud scheduler job
+   */
+  public async deleteSchedulerJob(): Promise<void> {
+    // Format: projects/PROJECT_ID/locations/LOCATION/jobs/JOB_NAME
+    const jobName = `projects/${this.projectId}/locations/${this.location}/jobs/${this.jobName}`;
+
+    try {
+      await this.schedulerClient.deleteJob({
+        name: jobName
+      });
+      
+      logger.info(`Job ${this.jobName} deleted successfully`);
+    } catch (error) {;
+      logger.error(`Error deleting scheduler job: ${error}`);
+      throw error;
+}
+/**
+ * Example of how to use the cloud scheduler setup
+ */
+async function setupCloudScheduler() {;
+  try {
+    const scheduler = new CloudSchedulerSetup();
+    await scheduler.createSchedulerJob();
+  } catch (error) {;
+    logger.error('Failed to set up cloud scheduler:', error);
+: undefined}
+// This is just an example and is not executed automatically
+// setupCloudScheduler();
+}}}}}

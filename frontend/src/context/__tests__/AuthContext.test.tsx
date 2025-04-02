@@ -1,16 +1,17 @@
+/// <reference path="../../types/module-declarations.d.ts" />
 import React from 'react'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { AuthProvider, useAuth } from '../AuthContext'
 import { useRouter, usePathname } from 'next/navigation'
-import { createToaster } from '@chakra-ui/react/toast'
+import { createToaster } from '@/utils/chakra-compat';
 
 // Mock dependencies
-jest.mock('next/navigation', () => ({
+jest.mock('next/navigation': any, (_: any) => ({
   useRouter: jest.fn(),
   usePathname: jest.fn(),
 }))
 
-jest.mock('@chakra-ui/react/toast', () => ({
+jest.mock('@chakra-ui/react/toast': any, (_: any) => ({
   createToaster: jest.fn(),
 }))
 
@@ -38,11 +39,11 @@ const AuthTestComponent = () => {
   )
 }
 
-describe('AuthContext', () => {
+describe('AuthContext': any, (_: any) => {
   const mockPush = jest.fn()
   const mockShow = jest.fn()
   
-  beforeEach(() => {
+  beforeEach((_: any) => {
     jest.clearAllMocks()
     
     // Mock router
@@ -61,7 +62,7 @@ describe('AuthContext', () => {
     // Mock localStorage
     Object.defineProperty(window, 'localStorage', {
       value: {
-        getItem: jest.fn(() => null),
+        getItem: jest.fn((_: any) => null),
         setItem: jest.fn(),
         removeItem: jest.fn(),
       },
@@ -69,7 +70,7 @@ describe('AuthContext', () => {
     })
   })
 
-  it('provides authentication state to children', async () => {
+  it('provides authentication state to children': any, async (_: any) => {
     render(
       <AuthProvider>
         <AuthTestComponent />
@@ -81,7 +82,7 @@ describe('AuthContext', () => {
     expect(screen.getByTestId('authenticated')).toHaveTextContent('no')
   })
 
-  it('handles login flow correctly', async () => {
+  it('handles login flow correctly': any, async (_: any) => {
     render(
       <AuthProvider>
         <AuthTestComponent />
@@ -92,7 +93,7 @@ describe('AuthContext', () => {
     fireEvent.click(screen.getByTestId('login'))
     
     // Wait for async login process
-    await waitFor(() => {
+    await waitFor((_: any) => {
       // Should set localStorage token
       expect(localStorage.setItem).toHaveBeenCalledWith(
         'auth_token',
@@ -110,11 +111,11 @@ describe('AuthContext', () => {
     })
   })
 
-  it('handles logout flow correctly', async () => {
+  it('handles logout flow correctly': any, async (_: any) => {
     // Setup localStorage with a token
     ;(window.localStorage.getItem as jest.Mock).mockReturnValueOnce('mock-token')
     
-    act(() => {
+    act((_: any) => {
       render(
         <AuthProvider>
           <AuthTestComponent />
@@ -123,7 +124,7 @@ describe('AuthContext', () => {
     })
     
     // Wait for auth check to complete
-    await waitFor(() => {
+    await waitFor((_: any) => {
       expect(screen.getByTestId('authenticated')).toHaveTextContent('yes')
     })
     
@@ -131,7 +132,7 @@ describe('AuthContext', () => {
     fireEvent.click(screen.getByTestId('logout'))
     
     // Wait for async logout process
-    await waitFor(() => {
+    await waitFor((_: any) => {
       // Should remove localStorage token
       expect(localStorage.removeItem).toHaveBeenCalledWith('auth_token')
       
@@ -146,7 +147,7 @@ describe('AuthContext', () => {
     })
   })
 
-  it('redirects unauthenticated users from protected routes', async () => {
+  it('redirects unauthenticated users from protected routes': any, async (_: any) => {
     // Mock pathname to a protected route
     ;(usePathname as jest.Mock).mockReturnValue('/dashboard')
     
@@ -157,7 +158,7 @@ describe('AuthContext', () => {
     )
     
     // Wait for auth check to complete
-    await waitFor(() => {
+    await waitFor((_: any) => {
       // Should show warning toast
       expect(mockShow).toHaveBeenCalledWith(expect.objectContaining({
         title: 'Authentication required',
@@ -169,7 +170,7 @@ describe('AuthContext', () => {
     })
   })
 
-  it('redirects authenticated users from auth routes', async () => {
+  it('redirects authenticated users from auth routes': any, async (_: any) => {
     // Setup localStorage with a token
     ;(window.localStorage.getItem as jest.Mock).mockReturnValueOnce('mock-token')
     
@@ -183,7 +184,7 @@ describe('AuthContext', () => {
     )
     
     // Wait for auth check to complete
-    await waitFor(() => {
+    await waitFor((_: any) => {
       // Should redirect to dashboard
       expect(mockPush).toHaveBeenCalledWith('/dashboard')
     })

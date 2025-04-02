@@ -1,49 +1,52 @@
 /**
  * Notification Center Component
- * A standalone component for viewing all notifications on a dedicated page
+ * A centralized notification management UI
  */
+/// <reference path="../../types/module-declarations.d.ts" />
 
-import { useState, useCallback } from 'react';
-import { Box } from '@chakra-ui/react/box';
-import { Heading } from '@chakra-ui/react/heading';
-import { Card, CardHeader, CardBody } from '@chakra-ui/react/card';
-import { HStack } from '@chakra-ui/react/stack';
-import { Button } from '@chakra-ui/react/button';
-import { ButtonGroup } from '@chakra-ui/react/button-group';
-import { Select } from '@chakra-ui/react/select';
-import { 
-  Tab, 
-  Tabs, 
-  TabList, 
-  TabPanel, 
-  TabPanels 
-} from '@chakra-ui/react/tabs';
-import { Text } from '@chakra-ui/react/text';
-import { Flex } from '@chakra-ui/react/flex';
-import { Icon } from '@chakra-ui/react/icon';
-import { RepeatIcon } from '@chakra-ui/icons';
-import { NotificationList } from './NotificationList';
+
+import React, { useState, useCallback } from 'react';
+import { Card  } from '@/utils/chakra-compat';
+import { CardHeader  } from '@/utils/chakra-compat';
+import { CardBody  } from '@/utils/chakra-compat';
+import { Heading  } from '@/utils/chakra-compat';
+import { Text  } from '@/utils/chakra-compat';
+import { Box  } from '@/utils/chakra-compat';
+import { HStack  } from '@/utils/chakra-compat';
+import { Flex  } from '@/utils/chakra-compat';
+import { Button  } from '@/utils/chakra-compat';
+import { ButtonGroup  } from '@/utils/chakra-compat';
+import { Select  } from '@/utils/chakra-compat';
+import { Tabs  } from '@/utils/chakra-compat';
+import { TabList  } from '@/utils/chakra-compat';
+import { TabPanels  } from '@/utils/chakra-compat';
+import { TabPanel  } from '@/utils/chakra-compat';
+import { Tab  } from '@/utils/chakra-compat';
+import { RefreshCcw } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
+import { NotificationList } from './NotificationList';
 import { Notification, NotificationCategory } from '../api/notification.api';
 
+interface NotificationCenterProps {}
+
 export function NotificationCenter() {
-  // State
+  // State for tab and category filters
   const [activeTab, setActiveTab] = useState(0);
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   
-  // Notifications
+  // Use notifications hook to get data and actions
   const { 
     notifications, 
     unreadCount, 
-    isLoading, 
+    loading, 
     markAllAsRead, 
     clearAllNotifications,
     refreshNotifications
   } = useNotifications();
   
-  // Filter notifications by read status and category
+  // Filter notifications based on tab and category
   const filteredNotifications = notifications.filter(notification => {
-    // Filter by read status
+    // Filter by read status (tab 1 shows only unread)
     if (activeTab === 1 && notification.read) return false;
     
     // Filter by category
@@ -53,26 +56,25 @@ export function NotificationCenter() {
   });
   
   // Get unique categories from notifications
-  const uniqueCategories = notifications.reduce<NotificationCategory[]>((acc, notification) => {
+  const uniqueCategories = notifications.reduce<NotificationCategory[]>((acc: any, notification: any) => {
     if (!acc.includes(notification.category)) {
       acc.push(notification.category);
     }
     return acc;
   }, []);
-  const categories = uniqueCategories;
   
-  // Handle refresh
-  const handleRefresh = useCallback(async () => {
+  // Handler to refresh notifications
+  const handleRefresh = useCallback(async (_: any) => {
     await refreshNotifications();
   }, [refreshNotifications]);
   
-  // Handle mark all as read
-  const handleMarkAllAsRead = useCallback(async () => {
+  // Handler to mark all notifications as read
+  const handleMarkAllAsRead = useCallback(async (_: any) => {
     await markAllAsRead();
   }, [markAllAsRead]);
   
-  // Handle clear all
-  const handleClearAll = useCallback(async () => {
+  // Handler to clear all notifications
+  const handleClearAll = useCallback(async (_: any) => {
     await clearAllNotifications();
   }, [clearAllNotifications]);
   
@@ -88,23 +90,23 @@ export function NotificationCenter() {
           <Heading size="md">Notifications</Heading>
           
           <HStack>
-            <Select 
-              size="sm" 
+            <Select
+              size="sm"
               value={categoryFilter} 
               onChange={handleCategoryChange}
               minWidth="150px"
             >
               <option value="ALL">All Categories</option>
-              {categories.map(category => (
+              {uniqueCategories.map(category => (
                 <option key={category} value={category}>
                   {category.replace('_', ' ')}
                 </option>
               ))}
             </Select>
             
-            <Button 
-              size="sm" 
-              leftIcon={<RepeatIcon />} 
+            <Button
+              size="sm"
+              leftIcon={<RefreshCcw size={16} />} 
               onClick={handleRefresh}
               variant="ghost"
             >
@@ -115,9 +117,16 @@ export function NotificationCenter() {
       </CardHeader>
       
       <CardBody p={0}>
-        <Tabs isFitted index={activeTab} onChange={setActiveTab}>
+        <Tabs index={activeTab} onChange={index => setActiveTab(index)}>
           <TabList>
-            <Tab>All</Tab>
+            <Tab>
+              All
+              {notifications.length > 0 && (
+                <Text ml={1} fontSize="xs" fontWeight="bold">
+                  ({notifications.length})
+                </Text>
+              )}
+            </Tab>
             <Tab>
               Unread
               {unreadCount > 0 && (
@@ -131,20 +140,20 @@ export function NotificationCenter() {
           <Box mb={4} mt={2} px={4}>
             <Flex justify="flex-end">
               <ButtonGroup size="sm">
-                <Button 
-                  isDisabled={unreadCount === 0} 
+                <Button
+                  disabled={unreadCount === 0} 
                   onClick={handleMarkAllAsRead}
                   variant="outline"
                 >
-                  Mark all as read
+                  Mark All as Read
                 </Button>
-                <Button 
-                  isDisabled={filteredNotifications.length === 0} 
+                <Button
+                  disabled={filteredNotifications.length === 0} 
                   onClick={handleClearAll}
                   colorScheme="red"
                   variant="outline"
                 >
-                  Clear all
+                  Clear All
                 </Button>
               </ButtonGroup>
             </Flex>
@@ -152,15 +161,15 @@ export function NotificationCenter() {
           
           <TabPanels>
             <TabPanel p={0}>
-              <NotificationList 
+              <NotificationList
                 notifications={filteredNotifications} 
-                isLoading={isLoading} 
+                isLoading={loading}
               />
             </TabPanel>
             <TabPanel p={0}>
-              <NotificationList 
+              <NotificationList
                 notifications={filteredNotifications} 
-                isLoading={isLoading} 
+                isLoading={loading}
               />
             </TabPanel>
           </TabPanels>
@@ -169,3 +178,5 @@ export function NotificationCenter() {
     </Card>
   );
 }
+
+export default NotificationCenter;

@@ -1,0 +1,122 @@
+// TypeScript fixed
+// Conversation model for AI Customer Service Agent
+import mongoose, { Document, Schema } from 'mongoose';
+
+// Define message roles - same as what Vertex AI expects
+export enum MessageRole {
+  USER = 'user',
+  ASSISTANT = 'assistant', 
+  SYSTEM = 'system'
+}
+
+// Define conversation status values
+export enum ConversationStatus {
+  ACTIVE = 'active',
+  ESCALATED = 'escalated', 
+  CLOSED = 'closed'
+}
+
+// Define a message within a conversation
+export interface IMessage {
+  role: MessageRole;
+  content: string;
+  timestamp: Date;
+  metadata?: {
+    tokens?: number;
+    confidence?: number;
+    [key: string]: any;
+  };
+}
+
+// Define the overall conversation
+export interface IConversation {
+  userId: mongoose.Types.ObjectId; // The user who initiated the conversation
+  organizationId?: mongoose.Types.ObjectId; // Optional organization context
+  messages: IMessage[];
+  status: ConversationStatus;
+  topic?: string; // Conversation topic/summary
+  metadata?: {
+    escalationReason?: string;
+    escalatedAt?: Date;
+    closedAt?: Date;
+    ragDocuments?: string[]; // References to KB documents used
+    [key: string]: any;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+  lastMessageAt: Date;
+}
+
+// Define the document interface for mongoose
+export interface IConversationDocument extends IConversation, Document {}
+
+
+export interface IConversationModel extends mongoose.Model<IConversationDocument> {
+
+}
+
+
+// Create the schema for a message
+const messageSchema = new Schema<IMessage>({
+  role: {
+    type: String,
+    required: true,
+    enum: Object.values(MessageRole)
+  },
+  content: {
+    type: String,
+    required: true
+  },
+  timestamp: {
+    type: Date,
+    default: Date.now
+  },
+  metadata: {
+    type: Schema.Types.Mixed,
+    default: {}
+  }
+}, { _id: false });
+
+// Create the schema for a conversation
+const conversationSchema = new Schema<IConversationDocument>({
+  userId: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    index: true
+  },
+  organizationId: {
+    type: Schema.Types.ObjectId,
+    index: true
+  },
+  messages: [messageSchema],
+  status: {
+    type: String,
+    enum: Object.values(ConversationStatus),
+    default: ConversationStatus.ACTIVE,
+    index: true
+  },
+  topic: {
+    type: String
+  },
+  metadata: {
+    type: Schema.Types.Mixed,
+    default: {}
+  },
+  lastMessageAt: {
+    type: Date,
+    default: Date.now,
+    index: true
+  }
+}, {
+  timestamps: true
+});
+
+// Create indexes for efficient querying
+conversationSchema.index({ userId: 1, status: 1 });
+conversationSchema.index({ organizationId: 1, status: 1 });
+conversationSchema.index({ lastMessageAt: -1 });
+
+// Create and export the model
+const Conversation = mongoose.model<IConversationDocument>('Conversation', conversationSchema);
+export default Conversation;

@@ -1,0 +1,6 @@
+// TypeScript checked
+/**
+ * Export authorization module and factory for external use
+ */
+export { default as AuthorizationModule } from "./authorization";
+export { default as AuthorizationModuleFactory } from "./authorization-factory";

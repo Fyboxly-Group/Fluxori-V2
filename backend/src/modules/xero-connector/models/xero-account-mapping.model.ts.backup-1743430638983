@@ -1,0 +1,61 @@
+// @ts-nocheck
+
+import mongoose, { Document, Schema, Model } from 'mongoose';
+import { AccountMapping } from '../types';
+
+/**
+ * Document interface for Mongoose
+ */
+export interface IXeroAccountMappingDocument extends AccountMapping, Document {}
+
+/**
+ * Model type for XeroAccountMapping
+ */
+export type XeroAccountMappingModel = Model<IXeroAccountMappingDocument>;
+
+/**
+ * Mongoose schema definition
+ */
+const xeroAccountMappingSchema = new Schema<IXeroAccountMappingDocument>(
+  {
+    fluxoriCategoryId: {
+      type: String,
+      index: true,
+    },
+    fluxoriCategory: {
+      type: String,
+    },
+    xeroAccountId: {
+      type: String,
+      required: true,
+    },
+    xeroAccountCode: {
+      type: String,
+      required: true,
+    },
+    xeroAccountName: {
+      type: String,
+      required: true,
+    },
+    isDefault: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+/**
+ * Indexes for efficient querying
+ */
+xeroAccountMappingSchema.index({ fluxoriCategoryId: 1 }, { unique: true, sparse: true });
+xeroAccountMappingSchema.index({ isDefault: 1 });
+
+/**
+ * Create and export the model
+ */
+const XeroAccountMapping = mongoose.model<IXeroAccountMappingDocument>('XeroAccountMapping', xeroAccountMappingSchema);
+
+export default XeroAccountMapping;

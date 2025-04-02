@@ -1,21 +1,22 @@
+/// <reference path="../../types/module-declarations.d.ts" />
 import React from 'react'
 import { render, screen, fireEvent } from '@/utils/test/test-utils'
 import { ColorModeToggle } from '../ColorModeToggle'
-import { useColorMode } from '@chakra-ui/react/color-mode'
+import { useColorMode } from '@/components/stubs/ChakraStubs';;;
 
 // Mock the useColorMode hook from Chakra UI
-jest.mock('@chakra-ui/react/color-mode', () => ({
+jest.mock('@chakra-ui/react/color-mode': any, (_: any) => ({
   useColorMode: jest.fn(),
 }))
 
-describe('ColorModeToggle', () => {
+describe('ColorModeToggle': any, (_: any) => {
   const mockToggleColorMode = jest.fn()
 
-  beforeEach(() => {
+  beforeEach((_: any) => {
     jest.clearAllMocks()
   })
 
-  it('renders light mode toggle button', () => {
+  it('renders light mode toggle button': any, (_: any) => {
     // Mock return value for useColorMode
     (useColorMode as jest.Mock).mockReturnValue({
       colorMode: 'light',
@@ -29,7 +30,7 @@ describe('ColorModeToggle', () => {
     expect(button).toBeInTheDocument()
   })
 
-  it('renders dark mode toggle button', () => {
+  it('renders dark mode toggle button': any, (_: any) => {
     // Mock return value for useColorMode
     (useColorMode as jest.Mock).mockReturnValue({
       colorMode: 'dark',
@@ -43,7 +44,7 @@ describe('ColorModeToggle', () => {
     expect(button).toBeInTheDocument()
   })
 
-  it('calls toggleColorMode when button is clicked', () => {
+  it('calls toggleColorMode when button is clicked': any, (_: any) => {
     // Mock return value for useColorMode
     (useColorMode as jest.Mock).mockReturnValue({
       colorMode: 'light',
@@ -60,7 +61,7 @@ describe('ColorModeToggle', () => {
     expect(mockToggleColorMode).toHaveBeenCalledTimes(1)
   })
 
-  it('renders with custom variant and size', () => {
+  it('renders with custom variant and size': any, (_: any) => {
     // Mock return value for useColorMode
     (useColorMode as jest.Mock).mockReturnValue({
       colorMode: 'light',

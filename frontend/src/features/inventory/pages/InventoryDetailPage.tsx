@@ -1,15 +1,25 @@
+/// <reference path="../../types/module-declarations.d.ts" />
 'use client';
 
-import { Box } from '@chakra-ui/react/box';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink } from '@chakra-ui/react/breadcrumb';
-import { Heading } from '@chakra-ui/react/heading';
-import { HStack, VStack } from '@chakra-ui/react/stack';
-import { Button } from '@chakra-ui/react/button';
-import { useColorMode } from '@chakra-ui/react/color-mode';
+import React from 'react';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink } from '@/utils/chakra-compat';
+import { useColorMode } from '@/components/stubs/ChakraStubs';;;;
+;
+;
+;
+;
+;
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 
 import { InventoryDetail } from '../components/InventoryDetail';
+import { Box  } from '@/utils/chakra-compat';
+import { VStack  } from '@/utils/chakra-compat';
+import { HStack  } from '@/utils/chakra-compat';
+import { Heading  } from '@/utils/chakra-compat';
+import { Button  } from '@/utils/chakra-compat';
+
+interface InventoryDetailPageProps {}
 
 export default function InventoryDetailPage() {
   const { colorMode } = useColorMode();
@@ -19,9 +29,9 @@ export default function InventoryDetailPage() {
   
   return (
     <Box p={6}>
-      <VStack align="stretch" spacing={6}>
+      <VStack align="stretch" gap={6}>
         <HStack justify="space-between">
-          <VStack align="start" spacing={1}>
+          <VStack align="start" gap={1}>
             <Breadcrumb fontSize="sm">
               <BreadcrumbItem>
                 <BreadcrumbLink as={Link} href="/inventory">Inventory</BreadcrumbLink>
@@ -33,7 +43,7 @@ export default function InventoryDetailPage() {
             <Heading size="xl">Inventory Item Details</Heading>
           </VStack>
           
-          <HStack spacing={3}>
+          <HStack gap={3}>
             <Button 
               variant="outline" 
               onClick={() => router.back()}

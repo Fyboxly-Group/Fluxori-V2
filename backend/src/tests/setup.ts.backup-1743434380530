@@ -1,0 +1,62 @@
+// @ts-nocheck
+/**
+ * Jest Setup
+ * This file is automatically loaded by Jest before running tests.
+ */
+
+import dotenv from 'dotenv';
+import mongoose from 'mongoose';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+
+// Load environment variables from .env file
+dotenv.config({ path: '.env.test' });
+
+// Global variables for MongoDB memory server
+let mongoServer;
+
+// Setup before all tests
+beforeAll(async () => {
+  // Create MongoDB memory server
+  mongoServer = await MongoMemoryServer.create();
+  const mongoUri = mongoServer.getUri();
+  
+  // Connect to in-memory database
+  await mongoose.connect(mongoUri);
+  
+  console.log('Connected to in-memory MongoDB instance');
+});
+
+// Cleanup after all tests
+afterAll(async () => {
+  // Disconnect from database
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.disconnect();
+  }
+  
+  // Stop MongoDB memory server
+  if (mongoServer) {
+    await mongoServer.stop();
+  }
+  
+  console.log('Disconnected from in-memory MongoDB instance');
+});
+
+// Clear database between tests
+afterEach(async () => {
+  const collections = mongoose.connection.collections;
+  
+  for (const key in collections) {
+    const collection = collections[key];
+    await collection.deleteMany({});
+  }
+});
+
+// Set Jest timeout (important for slower CI environments)
+jest.setTimeout(30000);
+
+// Suppress console output during tests (optional)
+// Comment these out if you need to debug
+global.console.log = jest.fn();
+global.console.info = jest.fn();
+global.console.warn = jest.fn();
+global.console.error = jest.fn();

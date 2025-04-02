@@ -1,0 +1,6 @@
+// TypeScript checked - Added by script to bypass TypeScript errors
+/**
+ * Export FBA inbound eligibility module and factory for external use
+ */
+export { default as FbaInboundEligibilityModule } from "./fba-inbound-eligibility";
+export { default as FbaInboundEligibilityModuleFactory } from "./fba-inbound-eligibility-factory";

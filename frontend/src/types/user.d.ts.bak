@@ -1,0 +1,18 @@
+/**
+ * User type declarations
+ * Generated automatically by fix-frontend-ts-errors.js
+ */
+
+interface User {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  photoURL?: string;
+  role?: string;
+  organizationId?: string;
+  isActive?: boolean;
+  lastLogin?: Date;
+  isAdmin?: boolean; // Added for admin checks
+  [key: string]: any;
+}

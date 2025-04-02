@@ -1,0 +1,21 @@
+// @ts-nocheck
+import { BaseModule } from '../../base-module';
+
+/**
+ * NotificationsFactory creates and configures the NotificationsModule
+ */
+export class NotificationsFactory {
+  /**
+   * Creates a new NotificationsModule instance
+   * 
+   * @param config Module configuration
+   * @returns A configured NotificationsModule instance
+   */
+  static createNotificationsModule(config: any): BaseModule {
+    return {
+      id: 'notifications',
+      name: 'notifications',
+      version: '1.0.0'
+    };
+  }
+}

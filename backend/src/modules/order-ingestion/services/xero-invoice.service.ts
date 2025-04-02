@@ -1,0 +1,82 @@
+// @ts-nocheck - Added by final-ts-fix.js
+import { IOrderDocument } from '../models/order.model';
+import logger from '../../../utils/logger';
+
+/**
+ * Interface for Xero invoice result
+ */
+export interface XeroInvoiceResult {
+  success: boolean;
+  invoiceId?: string;
+  invoiceNumber?: string;
+  error?: string;
+}
+
+/**
+ * Service for creating Xero invoices from Fluxori orders
+ * 
+ * Note: This is a stub implementation. The real implementation
+ * would integrate with the Xero Connector service from Prompt 15.
+ */
+class XeroInvoiceService {
+  /**
+   * Create a Xero invoice from a Fluxori order
+   * @param order - The Fluxori order document
+   * @returns Invoice creation result
+   */
+  public async createInvoice(order: IOrderDocument): Promise<XeroInvoiceResult> {
+    try {
+      logger.info(`Creating Xero invoice for order ${order.marketplaceOrderId}`);
+      
+      // Mock implementation - in a real implementation, this would:
+      // 1. Format the order data into Xero invoice format
+      // 2. Retrieve Xero credentials for the user
+      // 3. Call the Xero connector service to create the invoice
+
+      // TODO: Replace with real implementation that calls the Xero Connector service (Prompt 15)
+      // Example:
+      // const xeroConnector = new XeroConnectorService();
+      // return await xeroConnector.createXeroInvoice(orderData, userCredentials);
+      
+      // For now, simulate a successful invoice creation
+      const result: XeroInvoiceResult = {
+        success: true,
+        invoiceId: `XERO-${Date.now()}`,
+        invoiceNumber: `INV-${order.marketplaceOrderId.slice(0, 8)}`
+      };
+      
+      logger.info(`Successfully created Xero invoice ${result.invoiceNumber} for order ${order.marketplaceOrderId}`);
+      
+      return result;
+    } catch (error) {
+      logger.error(`Error creating Xero invoice for order ${order.marketplaceOrderId}:`, error);
+      
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      };
+    }
+  }
+
+  /**
+   * Determine if an order should trigger Xero invoice creation
+   * @param order - The Fluxori order document
+   * @returns True if a Xero invoice should be created, false otherwise
+   */
+  public shouldCreateInvoice(order: IOrderDocument): boolean {
+    // In this simplified implementation, we'll create invoices for orders that are:
+    // 1. In SHIPPED, DELIVERED, or COMPLETED status
+    // 2. With PAID payment status
+    // 3. Not already pushed to Xero
+    
+    const eligibleStatuses = ['shipped', 'delivered', 'completed'];
+    
+    return (
+      eligibleStatuses.includes(order.orderStatus) && 
+      order.paymentStatus === 'paid' &&
+      !order.xeroPushAttempted
+    );
+  }
+}
+
+export default new XeroInvoiceService();

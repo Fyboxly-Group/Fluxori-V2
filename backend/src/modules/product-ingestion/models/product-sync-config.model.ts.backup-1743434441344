@@ -1,0 +1,134 @@
+// TypeScript fixed
+import mongoose, { Document, Schema, Model } from 'mongoose';
+
+/**
+ * Sync direction enum
+ */
+export enum SyncDirection {
+  TO_MARKETPLACE = 'to_marketplace', // Fluxori -> Marketplace
+  FROM_MARKETPLACE = 'from_marketplace', // Marketplace -> Fluxori
+  BIDIRECTIONAL = 'bidirectional', // Both directions
+  NONE = 'none' // No sync
+}
+
+/**
+ * Product sync configuration interface
+ */
+export interface IProductSyncConfig {
+  userId: mongoose.Types.ObjectId;
+  organizationId: mongoose.Types.ObjectId;
+  marketplaceId: string;
+  // Whether to create new products based on marketplace data
+  createProducts: boolean;
+  // Stock sync configuration
+  stockSync: {
+    direction: SyncDirection;
+    // Optional warehouse mapping (marketplace to Fluxori warehouse)
+    warehouseMapping?: Record<string, string>;
+  };
+  // Price sync configuration
+  priceSync: {
+    direction: SyncDirection;
+  };
+  // Product data sync configuration (title, description, etc.)
+  productDataSync: {
+    direction: SyncDirection;
+    // Specific fields to sync (empty means all)
+    fields?: string[];
+  };
+  // Whether to log conflicts between Fluxori and marketplace data
+  logConflicts: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Product sync configuration document interface
+ */
+export interface IProductSyncConfigDocument extends IProductSyncConfig, Document {}
+
+
+export interface IProductSyncConfigModel extends mongoose.Model<IProductSyncConfigDocument> {
+
+}
+
+
+/**
+ * Product sync configuration model type
+ */
+export type ProductSyncConfigModel = Model<IProductSyncConfigDocument>;
+
+/**
+ * Product sync configuration schema
+ */
+const productSyncConfigSchema = new Schema<IProductSyncConfigDocument>({
+  userId: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    index: true
+  },
+  organizationId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Organization',
+    required: true,
+    index: true
+  },
+  marketplaceId: {
+    type: String,
+    required: true,
+    index: true
+  },
+  createProducts: {
+    type: Boolean,
+    default: true
+  },
+  stockSync: {
+    direction: {
+      type: String,
+      enum: Object.values(SyncDirection),
+      default: SyncDirection.FROM_MARKETPLACE
+    },
+    warehouseMapping: {
+      type: Map,
+      of: String
+    }
+  },
+  priceSync: {
+    direction: {
+      type: String,
+      enum: Object.values(SyncDirection),
+      default: SyncDirection.NONE
+    }
+  },
+  productDataSync: {
+    direction: {
+      type: String,
+      enum: Object.values(SyncDirection),
+      default: SyncDirection.NONE
+    },
+    fields: [String]
+  },
+  logConflicts: {
+    type: Boolean,
+    default: true
+  }
+}, {
+  timestamps: true
+});
+
+// Compound index for userId, organizationId, and marketplaceId for efficient lookups
+productSyncConfigSchema.index(
+  { userId: 1, organizationId: 1, marketplaceId: 1 },
+  { unique: true }
+);
+
+/**
+ * Create and export the model
+ */
+const ProductSyncConfig = mongoose.model<IProductSyncConfigDocument, ProductSyncConfigModel>(
+  'ProductSyncConfig',
+  productSyncConfigSchema
+);
+
+export default ProductSyncConfig;

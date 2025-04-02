@@ -1,0 +1,140 @@
+// TypeScript fixed
+import mongoose, { Document, Model, Schema } from 'mongoose';
+
+export enum SupplierStatus {
+  ACTIVE = 'active',
+  INACTIVE = 'inactive'
+}
+
+/**
+ * Static methods for Supplier model
+ */
+export interface ISupplierStatics {
+  // Add static methods as needed
+}
+
+/**
+ * Methods for Supplier model
+ */
+export interface ISupplierMethods {
+  // Add methods as needed
+}
+
+export interface ISupplier {
+  name: string;
+  contactName?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+  status: SupplierStatus | string;
+  notes?: string;
+  website?: string;
+  paymentTerms?: string;
+  rating?: number;
+  tags?: string[];
+  organizationId: mongoose.Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ISupplierDocument extends ISupplier, Document, ISupplierMethods {}
+
+export interface ISupplierModel extends mongoose.Model<ISupplierDocument> {
+
+}
+
+/**
+ * Type for Supplier model with statics
+ */
+export type SupplierModel = Model<ISupplierDocument> & ISupplierStatics;
+
+const supplierSchema = new Schema<ISupplierDocument, SupplierModel, ISupplierMethods>(
+  {
+    name: { 
+      type: String, 
+      required: true,
+      trim: true
+    },
+    contactName: { 
+      type: String,
+      trim: true
+    },
+    email: { 
+      type: String,
+      trim: true,
+      lowercase: true
+    },
+    phone: { 
+      type: String,
+      trim: true
+    },
+    address: { 
+      type: String,
+      trim: true
+    },
+    city: { 
+      type: String,
+      trim: true
+    },
+    state: { 
+      type: String,
+      trim: true
+    },
+    postalCode: { 
+      type: String,
+      trim: true
+    },
+    country: { 
+      type: String,
+      trim: true
+    },
+    status: { 
+      type: String, 
+      default: SupplierStatus.ACTIVE, 
+      enum: Object.values(SupplierStatus)
+    },
+    notes: { 
+      type: String,
+      trim: true
+    },
+    website: { 
+      type: String,
+      trim: true
+    },
+    paymentTerms: { 
+      type: String,
+      trim: true
+    },
+    rating: { 
+      type: Number, 
+      min: 0, 
+      max: 5 
+    },
+    tags: [{ 
+      type: String,
+      trim: true
+    }],
+    organizationId: { 
+      type: Schema.Types.ObjectId, 
+      ref: 'Organization', 
+      required: true 
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+// Indexes for efficient querying
+supplierSchema.index({ name: 1 });
+supplierSchema.index({ status: 1 });
+supplierSchema.index({ organizationId: 1 });
+supplierSchema.index({ 'tags': 1 });
+
+const Supplier = mongoose.model<ISupplierDocument, SupplierModel>('Supplier', supplierSchema);
+
+export default Supplier;

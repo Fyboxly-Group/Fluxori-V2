@@ -1,0 +1,6 @@
+// TypeScript checked
+/**
+ * Export sales module and factory for external use
+ */
+export { default as SalesModule } from "./sales";
+export { default as SalesModuleFactory } from "./sales-factory";

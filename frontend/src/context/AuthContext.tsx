@@ -2,7 +2,13 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { createToaster } from '@chakra-ui/react/toast'
+import { createToaster } from '@/utils/chakra-compat';
+
+interface AuthProviderProps {
+  className?: string;
+}
+
+interface AuthContextProps {}
 
 // Define the user type
 export type User = {
@@ -10,6 +16,7 @@ export type User = {
   name: string
   email: string
   role: 'user' | 'admin'
+  isAdmin: boolean // Add isAdmin property
 }
 
 // Define the context type
@@ -60,7 +67,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             id: '1',
             name: 'John Doe',
             email: 'john@example.com',
-            role: 'user'
+            role: 'user',
+            isAdmin: true // Set isAdmin property
           })
         }
       } catch (error) {
@@ -118,7 +126,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: '1',
         name: 'John Doe',
         email,
-        role: 'user'
+        role: 'user',
+        isAdmin: true // Set isAdmin property
       })
       
       toast.show({

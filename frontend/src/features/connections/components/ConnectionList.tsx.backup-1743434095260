@@ -1,0 +1,176 @@
+'use client';
+
+import { useState } from 'react';
+import { Box } from '@chakra-ui/react/box';
+import { Button } from '@chakra-ui/react/button';
+import { Text } from '@chakra-ui/react/text';
+import { Heading } from '@chakra-ui/react/heading';
+import { Stack, HStack, VStack } from '@chakra-ui/react/stack';
+import { Spinner } from '@chakra-ui/react/spinner';
+import { SimpleGrid } from '@chakra-ui/react/simple-grid';
+import { useColorMode } from '@chakra-ui/react/color-mode';
+import { Card, CardHeader, CardBody, CardFooter } from '@chakra-ui/react/card';
+import { Plus, Link, PlusCircle } from 'lucide-react';
+
+import useConnections from '../hooks/useConnections';
+import { ConnectionStatus } from '../../../api/connections.api';
+import { MarketplaceCard } from './MarketplaceCard';
+
+// Define supported marketplaces for cards
+const SUPPORTED_MARKETPLACES = [
+  {
+    id: 'takealot',
+    name: 'Takealot',
+    description: 'South Africa\'s leading e-commerce platform',
+  },
+  {
+    id: 'amazon',
+    name: 'Amazon',
+    description: 'Global marketplace for online shopping',
+  },
+  {
+    id: 'shopify',
+    name: 'Shopify',
+    description: 'E-commerce platform for online stores',
+  },
+  {
+    id: 'xero',
+    name: 'Xero',
+    description: 'Cloud-based accounting software',
+  },
+];
+
+// Define props for the component
+interface ConnectionListProps {
+  onAddClick?: () => void;
+  onConnectionClick?: (id: string) => void;
+}
+
+/**
+ * Component to display a grid of marketplace connections
+ */
+export function ConnectionList({ onAddClick, onConnectionClick }: ConnectionListProps) {
+  const { colorMode } = useColorMode();
+  const { useAllConnections, useDeleteConnection, useTestConnection } = useConnections();
+  const [isDeleteLoading, setIsDeleteLoading] = useState<string | null>(null);
+  const [isTestLoading, setIsTestLoading] = useState<string | null>(null);
+  
+  // Fetch connections data
+  const { 
+    data: connections,
+    isLoading,
+    error,
+    refetch
+  } = useAllConnections();
+  
+  // Mutation hooks
+  const { mutateAsync: deleteConnection } = useDeleteConnection();
+  const { mutateAsync: testConnection } = useTestConnection();
+  
+  // Handle delete connection
+  const handleDelete = async (id: string) => {
+    setIsDeleteLoading(id);
+    try {
+      await deleteConnection(id);
+    } finally {
+      setIsDeleteLoading(null);
+    }
+  };
+  
+  // Handle test connection
+  const handleTest = async (id: string) => {
+    setIsTestLoading(id);
+    try {
+      await testConnection(id);
+    } finally {
+      setIsTestLoading(null);
+    }
+  };
+  
+  // Prepare marketplace cards with connection status
+  const marketplaceCards = SUPPORTED_MARKETPLACES.map(marketplace => {
+    // Find connection if it exists
+    const connection = connections?.find((conn: any) => 
+      conn.marketplaceId.toLowerCase() === marketplace.id.toLowerCase()
+    );
+    
+    // Card data
+    return {
+      ...marketplace,
+      connection,
+      status: connection ? connection.status : ConnectionStatus.DISCONNECTED,
+      id: connection?.id || `new-${marketplace.id}`,
+      lastChecked: connection?.lastChecked,
+      lastError: connection?.lastError,
+    };
+  });
+  
+  // Loading state
+  if (isLoading) {
+    return (
+      <Box textAlign="center" py={6}>
+        <Spinner size="lg" />
+        <Text mt={2}>Loading connections...</Text>
+      </Box>
+    );
+  }
+  
+  // Error state
+  if (error) {
+    return (
+      <Box 
+        p={4} 
+        bg={colorMode === 'light' ? 'red.50' : 'red.900'} 
+        color={colorMode === 'light' ? 'red.600' : 'red.200'} 
+        borderRadius="md"
+      >
+        <Heading size="md" mb={2}>Error Loading Connections</Heading>
+        <Text>There was a problem loading the marketplace connections.</Text>
+        <Button onClick={() => refetch()} mt={4} colorScheme="red" size="sm">
+          Try Again
+        </Button>
+      </Box>
+    );
+  }
+  
+  return (
+    <Card variant="outline">
+      <CardHeader>
+        <HStack justify="space-between">
+          <Heading size="md">Marketplace Connections</Heading>
+          <Button 
+            leftIcon={<Plus size={16} />} 
+            colorScheme="blue"
+            onClick={onAddClick}
+          >
+            Add Connection
+          </Button>
+        </HStack>
+      </CardHeader>
+      
+      <CardBody>
+        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={5}>
+          {marketplaceCards.map((card) => (
+            <MarketplaceCard
+              key={card.id}
+              id={card.connection?.id || `new-${card.id}`}
+              marketplaceId={card.id}
+              marketplaceName={card.name}
+              status={card.status}
+              lastChecked={card.lastChecked}
+              lastError={card.lastError}
+              description={card.description}
+              onConnect={onAddClick || (() => {})}
+              onDelete={handleDelete}
+              onTest={handleTest}
+              isTestLoading={isTestLoading === card.connection?.id}
+              isDeleteLoading={isDeleteLoading === card.connection?.id}
+            />
+          ))}
+        </SimpleGrid>
+      </CardBody>
+    </Card>
+  );
+}
+
+export default ConnectionList;

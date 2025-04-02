@@ -1,0 +1,27 @@
+// @ts-nocheck
+import * as express from 'express';
+import { authenticate, authorize } from '../middleware/auth.middleware';
+import {
+  getInventoryStockByItem,
+  updateInventoryStock,
+  transferInventory,
+  getLowStockItems,
+} from '../controllers/inventory-stock.controller';
+
+const router = express.Router();
+
+// Base path: /api/inventory
+
+// Get low stock items(new endpoint using warehouse-specific stock)
+router.get('/low-stock/warehouse', authenticate, getLowStockItems);
+
+// Get inventory stock levels by item ID
+router.get('/:id/stock', authenticate, getInventoryStockByItem);
+
+// Update inventory stock for a specific warehouse
+router.put('/:id/stock/:warehouseId', authenticate, authorize('admin', 'manager', 'staff'), updateInventoryStock);
+
+// Transfer inventory between warehouses
+router.post('/:id/transfer', authenticate, authorize('admin', 'manager', 'staff'), transferInventory);
+
+export default router;

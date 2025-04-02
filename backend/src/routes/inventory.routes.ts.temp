@@ -1,0 +1,75 @@
+import * as express from 'express';
+import {
+  getInventoryItems,
+  getInventoryItemById,
+  createInventoryItem,
+  updateInventoryItem,
+  deleteInventoryItem,
+  updateInventoryStock,
+  getInventoryStats,
+  getLowStockItems,
+} from '../controllers/inventory.controller';
+import { authenticate, authorize } from '../middleware/auth.middleware';
+
+const router = express.Router();
+
+// Apply authentication to all inventory routes
+router.use(authenticate);
+
+/**
+ * @route   GET /api/inventory
+ * @desc    Get all inventory items
+ * @access  Private
+ */
+router.get('/', getInventoryItems);
+
+/**
+ * @route   GET /api/inventory/stats
+ * @desc    Get inventory statistics
+ * @access  Private
+ */
+router.get('/stats', getInventoryStats);
+
+/**
+ * @route   GET /api/inventory/low-stock
+ * @desc    Get low stock items
+ * @access  Private
+ */
+router.get('/low-stock', getLowStockItems);
+
+/**
+ * @route   GET /api/inventory/:id
+ * @desc    Get a inventory item by ID
+ * @access  Private
+ */
+router.get('/:id', getInventoryItemById);
+
+/**
+ * @route   POST /api/inventory
+ * @desc    Create a new inventory item
+ * @access  Private
+ */
+router.post('/', createInventoryItem);
+
+/**
+ * @route   PUT /api/inventory/:id
+ * @desc    Update an inventory item
+ * @access  Private
+ */
+router.put('/:id', updateInventoryItem);
+
+/**
+ * @route   DELETE /api/inventory/:id
+ * @desc    Delete an inventory item
+ * @access  Private(Admin only)
+ */
+router.delete('/:id', authorize('admin'), deleteInventoryItem);
+
+/**
+ * @route   PUT /api/inventory/:id/stock
+ * @desc    Update inventory stock
+ * @access  Private
+ */
+router.put('/:id/stock', updateInventoryStock);
+
+export default router;

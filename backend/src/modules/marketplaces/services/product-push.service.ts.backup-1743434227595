@@ -1,0 +1,193 @@
+// @ts-nocheck
+import mongoose from 'mongoose';
+import { ApiError } from '../../../middleware/error.middleware';
+import { MarketplaceAdapterFactory } from '../adapters/marketplace-adapter.factory';
+import { MarketplaceCredentialsService } from './marketplace-credentials.service';
+import { IMarketplaceAdapter } from '../adapters/interfaces/marketplace-adapter.interface';
+import { 
+  StockUpdatePayload, 
+  PriceUpdatePayload, 
+  StatusUpdatePayload, 
+  ProductStatus,
+  OperationResult
+} from '../models/marketplace.models';
+
+// Define types for product updates
+export interface ProductUpdateData {
+  price?: number;
+  rrp?: number;
+  stock?: number;
+  status?: 'active' | 'inactive';
+}
+
+// Define result interface
+export interface ProductPushResult {
+  success: boolean;
+  message: string;
+  marketplaceId?: string;
+  productId?: string;
+  timestamp?: string;
+  details?: Record<string, any>;
+}
+
+/**
+ * Singleton service to handle pushing product updates to marketplaces
+ */
+export class ProductPushService {
+  private static instance: ProductPushService;
+  private adapterFactory: MarketplaceAdapterFactory;
+  private credentialsService: MarketplaceCredentialsService;
+  
+  private constructor() {
+    // Initialize dependencies
+    this.adapterFactory = MarketplaceAdapterFactory.getInstance();
+    this.credentialsService = MarketplaceCredentialsService.getInstance();
+  }
+  
+  /**
+   * Get singleton instance
+   */
+  public static getInstance(): ProductPushService {
+    if (!ProductPushService.instance) {
+      ProductPushService.instance = new ProductPushService();
+    }
+    return ProductPushService.instance;
+  }
+  
+  /**
+   * Push product updates to a marketplace
+   * @param productId - Product ID
+   * @param marketplaceId - Marketplace ID
+   * @param userId - User ID
+   * @param updateData - Data to update
+   * @returns Result of the push operation
+   */
+  public async pushProductUpdate(
+    productId: string,
+    marketplaceId: string,
+    userId: string,
+    updateData: ProductUpdateData
+  ): Promise<ProductPushResult> {
+    try {
+      console.log(`Pushing updates for product ${productId} to marketplace ${marketplaceId}`);
+      console.log(`Updates requested by user ${userId}:`, updateData);
+      
+      // Get marketplace adapter
+      const adapter = await this.getMarketplaceAdapter(marketplaceId, userId);
+      
+      // Get product SKU (in a real implementation, this would fetch from the database)
+      const productSku = await this.getProductSku(productId);
+      
+      // Track results for each update type
+      const results: Record<string, OperationResult<any>> = {};
+      
+      // Update price if provided
+      if (updateData.price !== undefined || updateData.rrp !== undefined) {
+        const priceUpdate: PriceUpdatePayload = {
+          sku: productSku,
+          price: updateData.price || 0, // Default to 0 if not provided
+        };
+        
+        // Add RRP/sale price if provided
+        if (updateData.rrp !== undefined) {
+          priceUpdate.salePrice = updateData.price;
+          // Use RRP as the regular price
+          priceUpdate.price = updateData.rrp;
+        }
+        
+        results.price = await adapter.updatePrices([priceUpdate]);
+      }
+      
+      // Update stock if provided
+      if (updateData.stock !== undefined) {
+        const stockUpdate: StockUpdatePayload = {
+          sku: productSku,
+          quantity: updateData.stock
+        };
+        
+        results.stock = await adapter.updateStock([stockUpdate]);
+      }
+      
+      // Update status if provided
+      if (updateData.status !== undefined) {
+        const statusUpdate: StatusUpdatePayload = {
+          sku: productSku,
+          status: updateData.status === 'active' 
+            ? ProductStatus.ACTIVE 
+            : ProductStatus.INACTIVE
+        };
+        
+        results.status = await adapter.updateStatus([statusUpdate]);
+      }
+      
+      // Check for any failures
+      const hasFailures = Object.values(results).some((result: any) => 
+        !result.success || 
+        (result.data && result.data.failed && result.data.failed.length > 0)
+      );
+      
+      // Construct the response
+      return {
+        success: !hasFailures,
+        message: hasFailures 
+          ? 'Some updates failed, see details' 
+          : 'Product update pushed successfully',
+        marketplaceId,
+        productId,
+        timestamp: new Date().toISOString(),
+        details: {
+          fields: Object.keys(updateData),
+          marketplace: marketplaceId,
+          results
+        }
+      };
+    } catch (error) {
+      console.error('Error pushing product update:', error);
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw new ApiError(
+        500,
+        `Failed to push product update: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+  
+  /**
+   * Get the marketplace adapter for a given marketplace ID and user ID
+   * @param marketplaceId - The marketplace ID
+   * @param userId - The user ID
+   * @returns An initialized marketplace adapter
+   * @throws ApiError if the marketplace is not supported or credentials are not found
+   */
+  private async getMarketplaceAdapter(marketplaceId: string, userId: string): Promise<IMarketplaceAdapter> {
+    try {
+      // Get credentials for the user and marketplace
+      const credentials = await this.credentialsService.getCredentials(userId, marketplaceId);
+      
+      // Get and initialize the adapter
+      return await this.adapterFactory.getAdapter(marketplaceId, credentials);
+    } catch (error) {
+      console.error(`Failed to get marketplace adapter for ${marketplaceId}:`, error);
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw new ApiError(
+        500,
+        `Failed to initialize marketplace adapter: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+  
+  /**
+   * Get a product's SKU by its ID
+   * @param productId - The product ID
+   * @returns The product SKU
+   * @throws ApiError if the product is not found
+   */
+  private async getProductSku(productId: string): Promise<string> {
+    // In a real implementation, this would fetch the SKU from the database
+    // For now, we'll just return a mock SKU based on the product ID
+    return `SKU-${productId}`;
+  }
+}

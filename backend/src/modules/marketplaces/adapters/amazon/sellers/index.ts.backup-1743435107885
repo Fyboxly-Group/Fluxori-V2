@@ -1,0 +1,3 @@
+// Adapter exports
+export { default as SellersModule } from './sellers';
+export { default as SellersModuleFactory } from './sellers-factory';

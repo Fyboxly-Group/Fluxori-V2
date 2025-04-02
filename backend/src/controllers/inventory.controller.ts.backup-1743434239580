@@ -1,0 +1,391 @@
+// @ts-nocheck
+import { Request, Response, NextFunction } from 'express';
+import { StatusCodes } from 'http-status-codes';
+import mongoose from 'mongoose';
+import Inventory from '../models/inventory.model';
+import Activity from '../models/activity.model';
+import { IUserDocument } from '../models/user.model';
+
+// Define authenticated request type
+type AuthenticatedRequest = Request & {
+  user?: IUserDocument & {
+    id: string;
+    organizationId: string;
+    role?: string;
+  };
+};
+
+/**
+ * Inventory Controller
+ * Handles operations related to inventory management
+ */
+export class InventoryController {
+  /**
+   * Get a list of inventory items
+   */
+  static async getInventoryItems(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const organizationId = req.user?.organizationId;
+      
+      if (!userId || !organizationId) {
+        res.status(StatusCodes.UNAUTHORIZED).json({
+          success: false,
+          message: 'Unauthorized - User not authenticated'
+        });
+        return;
+      }
+      
+      // Parse query parameters for pagination and filtering
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const search = req.query.search as string;
+      const category = req.query.category as string;
+      const status = req.query.status as string;
+      
+      // Build query filters
+      const filter: any = { organizationId };
+      
+      if (search) {
+        filter.$or = [
+          { name: { $regex: search, $options: 'i' } },
+          { sku: { $regex: search, $options: 'i' } },
+          { description: { $regex: search, $options: 'i' } }
+        ];
+      }
+      
+      if (category) {
+        filter.category = category;
+      }
+      
+      if (status) {
+        filter.isActive = status === 'active';
+      }
+      
+      // Execute query with pagination
+      const skip = (page - 1) * limit;
+      
+      const [items, totalItems] = await Promise.all([
+        Inventory.find(filter)
+          .sort({ updatedAt: -1 })
+          .skip(skip)
+          .limit(limit),
+        Inventory.countDocuments(filter)
+      ]);
+      
+      // Return paginated results
+      res.status(StatusCodes.OK).json({
+        success: true,
+        data: {
+          items,
+          totalItems,
+          page,
+          limit,
+          totalPages: Math.ceil(totalItems / limit)
+        }
+      });
+    } catch (error) {
+      console.error('Error getting inventory items:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: errorMessage
+      });
+    }
+  }
+  
+  /**
+   * Get a single inventory item by ID
+   */
+  static async getInventoryItem(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const organizationId = req.user?.organizationId;
+      const itemId = req.params.id;
+      
+      if (!userId || !organizationId) {
+        res.status(StatusCodes.UNAUTHORIZED).json({
+          success: false,
+          message: 'Unauthorized - User not authenticated'
+        });
+        return;
+      }
+      
+      if (!itemId) {
+        res.status(StatusCodes.BAD_REQUEST).json({
+          success: false,
+          message: 'Item ID is required'
+        });
+        return;
+      }
+      
+      // Find the inventory item
+      const item = await Inventory.findOne({
+        _id: itemId,
+        organizationId
+      }).populate('supplier', 'name email phone');
+      
+      if (!item) {
+        res.status(StatusCodes.NOT_FOUND).json({
+          success: false,
+          message: 'Inventory item not found'
+        });
+        return;
+      }
+      
+      res.status(StatusCodes.OK).json({
+        success: true,
+        data: item
+      });
+    } catch (error) {
+      console.error('Error getting inventory item:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: errorMessage
+      });
+    }
+  }
+  
+  /**
+   * Create a new inventory item
+   */
+  static async createInventoryItem(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const organizationId = req.user?.organizationId;
+      const itemData = req.body;
+      
+      if (!userId || !organizationId) {
+        res.status(StatusCodes.UNAUTHORIZED).json({
+          success: false,
+          message: 'Unauthorized - User not authenticated'
+        });
+        return;
+      }
+      
+      // Validate required fields
+      if (!itemData.name || !itemData.sku) {
+        res.status(StatusCodes.BAD_REQUEST).json({
+          success: false,
+          message: 'Name and SKU are required fields'
+        });
+        return;
+      }
+      
+      // Check if SKU already exists
+      const existingItem = await Inventory.findOne({
+        sku: itemData.sku,
+        organizationId
+      });
+      
+      if (existingItem) {
+        res.status(StatusCodes.CONFLICT).json({
+          success: false,
+          message: 'An item with this SKU already exists'
+        });
+        return;
+      }
+      
+      // Create the new inventory item
+      const newItem = await Inventory.create({
+        ...itemData,
+        organizationId,
+        createdBy: userId
+      });
+      
+      // Log activity
+      await Activity.create({
+        type: 'inventory_create',
+        description: `Created inventory item "${newItem.name}"`,
+        details: {
+          itemId: newItem._id,
+          sku: newItem.sku,
+          name: newItem.name
+        },
+        userId,
+        organizationId
+      });
+      
+      res.status(StatusCodes.CREATED).json({
+        success: true,
+        message: 'Inventory item created successfully',
+        data: newItem
+      });
+    } catch (error) {
+      console.error('Error creating inventory item:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: errorMessage
+      });
+    }
+  }
+  
+  /**
+   * Update an inventory item
+   */
+  static async updateInventoryItem(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const organizationId = req.user?.organizationId;
+      const itemId = req.params.id;
+      const updateData = req.body;
+      
+      if (!userId || !organizationId) {
+        res.status(StatusCodes.UNAUTHORIZED).json({
+          success: false,
+          message: 'Unauthorized - User not authenticated'
+        });
+        return;
+      }
+      
+      if (!itemId) {
+        res.status(StatusCodes.BAD_REQUEST).json({
+          success: false,
+          message: 'Item ID is required'
+        });
+        return;
+      }
+      
+      // Check if item exists and belongs to the organization
+      const existingItem = await Inventory.findOne({
+        _id: itemId,
+        organizationId
+      });
+      
+      if (!existingItem) {
+        res.status(StatusCodes.NOT_FOUND).json({
+          success: false,
+          message: 'Inventory item not found'
+        });
+        return;
+      }
+      
+      // If SKU is being changed, check it doesn't conflict
+      if (updateData.sku && updateData.sku !== existingItem.sku) {
+        const skuExists = await Inventory.findOne({
+          sku: updateData.sku,
+          organizationId,
+          _id: { $ne: itemId }
+        });
+        
+        if (skuExists) {
+          res.status(StatusCodes.CONFLICT).json({
+            success: false,
+            message: 'An item with this SKU already exists'
+          });
+          return;
+        }
+      }
+      
+      // Update the inventory item
+      const updatedItem = await Inventory.findByIdAndUpdate(
+        itemId,
+        updateData,
+        { new: true, runValidators: true }
+      );
+      
+      // Log activity
+      await Activity.create({
+        type: 'inventory_update',
+        description: `Updated inventory item "${updatedItem.name}"`,
+        details: {
+          itemId: updatedItem._id,
+          sku: updatedItem.sku,
+          name: updatedItem.name,
+          changes: updateData
+        },
+        userId,
+        organizationId
+      });
+      
+      res.status(StatusCodes.OK).json({
+        success: true,
+        message: 'Inventory item updated successfully',
+        data: updatedItem
+      });
+    } catch (error) {
+      console.error('Error updating inventory item:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: errorMessage
+      });
+    }
+  }
+  
+  /**
+   * Delete an inventory item
+   */
+  static async deleteInventoryItem(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const organizationId = req.user?.organizationId;
+      const itemId = req.params.id;
+      
+      if (!userId || !organizationId) {
+        res.status(StatusCodes.UNAUTHORIZED).json({
+          success: false,
+          message: 'Unauthorized - User not authenticated'
+        });
+        return;
+      }
+      
+      if (!itemId) {
+        res.status(StatusCodes.BAD_REQUEST).json({
+          success: false,
+          message: 'Item ID is required'
+        });
+        return;
+      }
+      
+      // Check if item exists and belongs to the organization
+      const existingItem = await Inventory.findOne({
+        _id: itemId,
+        organizationId
+      });
+      
+      if (!existingItem) {
+        res.status(StatusCodes.NOT_FOUND).json({
+          success: false,
+          message: 'Inventory item not found'
+        });
+        return;
+      }
+      
+      // Delete the inventory item
+      await Inventory.findByIdAndDelete(itemId);
+      
+      // Log activity
+      await Activity.create({
+        type: 'inventory_delete',
+        description: `Deleted inventory item "${existingItem.name}"`,
+        details: {
+          itemId: existingItem._id,
+          sku: existingItem.sku,
+          name: existingItem.name
+        },
+        userId,
+        organizationId
+      });
+      
+      res.status(StatusCodes.OK).json({
+        success: true,
+        message: 'Inventory item deleted successfully'
+      });
+    } catch (error) {
+      console.error('Error deleting inventory item:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: errorMessage
+      });
+    }
+  }
+}

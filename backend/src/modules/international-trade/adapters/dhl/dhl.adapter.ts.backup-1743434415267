@@ -1,0 +1,15 @@
+// @ts-nocheck
+import { Types } from 'mongoose';
+
+/**
+ * DHL Adapter for shipping API
+ */
+export class DHLAdapter {
+  /**
+   * Get shipping rates
+   */
+  async getShippingRates(shipmentData: any): Promise<any[]> {
+    // Placeholder implementation
+    return [{ carrier: 'DHL', rate: 25.99 }];
+  }
+}

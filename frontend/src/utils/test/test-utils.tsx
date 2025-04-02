@@ -1,6 +1,6 @@
 import React, { ReactElement } from 'react'
 import { render, RenderOptions } from '@testing-library/react'
-import { ChakraProvider, ChakraTheme } from '@chakra-ui/react'
+import { ChakraProvider } from '@/utils/chakra-compat'
 import { theme } from '@/theme'
 import { AuthProvider } from '@/context/AuthContext'
 

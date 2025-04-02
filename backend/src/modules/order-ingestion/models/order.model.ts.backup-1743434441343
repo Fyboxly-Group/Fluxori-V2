@@ -1,0 +1,361 @@
+// TypeScript fixed
+import mongoose, { Document, Schema, Model } from 'mongoose';
+
+/**
+ * Order status enum - Standardized across marketplaces
+ */
+export enum OrderStatus {
+  NEW = 'new',
+  PROCESSING = 'processing',
+  SHIPPED = 'shipped',
+  DELIVERED = 'delivered',
+  CANCELED = 'canceled',
+  ON_HOLD = 'on_hold',
+  RETURNED = 'returned',
+  REFUNDED = 'refunded',
+  COMPLETED = 'completed'
+}
+
+/**
+ * Payment status enum - Standardized across marketplaces
+ */
+export enum PaymentStatus {
+  PENDING = 'pending',
+  AUTHORIZED = 'authorized',
+  PAID = 'paid',
+  PARTIALLY_PAID = 'partially_paid',
+  REFUNDED = 'refunded',
+  PARTIALLY_REFUNDED = 'partially_refunded',
+  FAILED = 'failed',
+  VOIDED = 'voided'
+}
+
+/**
+ * Order fulfillment type enum
+ */
+export enum FulfillmentType {
+  MARKETPLACE_FULFILLED = 'marketplace_fulfilled',
+  SELLER_FULFILLED = 'seller_fulfilled'
+}
+
+/**
+ * Order line item interface
+ */
+export interface IOrderLineItem {
+  sku: string;
+  marketplaceProductId?: string;
+  productId?: mongoose.Types.ObjectId; // Link to internal product catalog if available
+  title: string;
+  quantity: number;
+  unitPrice: number;
+  tax?: number;
+  discount?: number;
+  total: number;
+  imageUrl?: string;
+  attributes?: Array<{
+    name: string;
+    value: string;
+  }>;
+}
+
+/**
+ * Order line item document interface
+ */
+export interface IOrderLineItemDocument extends IOrderLineItem, Document {}
+
+/**
+ * Address interface
+ */
+export interface IAddress {
+  line1: string;
+  line2?: string;
+  city: string;
+  state?: string;
+  postalCode: string;
+  country: string;
+  contactName?: string;
+  contactPhone?: string;
+}
+
+/**
+ * Order interface
+ */
+export interface IOrder {
+  userId: mongoose.Types.ObjectId;
+  organizationId: mongoose.Types.ObjectId;
+  marketplaceId: string;
+  marketplaceName: string;
+  marketplaceOrderId: string;
+  orderNumber?: string; // Human-readable order number if different from ID
+  orderStatus: OrderStatus;
+  paymentStatus: PaymentStatus;
+  customerEmail: string;
+  customerName?: string;
+  customerPhone?: string;
+  shippingAddress: IAddress;
+  billingAddress?: IAddress; // Optional, defaults to shipping address if not provided
+  lineItems: IOrderLineItem[];
+  currency: string;
+  subtotal: number;
+  tax: number;
+  shipping: number;
+  discount: number;
+  total: number;
+  notes?: string;
+  fulfillmentType?: FulfillmentType;
+  orderDate: Date;
+  processedDate?: Date; // When the order was processed by Fluxori
+  xeroInvoiceId?: string; // Reference to Xero invoice if created
+  xeroInvoiceNumber?: string; // Human-readable Xero invoice number
+  xeroPushAttempted?: boolean; // Whether a push to Xero was attempted
+  xeroPushDate?: Date; // When the Xero push was attempted
+  xeroPushStatus?: 'success' | 'failed'; // Result of Xero push
+  xeroPushError?: string; // Error message if Xero push failed
+  trackingNumber?: string;
+  trackingCompany?: string;
+  trackingUrl?: string;
+  estimatedDeliveryDate?: Date;
+  shippedDate?: Date;
+  deliveredDate?: Date;
+  marketplaceData?: any; // Raw data from marketplace for reference
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Order document interface
+ */
+export interface IOrderDocument extends IOrder, Document {}
+
+
+export interface IOrderModel extends mongoose.Model<IOrderDocument> {
+
+}
+
+
+/**
+ * Order model type
+ */
+export type OrderModel = Model<IOrderDocument>;
+
+/**
+ * Order line item schema
+ */
+const orderLineItemSchema = new Schema<IOrderLineItemDocument>({
+  sku: {
+    type: String,
+    required: true,
+    index: true
+  },
+  marketplaceProductId: {
+    type: String,
+    index: true
+  },
+  productId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Product',
+    index: true
+  },
+  title: {
+    type: String,
+    required: true
+  },
+  quantity: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  unitPrice: {
+    type: Number,
+    required: true
+  },
+  tax: {
+    type: Number,
+    default: 0
+  },
+  discount: {
+    type: Number,
+    default: 0
+  },
+  total: {
+    type: Number,
+    required: true
+  },
+  imageUrl: String,
+  attributes: [{
+    name: String,
+    value: String
+  }]
+}, { _id: true });
+
+/**
+ * Address schema
+ */
+const addressSchema = new Schema<IAddress>({
+  line1: {
+    type: String,
+    required: true
+  },
+  line2: String,
+  city: {
+    type: String,
+    required: true
+  },
+  state: String,
+  postalCode: {
+    type: String,
+    required: true
+  },
+  country: {
+    type: String,
+    required: true
+  },
+  contactName: String,
+  contactPhone: String
+}, { _id: false });
+
+/**
+ * Order schema
+ */
+const orderSchema = new Schema<IOrderDocument>({
+  userId: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    index: true
+  },
+  organizationId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Organization',
+    required: true,
+    index: true
+  },
+  marketplaceId: {
+    type: String,
+    required: true,
+    index: true
+  },
+  marketplaceName: {
+    type: String,
+    required: true
+  },
+  marketplaceOrderId: {
+    type: String,
+    required: true,
+    index: true
+  },
+  orderNumber: {
+    type: String,
+    index: true
+  },
+  orderStatus: {
+    type: String,
+    enum: Object.values(OrderStatus),
+    required: true,
+    index: true
+  },
+  paymentStatus: {
+    type: String,
+    enum: Object.values(PaymentStatus),
+    required: true
+  },
+  customerEmail: {
+    type: String,
+    required: true,
+    index: true
+  },
+  customerName: String,
+  customerPhone: String,
+  shippingAddress: {
+    type: addressSchema,
+    required: true
+  },
+  billingAddress: addressSchema,
+  lineItems: {
+    type: [orderLineItemSchema],
+    required: true,
+    default: []
+  },
+  currency: {
+    type: String,
+    required: true
+  },
+  subtotal: {
+    type: Number,
+    required: true
+  },
+  tax: {
+    type: Number,
+    required: true,
+    default: 0
+  },
+  shipping: {
+    type: Number,
+    required: true,
+    default: 0
+  },
+  discount: {
+    type: Number,
+    required: true,
+    default: 0
+  },
+  total: {
+    type: Number,
+    required: true
+  },
+  notes: String,
+  fulfillmentType: {
+    type: String,
+    enum: Object.values(FulfillmentType)
+  },
+  orderDate: {
+    type: Date,
+    required: true,
+    index: true
+  },
+  processedDate: Date,
+  xeroInvoiceId: {
+    type: String,
+    index: true
+  },
+  xeroInvoiceNumber: String,
+  xeroPushAttempted: {
+    type: Boolean,
+    default: false
+  },
+  xeroPushDate: Date,
+  xeroPushStatus: {
+    type: String,
+    enum: ['success', 'failed']
+  },
+  xeroPushError: String,
+  trackingNumber: String,
+  trackingCompany: String,
+  trackingUrl: String,
+  estimatedDeliveryDate: Date,
+  shippedDate: Date,
+  deliveredDate: Date,
+  marketplaceData: Schema.Types.Mixed,
+}, {
+  timestamps: true
+});
+
+// Compound index for efficient lookup of duplicates
+orderSchema.index(
+  { marketplaceId: 1, marketplaceOrderId: 1, userId: 1, organizationId: 1 },
+  { unique: true }
+);
+
+// Index by creation and update dates
+orderSchema.index({ createdAt: 1 });
+orderSchema.index({ updatedAt: 1 });
+
+// Index for Xero status for efficient querying of orders that need to be pushed to Xero
+orderSchema.index({ xeroPushAttempted: 1, orderStatus: 1 });
+
+/**
+ * Create and export the model
+ */
+const Order = mongoose.model<IOrderDocument, OrderModel>('Order', orderSchema);
+
+export default Order;

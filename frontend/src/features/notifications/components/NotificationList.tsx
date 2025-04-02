@@ -1,255 +1,293 @@
-/**
- * Notification List Component
- * Displays a list of notifications with options to mark as read or clear
- */
+/// <reference path="../../types/module-declarations.d.ts" />
+'use client';
 
-import { useCallback } from 'react';
-import { Box } from '@chakra-ui/react/box';
-import { VStack, HStack } from '@chakra-ui/react/stack';
-import { Text } from '@chakra-ui/react/text';
-import { IconButton } from '@chakra-ui/react/button';
-import { Divider } from '@chakra-ui/react/divider';
-import { Spinner } from '@chakra-ui/react/spinner';
-import { Center } from '@chakra-ui/react/center';
-import { Flex } from '@chakra-ui/react/flex';
-import { Link } from '@chakra-ui/react/layout';
-import { Icon } from '@chakra-ui/react/icon';
-import { 
-  CheckIcon, 
-  CloseIcon, 
-  InfoIcon, 
-  WarningIcon, 
-  CheckCircleIcon, 
-  WarningTwoIcon
-} from '@chakra-ui/icons';
-import { Notification, NotificationType } from '../api/notification.api';
+import React, { useState } from 'react';
+;
+;
+import { Button  } from '@/utils/chakra-compat';
+import { Badge  } from '@/utils/chakra-compat';
+import { Divider  } from '@/utils/chakra-compat';
+import { List, ListItem  } from '@/utils/chakra-compat';
+import { Spinner  } from '@/utils/chakra-compat';
+import { Flex  } from '@/utils/chakra-compat';
+import { HStack, VStack  } from '@/utils/chakra-compat';
+import { IconButton  } from '@/utils/chakra-compat';
+import { useColorMode } from '@/components/stubs/ChakraStubs';;
+import { Bell, X, Settings, Info, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
-import NextLink from 'next/link';
-
-// Format date to relative time (e.g. "2 hours ago")
-function formatRelativeTime(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  
-  // Less than a minute
-  if (seconds < 60) {
-    return 'just now';
-  }
-  
-  // Less than an hour
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) {
-    return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
-  }
-  
-  // Less than a day
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) {
-    return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
-  }
-  
-  // Less than a week
-  const days = Math.floor(hours / 24);
-  if (days < 7) {
-    return `${days} day${days !== 1 ? 's' : ''} ago`;
-  }
-  
-  // Format as date
-  return date.toLocaleDateString();
-}
-
-// Get icon for notification type
-function getNotificationIcon(type: NotificationType) {
-  switch (type) {
-    case NotificationType.INFO:
-      return InfoIcon;
-    case NotificationType.SUCCESS:
-      return CheckCircleIcon;
-    case NotificationType.WARNING:
-      return WarningIcon;
-    case NotificationType.ERROR:
-      return WarningTwoIcon;
-    case NotificationType.ALERT:
-      return WarningTwoIcon;
-    default:
-      return InfoIcon;
-  }
-}
-
-// Get color scheme for notification type
-function getColorScheme(type: NotificationType): string {
-  switch (type) {
-    case NotificationType.INFO:
-      return 'blue';
-    case NotificationType.SUCCESS:
-      return 'green';
-    case NotificationType.WARNING:
-      return 'yellow';
-    case NotificationType.ERROR:
-      return 'red';
-    case NotificationType.ALERT:
-      return 'red';
-    case NotificationType.SYNC_STATUS:
-      return 'purple';
-    case NotificationType.SYSTEM:
-      return 'gray';
-    default:
-      return 'blue';
-  }
-}
-
-interface NotificationItemProps {
-  notification: Notification;
-  onClose?: () => void;
-}
-
-// Individual notification item
-function NotificationItem({ notification, onClose }: NotificationItemProps) {
-  const { markAsRead, clearNotification } = useNotifications();
-  const colorScheme = getColorScheme(notification.type);
-  const IconComponent = getNotificationIcon(notification.type);
-  
-  // Handle mark as read
-  const handleMarkAsRead = useCallback(async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    await markAsRead(notification._id);
-  }, [markAsRead, notification._id]);
-  
-  // Handle clear
-  const handleClear = useCallback(async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    await clearNotification(notification._id);
-  }, [clearNotification, notification._id]);
-  
-  const NotificationContent = (
-    <Box
-      px={4}
-      py={3}
-      _hover={{ bg: 'blackAlpha.50' }}
-      cursor={notification.link ? 'pointer' : 'default'}
-      bg={!notification.read ? `${colorScheme}.50` : undefined}
-      borderLeft={!notification.read ? '3px solid' : undefined}
-      borderColor={!notification.read ? `${colorScheme}.500` : undefined}
-      width="full"
-      onClick={!notification.read ? () => markAsRead(notification._id) : undefined}
-    >
-      <HStack spacing={3} align="flex-start">
-        <Icon as={IconComponent} boxSize={5} color={`${colorScheme}.500`} mt={1} />
-        
-        <VStack align="flex-start" spacing={1} flex={1}>
-          <Text fontWeight={!notification.read ? 'bold' : 'medium'} fontSize="sm" noOfLines={1}>
-            {notification.title}
-          </Text>
-          
-          <Text fontSize="xs" color="gray.600" noOfLines={2}>
-            {notification.message}
-          </Text>
-          
-          <HStack justify="space-between" width="full">
-            <Text fontSize="xs" color="gray.500">
-              {formatRelativeTime(notification.createdAt)}
-            </Text>
-            
-            <HStack spacing={1}>
-              {!notification.read && (
-                <IconButton
-                  aria-label="Mark as read"
-                  icon={<CheckIcon />}
-                  size="xs"
-                  variant="ghost"
-                  onClick={handleMarkAsRead}
-                />
-              )}
-              
-              <IconButton
-                aria-label="Clear notification"
-                icon={<CloseIcon />}
-                size="xs"
-                variant="ghost"
-                onClick={handleClear}
-              />
-            </HStack>
-          </HStack>
-        </VStack>
-      </HStack>
-    </Box>
-  );
-  
-  // Wrap in Link if notification has a link
-  if (notification.link) {
-    return (
-      <Link
-        as={NextLink}
-        href={notification.link}
-        _hover={{ textDecoration: 'none' }}
-        onClick={() => {
-          if (!notification.read) {
-            markAsRead(notification._id);
-          }
-          if (onClose) {
-            onClose();
-          }
-        }}
-        width="full"
-      >
-        {NotificationContent}
-      </Link>
-    );
-  }
-  
-  return NotificationContent;
-}
+import type { Notification, NotificationType } from '../types/notification.types';
+import { Box, Text } from '@/utils/chakra-compat';
+;
 
 interface NotificationListProps {
-  notifications: Notification[];
-  isLoading: boolean;
-  onClose?: () => void;
+  maxItems?: number;
+  onNotificationClick?: (notification: Notification) => void;
+  showSettings?: boolean;
+  showClearAll?: boolean;
+  onSettingsClick?: () => void;
 }
 
-export function NotificationList({ 
-  notifications, 
-  isLoading, 
-  onClose 
+export function NotificationList({
+  maxItems = 5,
+  onNotificationClick,
+  showSettings = true,
+  showClearAll = true,
+  onSettingsClick
 }: NotificationListProps) {
-  // Loading state
-  if (isLoading) {
-    return (
-      <Center py={10}>
-        <Spinner />
-      </Center>
-    );
-  }
+  const { colorMode } = useColorMode();
+  const { 
+    notifications, 
+    loading, 
+    error, 
+    markAsRead, 
+    markAllAsRead,
+    deleteNotification,
+    deleteAllNotifications
+  } = useNotifications();
   
-  // Empty state
-  if (notifications.length === 0) {
-    return (
-      <Flex 
-        direction="column" 
-        align="center" 
-        justify="center" 
-        py={10} 
-        px={6} 
-        textAlign="center"
-      >
-        <Icon as={InfoIcon} boxSize={10} color="gray.400" mb={3} />
-        <Text color="gray.500">No notifications yet</Text>
-        <Text fontSize="sm" color="gray.400">
-          New notifications will appear here
-        </Text>
-      </Flex>
-    );
-  }
+  const [expanded, setExpanded] = useState(false);
+  
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.round(diffMs / 60000);
+    const diffHours = Math.round(diffMs / 3600000);
+    const diffDays = Math.round(diffMs / 86400000);
+    
+    if (diffMins < 60) {
+      return `${diffMins} min${diffMins !== 1 ? 's' : ''} ago`;
+    }
+    if (diffHours < 24) {
+      return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+    }
+    if (diffDays < 7) {
+      return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+    }
+    
+    return date.toLocaleDateString();
+  };
+  
+  // Get icon for notification type
+  const getIcon = (type: NotificationType) => {
+    switch (type) {
+      case NotificationType.Info:
+        return <Info size={16} />;
+      case NotificationType.Warning:
+        return <AlertTriangle size={16} />;
+      case NotificationType.Success:
+        return <CheckCircle size={16} />;
+      case NotificationType.Error:
+        return <AlertTriangle size={16} />;
+      default:
+        return <Bell size={16} />;
+    }
+  };
+  
+  // Get color for notification type
+  const getColorScheme = (type: NotificationType) => {
+    switch (type) {
+      case NotificationType.Info: return 'blue';
+      case NotificationType.Warning: return 'orange';
+      case NotificationType.Success: return 'green';
+      case NotificationType.Error: return 'red';
+      default: return 'gray';
+    }
+  };
+  
+  // Handle notification click
+  const handleNotificationClick = (notification: Notification) => {
+    if (!notification.isRead) {
+      markAsRead(notification.id);
+    }
+    
+    if (onNotificationClick) {
+      onNotificationClick(notification);
+    }
+  };
+  
+  // Get notifications to display
+  const displayNotifications = expanded 
+    ? notifications 
+    : notifications.slice(0, maxItems);
+  
+  // Calculate unread count
+  const unreadCount = notifications.filter(n => !n.isRead).length;
   
   return (
-    <VStack spacing={0} divider={<Divider />} width="full">
-      {notifications.map((notification) => (
-        <NotificationItem 
-          key={notification._id} 
-          notification={notification} 
-          onClose={onClose}
-        />
-      ))}
-    </VStack>
+    <Box>
+      {/* Header */}
+      <Flex justify="space-between" align="center" mb={2}>
+        <HStack>
+          <Text fontWeight="bold">Notifications</Text>
+          {unreadCount > 0 && (
+            <Badge colorScheme="red" borderRadius="full">
+              {unreadCount}
+            </Badge>
+          )}
+        </HStack>
+        
+        <HStack gap={1}>
+          {showClearAll && notifications.length > 0 && (
+            <IconButton
+              aria-label="Mark all as read"
+              icon={<CheckCircle size={14}  />}
+              size="xs"
+              variant="ghost"
+              onClick={() => markAllAsRead()}
+            />
+          )}
+          
+          {showSettings && (
+            <IconButton
+              aria-label="Notification settings"
+              icon={<Settings size={14}  />}
+              size="xs"
+              variant="ghost"
+              onClick={onSettingsClick}
+            />
+          )}
+        </HStack>
+      </Flex>
+      
+      <Divider mb={2}  />
+      
+      {/* Loading state */}
+      {loading && (
+        <Box py={4} textAlign="center">
+          <Spinner size="sm"  />
+          <Text mt={2} fontSize="sm" color="gray.500">
+            Loading notifications...
+          </Text>
+        </Box>
+      )}
+      
+      {/* Error state */}
+      {error && (
+        <Box 
+          py={3} 
+          px={4} 
+          bg={colorMode === 'light' ? 'red.50' : 'red.900'} 
+          color={colorMode === 'light' ? 'red.500' : 'red.200'}
+          borderRadius="md"
+          mb={2}
+        >
+          <Text fontSize="sm">Error loading notifications</Text>
+        </Box>
+      )}
+      
+      {/* Empty state */}
+      {!loading && !error && notifications.length === 0 && (
+        <Box 
+          py={6} 
+          textAlign="center" 
+          bg={colorMode === 'light' ? 'gray.50' : 'gray.700'}
+          borderRadius="md"
+        >
+          <Bell size={24} opacity={0.5} stroke={colorMode === 'light' ? '#718096' : '#A0AEC0'} />
+          <Text mt={2} fontSize="sm" color="gray.500">
+            No notifications yet
+          </Text>
+        </Box>
+      )}
+      
+      {/* Notification list */}
+      {!loading && !error && notifications.length > 0 && (
+        <List gap={1}>
+          {displayNotifications.map(notification => (
+            <ListItem 
+              key={notification.id}
+              onClick={() => handleNotificationClick(notification)}
+              cursor="pointer"
+              borderRadius="md"
+              p={2}
+              bg={notification.isRead 
+                ? 'transparent' 
+                : colorMode === 'light' ? 'blue.50' : 'blue.900'
+              }
+              _hover={{
+                bg: colorMode === 'light' ? 'gray.50' : 'gray.700'
+              }}
+              transition="background-color 0.2s"
+            >
+              <Flex>
+                <Box 
+                  mr={3}
+                  color={getColorScheme(notification.type)}
+                  mt={1}
+                >
+                  {getIcon(notification.type)}
+                </Box>
+                
+                <Box flex={1}>
+                  <Flex justify="space-between" align="center" mb={1}>
+                    <Text 
+                      fontSize="sm" 
+                      fontWeight={notification.isRead ? 'normal' : 'medium'}
+                    >
+                      {notification.title}
+                    </Text>
+                    
+                    <IconButton
+                      aria-label="Delete notification"
+                      icon={<X size={12}  />}
+                      size="xs"
+                      variant="ghost"
+                      onClick={(e: any) => {
+                        e.stopPropagation();
+                        deleteNotification(notification.id);
+                      }}
+                    />
+                  </Flex>
+                  
+                  <Text 
+                    fontSize="xs" 
+                    color={colorMode === 'light' ? 'gray.600' : 'gray.400'}
+                    mb={1}
+                    noOfLines={2}
+                  >
+                    {notification.message}
+                  </Text>
+                  
+                  <Text 
+                    fontSize="xs" 
+                    color={colorMode === 'light' ? 'gray.500' : 'gray.500'}
+                  >
+                    {formatDate(notification.createdAt)}
+                  </Text>
+                </Box>
+              </Flex>
+            </ListItem>
+          ))}
+        </List>
+      )}
+      
+      {/* Show more/less button */}
+      {!loading && !error && notifications.length > maxItems && (
+        <Button 
+          variant="ghost" 
+          size="xs"
+          width="full"
+          mt={2}
+          onClick={() => setExpanded(!expanded)}
+        >
+          {expanded ? 'Show Less' : `Show More (${notifications.length - maxItems})`}
+        </Button>
+      )}
+      
+      {/* Clear all button */}
+      {showClearAll && !loading && !error && notifications.length > 0 && (
+        <Button 
+          variant="outline" 
+          size="xs"
+          width="full"
+          mt={2}
+          onClick={() => deleteAllNotifications()}
+        >
+          Clear All
+        </Button>
+      )}
+    </Box>
   );
 }

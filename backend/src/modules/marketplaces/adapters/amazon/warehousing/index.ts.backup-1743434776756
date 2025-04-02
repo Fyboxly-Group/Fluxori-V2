@@ -1,0 +1,6 @@
+// TypeScript checked
+/**
+ * Export warehousing module and factory for external use
+ */
+export { default as WarehousingModule } from "./warehousing";
+export { default as WarehousingModuleFactory } from "./warehousing-factory";

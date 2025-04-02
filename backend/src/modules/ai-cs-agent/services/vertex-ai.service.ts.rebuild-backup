@@ -1,0 +1,67 @@
+/**
+ * VertexAI Service for AI Customer Service Agent
+ * 
+ * Handles interactions with Google's Vertex AI platform
+ */
+import config from '../../../config';
+
+// Types for message history
+export interface MessageHistory {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+/**
+ * Service for Vertex AI interactions
+ */
+export class VertexAIService {
+  private projectId: string;
+  private location: string;
+  private modelId: string;
+
+  constructor() {;
+    // Initialize from config
+    this.projectId = config.googleCloud.projectId;
+    this.location = config.googleCloud.location;
+    this.modelId = config.googleCloud.vertexAI.modelId;
+  }
+
+  /**
+   * Generate an initial greeting for a user
+   * @param userId User ID
+   * @returns Generated greeting
+   */
+  async generateInitialGreeting(userId: string): Promise<string> {
+    // Implementation would call Vertex AI
+    return 'Hello! I\'m your AI assistant. How can I help you today?';
+  }
+
+  /**
+   * Generate a response to a user message
+   * @param message User message
+   * @param conversationId Conversation ID
+   * @param context Optional RAG context
+   * @returns Generated response
+   */
+  async generateResponse(
+    message: string,
+    conversationId: string,
+    context?: string
+  ): Promise<string> {
+    // Implementation would call Vertex AI
+    return `I received your message: "${message}". Here is my response based on the available context.`;
+  }
+
+  /**
+   * Generate a response using conversation history
+   * @param history Message history
+   * @param context Optional RAG context
+   * @returns Generated response
+   */
+  async generateResponseWithHistory(
+    history: MessageHistory[],
+    context?: string
+  ): Promise<string> {
+    // Implementation would call Vertex AI with history
+    return 'Here is my response based on our conversation history.';
+}

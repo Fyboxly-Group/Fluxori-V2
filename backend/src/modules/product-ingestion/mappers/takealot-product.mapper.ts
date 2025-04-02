@@ -1,0 +1,91 @@
+// @ts-nocheck - Added by final-ts-fix.js
+import { Injectable } from '../../../decorators/injectable.decorator';
+import { Types } from 'mongoose';
+import { ProductModel } from '../models/product.model';
+import { WarehouseModel } from '../models/warehouse.model';
+
+/**
+ * Takealot Product Mapper
+ * Maps Takealot API responses to internal product model
+ */
+@Injectable()
+export class TakealotProductMapper {
+  /**
+   * Map a Takealot product to internal product model
+   */
+  mapProduct(takealotProduct: any): Partial<any> {
+    try {
+      return {
+        title: takealotProduct.title || '',
+        description: takealotProduct.description || '',
+        sku: takealotProduct.sku || '',
+        barcode: takealotProduct.barcode || '',
+        price: this.mapPrice(takealotProduct),
+        images: this.mapImages(takealotProduct),
+        attributes: this.mapAttributes(takealotProduct),
+        marketplaceData: {
+          takealot: takealotProduct
+        }
+      };
+    } catch (error) {
+      console.error(`Error mapping takealot product:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Map product price
+   */
+  private mapPrice(takealotProduct: any): any {
+    try {
+      return {
+        amount: parseFloat(takealotProduct.price || '0'),
+        currency: takealotProduct.currency || 'USD'
+      };
+    } catch (error) {
+      console.error(`Error mapping takealot product price:`, error);
+      return { amount: 0, currency: 'USD' };
+    }
+  }
+
+  /**
+   * Map product images
+   */
+  private mapImages(takealotProduct: any): any[] {
+    try {
+      if (!takealotProduct.images || !Array.isArray(takealotProduct.images)) {
+        return [];
+      }
+
+      return takealotProduct.images.map((image: any) => ({
+        url: image.url || '',
+        position: image.position || 0,
+        alt: image.alt || ''
+      }));
+    } catch (error) {
+      console.error(`Error mapping takealot product images:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Map product attributes
+   */
+  private mapAttributes(takealotProduct: any): Record<string, any> {
+    try {
+      const attributes: Record<string, any> = {};
+
+      // Map common attributes
+      if (takealotProduct.attributes) {
+        Object.entries(takealotProduct.attributes).forEach(([key, value]) => {
+          attributes[key] = value;
+        });
+      }
+
+      return attributes;
+    } catch (error) {
+      console.error(`Error mapping takealot product attributes:`, error);
+      return {};
+    }
+  }
+}

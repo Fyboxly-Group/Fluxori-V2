@@ -1,0 +1,461 @@
+// @ts-nocheck
+import mongoose, { Document, Model, Schema } from 'mongoose';
+
+export enum OrderStatus {
+  PENDING = 'pending',
+  PROCESSING = 'processing',
+  SHIPPED = 'shipped',
+  DELIVERED = 'delivered',
+  CANCELLED = 'cancelled',
+  RETURNED = 'returned',
+  REFUNDED = 'refunded'
+}
+
+export enum PaymentStatus {
+  UNPAID = 'unpaid',
+  PAID = 'paid',
+  PARTIALLY_PAID = 'partially_paid',
+  REFUNDED = 'refunded',
+  PARTIALLY_REFUNDED = 'partially_refunded'
+}
+
+export enum PaymentMethod {
+  CREDIT_CARD = 'credit_card',
+  BANK_TRANSFER = 'bank_transfer',
+  PAYPAL = 'paypal',
+  CASH = 'cash',
+  OTHER = 'other'
+}
+
+/**
+ * Interface for OrderItem
+ */
+export interface IOrderItem {
+  inventoryId: mongoose.Types.ObjectId;
+  sku: string;
+  name: string;
+  description?: string;
+  quantity: number;
+  price: number;
+  discount?: number;
+  tax?: number;
+  total: number;
+}
+
+/**
+ * Interface for Customer
+ */
+export interface IOrderCustomer {
+  customerId?: mongoose.Types.ObjectId;
+  name: string;
+  email: string;
+  phone?: string;
+  shippingAddress: {
+    street: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  };
+  billingAddress?: {
+    street: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  };
+}
+
+/**
+ * Interface for Shipping Details
+ */
+export interface IShippingDetails {
+  method: string;
+  carrier?: string;
+  trackingNumber?: string;
+  estimatedDelivery?: Date;
+  cost: number;
+  address: {
+    street: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  };
+}
+
+/**
+ * Interface for Payment Details
+ */
+export interface IPaymentDetails {
+  method: PaymentMethod | string;
+  transactionId?: string;
+  amount: number;
+  date: Date;
+  status: PaymentStatus | string;
+  cardLast4?: string;
+}
+
+/**
+ * Static methods for Order model
+ */
+export interface IOrderStatics {
+  // Add static methods as needed
+}
+
+/**
+ * Methods for Order model
+ */
+export interface IOrderMethods {
+  // Add methods as needed
+}
+
+export interface IOrder {
+  orderNumber: string;
+  customer: IOrderCustomer;
+  items: IOrderItem[];
+  status: OrderStatus | string;
+  paymentStatus: PaymentStatus | string;
+  paymentMethod: PaymentMethod | string;
+  paymentDetails?: IPaymentDetails;
+  shippingDetails?: IShippingDetails;
+  notes?: string;
+  subtotal: number;
+  tax: number;
+  shipping: number;
+  discount: number;
+  total: number;
+  refundAmount?: number;
+  refundReason?: string;
+  refundDate?: Date;
+  trackingInfo?: {
+    carrier: string;
+    trackingNumber: string;
+    trackingUrl?: string;
+  };
+  tags?: string[];
+  source?: string;
+  externalOrderId?: string;
+  organizationId: mongoose.Types.ObjectId;
+  createdBy: mongoose.Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface IOrderDocument extends IOrder, Document, IOrderMethods {}
+
+/**
+ * Type for Order model with statics
+ */
+export type OrderModel = Model<IOrderDocument> & IOrderStatics;
+
+const addressSchema = new Schema({
+  street: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  city: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  state: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  postalCode: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  country: {
+    type: String,
+    required: true,
+    trim: true
+  }
+}, { _id: false });
+
+const orderItemSchema = new Schema({
+  inventoryId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Inventory',
+    required: true
+  },
+  sku: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  name: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  description: {
+    type: String,
+    trim: true
+  },
+  quantity: {
+    type: Number,
+    required: true,
+    min: 1
+  },
+  price: {
+    type: Number,
+    required: true
+  },
+  discount: {
+    type: Number,
+    default: 0
+  },
+  tax: {
+    type: Number,
+    default: 0
+  },
+  total: {
+    type: Number,
+    required: true
+  }
+}, { _id: true });
+
+const customerSchema = new Schema({
+  customerId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Customer'
+  },
+  name: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  email: {
+    type: String,
+    required: true,
+    trim: true,
+    lowercase: true
+  },
+  phone: {
+    type: String,
+    trim: true
+  },
+  shippingAddress: {
+    type: addressSchema,
+    required: true
+  },
+  billingAddress: addressSchema
+}, { _id: false });
+
+const trackingInfoSchema = new Schema({
+  carrier: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  trackingNumber: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  trackingUrl: {
+    type: String,
+    trim: true
+  }
+}, { _id: false });
+
+const shippingDetailsSchema = new Schema({
+  method: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  carrier: {
+    type: String,
+    trim: true
+  },
+  trackingNumber: {
+    type: String,
+    trim: true
+  },
+  estimatedDelivery: {
+    type: Date
+  },
+  cost: {
+    type: Number,
+    required: true,
+    default: 0
+  },
+  address: {
+    type: addressSchema,
+    required: true
+  }
+}, { _id: false });
+
+const paymentDetailsSchema = new Schema({
+  method: {
+    type: String,
+    enum: Object.values(PaymentMethod),
+    required: true
+  },
+  transactionId: {
+    type: String,
+    trim: true
+  },
+  amount: {
+    type: Number,
+    required: true
+  },
+  date: {
+    type: Date,
+    required: true,
+    default: Date.now
+  },
+  status: {
+    type: String,
+    enum: Object.values(PaymentStatus),
+    required: true
+  },
+  cardLast4: {
+    type: String,
+    trim: true
+  }
+}, { _id: false });
+
+const orderSchema = new Schema<IOrderDocument, OrderModel, IOrderMethods>(
+  {
+    orderNumber: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true
+    },
+    customer: {
+      type: customerSchema,
+      required: true
+    },
+    items: {
+      type: [orderItemSchema],
+      required: true,
+      validate: [
+        {
+          validator: function(items: any[]) {
+            return items.length > 0;
+          },
+          message: 'Order must have at least one item'
+        }
+      ]
+    },
+    status: {
+      type: String,
+      enum: Object.values(OrderStatus),
+      default: OrderStatus.PENDING
+    },
+    paymentStatus: {
+      type: String,
+      enum: Object.values(PaymentStatus),
+      default: PaymentStatus.UNPAID
+    },
+    paymentMethod: {
+      type: String,
+      enum: Object.values(PaymentMethod),
+      default: PaymentMethod.CREDIT_CARD
+    },
+    paymentDetails: paymentDetailsSchema,
+    shippingDetails: shippingDetailsSchema,
+    notes: {
+      type: String,
+      trim: true
+    },
+    subtotal: {
+      type: Number,
+      required: true
+    },
+    tax: {
+      type: Number,
+      required: true,
+      default: 0
+    },
+    shipping: {
+      type: Number,
+      required: true,
+      default: 0
+    },
+    discount: {
+      type: Number,
+      required: true,
+      default: 0
+    },
+    total: {
+      type: Number,
+      required: true
+    },
+    refundAmount: {
+      type: Number
+    },
+    refundReason: {
+      type: String,
+      trim: true
+    },
+    refundDate: {
+      type: Date
+    },
+    trackingInfo: trackingInfoSchema,
+    tags: [{
+      type: String,
+      trim: true
+    }],
+    source: {
+      type: String,
+      trim: true
+    },
+    externalOrderId: {
+      type: String,
+      trim: true
+    },
+    organizationId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Organization',
+      required: true
+    },
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+// Indexes for efficient querying
+orderSchema.index({ orderNumber: 1 });
+orderSchema.index({ 'customer.customerId': 1 });
+orderSchema.index({ 'customer.email': 1 });
+orderSchema.index({ status: 1 });
+orderSchema.index({ paymentStatus: 1 });
+orderSchema.index({ createdAt: -1 });
+orderSchema.index({ organizationId: 1 });
+orderSchema.index({ externalOrderId: 1 });
+orderSchema.index({ source: 1 });
+
+// Pre-save hook to calculate total
+orderSchema.pre('save', function(next) {
+  if (this.isModified('items') || this.isModified('subtotal') || 
+      this.isModified('shipping') || this.isModified('tax') || this.isModified('discount')) {
+    
+    // Calculate subtotal from items if items are modified
+    if (this.isModified('items')) {
+      this.subtotal = this.items.reduce((sum, item) => sum + item.total, 0);
+    }
+    
+    // Calculate total
+    this.total = this.subtotal + this.shipping + this.tax - this.discount;
+  }
+  next();
+});
+
+const Order = mongoose.model<IOrderDocument, OrderModel>('Order', orderSchema);
+
+export default Order;

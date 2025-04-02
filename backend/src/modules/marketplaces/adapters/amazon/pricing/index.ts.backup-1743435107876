@@ -1,0 +1,6 @@
+// TypeScript checked
+/**
+ * Export pricing module and factory for external use
+ */
+export { default as PricingModule } from "./pricing";
+export { default as PricingModuleFactory } from "./pricing-factory";

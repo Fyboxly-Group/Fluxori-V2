@@ -1,0 +1,39 @@
+// @ts-nocheck
+import { Request, Response, NextFunction } from 'express';
+import { Types } from 'mongoose';
+
+/**
+ * Get compliance information
+ */
+export const getComplianceInfo = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // Placeholder implementation
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get shipping rates
+ */
+export const getShippingRates = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // Placeholder implementation
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Track shipment
+ */
+export const trackShipment = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // Placeholder implementation
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+};

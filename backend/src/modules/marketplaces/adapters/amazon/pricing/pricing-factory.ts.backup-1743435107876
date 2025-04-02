@@ -1,0 +1,21 @@
+// @ts-nocheck
+import { BaseModule } from '../../base-module';
+
+/**
+ * PricingFactory creates and configures the PricingModule
+ */
+export class PricingFactory {
+  /**
+   * Creates a new PricingModule instance
+   * 
+   * @param config Module configuration
+   * @returns A configured PricingModule instance
+   */
+  static createPricingModule(config: any): BaseModule {
+    return {
+      id: 'pricing',
+      name: 'pricing',
+      version: '1.0.0'
+    };
+  }
+}

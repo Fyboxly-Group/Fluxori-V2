@@ -1,0 +1,403 @@
+// @ts-nocheck - Added by final-ts-fix.js
+/// <reference path="../../../types/declarations/secret-manager.d.ts" />
+
+import mongoose from 'mongoose';
+import MarketplaceConnection, {
+  AuthenticationType,
+  ConnectionStatus,
+  IMarketplaceConnectionDocument,
+  MarketplaceType,
+} from '../models/connection.model';
+import secretsService from './secrets.service';
+import { MarketplaceCredentials } from '../../marketplaces/models/marketplace.models';
+import { MarketplaceAdapterFactory } from "../../marketplaces/adapters/marketplace-adapter.factory";
+import { IMarketplaceAdapter } from "../../marketplaces/adapters/interfaces/marketplace-adapter.interface";
+import { toObjectId } from '../../../types/mongo-util-types';
+
+// Extended adapter factory interface
+interface ExtendedMarketplaceAdapterFactory {
+  getAdapter(marketplaceId: string): Promise<IMarketplaceAdapter>;
+  getAdapter(marketplaceId: string, credentials: MarketplaceCredentials): Promise<IMarketplaceAdapter>;
+}
+
+// Get the adapter factory instance with proper typing
+const adapterFactory = MarketplaceAdapterFactory.getInstance() as unknown as ExtendedMarketplaceAdapterFactory;
+
+/**
+ * Service for managing marketplace connections
+ */
+class ConnectionService {
+  /**
+   * Create a new marketplace connection
+   * @param userId - User ID
+   * @param organizationId - Organization ID
+   * @param marketplaceId - Marketplace ID
+   * @param marketplaceName - Human-readable marketplace name
+   * @param authenticationType - Type of authentication
+   * @param credentials - Connection credentials
+   * @param metadata - Additional metadata
+   * @returns Created connection document
+   */
+  public async createConnection(
+    userId: string,
+    organizationId: string,
+    marketplaceId: string,
+    marketplaceName: string,
+    authenticationType: AuthenticationType,
+    credentials: MarketplaceCredentials,
+    metadata?: Record<string, any>
+  ): Promise<IMarketplaceConnectionDocument> {
+    try {
+      // Validate the credentials by testing the connection
+      const validationResult = await this.validateCredentials(marketplaceId, credentials);
+      
+      // Store the credentials securely
+      const credentialReference = await secretsService.storeCredentials(
+        userId,
+        organizationId,
+        marketplaceId,
+        credentials
+      );
+      
+      // Check for existing connection
+      const existingConnection = await MarketplaceConnection.findOne({
+        userId,
+        organizationId,
+        marketplaceId,
+      });
+      
+      if (existingConnection) {
+        // Update existing connection
+        existingConnection.marketplaceName = marketplaceName;
+        existingConnection.authenticationType = authenticationType;
+        existingConnection.credentialReference = credentialReference;
+        existingConnection.credentialMetadata = metadata;
+        existingConnection.status = validationResult.connected ? 
+          ConnectionStatus.CONNECTED : ConnectionStatus.ERROR;
+        existingConnection.lastChecked = new Date();
+        existingConnection.lastError = validationResult.connected ? 
+          undefined : validationResult.message;
+          
+        if (authenticationType === AuthenticationType.OAUTH && credentials.expiresAt) {
+          existingConnection.expiresAt = new Date(credentials.expiresAt);
+        }
+        
+        return await existingConnection.save();
+      }
+      
+      // Create new connection
+      const connection = new MarketplaceConnection({
+        userId: toObjectId(userId),
+        organizationId: toObjectId(organizationId),
+        marketplaceId,
+        marketplaceName,
+        authenticationType,
+        credentialReference,
+        credentialMetadata: metadata,
+        status: validationResult.connected ? 
+          ConnectionStatus.CONNECTED : ConnectionStatus.ERROR,
+        lastChecked: new Date(),
+        lastError: validationResult.connected ? 
+          undefined : validationResult.message,
+        expiresAt: authenticationType === AuthenticationType.OAUTH && credentials.expiresAt ? 
+          new Date(credentials.expiresAt) : undefined,
+      });
+      
+      return await connection.save();
+    } catch (error) {
+      console.error('Error creating connection:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all connections for a user/organization
+   * @param userId - User ID
+   * @param organizationId - Organization ID
+   * @returns Array of connections
+   */
+  public async getConnections(userId: string, organizationId: string): Promise<IMarketplaceConnectionDocument[]> {
+    return MarketplaceConnection.find({
+      userId,
+      organizationId,
+    }).sort({ updatedAt: -1 });
+  }
+
+  /**
+   * Get a specific connection by ID
+   * @param connectionId - Connection ID
+   * @param userId - User ID
+   * @param organizationId - Organization ID
+   * @returns Connection document if found
+   */
+  public async getConnectionById(
+    connectionId: string,
+    userId: string,
+    organizationId: string
+  ): Promise<IMarketplaceConnectionDocument | null> {
+    return MarketplaceConnection.findOne({
+      _id: connectionId,
+      userId,
+      organizationId,
+    });
+  }
+
+  /**
+   * Get a connection by marketplace ID
+   * @param marketplaceId - Marketplace ID
+   * @param userId - User ID
+   * @param organizationId - Organization ID
+   * @returns Connection document if found
+   */
+  public async getConnectionByMarketplace(
+    marketplaceId: string,
+    userId: string,
+    organizationId: string
+  ): Promise<IMarketplaceConnectionDocument | null> {
+    return MarketplaceConnection.findOne({
+      marketplaceId,
+      userId,
+      organizationId,
+    });
+  }
+
+  /**
+   * Delete a connection and its credentials
+   * @param connectionId - Connection ID
+   * @param userId - User ID
+   * @param organizationId - Organization ID
+   * @returns Success flag
+   */
+  public async deleteConnection(
+    connectionId: string,
+    userId: string,
+    organizationId: string
+  ): Promise<boolean> {
+    const connection = await MarketplaceConnection.findOne({
+      _id: connectionId,
+      userId,
+      organizationId,
+    });
+    
+    if (!connection) {
+      return false;
+    }
+    
+    // Delete credentials from secret manager/encryption
+    await secretsService.deleteCredentials(connection.credentialReference);
+    
+    // Delete the connection
+    await connection.deleteOne();
+    
+    return true;
+  }
+
+  /**
+   * Update connection status
+   * @param connectionId - Connection ID
+   * @param status - New status
+   * @param errorMessage - Optional error message
+   * @returns Updated connection
+   */
+  public async updateConnectionStatus(
+    connectionId: string,
+    status: ConnectionStatus,
+    errorMessage?: string
+  ): Promise<IMarketplaceConnectionDocument | null> {
+    const connection = await MarketplaceConnection.findById(connectionId);
+    
+    if (!connection) {
+      return null;
+    }
+    
+    connection.status = status;
+    connection.lastChecked = new Date();
+    
+    if (errorMessage) {
+      connection.lastError = errorMessage;
+    } else if (status === ConnectionStatus.CONNECTED) {
+      connection.lastError = undefined;
+    }
+    
+    return await connection.save();
+  }
+
+  /**
+   * Get credentials for a marketplace connection
+   * @param userId - User ID
+   * @param organizationId - Organization ID
+   * @param marketplaceId - Marketplace ID
+   * @returns Credentials if connection exists
+   */
+  public async getMarketplaceCredentials(
+    userId: string,
+    organizationId: string,
+    marketplaceId: string
+  ): Promise<MarketplaceCredentials> {
+    const connection = await this.getConnectionByMarketplace(marketplaceId, userId, organizationId);
+    
+    if (!connection) {
+      throw new Error(`No connection found for marketplace ${marketplaceId}`);
+    }
+    
+    if (connection.status === ConnectionStatus.DISCONNECTED) {
+      throw new Error(`Connection for marketplace ${marketplaceId} is disconnected`);
+    }
+    
+    // Check if OAuth token is expired
+    if (connection.expiresAt && connection.expiresAt < new Date()) {
+      // Mark as expired if not already
+      if (connection.status !== ConnectionStatus.EXPIRED) {
+        connection.status = ConnectionStatus.EXPIRED;
+        await connection.save();
+      }
+      throw new Error(`Connection for marketplace ${marketplaceId} has expired`);
+    }
+    
+    return secretsService.getCredentials(connection.credentialReference);
+  }
+
+  /**
+   * Test existing connection
+   * @param connectionId - Connection ID
+   * @param userId - User ID
+   * @param organizationId - Organization ID
+   * @returns Test result
+   */
+  public async testConnection(
+    connectionId: string,
+    userId: string,
+    organizationId: string
+  ): Promise<{ success: boolean; message: string }> {
+    const connection = await this.getConnectionById(connectionId, userId, organizationId);
+    
+    if (!connection) {
+      return { success: false, message: 'Connection not found' };
+    }
+    
+    try {
+      // Get the credentials
+      const credentials = await secretsService.getCredentials(connection.credentialReference);
+      
+      // Validate the credentials
+      const result = await this.validateCredentials(connection.marketplaceId, credentials);
+      
+      // Update the connection status
+      await this.updateConnectionStatus(
+        connectionId,
+        result.connected ? ConnectionStatus.CONNECTED : ConnectionStatus.ERROR,
+        result.connected ? undefined : result.message
+      );
+      
+      return {
+        success: result.connected,
+        message: result.message,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      // Update the connection status
+      await this.updateConnectionStatus(
+        connectionId,
+        ConnectionStatus.ERROR,
+        errorMessage
+      );
+      
+      return {
+        success: false,
+        message: `Connection test failed: ${errorMessage}`,
+      };
+    }
+  }
+
+  /**
+   * Validate marketplace credentials by testing the connection
+   * @param marketplaceId - Marketplace ID
+   * @param credentials - Credentials to validate
+   * @returns Validation result
+   */
+  private async validateCredentials(
+    marketplaceId: string,
+    credentials: MarketplaceCredentials
+  ): Promise<{ connected: boolean; message: string }> {
+    try {
+      // Use the marketplace adapter to test the connection
+      const adapter = await adapterFactory.getAdapter(marketplaceId, credentials);
+      
+      // Test the connection
+      const result = await adapter.testConnection();
+      
+      return {
+        connected: result.connected,
+        message: result.message,
+      };
+    } catch (error) {
+      return {
+        connected: false,
+        message: `Validation failed: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+}
+
+/**
+ * Extended connection service for direct connection access
+ * Used by internal services like the sync orchestrator
+ */
+class ConnectionDirectService {
+  /**
+   * Get a connection directly by ID without user/org check
+   * Primarily for internal services like the sync orchestrator
+   * @param connectionId - Connection ID
+   * @returns Connection document if found
+   */
+  public async getConnectionByIdDirect(
+    connectionId: string
+  ): Promise<IMarketplaceConnectionDocument | null> {
+    return MarketplaceConnection.findById(connectionId);
+  }
+
+  /**
+   * Get connections by array of IDs
+   * @param connectionIds - Array of connection IDs
+   * @returns Array of connection documents
+   */
+  public async getConnectionsByIds(
+    connectionIds: string[]
+  ): Promise<IMarketplaceConnectionDocument[]> {
+    return MarketplaceConnection.find({
+      _id: { $in: connectionIds }
+    });
+  }
+
+  /**
+   * Get all active connections across all users/organizations
+   * Used by the sync orchestrator to find connections to sync
+   * @returns Array of active connection documents
+   */
+  public async getAllActiveConnections(): Promise<IMarketplaceConnectionDocument[]> {
+    return MarketplaceConnection.find({
+      status: ConnectionStatus.CONNECTED
+    });
+  }
+}
+
+const connectionService = new ConnectionService();
+const connectionDirectService = new ConnectionDirectService();
+
+// Type for extended service with direct access methods
+export interface ConnectionServiceWithDirectAccess extends ConnectionService {
+  getConnectionByIdDirect(connectionId: string): Promise<IMarketplaceConnectionDocument | null>;
+  getConnectionsByIds(connectionIds: string[]): Promise<IMarketplaceConnectionDocument[]>;
+  getAllActiveConnections(): Promise<IMarketplaceConnectionDocument[]>;
+}
+
+// Extend the service with direct methods
+Object.assign(connectionService, {
+  getConnectionByIdDirect: connectionDirectService.getConnectionByIdDirect,
+  getConnectionsByIds: connectionDirectService.getConnectionsByIds,
+  getAllActiveConnections: connectionDirectService.getAllActiveConnections,
+});
+
+// Export the enhanced service with proper typing
+export default connectionService as ConnectionServiceWithDirectAccess;

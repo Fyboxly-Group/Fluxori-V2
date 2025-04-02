@@ -1,0 +1,27 @@
+import { Document, Types, Model } from 'mongoose';
+
+/**
+ * Base interface for Shipment (raw data)
+ */
+export interface IShipment {
+  name?: any;
+  type?: string;
+  required: any;
+  _id?: Types.ObjectId;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+/**
+ * Document interface for Shipment (includes Document methods)
+ */
+export interface IShipmentDocument extends Document, IShipment {
+  // Add document-specific methods here
+}
+
+/**
+ * Model interface for Shipment (includes static methods)
+ */
+export interface IShipmentModel extends Model<IShipmentDocument> {
+  // Add static model methods here
+}

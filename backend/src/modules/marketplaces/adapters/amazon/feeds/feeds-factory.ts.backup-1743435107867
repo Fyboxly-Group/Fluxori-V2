@@ -1,0 +1,21 @@
+// @ts-nocheck
+import { BaseModule } from '../../base-module';
+
+/**
+ * FeedsFactory creates and configures the FeedsModule
+ */
+export class FeedsFactory {
+  /**
+   * Creates a new FeedsModule instance
+   * 
+   * @param config Module configuration
+   * @returns A configured FeedsModule instance
+   */
+  static createFeedsModule(config: any): BaseModule {
+    return {
+      id: 'feeds',
+      name: 'feeds',
+      version: '1.0.0'
+    };
+  }
+}

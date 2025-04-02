@@ -1,5 +1,7 @@
-import { createMultiStyleConfigHelpers } from '@chakra-ui/react/styled-system'
-import { ChakraTheme } from '@chakra-ui/react'
+/// <reference path="../types/module-declarations.d.ts" />
+import React from 'react';
+import { createMultiStyleConfigHelpers } from '@/utils/chakra-compat';;
+import { ChakraTheme } from '@/utils/chakra-compat'
 
 // Foundation styles
 const foundations = {

@@ -1,3 +1,6 @@
+
+
+interface authProps {}
 import { apiClient } from './client'
 
 // Define response types for API calls

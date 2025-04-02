@@ -1,6 +1,7 @@
 'use client'
 
-import { ChakraProvider } from '@chakra-ui/react'
+import React from 'react'
+import { ChakraProvider } from '@/components/stubs/ChakraProvider'
 import { theme } from '@/theme'
 import { ReactNode } from 'react'
 import { AuthProvider } from '@/context/AuthContext'
@@ -15,13 +16,13 @@ interface ProvidersProps {
 
 export function Providers({ children }: ProvidersProps) {
   return (
-    <ChakraProvider theme={theme}>
+    <ChakraProvider theme={theme} value={{ theme }}>
       <AuthProvider>
         {/* 
           NotificationProvider is added here to enable notifications across the app
           It automatically connects to the WebSocket server when the user is authenticated
         */}
-        <NotificationProvider authToken={null} showToasts={true}>
+        <NotificationProvider authToken={null as unknown as string} showToasts={true}>
           {children}
         </NotificationProvider>
       </AuthProvider>

@@ -1,17 +1,24 @@
+/// <reference path="../../types/module-declarations.d.ts" />
 'use client';
 
-import { useMemo } from 'react';
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Box } from '@chakra-ui/react/box';
-import { Text } from '@chakra-ui/react/text';
-import { Spinner } from '@chakra-ui/react/spinner';
-import { List, ListItem } from '@chakra-ui/react/list';
-import { Button } from '@chakra-ui/react/button';
-import { Badge } from '@chakra-ui/react/badge';
-import { Flex, HStack, VStack } from '@chakra-ui/react/stack';
-import { useColorMode } from '@chakra-ui/react/color-mode';
-
+import { Box  } from '@/utils/chakra-compat';
+import { Text  } from '@/utils/chakra-compat';
+import { Spinner  } from '@/utils/chakra-compat';
+;
+;
+import { Button  } from '@/utils/chakra-compat';
+import { Badge  } from '@/utils/chakra-compat';
+import { Flex  } from '@/utils/chakra-compat';
+import { HStack  } from '@/utils/chakra-compat';
+import { VStack  } from '@/utils/chakra-compat';;
+import { useColorMode } from '@/components/stubs/ChakraStubs';;
 import { conversationApi, Conversation } from '../api/conversation.api';
+import { List, ListItem, Divider } from '@/utils/chakra-compat';
+;
+;
+;
 
 interface ConversationListProps {
   onSelectConversation: (conversationId: string) => void;
@@ -35,7 +42,7 @@ export function ConversationList({
     refetchOnWindowFocus: false
   });
   
-  // Format conversation date
+  // Format date helper function
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     
@@ -44,12 +51,12 @@ export function ConversationList({
       return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
     
-    // If this week, show day of week
+    // If this week, show weekday
     if (isThisWeek(date)) {
       return date.toLocaleDateString([], { weekday: 'short' });
     }
     
-    // Otherwise show date
+    // Otherwise, show date
     return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
   };
   
@@ -61,7 +68,7 @@ export function ConversationList({
            date.getFullYear() === today.getFullYear();
   };
   
-  // Helper to check if date is this week
+  // Helper to check if date is within the current week
   const isThisWeek = (date: Date) => {
     const today = new Date();
     const firstDayOfWeek = new Date(
@@ -72,7 +79,7 @@ export function ConversationList({
     return date >= firstDayOfWeek;
   };
   
-  // Get conversation preview text (last message content or default text)
+  // Helper to get message preview text
   const getPreviewText = (conversation: Conversation) => {
     if (conversation.messages.length === 0) {
       return 'No messages';
@@ -82,20 +89,20 @@ export function ConversationList({
     const lastMessage = [...conversation.messages]
       .reverse()
       .find(msg => msg.role !== 'system');
-    
+      
     if (!lastMessage) {
       return 'No messages';
     }
     
     const prefix = lastMessage.role === 'user' ? 'You: ' : 'AI: ';
-    const content = lastMessage.content.length > 50
+    const content = lastMessage.content.length > 50 
       ? `${lastMessage.content.substring(0, 50)}...`
       : lastMessage.content;
     
     return `${prefix}${content}`;
   };
   
-  // Get status badge color
+  // Get color for status badge
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
@@ -113,9 +120,9 @@ export function ConversationList({
     <Box>
       <HStack justify="space-between" mb={4}>
         <Text fontWeight="bold" fontSize="lg">Conversations</Text>
-        <Button 
-          size="xs" 
-          variant="outline" 
+        <Button
+          size="xs"
+          variant="outline"
           onClick={() => refetch()}
         >
           Refresh
@@ -124,21 +131,21 @@ export function ConversationList({
       
       {isLoading ? (
         <Flex justify="center" align="center" height="200px">
-          <Spinner />
+          <Spinner  />
         </Flex>
       ) : error ? (
-        <Box 
+        <Box
           p={4} 
           bg={colorMode === 'light' ? 'red.50' : 'red.900'} 
           color={colorMode === 'light' ? 'red.500' : 'red.200'} 
           borderRadius="md"
         >
-          <Text>Error loading conversations</Text>
+          <Text>Error loading conversations. Please try again.</Text>
         </Box>
       ) : data && data.length > 0 ? (
-        <List spacing={2}>
-          {data.map((conversation) => (
-            <ListItem 
+        <List gap={2}>
+          {data.map((conversation: any) => (
+            <ListItem
               key={conversation._id}
               onClick={() => onSelectConversation(conversation._id)}
               bg={selectedConversationId === conversation._id 
@@ -159,7 +166,7 @@ export function ConversationList({
                 borderColor: colorMode === 'light' ? 'gray.300' : 'gray.600',
               }}
             >
-              <VStack align="start" spacing={1}>
+              <VStack align="start" gap={1}>
                 <HStack justify="space-between" width="100%">
                   <Text fontWeight="medium" fontSize="sm">
                     {conversation.topic || `Conversation ${conversation._id.substring(0, 6)}...`}
@@ -181,13 +188,13 @@ export function ConversationList({
           ))}
         </List>
       ) : (
-        <Box 
+        <Box
           p={4} 
           bg={colorMode === 'light' ? 'gray.50' : 'gray.800'} 
           borderRadius="md"
           textAlign="center"
         >
-          <Text>No conversations found</Text>
+          <Text>No conversations found.</Text>
         </Box>
       )}
     </Box>

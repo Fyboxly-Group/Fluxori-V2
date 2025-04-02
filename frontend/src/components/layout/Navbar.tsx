@@ -1,68 +1,75 @@
-'use client'
+'use client';
 
-import { Flex } from '@chakra-ui/react/flex'
-import { Box } from '@chakra-ui/react/box'
-import { Button } from '@chakra-ui/react/button'
-import { Image } from '@chakra-ui/react/image'
-import { HStack } from '@chakra-ui/react/stack'
-import { IconButton } from '@chakra-ui/react/button'
-import { useColorMode } from '@chakra-ui/react/color-mode'
-import { useDisclosure } from '@chakra-ui/react/hooks'
-import { Drawer, DrawerBody, DrawerHeader, DrawerOverlay, DrawerContent, DrawerCloseButton } from '@chakra-ui/react/drawer'
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { ColorModeToggle } from '@/components/ui/ColorModeToggle'
-import { NotificationBell } from '@/features/notifications'
+import React, { useState, useEffect } from 'react';
+import NextLink from 'next/link';
+import { Box, Flex, HStack, Button, IconButton, Drawer, DrawerBody, DrawerHeader, DrawerOverlay, DrawerContent } from '@/utils/chakra-compat';
+import { useColorMode, useDisclosure, DrawerCloseButton } from '@/components/stubs/ChakraStubs';;
+import { Menu as MenuIcon } from 'lucide-react';
+import { ColorModeToggle } from '../ui/ColorModeToggle';
+import { NotificationBell } from '../common/NotificationBell';
 
-// Placeholder for icons - in a real app you'd import from your icon library
-const SunIcon = () => <Box>☀️</Box>
-const MoonIcon = () => <Box>🌙</Box>
-const MenuIcon = () => <Box>☰</Box>
-
-type NavItem = {
-  label: string
-  href: string
+interface NavItem {
+  label: string;
+  href: string;
 }
 
-type NavbarProps = {
-  logo?: string
-  navItems?: NavItem[]
+interface NavbarProps {
+  onToggleSidebar?: () => void;
+  showSidebarToggle?: boolean;
+  logoText?: string;
+  logoSrc?: string;
+  children?: React.ReactNode;
+  fixed?: boolean;
+  transparent?: boolean;
+  bg?: string;
+  height?: string | number;
+  zIndex?: number;
+  boxShadow?: string;
+  borderBottomWidth?: string | number;
+  borderBottomColor?: string;
+  position?: string;
+  logo?: React.ReactNode | string;
+  navItems?: Array<{
+    label: string;
+    href: string;
+    icon?: React.ReactElement;
+  }>;
 }
 
 export function Navbar({ 
-  logo = '/logo.svg', 
+  logo = '/logo.svg',
   navItems = [
     { label: 'Dashboard', href: '/dashboard' },
     { label: 'Projects', href: '/projects' },
     { label: 'Settings', href: '/settings' }
   ]
 }: NavbarProps) {
-  const { colorMode, toggleColorMode } = useColorMode()
-  const { isOpen, onOpen, onClose } = useDisclosure()
-  const [scrolled, setScrolled] = useState(false)
-
+  const { colorMode } = useColorMode();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [scrolled, setScrolled] = useState(false);
+  
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 10)
-    }
+      setScrolled(window.scrollY > 10);
+    };
 
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <Box 
-      as="nav" 
-      position="sticky" 
-      top="0" 
+    <Box
+      as="nav"
+      position="sticky"
+      top="0"
       zIndex="sticky"
       width="100%"
       boxShadow={scrolled ? 'md' : 'none'}
       bg={colorMode === 'light' ? 'white' : 'gray.800'}
       transition="box-shadow 0.2s, background-color 0.2s"
     >
-      <Flex 
-        px={{ base: 4, md: 6 }} 
+      <Flex
+        px={{ base: '4', md: '6' }} 
         py={3} 
         align="center"
         justify="space-between"
@@ -70,18 +77,18 @@ export function Navbar({
         mx="auto"
       >
         <Flex align="center">
-          <Link href="/" passHref>
+          <NextLink href="/" passHref>
             <Box mr={8} cursor="pointer">
               {/* Replace with your actual logo */}
               <Box fontWeight="bold" fontSize="xl">Fluxori</Box>
             </Box>
-          </Link>
+          </NextLink>
 
           {/* Desktop Navigation */}
-          <HStack gap={8} display={{ base: 'none', md: 'flex' }}>
-            {navItems.map((item) => (
-              <Link key={item.href} href={item.href} passHref>
-                <Box 
+          <HStack spacing={8} display={{ base: 'none', md: 'flex' }}>
+            {navItems.map((item: NavItem) => (
+              <NextLink key={item.href} href={item.href} passHref>
+                <Box
                   px={2}
                   py={1}
                   rounded="md"
@@ -95,15 +102,15 @@ export function Navbar({
                 >
                   {item.label}
                 </Box>
-              </Link>
+              </NextLink>
             ))}
           </HStack>
         </Flex>
 
-        <HStack gap={2}>
+        <HStack spacing={2}>
           {/* Notification Bell - hidden on mobile */}
           <Box display={{ base: 'none', md: 'block' }}>
-            <NotificationBell />
+            <NotificationBell count={3} />
           </Box>
         
           {/* Use ColorModeToggle component */}
@@ -114,12 +121,12 @@ export function Navbar({
             display={{ base: 'flex', md: 'none' }}
             aria-label="Open menu"
             variant="ghost"
-            icon={<MenuIcon />}
+            icon={<MenuIcon  />}
             onClick={onOpen}
           />
 
           {/* User actions button */}
-          <Button 
+          <Button
             display={{ base: 'none', md: 'inline-flex' }}
             variant="primary"
             size="sm"
@@ -137,9 +144,10 @@ export function Navbar({
           <DrawerHeader>Menu</DrawerHeader>
           <DrawerBody>
             <Flex direction="column" gap={4}>
-              {navItems.map((item) => (
-                <Link key={item.href} href={item.href} passHref onClick={onClose}>
-                  <Box 
+              {navItems.map((item: NavItem) => (
+                <NextLink key={item.href} href={item.href} passHref>
+                  <Box
+                    onClick={onClose}
                     px={3}
                     py={2}
                     rounded="md"
@@ -147,7 +155,7 @@ export function Navbar({
                   >
                     {item.label}
                   </Box>
-                </Link>
+                </NextLink>
               ))}
               <Button mt={4} variant="primary">
                 Sign In
@@ -157,5 +165,5 @@ export function Navbar({
         </DrawerContent>
       </Drawer>
     </Box>
-  )
+  );
 }

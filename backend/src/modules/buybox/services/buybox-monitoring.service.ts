@@ -1,0 +1,557 @@
+// @ts-nocheck - Added by final-ts-fix.js
+/**
+ * Buy Box Monitoring Service
+ * 
+ * Coordinates Buy Box monitoring activities
+ */
+import { Timestamp } from 'firebase-admin/firestore';
+import { 
+  BuyBoxHistory, 
+  BuyBoxSnapshot, 
+  BuyBoxOwnershipStatus,
+  RepricingRule,
+  RepricingStrategy
+} from '../../../models/firestore/buybox.schema';
+import { 
+  FirestoreInventoryItem,
+  FirestoreInventoryItemWithId
+} from '../../../models/firestore/inventory.schema';
+import { getBuyBoxMonitorFactory } from '../factories/buybox-monitor.factory';
+import { getBuyBoxHistoryRepository } from '../repositories/buybox-history.repository';
+import { getInventoryRepository } from '../../inventory/repositories/inventory.repository';
+import { IBuyBoxMonitor } from '../services/buybox-monitor.interface';
+import { Logger } from '../../../utils/logger';
+
+import { WithId } from '../../../types';
+
+/**
+ * Buy Box monitoring service
+ */
+export class BuyBoxMonitoringService {
+  private readonly logger: Logger;
+  
+  /**
+   * Constructor
+   */
+  constructor() {
+    this.logger = new Logger('BuyBoxMonitoringService');
+  }
+  
+  /**
+   * Initialize Buy Box monitoring for a product on a marketplace
+   * @param productId Product ID
+   * @param marketplaceId Marketplace ID
+   * @param marketplaceProductId Marketplace-specific product ID
+   * @param monitoringFrequency How often to check the Buy Box (in minutes)
+   * @returns The initialized Buy Box history object
+   */
+  async initializeMonitoring(
+    productId: string,
+    marketplaceId: string,
+    marketplaceProductId: string,
+    monitoringFrequency: number = 60 // Default: check once per hour
+  ): Promise<BuyBoxHistory> {
+    try {
+      this.logger.info(
+        `Initializing Buy Box monitoring for product ${productId} on ${marketplaceId}`
+      );
+      
+      // Get product data
+      const inventoryRepo = getInventoryRepository();
+      const product = await inventoryRepo.getInventoryItemById(productId);
+      
+      if (!product) {
+        throw new Error(`Product not found: ${productId}`);
+      }
+      
+      // Check if marketplace is supported
+      const factory = getBuyBoxMonitorFactory();
+      if (!factory.isMarketplaceSupported(marketplaceId)) {
+        throw new Error(`Marketplace not supported for Buy Box monitoring: ${marketplaceId}`);
+      }
+      
+      // Get appropriate monitor
+      const monitor = factory.getMonitor(marketplaceId);
+      
+      // Initialize monitoring
+      const history = await monitor.initializeMonitoring(
+        product, 
+        marketplaceProductId, 
+        monitoringFrequency
+      );
+      
+      return history;
+    } catch (error) {
+      this.logger.error(
+        `Failed to initialize Buy Box monitoring for ${productId} on ${marketplaceId}`,
+        error
+      );
+      throw error;
+    }
+  }
+  
+  /**
+   * Initialize Buy Box monitoring for all products on a marketplace
+   * @param marketplaceId Marketplace ID
+   * @param monitoringFrequency How often to check the Buy Box (in minutes)
+   * @returns Number of products initialized
+   */
+  async initializeMonitoringForMarketplace(
+    marketplaceId: string,
+    monitoringFrequency: number = 60 // Default: check once per hour
+  ): Promise<number> {
+    try {
+      this.logger.info(`Initializing Buy Box monitoring for all products on ${marketplaceId}`);
+      
+      // Check if marketplace is supported
+      const factory = getBuyBoxMonitorFactory();
+      if (!factory.isMarketplaceSupported(marketplaceId)) {
+        throw new Error(`Marketplace not supported for Buy Box monitoring: ${marketplaceId}`);
+      }
+      
+      // Get all products with listings on this marketplace
+      const inventoryRepo = getInventoryRepository();
+      const products = await inventoryRepo.getProductsOnMarketplace(marketplaceId);
+      
+      this.logger.info(`Found ${products.length} products on ${marketplaceId}`);
+      
+      // Initialize monitoring for each product
+      let successCount = 0;
+      
+      for (const product of products) {
+        try {
+          const marketplaceListing = product.marketplaces[marketplaceId];
+          if (!marketplaceListing) continue;
+          
+          await this.initializeMonitoring(
+            product.id,
+            marketplaceId,
+            marketplaceListing.marketplaceProductId,
+            monitoringFrequency
+          );
+          
+          successCount++;
+        } catch (error) {
+          this.logger.error(
+            `Failed to initialize monitoring for product ${product.id}`, 
+            error
+          );
+          // Continue with next product
+        }
+      }
+      
+      return successCount;
+    } catch (error) {
+      this.logger.error(
+        `Failed to initialize monitoring for marketplace ${marketplaceId}`, 
+        error
+      );
+      throw error;
+    }
+  }
+  
+  /**
+   * Stop Buy Box monitoring for a product
+   * @param productId Product ID
+   * @param marketplaceId Marketplace ID
+   * @returns Success status
+   */
+  async stopMonitoring(productId: string, marketplaceId: string): Promise<boolean> {
+    try {
+      this.logger.info(`Stopping Buy Box monitoring for product ${productId} on ${marketplaceId}`);
+      
+      // Get appropriate monitor
+      const factory = getBuyBoxMonitorFactory();
+      const monitor = factory.getMonitor(marketplaceId);
+      
+      // Get Buy Box history
+      const repository = getBuyBoxHistoryRepository();
+      const historyId = `${productId}_${marketplaceId}`;
+      const history = await repository.getById(historyId);
+      
+      if (!history) {
+        this.logger.warn(`No Buy Box history found for ${productId} on ${marketplaceId}`);
+        return false;
+      }
+      
+      // Stop monitoring
+      return await monitor.stopMonitoring(productId, history.marketplaceProductId);
+    } catch (error) {
+      this.logger.error(
+        `Failed to stop Buy Box monitoring for ${productId} on ${marketplaceId}`, 
+        error
+      );
+      return false;
+    }
+  }
+  
+  /**
+   * Check Buy Box status for all monitored products
+   * @returns Number of products checked
+   */
+  async checkAllMonitoredProducts(): Promise<number> {
+    try {
+      this.logger.info('Checking Buy Box status for all monitored products');
+      
+      // Get all products that need checking
+      const repository = getBuyBoxHistoryRepository();
+      const productsToCheck = await repository.getProductsToCheck();
+      
+      this.logger.info(`Found ${productsToCheck.length} products to check`);
+      
+      // Check each product
+      let successCount = 0;
+      
+      for (const history of productsToCheck) {
+        try {
+          await this.checkBuyBoxStatus(
+            history.productId,
+            history.marketplaceId,
+            history.marketplaceProductId
+          );
+          
+          successCount++;
+        } catch (error) {
+          this.logger.error(
+            `Failed to check Buy Box status for ${history.productId} on ${history.marketplaceId}`, 
+            error
+          );
+          // Continue with next product
+        }
+      }
+      
+      return successCount;
+    } catch (error) {
+      this.logger.error('Failed to check monitored products', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Check Buy Box status for a specific product
+   * @param productId Product ID
+   * @param marketplaceId Marketplace ID
+   * @param marketplaceProductId Marketplace-specific product ID
+   * @returns The updated Buy Box snapshot
+   */
+  async checkBuyBoxStatus(
+    productId: string,
+    marketplaceId: string,
+    marketplaceProductId: string
+  ): Promise<BuyBoxSnapshot> {
+    try {
+      this.logger.info(
+        `Checking Buy Box status for product ${productId} on ${marketplaceId}`
+      );
+      
+      // Get appropriate monitor
+      const factory = getBuyBoxMonitorFactory();
+      const monitor = factory.getMonitor(marketplaceId);
+      
+      // Check Buy Box status
+      const snapshot = await monitor.checkBuyBoxStatus(
+        productId, 
+        marketplaceProductId
+      );
+      
+      // Add snapshot to history
+      await monitor.addSnapshot(productId, snapshot);
+      
+      // Return the snapshot
+      return snapshot;
+    } catch (error) {
+      this.logger.error(
+        `Failed to check Buy Box status for ${productId} on ${marketplaceId}`, 
+        error
+      );
+      throw error;
+    }
+  }
+  
+  /**
+   * Apply repricing rules to all monitored products
+   * @returns Number of products updated
+   */
+  async applyRepricingRules(): Promise<number> {
+    try {
+      this.logger.info('Applying repricing rules to monitored products');
+      
+      // Get all repricing rules
+      const repository = getBuyBoxHistoryRepository();
+      const rules = await repository.getRules();
+      
+      if (rules.length === 0) {
+        this.logger.info('No active repricing rules found');
+        return 0;
+      }
+      
+      // Get all monitored products
+      const monitoredProducts = await repository.getMonitored();
+      
+      this.logger.info(
+        `Found ${rules.length} active rules and ${monitoredProducts.length} monitored products`
+      );
+      
+      // Track number of products updated
+      let updatedCount = 0;
+      
+      // Process each product
+      for (const history of monitoredProducts) {
+        try {
+          // Get product data
+          const inventoryRepo = getInventoryRepository();
+          const product = await inventoryRepo.getInventoryItemById(history.productId);
+          
+          if (!product) {
+            this.logger.warn(`Product not found: ${history.productId}`);
+            continue;
+          }
+          
+          // Find applicable rules for this product and marketplace
+          const applicableRules = this.findApplicableRules(rules, product, history.marketplaceId);
+          
+          if (applicableRules.length === 0) {
+            continue; // No rules apply
+          }
+          
+          // Get the highest priority rule
+          const rule = applicableRules[0]; // Rules are pre-sorted by priority
+          
+          // Calculate new price based on rule
+          const newPrice = await this.calculatePriceFromRule(
+            rule, 
+            product, 
+            history
+          );
+          
+          if (newPrice === null) {
+            continue; // No price change needed
+          }
+          
+          // Get appropriate monitor
+          const factory = getBuyBoxMonitorFactory();
+          const monitor = factory.getMonitor(history.marketplaceId);
+          
+          // Update price
+          const result = await monitor.updatePrice(
+            history.productId,
+            history.marketplaceProductId,
+            newPrice
+          );
+          
+          if (result.success) {
+            updatedCount++;
+            
+            // Update product price in Firestore
+            await inventoryRepo.updateInventoryItem(history.productId, {
+              [`marketplaces.${history.marketplaceId}.price`]: newPrice
+            });
+            
+            this.logger.info(
+              `Updated price for ${history.productId} on ${history.marketplaceId} to ${newPrice}`
+            );
+          } else {
+            this.logger.warn(
+              `Failed to update price for ${history.productId}: ${result.message}`
+            );
+          }
+        } catch (error) {
+          this.logger.error(
+            `Failed to apply repricing rules for ${history.productId}`, 
+            error
+          );
+          // Continue with next product
+        }
+      }
+      
+      return updatedCount;
+    } catch (error) {
+      this.logger.error('Failed to apply repricing rules', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Find applicable repricing rules for a product
+   * @param rules All available rules
+   * @param product The product
+   * @param marketplaceId The marketplace ID
+   * @returns Array of applicable rules, sorted by priority
+   */
+  private findApplicableRules(
+    rules: RepricingRule[],
+    product: FirestoreInventoryItemWithId,
+    marketplaceId: string
+  ): RepricingRule[] {
+    // Filter rules that apply to this marketplace
+    const marketplaceRules = rules.filter(rule => 
+      rule.marketplaces.includes(marketplaceId)
+    );
+    
+    // Filter rules that match product criteria
+    return marketplaceRules.filter(rule => {
+      // Skip if no product filter
+      if (!rule.productFilter) return true;
+      
+      const filter = rule.productFilter;
+      
+      // Check specific SKUs
+      if (filter.skus && filter.skus.length > 0) {
+        if (!filter.skus.includes(product.sku)) {
+          return false;
+        }
+      }
+      
+      // Check excluded SKUs
+      if (filter.excludedSkus && filter.excludedSkus.length > 0) {
+        if (filter.excludedSkus.includes(product.sku)) {
+          return false;
+        }
+      }
+      
+      // Check categories
+      if (filter.categories && filter.categories.length > 0) {
+        const productCategories = product.categories || [];
+        if (!filter.categories.some(cat => productCategories.includes(cat))) {
+          return false;
+        }
+      }
+      
+      // Check price range
+      const productPrice = product.basePrice;
+      if (filter.minPrice !== undefined && productPrice < filter.minPrice) {
+        return false;
+      }
+      
+      if (filter.maxPrice !== undefined && productPrice > filter.maxPrice) {
+        return false;
+      }
+      
+      return true;
+    });
+  }
+  
+  /**
+   * Calculate new price based on repricing rule
+   * @param rule The repricing rule
+   * @param product The product
+   * @param history The Buy Box history
+   * @returns New price or null if no change needed
+   */
+  private async calculatePriceFromRule(
+    rule: RepricingRule,
+    product: FirestoreInventoryItemWithId,
+    history: BuyBoxHistory
+  ): Promise<number | null> {
+    const currentPrice = history.lastSnapshot.ownSellerPrice;
+    const costPrice = product.costPrice || 0;
+    
+    // Get parameters
+    const params = rule.parameters;
+    const minPrice = params.minPrice || costPrice * 1.1; // Default 10% margin
+    const maxPrice = params.maxPrice || product.basePrice * 1.5; // Default 50% markup
+    
+    // Calculate new price based on strategy
+    let newPrice: number | null = null;
+    
+    switch (rule.strategy) {
+      case RepricingStrategy.MATCH_BUY_BOX:
+        // Match the Buy Box price if we don't own it
+        if (history.lastSnapshot.ownBuyBoxStatus !== BuyBoxOwnershipStatus.OWNED &&
+            history.lastSnapshot.buyBoxPrice) {
+          newPrice = history.lastSnapshot.buyBoxPrice;
+        }
+        break;
+        
+      case RepricingStrategy.BEAT_BUY_BOX:
+        // Beat the Buy Box price by a small amount if we don't own it
+        if (history.lastSnapshot.ownBuyBoxStatus !== BuyBoxOwnershipStatus.OWNED &&
+            history.lastSnapshot.buyBoxPrice) {
+          const difference = params.priceDifferenceAmount || 0.01;
+          newPrice = history.lastSnapshot.buyBoxPrice - difference;
+        }
+        break;
+        
+      case RepricingStrategy.FIXED_PERCENTAGE:
+        // Adjust price by a fixed percentage
+        if (history.lastSnapshot.buyBoxPrice) {
+          const percentage = params.priceDifferencePercentage || -1; // Default 1% lower
+          newPrice = history.lastSnapshot.buyBoxPrice * (1 + percentage / 100);
+        }
+        break;
+        
+      case RepricingStrategy.MAINTAIN_MARGIN:
+        // Ensure minimum margin is maintained
+        const targetMargin = params.targetMargin || 20; // Default 20% margin
+        
+        if (history.lastSnapshot.buyBoxPrice && costPrice > 0) {
+          const minimumPrice = costPrice * (1 + targetMargin / 100);
+          
+          if (currentPrice < minimumPrice) {
+            // Current price doesn't maintain margin, increase
+            newPrice = minimumPrice;
+          } else if (history.lastSnapshot.buyBoxPrice < minimumPrice) {
+            // Buy Box price doesn't maintain margin, use min price
+            newPrice = minimumPrice;
+          } else if (history.lastSnapshot.ownBuyBoxStatus !== BuyBoxOwnershipStatus.OWNED) {
+            // Try to win Buy Box while maintaining margin
+            newPrice = Math.max(
+              minimumPrice,
+              history.lastSnapshot.buyBoxPrice - (params.priceDifferenceAmount || 0.01)
+            );
+          }
+        }
+        break;
+        
+      case RepricingStrategy.DYNAMIC_PRICING:
+        // Use Buy Box monitor's suggestion
+        if (history.lastSnapshot.suggestedPrice) {
+          newPrice = history.lastSnapshot.suggestedPrice;
+        } else {
+          // Get appropriate monitor for suggestion
+          const factory = getBuyBoxMonitorFactory();
+          const monitor = factory.getMonitor(history.marketplaceId);
+          
+          // Get suggested price
+          const suggestion = await monitor.calculateSuggestedPrice(
+            product, 
+            history.lastSnapshot
+          );
+          
+          newPrice = suggestion.suggestedPrice;
+        }
+        break;
+    }
+    
+    // No price change needed
+    if (newPrice === null) {
+      return null;
+    }
+    
+    // Enforce min/max price constraints
+    newPrice = Math.max(minPrice, Math.min(maxPrice, newPrice));
+    
+    // Don't change price if difference is too small
+    const priceDifference = Math.abs(newPrice - currentPrice);
+    if (priceDifference < 0.01 || priceDifference / currentPrice < 0.005) {
+      return null; // Less than 0.5% change
+    }
+    
+    return newPrice;
+  }
+}
+
+// Singleton instance
+let service: BuyBoxMonitoringService | null = null;
+
+/**
+ * Get the Buy Box monitoring service
+ * @returns Buy Box monitoring service
+ */
+export function getBuyBoxMonitoringService(): BuyBoxMonitoringService {
+  if (!service) {
+    service = new BuyBoxMonitoringService();
+  }
+  
+  return service;
+}

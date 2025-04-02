@@ -13,7 +13,10 @@ import {
   InventoryItem,
   MarketplacePushOptions
 } from '../api/inventory.api';
-import { createToaster } from '@chakra-ui/react/toast';
+import { createToaster } from '@/utils/chakra-compat';
+
+interface useInventoryProps {}
+;
 
 // Define types for API responses and errors
 interface ApiError extends Error {
@@ -120,7 +123,7 @@ export const useInventory = () => {
     return useMutation<any, Error, { id: string; data: Partial<InventoryItem> }>({
       mutationFn: ({ id, data }) =>
         updateInventoryItem(id, data),
-      onSuccess: (_, variables) => {
+      onSuccess: (_: any, variables: any) => {
         const { id } = variables;
         queryClient.invalidateQueries({ queryKey: ['inventoryItems'] });
         queryClient.invalidateQueries({ queryKey: ['inventoryItem', id] });
@@ -167,7 +170,7 @@ export const useInventory = () => {
     return useMutation<any, Error, { id: string; data: { quantity: number; adjustmentType: 'set' | 'add' | 'subtract'; reason?: string } }>({
       mutationFn: ({ id, data }) =>
         updateInventoryStock(id, data),
-      onSuccess: (_, variables) => {
+      onSuccess: (_: any, variables: any) => {
         const { id } = variables;
         queryClient.invalidateQueries({ queryKey: ['inventoryItems'] });
         queryClient.invalidateQueries({ queryKey: ['inventoryItem', id] });
@@ -242,7 +245,7 @@ export const useInventory = () => {
     return useMutation<any, Error, { productId: string; marketplaceId: string; updates: MarketplacePushOptions }>({
       mutationFn: ({ productId, marketplaceId, updates }) => 
         pushProductToMarketplace(productId, marketplaceId, updates),
-      onSuccess: (result, variables) => {
+      onSuccess: (result: any, variables: any) => {
         const { marketplaceId } = variables;
         // Show overall success or partial success message
         if (result.success) {

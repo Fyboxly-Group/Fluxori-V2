@@ -1,0 +1,86 @@
+// @ts-nocheck
+import { Request, Response } from 'express';
+import { createMockRequest, createMockResponse } from './test-app';
+import mongoose from 'mongoose';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+
+/**
+ * Setup and teardown for MongoDB memory server in tests
+ */
+export const setupMongoMemoryServer = async () => {
+  const mongoServer = await MongoMemoryServer.create();
+  const mongoUri = mongoServer.getUri();
+
+  await mongoose.connect(mongoUri);
+
+  return {
+    mongoServer,
+    mongoose,
+  };
+};
+
+/**
+ * Clean up MongoDB memory server after tests
+ */
+export const teardownMongoMemoryServer = async ({ mongoServer, mongoose }) => {
+  await mongoose.disconnect();
+  await mongoServer.stop();
+};
+
+/**
+ * Create a mock controller context for testing
+ * @param reqOverrides Override properties for the mock request
+ * @param resOverrides Override properties for the mock response
+ * @returns Object with mock request, response, and next function
+ */
+export function createMockContext(
+  reqOverrides: Partial<Request> = {}, 
+  resOverrides: Partial<Response> = {}
+) {
+  const req = createMockRequest(reqOverrides);
+  const res = createMockResponse();
+  const next = jest.fn();
+
+  // Apply any custom response overrides
+  Object.assign(res, resOverrides);
+
+  return { req, res, next };
+}
+
+/**
+ * Mock authenticated user context
+ * @param user The user object to set in the request
+ * @returns Mock context with authenticated user
+ */
+export function createAuthenticatedContext(user = {
+  id: 'test-user-id',
+  email: 'test@example.com',
+  name: 'Test User',
+  role: 'admin',
+  organizationId: 'test-org-id',
+}) {
+  return createMockContext({ user });
+}
+
+/**
+ * Helper to get a random MongoDB ObjectId for testing
+ * @returns Random MongoDB ObjectId as string
+ */
+export function getRandomObjectId() {
+  return new mongoose.Types.ObjectId().toString();
+}
+
+/**
+ * Create an async wrapper for testing Express route handlers
+ * @param fn The async route handler function to test
+ * @returns A function that catches and forwards errors to next
+ */
+export function asyncHandler(fn) {
+  return async function(req, res, next) {
+    try {
+      await fn(req, res, next);
+    } catch (error) {
+      next(error);
+    }
+  };
+}

@@ -1,0 +1,156 @@
+import { MarketplaceAdapterInterface, MarketplaceCredentials, MarketplaceProduct, MarketplaceOrder } from '../../interfaces/marketplace-adapter.interface';
+import { 
+  MarketplaceCredentials,
+  ConnectionStatus,
+  MarketplaceProduct,
+  StockUpdatePayload,
+  PriceUpdatePayload,
+  StatusUpdatePayload,
+  MarketplaceOrder,
+  OrderAcknowledgment,
+  MarketplaceCategory,
+  PaginatedResponse,
+  OperationResult,
+  ProductFilterOptions, 
+  OrderFilterOptions
+} from '../../models/marketplace.models';
+
+/**
+ * Adapter for the Takealot marketplace
+ */
+export class TakealotAdapter implements MarketplaceAdapterInterface {
+  readonly marketplaceId = 'takealot';
+  readonly marketplaceName = 'Takealot';
+  
+  async initialize(credentials: MarketplaceCredentials): Promise<void> {
+    console.log(`Initializing Takealot adapter with credentials: ${JSON.stringify(credentials)}`);
+  }
+  
+  async testConnection(): Promise<ConnectionStatus> {
+    return { connected: true, message: 'Connected to Takealot', lastChecked: new Date() };
+  }
+  
+  async getRateLimitStatus(): Promise<{ remaining: number; reset: Date; limit: number }> {
+    return { remaining: 100, reset: new Date(Date.now() + 3600000), limit: 100 };
+  }
+  
+  async getProductBySku(sku: string): Promise<OperationResult<MarketplaceProduct>> {
+    return { success: true, data: { id: 'mock-id', sku, title: 'Mock Product', price: 100, currencyCode: 'ZAR', stockLevel: 10, status: 'active' as any, createdAt: new Date(), updatedAt: new Date(), marketplaceId: this.marketplaceId } };
+  }
+  
+  async getProductById(id: string): Promise<OperationResult<MarketplaceProduct>> {
+    return { success: true, data: { id, sku: 'mock-sku', title: 'Mock Product', price: 100, currencyCode: 'ZAR', stockLevel: 10, status: 'active' as any, createdAt: new Date(), updatedAt: new Date(), marketplaceId: this.marketplaceId } };
+  }
+  
+  async getProductsBySkus(skus: string[]): Promise<OperationResult<MarketplaceProduct[]>> {
+    return { success: true, data: skus.map((sku: any) => ({ id: `mock-id-${sku}`, sku, title: 'Mock Product', price: 100, currencyCode: 'ZAR', stockLevel: 10, status: 'active' as any, createdAt: new Date(), updatedAt: new Date(), marketplaceId: this.marketplaceId })) };
+  }
+  
+  async getProducts(
+    page: number,
+    pageSize: number,
+    filters?: ProductFilterOptions
+  ): Promise<PaginatedResponse<MarketplaceProduct>> {
+    return { data: [], total: 0, page, pageSize, totalPages: 0, hasNext: false, hasPrev: false };
+  }
+  
+  async updateStock(updates: StockUpdatePayload[]): Promise<OperationResult<{
+    successful: string[];
+    failed: Array<{ sku: string, reason: string }>;
+  }>> {
+    console.log(`Updating stock for ${updates.length} products on Takealot`);
+    return { 
+      success: true, 
+      data: { 
+        successful: updates.map((u: any) => u.sku), 
+        failed: [] 
+      } 
+    };
+  }
+  
+  async updatePrices(updates: PriceUpdatePayload[]): Promise<OperationResult<{
+    successful: string[];
+    failed: Array<{ sku: string, reason: string }>;
+  }>> {
+    console.log(`Updating prices for ${updates.length} products on Takealot`);
+    return { 
+      success: true, 
+      data: { 
+        successful: updates.map((u: any) => u.sku), 
+        failed: [] 
+      } 
+    };
+  }
+  
+  async updateStatus(updates: StatusUpdatePayload[]): Promise<OperationResult<{
+    successful: string[];
+    failed: Array<{ sku: string, reason: string }>;
+  }>> {
+    console.log(`Updating status for ${updates.length} products on Takealot`);
+    return { 
+      success: true, 
+      data: { 
+        successful: updates.map((u: any) => u.sku), 
+        failed: [] 
+      } 
+    };
+  }
+  
+  async getOrders(
+    page: number,
+    pageSize: number,
+    filters?: OrderFilterOptions
+  ): Promise<PaginatedResponse<MarketplaceOrder>> {
+    return { data: [], total: 0, page, pageSize, totalPages: 0, hasNext: false, hasPrev: false };
+  }
+  
+  async getRecentOrders(
+    sinceDate: Date,
+    page: number,
+    pageSize: number
+  ): Promise<PaginatedResponse<MarketplaceOrder>> {
+    return { data: [], total: 0, page, pageSize, totalPages: 0, hasNext: false, hasPrev: false };
+  }
+  
+  async getOrderById(id: string): Promise<OperationResult<MarketplaceOrder>> {
+    return { success: true, data: { id, marketplaceOrderId: id, customerDetails: { email: 'mock@example.com' } as any, orderItems: [], orderStatus: 'new' as any, paymentStatus: 'paid' as any, shippingStatus: 'awaiting_fulfillment' as any, shippingDetails: { address: { line1: 'Mock Address', city: 'Mock City', postalCode: '12345', country: 'South Africa' } as any, method: 'Standard' } as any, paymentDetails: { method: 'Credit Card', amount: 100, currency: 'ZAR' } as any, currencyCode: 'ZAR', subtotal: 100, shippingCost: 10, tax: 15, discount: 0, total: 125, createdAt: new Date(), updatedAt: new Date() } };
+  }
+  
+  async acknowledgeOrder(orderId: string): Promise<OperationResult<OrderAcknowledgment>> {
+    return { success: true, data: { orderId, success: true, timestamp: new Date() } };
+  }
+  
+  async updateOrderStatus(
+    orderId: string,
+    status: string,
+    trackingInfo?: {
+      carrier: string;
+      trackingNumber: string;
+      shippedDate?: Date;
+    }
+  ): Promise<OperationResult<{ orderId: string }>> {
+    return { success: true, data: { orderId } };
+  }
+  
+  async getCategories(parentId?: string): Promise<OperationResult<MarketplaceCategory[]>> {
+    return { success: true, data: [] };
+  }
+  
+  async getCategoryAttributes(categoryId: string): Promise<OperationResult<Array<{
+    id: string;
+    name: string;
+    required: boolean;
+    type: string;
+    values?: string[];
+  }>>> {
+    return { success: true, data: [] };
+  }
+  
+  async getMarketplaceHealth(): Promise<ConnectionStatus> {
+    return { connected: true, message: 'Takealot services are operational', lastChecked: new Date() };
+  }
+  
+  async close(): Promise<void> {
+    console.log('Closing Takealot adapter');
+  }
+}

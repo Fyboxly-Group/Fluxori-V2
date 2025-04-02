@@ -1,0 +1,119 @@
+// @ts-nocheck
+import mongoose, { Document, Model, Schema } from 'mongoose';
+import { TypedSchema, PreHookCallback, PostHookCallback } from '../types/mongo-util-types';
+
+/**
+ * Static methods for InventoryStock model
+ */
+export interface IInventoryStockStatics {
+  // Add static methods as needed
+}
+
+/**
+ * Methods for InventoryStock model
+ */
+export interface IInventoryStockMethods {
+  // Add methods as needed
+}
+
+export interface IInventoryStock {
+  inventoryItem: mongoose.Types.ObjectId,
+  warehouse: mongoose.Types.ObjectId,
+  quantityOnHand: number,
+  quantityAllocated: number,
+  reorderPoint: number,
+  reorderQuantity: number,
+  preferredStockLevel: number,
+  binLocation?: string,
+  lastStockCheck?: Date,
+  createdBy: mongoose.Types.ObjectId,
+  createdAt: Date,
+  updatedAt: Date,
+}
+
+export interface IInventoryStockDocument extends IInventoryStock, Document, IInventoryStockMethods {}
+
+/**
+ * Type for InventoryStock model with statics
+ */
+export type InventoryStockModel = Model<IInventoryStockDocument> & IInventoryStockStatics;
+
+const inventoryStockSchema = new Schema<IInventoryStockDocument, InventoryStockModel, IInventoryStockMethods>(
+  {
+    inventoryItem: {
+      type: Schema.Types.ObjectId,
+      ref: 'InventoryItem',
+      required: true,
+    },
+    warehouse: {
+      type: Schema.Types.ObjectId,
+      ref: 'Warehouse',
+      required: true,
+    },
+    quantityOnHand: {
+      type: Number,
+      required: true,
+      default: 0,
+      min: 0,
+    },
+    quantityAllocated: {
+      type: Number,
+      required: true,
+      default: 0,
+      min: 0,
+    },
+    reorderPoint: {
+      type: Number,
+      required: true,
+      default: 5,
+      min: 0,
+    },
+    reorderQuantity: {
+      type: Number,
+      required: true,
+      default: 10,
+      min: 0,
+    },
+    preferredStockLevel: {
+      type: Number,
+      required: true,
+      default: 20,
+      min: 0,
+    },
+    binLocation: {
+      type: String,
+      trim: true,
+    },
+    lastStockCheck: {
+      type: Date,
+    },
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+// Compound index to ensure uniqueness of inventory item + warehouse
+inventoryStockSchema.index({ inventoryItem: 1, warehouse: 1 }, { unique: true });
+inventoryStockSchema.index({ warehouse: 1 });
+inventoryStockSchema.index({ quantityOnHand: 1 });
+inventoryStockSchema.index({ lastStockCheck: 1 });
+
+// Virtual for available quantity
+inventoryStockSchema.virtual('availableQuantity').get(function(this: IInventoryStockDocument) {
+  return Math.max(0, this.quantityOnHand - this.quantityAllocated);
+});
+
+// Method to check if stock is below reorder point
+inventoryStockSchema.methods.isBelowReorderPoint = function(): boolean {
+  return this.quantityOnHand <= this.reorderPoint;
+};
+
+const InventoryStock = mongoose.model<IInventoryStockDocument, InventoryStockModel>('InventoryStock', inventoryStockSchema);
+
+export default InventoryStock;

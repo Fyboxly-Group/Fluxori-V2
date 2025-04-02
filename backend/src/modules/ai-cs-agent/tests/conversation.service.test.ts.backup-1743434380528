@@ -1,0 +1,267 @@
+// @ts-nocheck
+import mongoose from 'mongoose';
+import { ConversationService } from '../services/conversation.service';
+import { VertexAIService } from '../services/vertex-ai.service';
+import { RAGService } from '../services/rag.service';
+import { CreditService } from '../../credits/services/credit.service';
+import Conversation, { ConversationStatus, MessageRole } from '../models/conversation.model';
+
+// Mock the external services
+jest.mock('../services/vertex-ai.service');
+jest.mock('../services/rag.service');
+jest.mock('../../credits/services/credit.service');
+jest.mock('../models/conversation.model');
+
+describe('ConversationService', () => {
+  let conversationService: ConversationService;
+  const mockUserId = '507f1f77bcf86cd799439011';
+  const mockOrgId = '507f1f77bcf86cd799439012';
+  
+  beforeEach(() => {
+    // Create a new instance of ConversationService for each test
+    conversationService = new ConversationService();
+    
+    // Mock VertexAI service responses
+    (VertexAIService.prototype.generateResponse as jest.Mock).mockResolvedValue({
+      text: 'This is a mock AI response.',
+      usage: {
+        prompt_tokens: 100,
+        completion_tokens: 50,
+        total_tokens: 150
+      },
+      metadata: {
+        model: 'gemini-1.5-flash',
+        finish_reason: 'stop'
+      }
+    });
+    
+    // Mock confidence and escalation assessments
+    (VertexAIService.prototype.calculateConfidence as jest.Mock).mockReturnValue({
+      confidence: 0.85
+    });
+    (VertexAIService.prototype.shouldEscalate as jest.Mock).mockReturnValue({ 
+      escalate: false 
+    });
+    
+    // Mock RAG service responses - this is the key for testing the integration
+    (RAGService.prototype.retrieveContext as jest.Mock).mockResolvedValue(
+      'This is mock context from the RAG service that should be included in the prompt.'
+    );
+    
+    // Mock credit service
+    (CreditService.deductCredits as jest.Mock).mockResolvedValue({
+      balance: 100
+    });
+    
+    // Mock Mongoose save method
+    const mockSave = jest.fn().mockImplementation(function(this: any) {
+      if (!this._id) {
+        this._id = new mongoose.Types.ObjectId();
+      }
+      return Promise.resolve(this);
+    });
+    
+    // Mock Conversation model methods
+    (Conversation.prototype.save as jest.Mock) = mockSave;
+    (Conversation.findById as jest.Mock) = jest.fn().mockImplementation((id: any) => {
+      const conversation = {
+        _id: new mongoose.Types.ObjectId(id as string),
+        userId: new mongoose.Types.ObjectId(mockUserId),
+        status: ConversationStatus.ACTIVE,
+        messages: [],
+        lastMessageAt: new Date(),
+        save: mockSave
+      };
+      return {
+        exec: jest.fn().mockResolvedValue(conversation)
+      };
+    });
+    
+    // Mock Conversation.create
+    (Conversation as unknown as jest.Mock) = jest.fn().mockImplementation((data: any) => {
+      return {
+        ...data,
+        _id: new mongoose.Types.ObjectId(),
+        save: mockSave
+      };
+    });
+  });
+  
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+  
+  describe('processMessage', () => {
+    it('should create a new conversation if no conversation ID is provided', async () => {
+      // Arrange
+      const userMessage = 'Hello, I need help with my subscription.';
+      
+      // Act
+      const result = await conversationService.processMessage(mockUserId, userMessage);
+      
+      // Assert
+      expect(result).toBeDefined();
+      expect(result.conversationId).toBeDefined();
+      expect(result.aiResponse).toBe('This is a mock AI response.');
+      expect(result.isEscalated).toBe(false);
+      expect(result.usage.tokens).toBe(150);
+      expect(result.usage.credits).toBe(4); // CREDITS_PER_INTERACTION constant
+      expect(result.usage.confidence).toBe(0.85);
+      
+      // Verify RAG service was called for context retrieval
+      expect(RAGService.prototype.retrieveContext).toHaveBeenCalledWith(
+        userMessage,
+        expect.any(String)
+      );
+      
+      // Verify VertexAI service was called with the RAG context
+      expect(VertexAIService.prototype.generateResponse).toHaveBeenCalledWith(
+        userMessage,
+        expect.any(Array),
+        'This is mock context from the RAG service that should be included in the prompt.'
+      );
+      
+      // Verify credits were deducted
+      expect(CreditService.deductCredits).toHaveBeenCalledWith(
+        mockUserId,
+        4, // CREDITS_PER_INTERACTION
+        'AI Customer Service Agent interaction',
+        undefined,
+        expect.any(String)
+      );
+    });
+    
+    it('should handle escalation to human agent when needed', async () => {
+      // Arrange
+      const userMessage = 'I have a complex problem that needs human assistance.';
+      
+      // Mock shouldEscalate to return true
+      (VertexAIService.prototype.shouldEscalate as jest.Mock).mockReturnValue({ 
+        escalate: true,
+        reason: 'Complex issue identified'
+      });
+      
+      // Act
+      const result = await conversationService.processMessage(mockUserId, userMessage);
+      
+      // Assert
+      expect(result.isEscalated).toBe(true);
+      expect(result.escalationReason).toBe('Complex issue identified');
+      
+      // Verify RAG and AI services were still called
+      expect(RAGService.prototype.retrieveContext).toHaveBeenCalled();
+      expect(VertexAIService.prototype.generateResponse).toHaveBeenCalled();
+    });
+    
+    it('should handle RAG service errors gracefully', async () => {
+      // Arrange
+      const userMessage = 'This will cause a RAG error.';
+      
+      // Mock RAG service to throw an error
+      (RAGService.prototype.retrieveContext as jest.Mock).mockRejectedValueOnce(
+        new Error('RAG service unavailable')
+      );
+      
+      // Act
+      const result = await conversationService.processMessage(mockUserId, userMessage);
+      
+      // Assert
+      expect(result).toBeDefined();
+      expect(result.aiResponse).toBe('This is a mock AI response.');
+      
+      // Verify VertexAI service was called without RAG context
+      expect(VertexAIService.prototype.generateResponse).toHaveBeenCalledWith(
+        userMessage,
+        expect.any(Array)
+      );
+      
+      // Verify reduced credits were deducted due to error
+      expect(CreditService.deductCredits).toHaveBeenCalledWith(
+        mockUserId,
+        2, // Half of CREDITS_PER_INTERACTION
+        'AI Customer Service Agent interaction (error recovery)',
+        undefined,
+        expect.any(String)
+      );
+    });
+    
+    it('should use existing conversation when ID is provided', async () => {
+      // Arrange
+      const mockConversationId = '507f1f77bcf86cd799439013';
+      const userMessage = 'Follow-up question about my account.';
+      
+      // Act
+      const result = await conversationService.processMessage(
+        mockUserId, 
+        userMessage, 
+        mockConversationId
+      );
+      
+      // Assert
+      expect(result.conversationId).toBeDefined();
+      
+      // Verify conversation was retrieved
+      expect(Conversation.findById).toHaveBeenCalledWith(mockConversationId);
+      
+      // Verify RAG service was called
+      expect(RAGService.prototype.retrieveContext).toHaveBeenCalled();
+    });
+    
+    it('should include organization ID when provided', async () => {
+      // Arrange
+      const userMessage = 'Question from an organization account.';
+      
+      // Act
+      const result = await conversationService.processMessage(
+        mockUserId, 
+        userMessage, 
+        undefined, 
+        mockOrgId
+      );
+      
+      // Assert
+      expect(result).toBeDefined();
+      
+      // Verify credits were deducted with organization ID
+      expect(CreditService.deductCredits).toHaveBeenCalledWith(
+        mockUserId,
+        4, // CREDITS_PER_INTERACTION
+        'AI Customer Service Agent interaction',
+        mockOrgId,
+        expect.any(String)
+      );
+    });
+    
+    it('should format conversation history correctly for RAG query', async () => {
+      // Create a service instance we can test private methods on
+      const service = new ConversationService();
+      
+      // Create mock messages
+      const messages = [
+        {
+          role: MessageRole.USER,
+          content: 'How do I change my subscription?',
+          timestamp: new Date()
+        },
+        {
+          role: MessageRole.ASSISTANT,
+          content: 'You can change your subscription in account settings.',
+          timestamp: new Date()
+        },
+        {
+          role: MessageRole.USER,
+          content: 'Where exactly in settings?',
+          timestamp: new Date()
+        }
+      ];
+      
+      // Call the private method using any type casting
+      const formattedHistory = (service as any).formatConversationHistoryForRag(messages);
+      
+      // Verify formatting
+      expect(formattedHistory).toContain('User: How do I change my subscription?');
+      expect(formattedHistory).toContain('Assistant: You can change your subscription in account settings.');
+      expect(formattedHistory).toContain('User: Where exactly in settings?');
+    });
+  });
+});

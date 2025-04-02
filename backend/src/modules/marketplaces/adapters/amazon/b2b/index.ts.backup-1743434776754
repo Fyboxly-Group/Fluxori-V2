@@ -1,0 +1,6 @@
+// TypeScript checked
+/**
+ * Export b2b module and factory for external use
+ */
+export { default as B2bModule } from "./b2b";
+export { default as B2bModuleFactory } from "./b2b-factory";

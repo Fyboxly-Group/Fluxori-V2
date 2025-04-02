@@ -1,0 +1,76 @@
+// @ts-nocheck
+import { Injectable } from '../../decorators/injectable.decorator';
+import { Types } from 'mongoose';
+import { {{ModelName}}Model, I{{ModelName}}, I{{ModelName}}Document } from '../models/{{modelName}}.model';
+import { Result, success, failure } from '../../types/utils/result';
+
+/**
+ * {{ModelName}} Service
+ */
+@Injectable()
+export class {{ModelName}}Service {
+  /**
+   * Get all {{modelNamePlural}}
+   */
+  async getAll(): Promise<Result<I{{ModelName}}Document[]>> {
+    try {
+      const {{modelNamePlural}} = await {{ModelName}}Model.find({ isActive: true }).sort({ createdAt: -1 });
+      return success({{modelNamePlural}});
+    } catch (error) {
+      return failure(error as Error);
+    }
+  }
+  
+  /**
+   * Get {{modelName}} by ID
+   */
+  async getById(id: Types.ObjectId): Promise<Result<I{{ModelName}}Document | null>> {
+    try {
+      const {{modelName}} = await {{ModelName}}Model.findById(id);
+      return success({{modelName}});
+    } catch (error) {
+      return failure(error as Error);
+    }
+  }
+  
+  /**
+   * Create {{modelName}}
+   */
+  async create(data: I{{ModelName}}): Promise<Result<I{{ModelName}}Document>> {
+    try {
+      const {{modelName}} = new {{ModelName}}Model(data);
+      const result = await {{modelName}}.save();
+      return success(result);
+    } catch (error) {
+      return failure(error as Error);
+    }
+  }
+  
+  /**
+   * Update {{modelName}}
+   */
+  async update(id: Types.ObjectId, updates: Partial<I{{ModelName}}>): Promise<Result<I{{ModelName}}Document | null>> {
+    try {
+      const {{modelName}} = await {{ModelName}}Model.findByIdAndUpdate(
+        id,
+        updates,
+        { new: true, runValidators: true }
+      );
+      return success({{modelName}});
+    } catch (error) {
+      return failure(error as Error);
+    }
+  }
+  
+  /**
+   * Delete {{modelName}}
+   */
+  async delete(id: Types.ObjectId): Promise<Result<I{{ModelName}}Document | null>> {
+    try {
+      const {{modelName}} = await {{ModelName}}Model.findByIdAndDelete(id);
+      return success({{modelName}});
+    } catch (error) {
+      return failure(error as Error);
+    }
+  }
+}

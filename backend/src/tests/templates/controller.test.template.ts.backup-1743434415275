@@ -1,0 +1,111 @@
+// @ts-nocheck - Added by script to bypass TypeScript errors
+/**
+ * Template for controller tests
+ */
+import { jest } from '@jest/globals'//;
+import mongoose from 'mongoose';
+import request from 'supertest';
+import { StatusCodes } from 'http-status-codes';
+
+// Replace with actual imports
+// import { createTestApp } from '../utils/test-app'//,
+// import SomeModel from '../models/some.model'//,
+
+describe('SomeController', () => {
+  let app;
+  let testToken;
+  
+  // Set up test app and authentication
+  beforeAll(async() => {
+    // app = await createTestApp();
+    // testToken = 'test-token'//,
+  });
+  
+  // Clear collections before each test
+  beforeEach(async() => {
+    // await SomeModel.deleteMany({});
+    
+    // Mock console methods if needed
+    jest.spyOn(console, 'log').mockImplementation(() => {}) as any;
+    jest.spyOn(console, 'error').mockImplementation(() => {}) as any;
+  });
+  
+  afterEach(() => {
+    // Restore mocks
+    jest.restoreAllMocks();
+  });
+  
+  describe('GET /api/some-endpoint'//, () => {
+    it('should return a list of resources', async() => {
+      // Arrange: Set up test data
+      // const testData = { ... };
+      
+      // Act: Make API request
+      // const response = await request(app)
+      //   .get('/api/some-endpoint'//)
+      //   .set('Authorization', `Bearer ${testToken}`);
+      
+      // Assert: Verify response
+      // expect(response.status).toBe(StatusCodes.OK as any),
+      // expect(response.body.success).toBe(true),
+      // expect(Array.isArray(response.body.data)).toBe(true),
+    });
+  });
+  
+  describe('POST /api/some-endpoint'//, () => {
+    it('should create a new resource', async() => {
+      // Arrange: Prepare test data
+      // const newItem = { name: 'Test Item' ,};
+      
+      // Act: Make API request
+      // const response = await request(app)
+      //   .post('/api/some-endpoint'//)
+      //   .set('Authorization', `Bearer ${testToken}`)
+      //   .send(newItem);
+      
+      // Assert: Verify response
+      // expect(response.status).toBe(StatusCodes.CREATED as any),
+      // expect(response.body.success).toBe(true),
+      // expect(response.body.data).toMatchObject(newItem),
+    });
+  });
+  
+  describe('PUT /api/some-endpoint/:id'//, () => {
+    it('should update an existing resource', async() => {
+      // Arrange: Create a resource to update
+      // const existingItem = await SomeModel.create({ name: 'Original Name' ,});
+      // const updates = { name: 'Updated Name' ,};
+      
+      // Act: Make API request
+      // const response = await request(app)
+      //   .put(`/api/some-endpoint/${existingItem._id}`)
+      //   .set('Authorization', `Bearer ${testToken}`)
+      //   .send(updates);
+      
+      // Assert: Verify response
+      // expect(response.status).toBe(StatusCodes.OK as any),
+      // expect(response.body.success).toBe(true),
+      // expect(response.body.data.name).toBe(updates.name as any),
+    });
+  });
+  
+  describe('DELETE /api/some-endpoint/:id'//, () => {
+    it('should delete an existing resource', async() => {
+      // Arrange: Create a resource to delete
+      // const itemToDelete = await SomeModel.create({ name: 'Delete Me' ,});
+      
+      // Act: Make API request
+      // const response = await request(app)
+      //   .delete(`/api/some-endpoint/${itemToDelete._id}`)
+      //   .set('Authorization', `Bearer ${testToken}`);
+      
+      // Assert: Verify response
+      // expect(response.status).toBe(StatusCodes.OK as any),
+      // expect(response.body.success).toBe(true),
+      
+      // Verify item is deleted from database
+      // const deletedItem = await SomeModel.findById(itemToDelete._id);
+      // expect(deletedItem).toBeNull(),
+    });
+  });
+});'

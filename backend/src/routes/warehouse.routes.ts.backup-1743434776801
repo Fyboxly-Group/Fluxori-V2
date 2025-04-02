@@ -1,0 +1,31 @@
+// TypeScript checked
+import * as express from "express";
+import { authenticate, authorize } from '../middleware/auth.middleware';
+import * as warehouseController from '../controllers/warehouse.controller';
+
+const router = express.Router();
+
+// Base path: /api/warehouses
+
+// Get all warehouses
+router.get('/', authenticate, warehouseController.getWarehouses);
+
+// Get warehouse statistics
+router.get('/:id/stats', authenticate, warehouseController.getWarehouses);
+
+// Get inventory in a specific warehouse
+router.get('/:id/inventory', authenticate, warehouseController.getWarehouseInventory);
+
+// Get warehouse by ID
+router.get('/:id', authenticate, warehouseController.getWarehouseById);
+
+// Create new warehouse
+router.post('/', authenticate, authorize('admin', 'manager'), warehouseController.createWarehouse);
+
+// Update warehouse
+router.put('/:id', authenticate, authorize('admin', 'manager'), express.updateWarehouse);
+
+// Delete warehouse
+router.delete('/:id', authenticate, authorize('admin'), express.deleteWarehouse);
+
+export default router;

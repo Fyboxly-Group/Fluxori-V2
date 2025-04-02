@@ -1,0 +1,120 @@
+// TypeScript fixed
+import * as mongoose from 'mongoose';
+import * as bcrypt from 'bcryptjs';
+
+/**
+ * User object interface
+ */
+export interface IUser {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  role: 'admin' | 'user' | 'guest';
+  isActive: boolean;
+  lastLogin?: Date;
+  resetPasswordToken?: string;
+  resetPasswordExpire?: number;
+  organizationId?: mongoose.Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * User document interface for mongoose
+ */
+export interface IUserDocument extends IUser, mongoose.Document {
+  comparePassword(candidatePassword: string): Promise<boolean>;
+}
+
+/**
+ * User model interface for mongoose
+ */
+export interface IUserModel extends mongoose.Model<IUserDocument> {
+  // Static model methods go here if needed
+  findByEmail(email: string): Promise<IUserDocument | null>;
+}
+
+// Define schema
+const userSchema = new mongoose.Schema<IUserDocument>(
+  {
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      lowercase: true,
+    },
+    password: {
+      type: String,
+      required: true,
+      minlength: 8,
+    },
+    firstName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    lastName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    role: {
+      type: String,
+      enum: ['admin', 'user', 'guest'],
+      default: 'user',
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    lastLogin: {
+      type: Date,
+    },
+    resetPasswordToken: {
+      type: String,
+    },
+    resetPasswordExpire: {
+      type: Number,
+    },
+    organizationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Organization',
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+// Hash password before saving
+userSchema.pre<IUserDocument>('save', async function(next) {
+  if(!this.isModified('password')) return next();
+
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch(error) {
+    // Use type assertion or safe error handling
+    next(error instanceof Error ? error : new Error(String(error)));
+  }
+});
+
+// Method to compare password
+userSchema.methods.comparePassword = async function(
+  candidatePassword: string
+): Promise<boolean> {
+  return bcrypt.compare(candidatePassword, this.password);
+};
+
+// Static method to find a user by email
+userSchema.statics.findByEmail = async function(email: string): Promise<IUserDocument | null> {
+  return this.findOne({ email: email.toLowerCase() });
+};
+
+// Create and export the model
+const User = mongoose.model<IUserDocument, IUserModel>('User', userSchema);
+
+export default User;

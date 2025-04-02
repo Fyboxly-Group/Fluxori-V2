@@ -1,0 +1,22 @@
+// @ts-nocheck
+import { Injectable } from '../../../../../../decorators/injectable.decorator';
+import { Types } from 'mongoose';
+
+/**
+ * FBA Inbound Eligibility Service
+ */
+@Injectable()
+export class FBAInboundEligibility {
+  /**
+   * Constructor
+   */
+  constructor() {}
+  
+  /**
+   * Get eligibility for SKUs
+   */
+  async getEligibility(skus: string[]): Promise<any[]> {
+    // Placeholder implementation
+    return [];
+  }
+}

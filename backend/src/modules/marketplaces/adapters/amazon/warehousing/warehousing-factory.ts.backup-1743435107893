@@ -1,0 +1,21 @@
+// @ts-nocheck
+import { BaseModule } from '../../base-module';
+
+/**
+ * WarehousingFactory creates and configures the WarehousingModule
+ */
+export class WarehousingFactory {
+  /**
+   * Creates a new WarehousingModule instance
+   * 
+   * @param config Module configuration
+   * @returns A configured WarehousingModule instance
+   */
+  static createWarehousingModule(config: any): BaseModule {
+    return {
+      id: 'warehousing',
+      name: 'warehousing',
+      version: '1.0.0'
+    };
+  }
+}

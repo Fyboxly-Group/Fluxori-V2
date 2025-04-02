@@ -1,0 +1,261 @@
+// @ts-nocheck
+import { Request, Response, NextFunction } from 'express';
+import Project from '../models/project.model';
+import Inventory from '../models/inventory.model';
+import Shipment from '../models/shipment.model';
+import Customer from '../models/customer.model';
+import Supplier from '../models/supplier.model';
+import PurchaseOrder from '../models/purchase-order.model';
+import Task from '../models/task.model';
+import Activity from '../models/activity.model';
+import { ISupplier } from '../models/supplier.model';
+import { IPurchaseOrder } from '../models/purchase-order.model';
+import mongoose from 'mongoose';
+import { IUserDocument } from '../models/user.model';
+
+// Import type definitions from auth middleware
+type AuthenticatedRequest = Request & {
+  user?: IUserDocument & {
+    id: string,
+    organizationId: string,
+    role?: string,
+  },
+};
+
+/**
+ * Dashboard Controller
+ * Handles operations related to dashboard data
+ */
+export class DashboardController {
+  /**
+   * Get summary statistics for dashboard
+   */
+  static async getDashboardSummary(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const organizationId = req.user?.organizationId;
+      
+      if (!userId || !organizationId) {
+        res.status(401).json({
+          success: false,
+          message: 'Unauthorized - User not authenticated'
+        });
+        return;
+      }
+      
+      // This is a placeholder implementation
+      // In a real controller, we would query the database for this data
+      
+      // Mock summary data
+      const summaryData = {
+        inventoryCount: 532,
+        lowStockCount: 23,
+        activeProjects: 8,
+        pendingShipments: 12,
+        openPurchaseOrders: 5,
+        monthlyRevenue: 124567.89,
+        monthlyCost: 67890.12,
+        customerCount: 45,
+        supplierCount: 12
+      };
+      
+      res.status(200).json({
+        success: true,
+        data: summaryData
+      });
+    } catch (error) {
+      console.error('Error getting dashboard summary:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      res.status(500).json({
+        success: false,
+        message: errorMessage
+      });
+    }
+  }
+  
+  /**
+   * Get recent activities for dashboard
+   */
+  static async getRecentActivities(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const organizationId = req.user?.organizationId;
+      
+      if (!userId || !organizationId) {
+        res.status(401).json({
+          success: false,
+          message: 'Unauthorized - User not authenticated'
+        });
+        return;
+      }
+      
+      // Parse query parameters for pagination
+      const limit = parseInt(req.query.limit as string) || 10;
+      
+      // This is a placeholder implementation
+      // In a real controller, we would query the Activity model
+      
+      // Mock activity data
+      const activities = [
+        {
+          id: 'act1',
+          type: 'inventory_update',
+          description: 'Inventory levels updated for 5 products',
+          createdAt: new Date(Date.now() - 25 * 60 * 1000).toISOString(), // 25 minutes ago
+          user: {
+            id: userId,
+            name: 'Current User'
+          }
+        },
+        {
+          id: 'act2',
+          type: 'purchase_order_created',
+          description: 'New purchase order #PO-2023-056 created',
+          createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+          user: {
+            id: userId,
+            name: 'Current User'
+          }
+        },
+        {
+          id: 'act3',
+          type: 'shipment_status_update',
+          description: 'Shipment #SH-2023-078 marked as delivered',
+          createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5 hours ago
+          user: {
+            id: 'user2',
+            name: 'Jane Smith'
+          }
+        }
+      ];
+      
+      res.status(200).json({
+        success: true,
+        data: activities
+      });
+    } catch (error) {
+      console.error('Error getting recent activities:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      res.status(500).json({
+        success: false,
+        message: errorMessage
+      });
+    }
+  }
+  
+  /**
+   * Get upcoming tasks for dashboard
+   */
+  static async getUpcomingTasks(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const organizationId = req.user?.organizationId;
+      
+      if (!userId || !organizationId) {
+        res.status(401).json({
+          success: false,
+          message: 'Unauthorized - User not authenticated'
+        });
+        return;
+      }
+      
+      // This is a placeholder implementation
+      // In a real controller, we would query the Task model
+      
+      // Mock task data
+      const tasks = [
+        {
+          id: 'task1',
+          title: 'Review inventory levels',
+          dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 1 day from now
+          status: 'pending',
+          priority: 'high',
+          assignedTo: userId
+        },
+        {
+          id: 'task2',
+          title: 'Approve purchase order #PO-2023-057',
+          dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days from now
+          status: 'pending',
+          priority: 'medium',
+          assignedTo: userId
+        },
+        {
+          id: 'task3',
+          title: 'Follow up with supplier for delayed shipment',
+          dueDate: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(), // 6 hours from now
+          status: 'pending',
+          priority: 'high',
+          assignedTo: userId
+        }
+      ];
+      
+      res.status(200).json({
+        success: true,
+        data: tasks
+      });
+    } catch (error) {
+      console.error('Error getting upcoming tasks:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      res.status(500).json({
+        success: false,
+        message: errorMessage
+      });
+    }
+  }
+}
+
+/**
+ * getDashboardSummary method placeholder
+ */
+export const getDashboardSummary = async (req, res) => {
+  try {
+    // TODO: Implement getDashboardSummary functionality
+    return res.status(200).json({ message: 'getDashboardSummary functionality not implemented yet' });
+  } catch (error) {
+    console.error('Error in getDashboardSummary:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * getRecentActivities method placeholder
+ */
+export const getRecentActivities = async (req, res) => {
+  try {
+    // TODO: Implement getRecentActivities functionality
+    return res.status(200).json({ message: 'getRecentActivities functionality not implemented yet' });
+  } catch (error) {
+    console.error('Error in getRecentActivities:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * getUpcomingTasks method placeholder
+ */
+export const getUpcomingTasks = async (req, res) => {
+  try {
+    // TODO: Implement getUpcomingTasks functionality
+    return res.status(200).json({ message: 'getUpcomingTasks functionality not implemented yet' });
+  } catch (error) {
+    console.error('Error in getUpcomingTasks:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * getDashboardSummary method placeholder
+ */
+export const getDashboardSummary = async (req, res) => {
+  try {
+    // TODO: Implement getDashboardSummary functionality
+    return res.status(200).json({ message: 'getDashboardSummary functionality not implemented yet' });
+  } catch (error) {
+    console.error('Error in getDashboardSummary:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};

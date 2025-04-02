@@ -1,0 +1,351 @@
+/**
+ * Specialized fix script for the swagger.ts file
+ * 
+ * This script completely rewrites the swagger.ts file with correct TypeScript syntax.
+ */
+
+const fs = require('fs');
+const path = require('path');
+
+const SWAGGER_FILE_PATH = '/home/tarquin_stapa/Fluxori-V2/backend/src/config/swagger.ts';
+
+// Full correct content for the swagger.ts file
+const correctSwaggerContent = `import swaggerJSDoc from 'swagger-jsdoc';
+import { version } from '../../package.json';
+import { Options } from 'swagger-jsdoc';
+
+const options: Options = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Fluxori-V2 API Documentation',
+      version,
+      description: 'API documentation for the Fluxori-V2 inventory management system',
+      license: {
+        name: 'UNLICENSED',
+        url: 'https://example.com/license'
+      },
+      contact: {
+        name: 'Fluxori Team',
+        url: 'https://example.com',
+        email: 'support@example.com'
+      }
+    },
+    servers: [
+      {
+        url: \`\${process.env.API_URL || 'http://localhost:4000'}/api\`,
+        description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server'
+      }
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT'
+        }
+      },
+      schemas: {
+        ErrorResponse: {
+          type: 'object',
+          properties: {
+            success: {
+              type: 'boolean',
+              example: false
+            },
+            message: {
+              type: 'string',
+              example: 'Error message'
+            },
+            errors: {
+              type: 'object',
+              example: {
+                field1: 'Error for field1',
+                field2: 'Error for field2'
+              }
+            }
+          }
+        },
+        SuccessResponse: {
+          type: 'object',
+          properties: {
+            success: {
+              type: 'boolean',
+              example: true
+            },
+            message: {
+              type: 'string',
+              example: 'Operation completed successfully'
+            }
+          }
+        },
+        PaginatedResponse: {
+          type: 'object',
+          properties: {
+            success: {
+              type: 'boolean',
+              example: true
+            },
+            count: {
+              type: 'integer',
+              example: 10
+            },
+            total: {
+              type: 'integer',
+              example: 100
+            },
+            pagination: {
+              type: 'object',
+              properties: {
+                page: {
+                  type: 'integer',
+                  example: 1
+                },
+                limit: {
+                  type: 'integer',
+                  example: 10
+                },
+                totalPages: {
+                  type: 'integer',
+                  example: 10
+                }
+              }
+            },
+            data: {
+              type: 'array',
+              items: {
+                type: 'object'
+              }
+            }
+          }
+        },
+        User: {
+          type: 'object',
+          properties: {
+            _id: {
+              type: 'string',
+              example: '60d21b4967d0d8992e610c85'
+            },
+            email: {
+              type: 'string',
+              example: 'user@example.com'
+            },
+            firstName: {
+              type: 'string',
+              example: 'John'
+            },
+            lastName: {
+              type: 'string',
+              example: 'Doe'
+            },
+            role: {
+              type: 'string',
+              enum: ['admin', 'user', 'guest'],
+              example: 'user'
+            },
+            isActive: {
+              type: 'boolean',
+              example: true
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              example: '2021-06-22T10:00:00Z'
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              example: '2021-06-22T10:00:00Z'
+            }
+          }
+        },
+        InventoryItem: {
+          type: 'object',
+          properties: {
+            _id: {
+              type: 'string',
+              example: '60d21b4967d0d8992e610c85'
+            },
+            sku: {
+              type: 'string',
+              example: 'ITEM-001'
+            },
+            name: {
+              type: 'string',
+              example: 'Product Name'
+            },
+            description: {
+              type: 'string',
+              example: 'Product description'
+            },
+            category: {
+              type: 'string',
+              example: 'Electronics'
+            },
+            price: {
+              type: 'number',
+              example: 99.99
+            },
+            costPrice: {
+              type: 'number',
+              example: 49.99
+            },
+            stockQuantity: {
+              type: 'integer',
+              example: 100
+            },
+            reorderPoint: {
+              type: 'integer',
+              example: 10
+            },
+            reorderQuantity: {
+              type: 'integer',
+              example: 50
+            },
+            supplier: {
+              type: 'string',
+              example: '60d21b4967d0d8992e610c86'
+            },
+            location: {
+              type: 'string',
+              example: 'Warehouse A'
+            },
+            isActive: {
+              type: 'boolean',
+              example: true
+            },
+            images: {
+              type: 'array',
+              items: {
+                type: 'string'
+              },
+              example: ['https://example.com/images/item1.jpg']
+            },
+            createdBy: {
+              type: 'string',
+              example: '60d21b4967d0d8992e610c87'
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              example: '2021-06-22T10:00:00Z'
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              example: '2021-06-22T10:00:00Z'
+            }
+          }
+        },
+        Shipment: {
+          type: 'object',
+          properties: {
+            _id: {
+              type: 'string',
+              example: '60d21b4967d0d8992e610c85'
+            },
+            shipmentNumber: {
+              type: 'string',
+              example: 'SHP-001'
+            },
+            type: {
+              type: 'string',
+              enum: ['inbound', 'outbound'],
+              example: 'inbound'
+            },
+            status: {
+              type: 'string',
+              enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'],
+              example: 'processing'
+            },
+            carrierName: {
+              type: 'string',
+              example: 'FedEx'
+            },
+            trackingNumber: {
+              type: 'string',
+              example: '1234567890'
+            },
+            expectedDeliveryDate: {
+              type: 'string',
+              format: 'date-time',
+              example: '2021-06-30T10:00:00Z'
+            },
+            actualDeliveryDate: {
+              type: 'string',
+              format: 'date-time',
+              example: null
+            },
+            documents: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  title: {
+                    type: 'string',
+                    example: 'Invoice'
+                  },
+                  fileUrl: {
+                    type: 'string',
+                    example: 'https://example.com/documents/invoice.pdf'
+                  },
+                  fileType: {
+                    type: 'string',
+                    example: 'application/pdf'
+                  },
+                  uploadedBy: {
+                    type: 'string',
+                    example: '60d21b4967d0d8992e610c87'
+                  },
+                  uploadedAt: {
+                    type: 'string',
+                    format: 'date-time',
+                    example: '2021-06-22T10:00:00Z'
+                  },
+                  category: {
+                    type: 'string',
+                    example: 'invoice'
+                  }
+                }
+              }
+            },
+            createdBy: {
+              type: 'string',
+              example: '60d21b4967d0d8992e610c87'
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              example: '2021-06-22T10:00:00Z'
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              example: '2021-06-22T10:00:00Z'
+            }
+          }
+        }
+      }
+    },
+    security: [
+      {
+        bearerAuth: []
+      }
+    ]
+  },
+  apis: [
+    './src/routes/*.ts',
+    './src/controllers/*.ts',
+    './src/models/*.ts',
+    './src/modules/**/routes/*.ts',
+    './src/modules/**/controllers/*.ts',
+    './src/modules/**/models/*.ts'
+  ]
+};
+
+export const swaggerSpec = swaggerJSDoc(options);`;
+
+// Write the fixed content to the file
+console.log(`Fixing file: ${SWAGGER_FILE_PATH}`);
+fs.writeFileSync(SWAGGER_FILE_PATH, correctSwaggerContent);
+console.log('Done!');

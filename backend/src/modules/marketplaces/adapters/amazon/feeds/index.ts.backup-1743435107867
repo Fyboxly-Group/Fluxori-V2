@@ -1,0 +1,6 @@
+// TypeScript checked
+/**
+ * Export feeds module and factory for external use
+ */
+export { default as FeedsModule } from "./feeds";
+export { default as FeedsModuleFactory } from "./feeds-factory";

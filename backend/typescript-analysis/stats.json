@@ -1,0 +1,21 @@
+{
+  "totalFiles": 463,
+  "filesWithNoCheck": 406,
+  "filesByPriority": {
+    "high": 96,
+    "medium": 367,
+    "low": 0
+  },
+  "filesByType": {
+    "controller": 48,
+    "service": 62,
+    "model": 55,
+    "route": 36,
+    "middleware": 6,
+    "utility": 21,
+    "other": 235
+  },
+  "filesWithAny": 193,
+  "totalAnyUsage": 382,
+  "mongooseModels": 33
+}

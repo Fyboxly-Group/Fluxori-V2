@@ -1,0 +1,622 @@
+// @ts-nocheck
+import { Request, Response, NextFunction } from 'express';
+import { StatusCodes } from 'http-status-codes';
+import mongoose from 'mongoose';
+import Project, { ProjectStatus, ProjectPhase } from '../models/project.model';
+import Task from '../models/task.model';
+import Customer from '../models/customer.model';
+import Activity from '../models/activity.model';
+import { IUserDocument } from '../models/user.model';
+
+// Define authenticated request type
+type AuthenticatedRequest = Request & {
+  user?: IUserDocument & {
+    id: string;
+    organizationId: string;
+    role?: string;
+  };
+};
+
+/**
+ * Project Controller
+ * Handles operations related to project management
+ */
+export class ProjectController {
+  /**
+   * Get a list of projects
+   */
+  static async getProjects(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const organizationId = req.user?.organizationId;
+      
+      if (!userId || !organizationId) {
+        res.status(StatusCodes.UNAUTHORIZED).json({
+          success: false,
+          message: 'Unauthorized - User not authenticated'
+        });
+        return;
+      }
+      
+      // Parse query parameters for pagination and filtering
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const status = req.query.status as string;
+      const phase = req.query.phase as string;
+      const search = req.query.search as string;
+      
+      // Build query filters
+      const filter: any = { organizationId };
+      
+      if (status) {
+        filter.status = status;
+      }
+      
+      if (phase) {
+        filter.phase = phase;
+      }
+      
+      if (search) {
+        filter.$or = [
+          { name: { $regex: search, $options: 'i' } },
+          { description: { $regex: search, $options: 'i' } }
+        ];
+      }
+      
+      // Execute query with pagination
+      const skip = (page - 1) * limit;
+      
+      const [projects, totalProjects] = await Promise.all([
+        Project.find(filter)
+          .populate('customer', 'name email')
+          .populate('accountManager', 'firstName lastName email')
+          .sort({ updatedAt: -1 })
+          .skip(skip)
+          .limit(limit),
+        Project.countDocuments(filter)
+      ]);
+      
+      // Return paginated results
+      res.status(StatusCodes.OK).json({
+        success: true,
+        data: {
+          projects,
+          totalProjects,
+          page,
+          limit,
+          totalPages: Math.ceil(totalProjects / limit)
+        }
+      });
+    } catch (error) {
+      console.error('Error getting projects:', error);
+      next(error);
+    }
+  }
+  
+  /**
+   * Get a single project by ID
+   */
+  static async getProjectById(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const organizationId = req.user?.organizationId;
+      const projectId = req.params.id;
+      
+      if (!userId || !organizationId) {
+        res.status(StatusCodes.UNAUTHORIZED).json({
+          success: false,
+          message: 'Unauthorized - User not authenticated'
+        });
+        return;
+      }
+      
+      // Find the project and populate related fields
+      const project = await Project.findOne({
+        _id: projectId,
+        organizationId
+      })
+        .populate('customer', 'name email phone')
+        .populate('accountManager', 'firstName lastName email')
+        .populate('stakeholders.user', 'firstName lastName email role');
+      
+      if (!project) {
+        res.status(StatusCodes.NOT_FOUND).json({
+          success: false,
+          message: 'Project not found'
+        });
+        return;
+      }
+      
+      // Get related tasks
+      const tasks = await Task.find({
+        project: projectId,
+        organizationId
+      }).select('title description status dueDate assignee');
+      
+      // Create response with project and related data
+      res.status(StatusCodes.OK).json({
+        success: true,
+        data: {
+          project,
+          tasks
+        }
+      });
+    } catch (error) {
+      console.error('Error getting project:', error);
+      next(error);
+    }
+  }
+  
+  /**
+   * Create a new project
+   */
+  static async createProject(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const organizationId = req.user?.organizationId;
+      const projectData = req.body;
+      
+      if (!userId || !organizationId) {
+        res.status(StatusCodes.UNAUTHORIZED).json({
+          success: false,
+          message: 'Unauthorized - User not authenticated'
+        });
+        return;
+      }
+      
+      // Validate required fields
+      if (!projectData.name || !projectData.customer || !projectData.accountManager) {
+        res.status(StatusCodes.BAD_REQUEST).json({
+          success: false,
+          message: 'Name, customer, and account manager are required fields'
+        });
+        return;
+      }
+      
+      // Verify that the customer exists
+      const customer = await Customer.findOne({
+        _id: projectData.customer,
+        organizationId
+      });
+      
+      if (!customer) {
+        res.status(StatusCodes.NOT_FOUND).json({
+          success: false,
+          message: 'Customer not found'
+        });
+        return;
+      }
+      
+      // Create the project
+      const newProject = await Project.create({
+        ...projectData,
+        organizationId,
+        createdBy: userId
+      });
+      
+      // Log activity
+      await Activity.create({
+        type: 'project_create',
+        description: `Created project "${newProject.name}"`,
+        details: {
+          projectId: newProject._id,
+          name: newProject.name,
+          customer: customer.name,
+          status: newProject.status
+        },
+        userId,
+        organizationId
+      });
+      
+      res.status(StatusCodes.CREATED).json({
+        success: true,
+        message: 'Project created successfully',
+        data: newProject
+      });
+    } catch (error) {
+      console.error('Error creating project:', error);
+      next(error);
+    }
+  }
+  
+  /**
+   * Update a project
+   */
+  static async updateProject(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const organizationId = req.user?.organizationId;
+      const projectId = req.params.id;
+      const updateData = req.body;
+      
+      if (!userId || !organizationId) {
+        res.status(StatusCodes.UNAUTHORIZED).json({
+          success: false,
+          message: 'Unauthorized - User not authenticated'
+        });
+        return;
+      }
+      
+      // Find the project
+      const project = await Project.findOne({
+        _id: projectId,
+        organizationId
+      });
+      
+      if (!project) {
+        res.status(StatusCodes.NOT_FOUND).json({
+          success: false,
+          message: 'Project not found'
+        });
+        return;
+      }
+      
+      // Check for status change to "completed"
+      const statusChanged = updateData.status && updateData.status !== project.status;
+      const completedNow = statusChanged && updateData.status === ProjectStatus.COMPLETED;
+      
+      if (completedNow && !updateData.actualCompletionDate) {
+        updateData.actualCompletionDate = new Date();
+      }
+      
+      // Update the project
+      const updatedProject = await Project.findByIdAndUpdate(
+        projectId,
+        updateData,
+        { new: true, runValidators: true }
+      );
+      
+      // Log activity
+      await Activity.create({
+        type: 'project_update',
+        description: `Updated project "${project.name}"`,
+        details: {
+          projectId: project._id,
+          name: project.name,
+          changes: updateData
+        },
+        userId,
+        organizationId
+      });
+      
+      res.status(StatusCodes.OK).json({
+        success: true,
+        message: 'Project updated successfully',
+        data: updatedProject
+      });
+    } catch (error) {
+      console.error('Error updating project:', error);
+      next(error);
+    }
+  }
+  
+  /**
+   * Delete a project
+   */
+  static async deleteProject(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const organizationId = req.user?.organizationId;
+      const projectId = req.params.id;
+      
+      if (!userId || !organizationId) {
+        res.status(StatusCodes.UNAUTHORIZED).json({
+          success: false,
+          message: 'Unauthorized - User not authenticated'
+        });
+        return;
+      }
+      
+      // Find the project
+      const project = await Project.findOne({
+        _id: projectId,
+        organizationId
+      });
+      
+      if (!project) {
+        res.status(StatusCodes.NOT_FOUND).json({
+          success: false,
+          message: 'Project not found'
+        });
+        return;
+      }
+      
+      // Check if there are tasks associated with this project
+      const tasksCount = await Task.countDocuments({
+        project: projectId
+      });
+      
+      if (tasksCount > 0) {
+        res.status(StatusCodes.BAD_REQUEST).json({
+          success: false,
+          message: `Cannot delete project: it has ${tasksCount} task(s) associated with it`
+        });
+        return;
+      }
+      
+      // Delete the project
+      await Project.findByIdAndDelete(projectId);
+      
+      // Log activity
+      await Activity.create({
+        type: 'project_delete',
+        description: `Deleted project "${project.name}"`,
+        details: {
+          projectId: project._id,
+          name: project.name
+        },
+        userId,
+        organizationId
+      });
+      
+      res.status(StatusCodes.OK).json({
+        success: true,
+        message: 'Project deleted successfully'
+      });
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      next(error);
+    }
+  }
+  
+  /**
+   * Add a document to a project
+   */
+  static async addProjectDocument(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const organizationId = req.user?.organizationId;
+      const projectId = req.params.id;
+      const documentData = req.body;
+      
+      if (!userId || !organizationId) {
+        res.status(StatusCodes.UNAUTHORIZED).json({
+          success: false,
+          message: 'Unauthorized - User not authenticated'
+        });
+        return;
+      }
+      
+      // Validate required fields
+      if (!documentData.title || !documentData.fileUrl || !documentData.category) {
+        res.status(StatusCodes.BAD_REQUEST).json({
+          success: false,
+          message: 'Title, fileUrl, and category are required fields'
+        });
+        return;
+      }
+      
+      // Find the project
+      const project = await Project.findOne({
+        _id: projectId,
+        organizationId
+      });
+      
+      if (!project) {
+        res.status(StatusCodes.NOT_FOUND).json({
+          success: false,
+          message: 'Project not found'
+        });
+        return;
+      }
+      
+      // Add document to project
+      const document = {
+        ...documentData,
+        uploadedBy: userId,
+        uploadedAt: new Date()
+      };
+      
+      project.documents.push(document);
+      await project.save();
+      
+      // Log activity
+      await Activity.create({
+        type: 'project_document_add',
+        description: `Added document "${documentData.title}" to project "${project.name}"`,
+        details: {
+          projectId: project._id,
+          documentTitle: documentData.title,
+          documentCategory: documentData.category
+        },
+        userId,
+        organizationId
+      });
+      
+      res.status(StatusCodes.OK).json({
+        success: true,
+        message: 'Document added to project successfully',
+        data: document
+      });
+    } catch (error) {
+      console.error('Error adding document to project:', error);
+      next(error);
+    }
+  }
+  
+  /**
+   * Add a stakeholder to a project
+   */
+  static async addProjectStakeholder(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const organizationId = req.user?.organizationId;
+      const projectId = req.params.id;
+      const stakeholderData = req.body;
+      
+      if (!userId || !organizationId) {
+        res.status(StatusCodes.UNAUTHORIZED).json({
+          success: false,
+          message: 'Unauthorized - User not authenticated'
+        });
+        return;
+      }
+      
+      // Validate required fields
+      if (!stakeholderData.user || !stakeholderData.role) {
+        res.status(StatusCodes.BAD_REQUEST).json({
+          success: false,
+          message: 'User and role are required fields'
+        });
+        return;
+      }
+      
+      // Find the project
+      const project = await Project.findOne({
+        _id: projectId,
+        organizationId
+      });
+      
+      if (!project) {
+        res.status(StatusCodes.NOT_FOUND).json({
+          success: false,
+          message: 'Project not found'
+        });
+        return;
+      }
+      
+      // Check if stakeholder already exists
+      const existingStakeholder = project.stakeholders.find(
+        s => s.user.toString() === stakeholderData.user
+      );
+      
+      if (existingStakeholder) {
+        res.status(StatusCodes.CONFLICT).json({
+          success: false,
+          message: 'This user is already a stakeholder on this project'
+        });
+        return;
+      }
+      
+      // Add stakeholder to project
+      project.stakeholders.push(stakeholderData);
+      await project.save();
+      
+      // Log activity
+      await Activity.create({
+        type: 'project_stakeholder_add',
+        description: `Added stakeholder to project "${project.name}"`,
+        details: {
+          projectId: project._id,
+          stakeholderId: stakeholderData.user,
+          role: stakeholderData.role
+        },
+        userId,
+        organizationId
+      });
+      
+      res.status(StatusCodes.OK).json({
+        success: true,
+        message: 'Stakeholder added to project successfully',
+        data: stakeholderData
+      });
+    } catch (error) {
+      console.error('Error adding stakeholder to project:', error);
+      next(error);
+    }
+  }
+}
+
+/**
+ * getProjects method placeholder
+ */
+export const getProjects = async (req, res) => {
+  try {
+    // TODO: Implement getProjects functionality
+    return res.status(200).json({ message: 'getProjects functionality not implemented yet' });
+  } catch (error) {
+    console.error('Error in getProjects:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * getProjects method placeholder
+ */
+export const getProjects = async (req, res) => {
+  try {
+    // TODO: Implement getProjects functionality
+    return res.status(200).json({ message: 'getProjects functionality not implemented yet' });
+  } catch (error) {
+    console.error('Error in getProjects:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * getProjectById method placeholder
+ */
+export const getProjectById = async (req, res) => {
+  try {
+    // TODO: Implement getProjectById functionality
+    return res.status(200).json({ message: 'getProjectById functionality not implemented yet' });
+  } catch (error) {
+    console.error('Error in getProjectById:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * createProject method placeholder
+ */
+export const createProject = async (req, res) => {
+  try {
+    // TODO: Implement createProject functionality
+    return res.status(200).json({ message: 'createProject functionality not implemented yet' });
+  } catch (error) {
+    console.error('Error in createProject:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * updateProject method placeholder
+ */
+export const updateProject = async (req, res) => {
+  try {
+    // TODO: Implement updateProject functionality
+    return res.status(200).json({ message: 'updateProject functionality not implemented yet' });
+  } catch (error) {
+    console.error('Error in updateProject:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * deleteProject method placeholder
+ */
+export const deleteProject = async (req, res) => {
+  try {
+    // TODO: Implement deleteProject functionality
+    return res.status(200).json({ message: 'deleteProject functionality not implemented yet' });
+  } catch (error) {
+    console.error('Error in deleteProject:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * addProjectDocument method placeholder
+ */
+export const addProjectDocument = async (req, res) => {
+  try {
+    // TODO: Implement addProjectDocument functionality
+    return res.status(200).json({ message: 'addProjectDocument functionality not implemented yet' });
+  } catch (error) {
+    console.error('Error in addProjectDocument:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * addProjectStakeholder method placeholder
+ */
+export const addProjectStakeholder = async (req, res) => {
+  try {
+    // TODO: Implement addProjectStakeholder functionality
+    return res.status(200).json({ message: 'addProjectStakeholder functionality not implemented yet' });
+  } catch (error) {
+    console.error('Error in addProjectStakeholder:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};

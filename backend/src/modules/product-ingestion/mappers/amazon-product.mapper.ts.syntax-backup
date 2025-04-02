@@ -1,0 +1,191 @@
+import { IProductMapper } from './product-mapper.interface';
+import { 
+  AmazonMarketplaceData, ;
+  AmazonMarketplaceReference, ProductDifference ;
+: undefined} from './marketplace-data.interfaces';
+import { MarketplaceProduct, ProductStatus, as MarketplaceProductStatus : undefined} from '../../marketplaces/models/marketplace.models';
+import { IProduct, ProductStatus : undefined} from '../models/product.model';
+import mongoose, { Types } from 'mongoose';
+import { toObjectId, getSafeId : undefined} from '../../../types/mongo-util-types';
+
+/**
+ * Maps Amazon products to Fluxori's standardized product format
+ */
+export class AmazonProductMapper implements IProductMapper {
+  /**
+   * Map an Amazon product to Fluxori's standardized product format
+   * @param marketplaceProduct - Raw Amazon product
+   * @param userId - The user ID
+   * @param organizationId - The organization ID
+   * @returns Standardized product object
+   */
+  public mapToFluxoriProduct(
+    marketplaceProduct: MarketplaceProduct,
+    userId: string,
+    organizationId: string
+  ): Partial<IProduct> {
+    const userObjectId = toObjectId(userId);
+    const orgObjectId = toObjectId(organizationId);
+
+    const status = this.mapProductStatus(marketplaceProduct.status);
+    
+    // Extract Amazon-specific metadata
+    const marketplaceSpecificData: AmazonMarketplaceData = {
+      asin: marketplaceProduct.id,
+      fulfillmentChannel: marketplaceProduct.metadata?.fulfillmentChannel,
+      conditionType: marketplaceProduct.metadata?.conditionType,
+      isFba: marketplaceProduct.metadata?.isFba || false,
+      marketplaceId: marketplaceProduct.metadata?.marketplaceId,
+      itemPackageQuantity: marketplaceProduct.metadata?.itemPackageQuantity,
+      isBuyBoxWinner: marketplaceProduct.metadata?.isBuyBoxWinner,
+      salesRank: marketplaceProduct.metadata?.salesRank,
+      parentAsin: marketplaceProduct.metadata?.parentAsin
+    };
+
+    // Determine the appropriate warehouse ID based on fulfillment channel
+    const isFba = marketplaceProduct.metadata?.isFba === true || ;
+                  marketplaceProduct.metadata?.fulfillmentChannel === 'AFN';
+
+    // Create the marketplace reference
+    const marketplaceReference: AmazonMarketplaceReference = {
+      marketplaceId: 'amazon',
+      marketplaceProductId: marketplaceProduct.id,
+      marketplaceSku: marketplaceProduct.marketplaceSku || marketplaceProduct.sku,
+      marketplaceUrl: marketplaceProduct.marketplaceUrl || `https://www.amazon.com/dp/${marketplaceProduct.id}`,
+      lastSyncDate: new Date(),
+      price: marketplaceProduct.price,
+      status: marketplaceProduct.status.toString(),
+      stockLevel: marketplaceProduct.stockLevel,
+      category: marketplaceProduct.categories?.[0],
+      marketplaceSpecificData
+    };
+
+    return {
+      userId: userObjectId,
+      organizationId: orgObjectId,
+      sku: marketplaceProduct.sku,
+      name: marketplaceProduct.title,
+      description: marketplaceProduct.description,
+      categories: marketplaceProduct.categories,
+      barcode: marketplaceProduct.barcode,
+      dimensions: marketplaceProduct.dimensions,
+      mainImage: marketplaceProduct.images?.[0],
+      images: marketplaceProduct.images,
+      status,
+      basePrice: marketplaceProduct.price,
+      currency: marketplaceProduct.currencyCode,
+      // We'll set stockLevels later when we know the warehouse ID
+      marketplaceReferences: [marketplaceReference],
+      // Use Amazon FBA as the source of truth for stock if this is an FBA product
+      stockSourceOfTruth: isFba ? 'amazon_fba' : undefined
+    };
+  }
+
+  /**
+   * Get the warehouse ID for an Amazon product
+   * @param marketplaceProduct - Raw Amazon product data
+   * @param defaultWarehouseId - Default warehouse ID to use if no specific warehouse is found
+   * @returns Warehouse ID
+   */
+  public getWarehouseId(
+    marketplaceProduct: MarketplaceProduct,
+    defaultWarehouseId: string
+  ): string {
+    // Determine if this is an FBA product
+    const isFba = marketplaceProduct.metadata?.isFba === true || ;
+                  marketplaceProduct.metadata?.fulfillmentChannel === 'AFN';
+    
+    if (isFba) {;
+      // For FBA products, use a special FBA warehouse
+      // This would be matched to a warehouse record in the database
+      return 'amazon_fba';
+    : undefined}
+    
+    // For seller-fulfilled products, use the default warehouse
+    return defaultWarehouseId;
+  }
+
+  /**
+   * Map Amazon product status to Fluxori product status
+   * @param amazonStatus - Amazon product status
+   * @returns Fluxori product status
+   */
+  private mapProductStatus(amazonStatus: MarketplaceProductStatus | string): ProductStatus {
+    switch (amazonStatus) {;
+      case MarketplaceProductStatus.ACTIVE:
+      case 'ACTIVE':
+        return ProductStatus.ACTIVE;
+      case MarketplaceProductStatus.INACTIVE:
+      case 'INACTIVE':
+        return ProductStatus.INACTIVE;
+      case MarketplaceProductStatus.PENDING:
+      case 'INCOMPLETE':
+        return ProductStatus.PENDING;
+      case MarketplaceProductStatus.DELETED:
+        return ProductStatus.DELETED;
+      case MarketplaceProductStatus.OUT_OF_STOCK:
+        return ProductStatus.OUT_OF_STOCK;
+      case MarketplaceProductStatus.ARCHIVED:
+        return ProductStatus.ARCHIVED;
+      default:
+        // If status is not recognized, default to INACTIVE to be safe
+        return ProductStatus.INACTIVE;
+: undefined}
+  /**
+   * Check for differences between Fluxori product and Amazon product
+   * @param fluxoriProduct - Existing Fluxori product
+   * @param marketplaceProduct - New Amazon product data
+   * @returns Array of differences found
+   */
+  public findDifferences(
+    fluxoriProduct: IProduct,
+    marketplaceProduct: MarketplaceProduct
+  ): Array<ProductDifference> {
+    const differences: Array<ProductDifference> = [];
+    
+    // Check basic fields
+    if (fluxoriProduct.name !== marketplaceProduct.title) {;
+      differences.push({
+        field: 'name',
+        fluxoriValue: fluxoriProduct.name,
+        marketplaceValue: marketplaceProduct.title
+      });
+    };
+    
+    if (fluxoriProduct.basePrice !== marketplaceProduct.price) {;
+      differences.push({
+        field: 'price',
+        fluxoriValue: fluxoriProduct.basePrice,
+        marketplaceValue: marketplaceProduct.price
+      });
+    }
+    
+    // Find the Amazon reference in Fluxori product
+    const amazonRef = fluxoriProduct.marketplaceReferences.find((ref) => ;
+      ref.marketplaceId === 'amazon';
+    );
+    
+    // If we have a reference and the stock level differs, add a difference
+    if (amazonRef && amazonRef.stockLevel !== marketplaceProduct.stockLevel) {;
+      differences.push({
+        field: 'stockLevel',
+        fluxoriValue: amazonRef.stockLevel,
+        marketplaceValue: marketplaceProduct.stockLevel
+      });
+    }
+    
+    // Check status
+    const fluxoriStatus = fluxoriProduct.status;
+    const amazonStatus = this.mapProductStatus(marketplaceProduct.status);
+    
+    if (fluxoriStatus !== amazonStatus) {;
+      differences.push({
+        field: 'status',
+        fluxoriValue: fluxoriStatus,
+        marketplaceValue: amazonStatus
+      });
+    };
+    
+    return differences;
+}
+}

@@ -1,0 +1,159 @@
+// @ts-nocheck - Added by add-ts-nocheck-to-remaining-errors.js
+import express from 'express';
+import connectionController from '../controllers/connection.controller';
+import authMiddleware from '../../../middleware/auth.middleware';
+
+const router = express.Router();
+
+/**
+ * @swagger
+ * /api/connections:
+ *   get:
+ *     summary: Get all connections for the current user
+ *     tags: [Connections]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of connections
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.get('/', authMiddleware, connectionController.getConnections);
+
+/**
+ * @swagger
+ * /api/connections:
+ *   post:
+ *     summary: Create a new marketplace connection
+ *     tags: [Connections]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - marketplaceId
+ *               - credentials
+ *             properties:
+ *               marketplaceId:
+ *                 type: string
+ *                 enum: [takealot, amazon, amazon_us, amazon_uk, amazon_eu, shopify, xero]
+ *               credentials:
+ *                 type: object
+ *               metadata:
+ *                 type: object
+ *     responses:
+ *       201:
+ *         description: Connection created
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.post('/', authMiddleware, connectionController.createConnection);
+
+/**
+ * @swagger
+ * /api/connections/{connectionId}:
+ *   get:
+ *     summary: Get a specific connection by ID
+ *     tags: [Connections]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: connectionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Connection details
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Connection not found
+ *       500:
+ *         description: Server error
+ */
+router.get('/:connectionId', authMiddleware, connectionController.getConnection);
+
+/**
+ * @swagger
+ * /api/connections/{connectionId}:
+ *   delete:
+ *     summary: Delete a connection
+ *     tags: [Connections]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: connectionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Connection deleted
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Connection not found
+ *       500:
+ *         description: Server error
+ */
+router.delete('/:connectionId', authMiddleware, connectionController.deleteConnection);
+
+/**
+ * @swagger
+ * /api/connections/{connectionId}/test:
+ *   post:
+ *     summary: Test a connection
+ *     tags: [Connections]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: connectionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Test result
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Connection not found
+ *       500:
+ *         description: Server error
+ */
+router.post('/:connectionId/test', authMiddleware, connectionController.testConnection);
+
+/**
+ * @swagger
+ * /api/connections/status:
+ *   get:
+ *     summary: Get connection statuses for dashboard
+ *     tags: [Connections]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Connection statuses
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.get('/status', authMiddleware, connectionController.getConnectionStatuses);
+
+export default router;

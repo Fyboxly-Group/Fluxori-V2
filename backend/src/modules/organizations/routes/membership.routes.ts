@@ -1,0 +1,506 @@
+/**
+ * Membership Routes
+ * Routes for managing users in organizations
+ */
+import { Router } from 'express';
+import { MembershipController } from '../controllers/membership.controller';
+import { 
+  multiTenantAuthenticate, 
+  requirePermission,
+  logApiAccess
+} from '../../../middleware/multi-tenant-auth.middleware';
+
+const router = Router();
+const membershipController = new MembershipController();
+
+// Apply authentication to all routes
+router.use(multiTenantAuthenticate);
+
+// Apply API access logging middleware
+router.use(logApiAccess);
+
+/**
+ * @swagger
+ * /api/memberships:
+ *   get:
+ *     summary: Get all users in the current organization
+ *     tags: [Memberships]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of users in the organization
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - No permission to view users
+ */
+router.get(
+  '/', 
+  requirePermission(['user:read']), 
+  membershipController.getOrganizationUsers.bind(membershipController)
+);
+
+/**
+ * @swagger
+ * /api/memberships/my-memberships:
+ *   get:
+ *     summary: Get current user's memberships in all organizations
+ *     tags: [Memberships]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of user's memberships
+ *       401:
+ *         description: Unauthorized
+ */
+router.get(
+  '/my-memberships', 
+  membershipController.getUserMemberships.bind(membershipController)
+);
+
+/**
+ * @swagger
+ * /api/memberships/invitations:
+ *   get:
+ *     summary: Get all pending invitations for the current organization
+ *     tags: [Memberships]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of pending invitations
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - No permission to view invitations
+ */
+router.get(
+  '/invitations', 
+  requirePermission(['invitation:read']), 
+  membershipController.getOrganizationInvitations.bind(membershipController)
+);
+
+/**
+ * @swagger
+ * /api/memberships/my-invitations:
+ *   get:
+ *     summary: Get all pending invitations for the current user
+ *     tags: [Memberships]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of pending invitations for the user
+ *       401:
+ *         description: Unauthorized
+ */
+router.get(
+  '/my-invitations', 
+  membershipController.getUserInvitations.bind(membershipController)
+);
+
+/**
+ * @swagger
+ * /api/memberships/invite:
+ *   post:
+ *     summary: Invite a user to the organization
+ *     tags: [Memberships]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - roles
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 description: Email of the user to invite
+ *               roles:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Role IDs to assign
+ *               type:
+ *                 type: string
+ *                 enum: [member, admin, owner]
+ *                 default: member
+ *                 description: Membership type
+ *               message:
+ *                 type: string
+ *                 description: Optional invitation message
+ *     responses:
+ *       201:
+ *         description: Invitation sent successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - No permission to invite users
+ */
+router.post(
+  '/invite', 
+  requirePermission(['invitation:create']), 
+  membershipController.inviteUser.bind(membershipController)
+);
+
+/**
+ * @swagger
+ * /api/memberships/invitations/{id}/accept:
+ *   post:
+ *     summary: Accept an invitation
+ *     tags: [Memberships]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Invitation ID
+ *     responses:
+ *       200:
+ *         description: Invitation accepted successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Not your invitation
+ *       404:
+ *         description: Invitation not found
+ *       410:
+ *         description: Invitation expired
+ */
+router.post(
+  '/invitations/:id/accept', 
+  membershipController.acceptInvitation.bind(membershipController)
+);
+
+/**
+ * @swagger
+ * /api/memberships/invitations/{id}/decline:
+ *   post:
+ *     summary: Decline an invitation
+ *     tags: [Memberships]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Invitation ID
+ *     responses:
+ *       200:
+ *         description: Invitation declined successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Not your invitation
+ *       404:
+ *         description: Invitation not found
+ */
+router.post(
+  '/invitations/:id/decline', 
+  membershipController.declineInvitation.bind(membershipController)
+);
+
+/**
+ * @swagger
+ * /api/memberships/invitations/{id}/cancel:
+ *   post:
+ *     summary: Cancel a pending invitation
+ *     tags: [Memberships]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Invitation ID
+ *     responses:
+ *       200:
+ *         description: Invitation cancelled successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - No permission to cancel invitations
+ *       404:
+ *         description: Invitation not found
+ */
+router.post(
+  '/invitations/:id/cancel', 
+  requirePermission(['invitation:delete']), 
+  membershipController.cancelInvitation.bind(membershipController)
+);
+
+/**
+ * @swagger
+ * /api/memberships/invitations/{id}/resend:
+ *   post:
+ *     summary: Resend an invitation
+ *     tags: [Memberships]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Invitation ID
+ *     responses:
+ *       200:
+ *         description: Invitation resent successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - No permission to manage invitations
+ *       404:
+ *         description: Invitation not found
+ */
+router.post(
+  '/invitations/:id/resend', 
+  requirePermission(['invitation:update']), 
+  membershipController.resendInvitation.bind(membershipController)
+);
+
+/**
+ * @swagger
+ * /api/memberships/{userId}:
+ *   get:
+ *     summary: Get user's membership details
+ *     tags: [Memberships]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: User membership details
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - No permission to view user details
+ *       404:
+ *         description: User not found in organization
+ */
+router.get(
+  '/:userId', 
+  requirePermission(['user:read']), 
+  membershipController.getUserMembershipDetails.bind(membershipController)
+);
+
+/**
+ * @swagger
+ * /api/memberships/{userId}/roles:
+ *   put:
+ *     summary: Update user roles
+ *     tags: [Memberships]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - roles
+ *             properties:
+ *               roles:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Role IDs to assign
+ *     responses:
+ *       200:
+ *         description: User roles updated successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - No permission to update user roles
+ *       404:
+ *         description: User not found in organization
+ */
+router.put(
+  '/:userId/roles', 
+  requirePermission(['user:update']), 
+  membershipController.updateUserRoles.bind(membershipController)
+);
+
+/**
+ * @swagger
+ * /api/memberships/{userId}/custom-permissions:
+ *   put:
+ *     summary: Update user custom permissions
+ *     tags: [Memberships]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               customPermissions:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Custom permissions to add
+ *               restrictedPermissions:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Permissions to explicitly restrict
+ *     responses:
+ *       200:
+ *         description: User custom permissions updated successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - No permission to update user permissions
+ *       404:
+ *         description: User not found in organization
+ */
+router.put(
+  '/:userId/custom-permissions', 
+  requirePermission(['user:update']), 
+  membershipController.updateUserCustomPermissions.bind(membershipController)
+);
+
+/**
+ * @swagger
+ * /api/memberships/{userId}/type:
+ *   put:
+ *     summary: Update user membership type
+ *     tags: [Memberships]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - type
+ *             properties:
+ *               type:
+ *                 type: string
+ *                 enum: [member, admin, owner]
+ *                 description: Membership type
+ *     responses:
+ *       200:
+ *         description: User membership type updated successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - No permission to update membership type
+ *       404:
+ *         description: User not found in organization
+ */
+router.put(
+  '/:userId/type', 
+  requirePermission(['user:update']), 
+  membershipController.updateMembershipType.bind(membershipController)
+);
+
+/**
+ * @swagger
+ * /api/memberships/{userId}:
+ *   delete:
+ *     summary: Remove a user from the organization
+ *     tags: [Memberships]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: User removed successfully
+ *       400:
+ *         description: Cannot remove the only owner
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - No permission to remove users
+ *       404:
+ *         description: User not found in organization
+ */
+router.delete(
+  '/:userId', 
+  requirePermission(['user:delete']), 
+  membershipController.removeUserFromOrganization.bind(membershipController)
+);
+
+/**
+ * @swagger
+ * /api/memberships/leave:
+ *   post:
+ *     summary: Leave the current organization
+ *     tags: [Memberships]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Successfully left the organization
+ *       400:
+ *         description: Cannot leave as the only owner
+ *       401:
+ *         description: Unauthorized
+ */
+router.post(
+  '/leave', 
+  membershipController.leaveOrganization.bind(membershipController)
+);
+
+export default router;

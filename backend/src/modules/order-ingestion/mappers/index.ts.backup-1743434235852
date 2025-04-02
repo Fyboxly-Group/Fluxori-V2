@@ -1,0 +1,19 @@
+// @ts-nocheck
+import { orderMapperRegistry } from './order-mapper.interface';
+import { ShopifyOrderMapper } from './shopify-order.mapper';
+import { AmazonOrderMapper } from './amazon-order.mapper';
+import { TakealotOrderMapper } from './takealot-order.mapper';
+
+// Register all marketplace mappers
+orderMapperRegistry.registerMapper('shopify', new ShopifyOrderMapper());
+orderMapperRegistry.registerMapper('amazon', new AmazonOrderMapper());
+orderMapperRegistry.registerMapper('amazon_us', new AmazonOrderMapper());
+orderMapperRegistry.registerMapper('amazon_uk', new AmazonOrderMapper());
+orderMapperRegistry.registerMapper('amazon_eu', new AmazonOrderMapper());
+orderMapperRegistry.registerMapper('takealot', new TakealotOrderMapper());
+
+export { orderMapperRegistry };
+export * from './order-mapper.interface';
+export * from './shopify-order.mapper';
+export * from './amazon-order.mapper';
+export * from './takealot-order.mapper';

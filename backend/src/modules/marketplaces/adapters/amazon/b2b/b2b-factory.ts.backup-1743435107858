@@ -1,0 +1,21 @@
+// @ts-nocheck
+import { BaseModule } from '../../base-module';
+
+/**
+ * B2bFactory creates and configures the B2bModule
+ */
+export class B2bFactory {
+  /**
+   * Creates a new B2bModule instance
+   * 
+   * @param config Module configuration
+   * @returns A configured B2bModule instance
+   */
+  static createB2bModule(config: any): BaseModule {
+    return {
+      id: 'b2b',
+      name: 'b2b',
+      version: '1.0.0'
+    };
+  }
+}

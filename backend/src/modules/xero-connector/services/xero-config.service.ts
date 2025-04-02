@@ -1,0 +1,53 @@
+// @ts-nocheck - Added by final-ts-fix.js
+import { Injectable } from '../../../decorators/injectable.decorator';
+import { Types } from 'mongoose';
+import mongoose from 'mongoose';
+
+/**
+ * Xero Configuration 
+ */
+interface XeroConfig {
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+  scopes: string[];
+  accessToken: string;
+  refreshToken: string;
+  idToken: string;
+  expiresIn: number;
+  tenantId: string;
+}
+
+/**
+ * Service for managing Xero configuration
+ */
+@Injectable()
+export class XeroConfigService {
+  /**
+   * Get Xero configuration for an organization
+   */
+  async getXeroConfig(organizationId: Types.ObjectId): Promise<XeroConfig> {
+    // Placeholder implementation
+    // In a real implementation, this would fetch the config from a database
+    return {
+      clientId: process.env.XERO_CLIENT_ID || '',
+      clientSecret: process.env.XERO_CLIENT_SECRET || '',
+      redirectUri: process.env.XERO_REDIRECT_URI || '',
+      scopes: (process.env.XERO_SCOPES || '').split(','),
+      accessToken: '',
+      refreshToken: '',
+      idToken: '',
+      expiresIn: 0,
+      tenantId: '',
+    };
+  }
+  
+  /**
+   * Update Xero configuration for an organization
+   */
+  async updateXeroConfig(organizationId: Types.ObjectId, config: Partial<XeroConfig>): Promise<void> {
+    // Placeholder implementation
+    // In a real implementation, this would update the config in a database
+    console.log('Updating Xero config for organization', organizationId);
+  }
+}

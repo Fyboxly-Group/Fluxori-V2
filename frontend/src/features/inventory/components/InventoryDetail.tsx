@@ -1,37 +1,62 @@
+/// <reference path="../../types/module-declarations.d.ts" />
+import { ResponsiveValue, GridTemplateColumns, LayoutDirection, ResponsiveSpacing } from '../../../utils/chakra-utils';
 'use client';
 
-import { useState } from 'react';
-import { Box } from '@chakra-ui/react/box';
-import { Button } from '@chakra-ui/react/button';
-import { Text } from '@chakra-ui/react/text';
-import { Heading } from '@chakra-ui/react/heading';
-import { Stack, HStack, VStack } from '@chakra-ui/react/stack';
-import { Spinner } from '@chakra-ui/react/spinner';
-import { Divider } from '@chakra-ui/react/divider';
-import { Badge } from '@chakra-ui/react/badge';
-import { Tabs, TabList, Tab, TabPanels, TabPanel } from '@chakra-ui/react/tabs';
-import { useColorMode } from '@chakra-ui/react/color-mode';
-import { Image } from '@chakra-ui/react/image';
-import { Grid, GridItem } from '@chakra-ui/react/grid';
-import { Card, CardHeader, CardBody, CardFooter } from '@chakra-ui/react/card';
-import { Link } from '@chakra-ui/react/link';
-
+import React from 'react';
+import { Box  } from '@/utils/chakra-compat';
+import { Card  } from '@/utils/chakra-compat';
+import { CardHeader  } from '@/utils/chakra-compat';
+import { CardBody  } from '@/utils/chakra-compat';
+import { Heading  } from '@/utils/chakra-compat';
+import { Text  } from '@/utils/chakra-compat';
+import { HStack  } from '@/utils/chakra-compat';
+import { VStack  } from '@/utils/chakra-compat';
+import { Badge  } from '@/utils/chakra-compat';
+import { Button  } from '@/utils/chakra-compat';
+import { Spinner  } from '@/utils/chakra-compat';
+import { Link  } from '@/utils/chakra-compat';
+import { Image  } from '@/utils/chakra-compat';
+;
+;
+import { Tabs  } from '@/utils/chakra-compat';
+import { TabList  } from '@/utils/chakra-compat';
+import { TabPanels  } from '@/utils/chakra-compat';
+import { TabPanel  } from '@/utils/chakra-compat';
+import { Tab  } from '@/utils/chakra-compat';
+import { useColorMode } from '@/components/stubs/ChakraStubs';;
 import { useInventory } from '../hooks/useInventory';
-import { MarketplacePush } from './MarketplacePush';
+import { MarketplacePush } from '@/features/marketplace/components/MarketplacePush';
+import { InventoryItem } from '../types/inventory.types';
+import { ResponsiveValue } from '../../../utils/chakra-utils';
+import { Grid, GridItem } from '@/utils/chakra-compat';
+;
+;
 
 interface InventoryDetailProps {
   itemId: string;
+  onUpdate?: (data: any) => Promise<void>;
+  onDelete?: (id: string) => Promise<void>;
+  showActions?: boolean;
+  showHistory?: boolean;
+  showRelated?: boolean;
+  isCompact?: boolean;
+  width?: ResponsiveValue<string | number>;
+  height?: ResponsiveValue<string | number>;
+  p?: ResponsiveValue<number | string>;
+  m?: ResponsiveValue<number | string>;
+  borderRadius?: string;
+  boxShadow?: string;
 }
 
 export function InventoryDetail({ itemId }: InventoryDetailProps) {
   const { colorMode } = useColorMode();
   const { useInventoryItem } = useInventory();
-  const { data: item, isLoading, error } = useInventoryItem(itemId);
+  const { data: item, isLoading: loading, error } = useInventoryItem(itemId);
   
-  if (isLoading) {
+  if (loading) {
     return (
       <Box textAlign="center" py={10}>
-        <Spinner size="xl" />
+        <Spinner size="xl"  />
         <Text mt={4}>Loading inventory details...</Text>
       </Box>
     );
@@ -39,13 +64,13 @@ export function InventoryDetail({ itemId }: InventoryDetailProps) {
   
   if (error) {
     return (
-      <Box 
+      <Box
         p={6} 
         bg={colorMode === 'light' ? 'red.50' : 'red.900'} 
         color={colorMode === 'light' ? 'red.500' : 'red.200'} 
         borderRadius="md"
       >
-        <Heading size="md" mb={2}>Error Loading Inventory</Heading>
+        <Heading size="md" mb={2}>Error Loading Item</Heading>
         <Text>There was a problem loading the inventory item: {error.message}</Text>
       </Box>
     );
@@ -53,7 +78,7 @@ export function InventoryDetail({ itemId }: InventoryDetailProps) {
   
   if (!item) {
     return (
-      <Box 
+      <Box
         p={6} 
         bg={colorMode === 'light' ? 'yellow.50' : 'yellow.900'} 
         color={colorMode === 'light' ? 'yellow.700' : 'yellow.200'} 
@@ -70,19 +95,19 @@ export function InventoryDetail({ itemId }: InventoryDetailProps) {
       <Card mb={6} variant="outline">
         <CardHeader>
           <HStack justify="space-between">
-            <VStack align="start" spacing={1}>
+            <VStack align="start" gap={1}>
               <Heading size="lg">{item.name}</Heading>
               <Text color={colorMode === 'light' ? 'gray.600' : 'gray.400'}>
                 SKU: {item.sku}
               </Text>
             </VStack>
-            <Badge 
-              colorScheme={item.isActive ? 'green' : 'gray'}
-              fontSize="0.8em" 
+            <Badge
+              colorScheme={item.active ? 'green' : 'gray'}
+              fontSize="0.8em"
               py={1} 
               px={2}
             >
-              {item.isActive ? 'Active' : 'Inactive'}
+              {item.active ? 'Active' : 'Inactive'}
             </Badge>
           </HStack>
         </CardHeader>
@@ -98,9 +123,9 @@ export function InventoryDetail({ itemId }: InventoryDetailProps) {
             <TabPanels>
               {/* Details Tab */}
               <TabPanel>
-                <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap={6}>
+                <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' } as ResponsiveValue<string>} gap={6}>
                   <GridItem>
-                    <VStack align="start" spacing={4}>
+                    <VStack align="start" gap={4}>
                       <Box>
                         <Text fontWeight="bold" mb={1}>Description</Text>
                         <Text>{item.description || 'No description available'}</Text>
@@ -127,7 +152,7 @@ export function InventoryDetail({ itemId }: InventoryDetailProps) {
                         <Box>
                           <Text fontWeight="bold" mb={1}>Tags</Text>
                           <HStack flexWrap="wrap">
-                            {item.tags.map((tag, index) => (
+                            {item.tags.map((tag: any, index: any) => (
                               <Badge key={index} colorScheme="blue" mr={2} mb={2}>
                                 {tag}
                               </Badge>
@@ -139,16 +164,16 @@ export function InventoryDetail({ itemId }: InventoryDetailProps) {
                   </GridItem>
                   
                   <GridItem>
-                    <VStack align="start" spacing={4}>
+                    <VStack align="start" gap={4}>
                       <Box>
                         <Text fontWeight="bold" mb={1}>Pricing</Text>
-                        <HStack spacing={6}>
+                        <HStack gap={6}>
                           <Box>
                             <Text fontSize="sm" color={colorMode === 'light' ? 'gray.600' : 'gray.400'}>
                               Selling Price
                             </Text>
                             <Text fontSize="xl" fontWeight="bold">
-                              ${item.price.toFixed(2)}
+                              {item.price.toFixed(2)}
                             </Text>
                           </Box>
                           <Box>
@@ -156,7 +181,7 @@ export function InventoryDetail({ itemId }: InventoryDetailProps) {
                               Cost Price
                             </Text>
                             <Text fontSize="xl">
-                              ${item.costPrice.toFixed(2)}
+                              {item.costPrice.toFixed(2)}
                             </Text>
                           </Box>
                           <Box>
@@ -164,7 +189,7 @@ export function InventoryDetail({ itemId }: InventoryDetailProps) {
                               Margin
                             </Text>
                             <Text fontSize="xl">
-                              {(((item.price - item.costPrice) / item.price) * 100).toFixed(1)}%
+                              {'{(((item.price - item.costPrice) / item.price) * 100).toFixed(1)}'}%
                             </Text>
                           </Box>
                         </HStack>
@@ -187,10 +212,7 @@ export function InventoryDetail({ itemId }: InventoryDetailProps) {
                         <Box>
                           <Text fontWeight="bold" mb={1}>Dimensions</Text>
                           <Text>
-                            {item.dimensions.width} x {item.dimensions.height} x {item.dimensions.depth} {item.dimensions.unit}
-                          </Text>
-                          <Text>
-                            Weight: {item.dimensions.weight} {item.dimensions.weightUnit}
+                            {item.dimensions.width} x {item.dimensions.height} x {item.dimensions.depth} {item.dimensions.unit} | {item.dimensions.weight} {item.dimensions.weightUnit}
                           </Text>
                         </Box>
                       )}
@@ -199,9 +221,9 @@ export function InventoryDetail({ itemId }: InventoryDetailProps) {
                         <Box>
                           <Text fontWeight="bold" mb={1}>Images</Text>
                           <HStack>
-                            {item.images.map((image, index) => (
+                            {item.images.map((image: any, index: any) => (
                               <Box key={index} boxSize="100px" borderRadius="md" overflow="hidden">
-                                <Image src={image} alt={`${item.name} - ${index + 1}`} />
+                                <Image src={image} alt={`${item.name} - ${index + 1}`}  />
                               </Box>
                             ))}
                           </HStack>
@@ -214,19 +236,22 @@ export function InventoryDetail({ itemId }: InventoryDetailProps) {
               
               {/* Stock Tab */}
               <TabPanel>
-                <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap={6}>
+                <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' } as ResponsiveValue<string>} gap={6}>
                   <GridItem>
                     <Card variant="filled" p={4}>
                       <HStack justify="space-between" mb={2}>
                         <Text fontWeight="bold">Current Stock</Text>
-                        <Badge 
+                        <Badge
                           colorScheme={item.stockQuantity <= item.reorderPoint ? 'red' : 'green'}
-                          fontSize="0.8em" 
+                          fontSize="0.8em"
                           py={1} 
                           px={2}
                         >
-                          {item.stockQuantity <= 0 ? 'Out of Stock' : 
-                           item.stockQuantity <= item.reorderPoint ? 'Low Stock' : 'In Stock'}
+                          {item.stockQuantity <= 0 
+                            ? 'Out of Stock' 
+                            : item.stockQuantity <= item.reorderPoint 
+                              ? 'Low Stock' 
+                              : 'In Stock'}
                         </Badge>
                       </HStack>
                       <Text fontSize="3xl" fontWeight="bold">{item.stockQuantity}</Text>
@@ -238,10 +263,10 @@ export function InventoryDetail({ itemId }: InventoryDetailProps) {
                   </GridItem>
                   
                   <GridItem>
-                    <VStack align="start" spacing={4}>
+                    <VStack align="start" gap={4}>
                       <Box w="full">
                         <Text fontWeight="bold" mb={2}>Stock Actions</Text>
-                        <HStack spacing={4}>
+                        <HStack gap={4}>
                           <Button colorScheme="blue" size="sm" w="full">
                             Add Stock
                           </Button>
@@ -274,3 +299,5 @@ export function InventoryDetail({ itemId }: InventoryDetailProps) {
     </Box>
   );
 }
+
+export default InventoryDetail;

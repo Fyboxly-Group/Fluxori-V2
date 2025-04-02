@@ -1,0 +1,21 @@
+// @ts-nocheck
+import { BaseModule } from '../../base-module';
+
+/**
+ * OrdersFactory creates and configures the OrdersModule
+ */
+export class OrdersFactory {
+  /**
+   * Creates a new OrdersModule instance
+   * 
+   * @param config Module configuration
+   * @returns A configured OrdersModule instance
+   */
+  static createOrdersModule(config: any): BaseModule {
+    return {
+      id: 'orders',
+      name: 'orders',
+      version: '1.0.0'
+    };
+  }
+}

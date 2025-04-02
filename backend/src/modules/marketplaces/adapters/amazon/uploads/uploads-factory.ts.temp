@@ -1,0 +1,46 @@
+/**
+ * Factory for creating Uploads API module
+ */
+
+import { UploadsModule } from './uploads';
+import { ModuleRegistry } from '../core/module-registry';
+import { getDefaultModuleVersion } from '../core/module-definitions';
+
+/**
+ * Factory for creating Uploads API module
+ */
+export class UploadsModuleFactory {
+  /**
+   * Create an Uploads module and register it with the provided registry
+   * @param makeApiRequest Function to make API requests
+   * @param marketplaceId Marketplace ID
+   * @param registry Module registry to register with
+   * @param apiVersion Optional API version(uses default if not provided)
+   * @returns The created module
+   */
+  public static createUploadsModule(
+    makeApiRequest: <T>(
+      method: string,
+      endpoint: string,
+      options?: any
+    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
+    marketplaceId: string,
+    registry: ModuleRegistry,
+    apiVersion?: string
+  ): UploadsModule {
+    // Use provided version or get the default
+    const version = apiVersion || getDefaultModuleVersion('uploads') || '2020-11-01';
+    
+    // Create the module
+    const module = new UploadsModule(
+      version,
+      makeApiRequest,
+      marketplaceId
+    );
+    
+    // Register the module
+    registry.registerModule(module);
+    
+    return module;
+  }
+}

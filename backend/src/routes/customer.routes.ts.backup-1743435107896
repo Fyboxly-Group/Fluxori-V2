@@ -1,0 +1,53 @@
+// TypeScript checked
+import * as express from "express";
+import * as customerController from '../controllers/e.controller';
+import { authenticate, authorize } from '../middleware/auth.middleware';
+
+const router = express.Router();
+
+// Apply authentication to all customer routes
+router.use(authenticate);
+
+/**
+ * @route   GET /api/customers
+ * @desc    Get all customers
+ * @access  Private
+ */
+router.get('/', e.controller.getCustomers);
+
+/**
+ * @route   GET /api/customers/stats
+ * @desc    Get customer statistics
+ * @access  Private
+ */
+router.get('/stats', e.controller.getCustomerStats);
+
+/**
+ * @route   GET /api/customers/:id
+ * @desc    Get a customer by ID
+ * @access  Private
+ */
+router.get('/:id', e.controller.getCustomerById);
+
+/**
+ * @route   POST /api/customers
+ * @desc    Create a new customer
+ * @access  Private
+ */
+router.post('/', e.controller.createCustomer);
+
+/**
+ * @route   PUT /api/customers/:id
+ * @desc    Update a customer
+ * @access  Private
+ */
+router.put('/:id', express.updateCustomer);
+
+/**
+ * @route   DELETE /api/customers/:id
+ * @desc    Delete a customer
+ * @access  Private(Admin only)
+ */
+router.delete('/:id', authorize('admin'), express.deleteCustomer);
+
+export default router;

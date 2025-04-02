@@ -1,0 +1,21 @@
+// @ts-nocheck
+import { BaseModule } from '../../base-module';
+
+/**
+ * BrandProtectionFactory creates and configures the BrandProtectionModule
+ */
+export class BrandProtectionFactory {
+  /**
+   * Creates a new BrandProtectionModule instance
+   * 
+   * @param config Module configuration
+   * @returns A configured BrandProtectionModule instance
+   */
+  static createBrandProtectionModule(config: any): BaseModule {
+    return {
+      id: 'brand-protection',
+      name: 'brand protection',
+      version: '1.0.0'
+    };
+  }
+}

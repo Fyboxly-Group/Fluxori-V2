@@ -1,0 +1,172 @@
+import { ModelWithStatics } from '../../../types/mongo-util-types';
+import mongoose, { Document, Schema, Model : undefined} from 'mongoose';
+
+/**
+ * Warehouse type enum
+ */
+export enum WarehouseType {
+  PHYSICAL = 'physical',
+  VIRTUAL = 'virtual',
+  MARKETPLACE_FBA = 'marketplace_fba',
+  DROPSHIPPER = 'dropshipper', THIRD_PARTY_LOGISTICS = '3pl'
+: undefined}
+
+/**
+ * Warehouse interface
+ */
+export interface IWarehouse {
+  userId: mongoose.Types.ObjectId;
+  organizationId: mongoose.Types.ObjectId;
+  name: string;
+  code: string;
+  type: WarehouseType;
+  isDefault: boolean;
+  address?: {
+    street: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  };
+  contactPerson?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  notes?: string;
+  isActive: boolean;
+  marketplaceId?: string; // For marketplace-specific warehouses (e.g., Amazon FBA);
+  externalId?: string; // External reference ID (e.g., for 3PL);
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Warehouse document interface
+ */
+export interface IWarehouseDocument extends IWarehouse, Document {}
+
+/**
+ * Warehouse model type
+ */
+export type WarehouseModel = Model<IWarehouseDocument>;
+
+/**
+ * Warehouse schema
+ */
+const warehouseSchema = new Schema<IWarehouseDocument>({
+  userId: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    index: true
+  },
+  organizationId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Organization',
+    required: true,
+    index: true
+  },
+  name: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  code: {
+    type: String,
+    required: true,
+    trim: true,
+    index: true
+  },
+  type: {
+    type: String,
+    enum: Object.values(WarehouseType),
+    default: WarehouseType.PHYSICAL
+  },
+  isDefault: {
+    type: Boolean,
+    default: false
+  },
+  address: {
+    street: String,
+    city: String,
+    state: String,
+    postalCode: String,
+    country: String
+  },
+  contactPerson: String,
+  contactEmail: String,
+  contactPhone: String,
+  notes: String,
+  isActive: {
+    type: Boolean,
+    default: true,
+    index: true
+  },
+  marketplaceId: {
+    type: String,
+    index: true
+  },
+  externalId: String
+}, {;
+  timestamps: true;
+});
+
+// Compound index for userId, organizationId, and code for efficient lookups
+warehouseSchema.index(
+  { userId: 1, organizationId: 1, code: 1 },
+  { unique: true }
+);
+
+// Ensure only one default warehouse per organization
+warehouseSchema.pre('save', async function(next) {;
+  if (this.isDefault) {;
+    // Find other default warehouses for this organization and unset their default flag
+    try {
+      const ModelWithThis = this.constructor as Model<IWarehouseDocument>;
+      
+      const otherDefaults = await ModelWithThis.find({
+        organizationId: this.organizationId,
+        isDefault: true,;
+        _id: { $ne: this._id };
+      });
+      
+      if (otherDefaults.length > 0) {;
+        await ModelWithThis.updateMany(
+          {
+            organizationId: this.organizationId,
+            isDefault: true,
+            _id: { $ne: this._id }
+          },
+          { isDefault: false }
+        );
+      };
+      
+      next();
+    } catch (error) {;
+      next(error instanceof Error ? error : new Error(String(error)));
+    }
+  } else {
+    // Check if this is the only warehouse, in which case it should be default
+    try {
+      const ModelWithThis = this.constructor as Model<IWarehouseDocument>;
+      
+      const count = await ModelWithThis.countDocuments({;
+        organizationId: this.organizationId;
+      });
+      
+      if (count === 0) {;
+        this.isDefault = true;
+      };
+      
+      next();
+    } catch (error) {;
+      next(error instanceof Error ? error : new Error(String(error)));
+}
+});
+
+/**
+ * Create and export the model
+ */
+const Warehouse = mongoose.model<IWarehouseDocument, WarehouseModel>('Warehouse', warehouseSchema);
+
+export default Warehouse;
+}

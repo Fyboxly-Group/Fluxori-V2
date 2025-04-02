@@ -1,0 +1,109 @@
+// TypeScript fixed
+import mongoose, { Document, Schema, Model } from 'mongoose';
+import { SyncOperationType, SyncStatus } from '../types';
+import * as mongoose from "mongoose";
+
+/**
+ * Document interface for Mongoose
+ */
+// Extend Document but avoid conflicts with property names
+export interface IXeroSyncStatusDocument extends Document {
+  id: string;
+  type: SyncOperationType;
+  startedAt: Date;
+  completedAt?: Date;
+  status: 'running' | 'completed' | 'failed';
+  progress: number;
+  totalItems?: number;
+  processedItems?: number;
+  errorList?: string[]; // Renamed to avoid conflict with Document.errors
+  userId: string;
+  organizationId: string;
+}
+
+
+export interface IXeroSyncStatusModel extends mongoose.Model<IXeroSyncStatusDocument> {
+
+}
+
+
+/**
+ * Model type for XeroSyncStatus
+ */
+export type XeroSyncStatusModel = Model<IXeroSyncStatusDocument>;
+
+/**
+ * Mongoose schema definition
+ */
+const xeroSyncStatusSchema = new Schema<IXeroSyncStatusDocument>(
+  {
+    id: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    type: {
+      type: String,
+      enum: ['full', 'invoices', 'contacts', 'payments', 'accounts', 'tax-rates'],
+      required: true,
+    },
+    startedAt: {
+      type: Date,
+      required: true,
+      default: Date.now,
+    },
+    completedAt: {
+      type: Date,
+    },
+    status: {
+      type: String,
+      enum: ['running', 'completed', 'failed'],
+      required: true,
+      default: 'running',
+    },
+    progress: {
+      type: Number,
+      required: true,
+      default: 0,
+      min: 0,
+      max: 100,
+    },
+    totalItems: {
+      type: Number,
+    },
+    processedItems: {
+      type: Number,
+    },
+    errorList: [{
+      type: String,
+    }],
+    userId: {
+      type: Schema.Types.ObjectId as any,
+      ref: 'User',
+      required: true,
+    },
+    organizationId: {
+      type: Schema.Types.ObjectId as any,
+      ref: 'Organization',
+      required: true,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+/**
+ * Indexes for efficient querying
+ */
+xeroSyncStatusSchema.index({ userId: 1 });
+xeroSyncStatusSchema.index({ organizationId: 1 });
+xeroSyncStatusSchema.index({ status: 1 });
+xeroSyncStatusSchema.index({ startedAt: -1 });
+
+/**
+ * Create and export the model
+ */
+const XeroSyncStatus = mongoose.model<IXeroSyncStatusDocument>('XeroSyncStatus', xeroSyncStatusSchema);
+
+export default XeroSyncStatus;

@@ -1,0 +1,21 @@
+// @ts-nocheck
+import { BaseModule } from '../../base-module';
+
+/**
+ * AuthorizationFactory creates and configures the AuthorizationModule
+ */
+export class AuthorizationFactory {
+  /**
+   * Creates a new AuthorizationModule instance
+   * 
+   * @param config Module configuration
+   * @returns A configured AuthorizationModule instance
+   */
+  static createAuthorizationModule(config: any): BaseModule {
+    return {
+      id: 'authorization',
+      name: 'authorization',
+      version: '1.0.0'
+    };
+  }
+}

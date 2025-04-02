@@ -1,0 +1,21 @@
+// @ts-nocheck
+import { BaseModule } from '../../base-module';
+
+/**
+ * UploadsFactory creates and configures the UploadsModule
+ */
+export class UploadsFactory {
+  /**
+   * Creates a new UploadsModule instance
+   * 
+   * @param config Module configuration
+   * @returns A configured UploadsModule instance
+   */
+  static createUploadsModule(config: any): BaseModule {
+    return {
+      id: 'uploads',
+      name: 'uploads',
+      version: '1.0.0'
+    };
+  }
+}
