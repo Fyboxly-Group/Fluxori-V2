@@ -1,0 +1,409 @@
+import { Router } from 'express';
+import { container } from '../../../config/inversify';
+import { RepricingController } from '../controllers/repricing.controller';
+import { authMiddleware } from '../../../middleware/auth.middleware';
+
+const router = Router();
+const repricingController = container.get(RepricingController);
+
+/**
+ * @swagger
+ * tags:
+ *   name: Repricing
+ *   description: API endpoints for managing repricing rules and events
+ */
+
+/**
+ * @swagger
+ * /api/repricing/rules:
+ *   get:
+ *     summary: Get all repricing rules for the current organization
+ *     tags: [Repricing]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: A list of repricing rules
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server Error
+ */
+router.get('/rules', authMiddleware, repricingController.getRules);
+
+/**
+ * @swagger
+ * /api/repricing/rules/{id}:
+ *   get:
+ *     summary: Get a specific repricing rule by ID
+ *     tags: [Repricing]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Repricing rule details
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Rule not found
+ *       500:
+ *         description: Server Error
+ */
+router.get('/rules/:id', authMiddleware, repricingController.getRuleById);
+
+/**
+ * @swagger
+ * /api/repricing/rules:
+ *   post:
+ *     summary: Create a new repricing rule
+ *     tags: [Repricing]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - isActive
+ *               - strategy
+ *               - parameters
+ *               - marketplaces
+ *               - updateFrequency
+ *               - priority
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               isActive:
+ *                 type: boolean
+ *               strategy:
+ *                 type: string
+ *                 enum: [match_buy_box, beat_buy_box, fixed_percentage, dynamic_pricing, maintain_margin]
+ *               parameters:
+ *                 type: object
+ *               productFilter:
+ *                 type: object
+ *               marketplaces:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               updateFrequency:
+ *                 type: integer
+ *                 minimum: 5
+ *                 maximum: 1440
+ *               priority:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 100
+ *     responses:
+ *       201:
+ *         description: Rule created successfully
+ *       400:
+ *         description: Invalid request body
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Not enough credits
+ *       500:
+ *         description: Server Error
+ */
+router.post('/rules', authMiddleware, repricingController.createRule);
+
+/**
+ * @swagger
+ * /api/repricing/rules/{id}:
+ *   put:
+ *     summary: Update an existing repricing rule
+ *     tags: [Repricing]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - isActive
+ *               - strategy
+ *               - parameters
+ *               - marketplaces
+ *               - updateFrequency
+ *               - priority
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               isActive:
+ *                 type: boolean
+ *               strategy:
+ *                 type: string
+ *                 enum: [match_buy_box, beat_buy_box, fixed_percentage, dynamic_pricing, maintain_margin]
+ *               parameters:
+ *                 type: object
+ *               productFilter:
+ *                 type: object
+ *               marketplaces:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               updateFrequency:
+ *                 type: integer
+ *                 minimum: 5
+ *                 maximum: 1440
+ *               priority:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 100
+ *     responses:
+ *       200:
+ *         description: Rule updated successfully
+ *       400:
+ *         description: Invalid request body
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Not allowed to update this rule
+ *       404:
+ *         description: Rule not found
+ *       500:
+ *         description: Server Error
+ */
+router.put('/rules/:id', authMiddleware, repricingController.updateRule);
+
+/**
+ * @swagger
+ * /api/repricing/rules/{id}:
+ *   delete:
+ *     summary: Delete a repricing rule
+ *     tags: [Repricing]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Rule deleted successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Not allowed to delete this rule
+ *       404:
+ *         description: Rule not found
+ *       500:
+ *         description: Server Error
+ */
+router.delete('/rules/:id', authMiddleware, repricingController.deleteRule);
+
+/**
+ * @swagger
+ * /api/repricing/rules/{id}/execute:
+ *   post:
+ *     summary: Execute a rule manually
+ *     tags: [Repricing]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Rule executed successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Not allowed to execute this rule
+ *       404:
+ *         description: Rule not found
+ *       500:
+ *         description: Server Error
+ */
+router.post('/rules/:id/execute', authMiddleware, repricingController.executeRule);
+
+/**
+ * @swagger
+ * /api/repricing/rules/{id}/events:
+ *   get:
+ *     summary: Get repricing events for a specific rule
+ *     tags: [Repricing]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 500
+ *           default: 100
+ *     responses:
+ *       200:
+ *         description: List of repricing events
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Not allowed to view events for this rule
+ *       404:
+ *         description: Rule not found
+ *       500:
+ *         description: Server Error
+ */
+router.get('/rules/:id/events', authMiddleware, repricingController.getRuleEvents);
+
+/**
+ * @swagger
+ * /api/repricing/products/{id}/events:
+ *   get:
+ *     summary: Get repricing events for a specific product
+ *     tags: [Repricing]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 500
+ *           default: 100
+ *     responses:
+ *       200:
+ *         description: List of repricing events
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server Error
+ */
+router.get('/products/:id/events', authMiddleware, repricingController.getProductEvents);
+
+/**
+ * @swagger
+ * /api/repricing/marketplaces/{id}/events:
+ *   get:
+ *     summary: Get repricing events for a specific marketplace
+ *     tags: [Repricing]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 500
+ *           default: 100
+ *     responses:
+ *       200:
+ *         description: List of repricing events
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server Error
+ */
+router.get('/marketplaces/:id/events', authMiddleware, repricingController.getMarketplaceEvents);
+
+/**
+ * @swagger
+ * /api/repricing/events/recent:
+ *   get:
+ *     summary: Get recent repricing events
+ *     tags: [Repricing]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 500
+ *           default: 100
+ *     responses:
+ *       200:
+ *         description: List of recent repricing events
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server Error
+ */
+router.get('/events/recent', authMiddleware, repricingController.getRecentEvents);
+
+/**
+ * @swagger
+ * /api/repricing/events/date-range:
+ *   get:
+ *     summary: Get repricing events within a date range
+ *     tags: [Repricing]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: start
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - in: query
+ *         name: end
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 500
+ *           default: 500
+ *     responses:
+ *       200:
+ *         description: List of repricing events within the specified date range
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server Error
+ */
+router.get('/events/date-range', authMiddleware, repricingController.getEventsByDateRange);
+
+export default router;

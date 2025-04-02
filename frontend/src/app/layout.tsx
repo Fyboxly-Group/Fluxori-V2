@@ -1,27 +1,22 @@
-import React, { Providers } from './providers'
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-
-const inter = Inter({ 
-  subsets: ['latin'],
-  variable: '--font-inter',
-})
+import { Metadata } from 'next';
+import { Providers } from './providers';
+import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Fluxori',
-  description: 'Fluxori V2 with Chakra UI v3',
-}
+  title: 'Fluxori V2',
+  description: 'Advanced Inventory Management Platform',
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body>
         <Providers>{children}</Providers>
       </body>
     </html>
-  )
+  );
 }

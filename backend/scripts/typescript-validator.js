@@ -90,6 +90,7 @@ function findAnyUsage() {
   console.log(chalk.blue('Checking for excessive use of "any" type...'));
   
   let anyCount = 0;
+  let filesWithAny = [];
   
   for (const dir of PRODUCTION_DIRS) {
     const pattern = path.join(ROOT_DIR, dir, '**/*.ts');
@@ -103,25 +104,46 @@ function findAnyUsage() {
       
       const content = fs.readFileSync(file, 'utf8');
       const lines = content.split('\n');
+      let fileAnyCount = 0;
       
       for (const line of lines) {
         // Count 'any' type usage, but exclude comments
-        if (line.includes(': any') && !line.trim().startsWith('//')) {
-          anyCount++;
+        if ((line.includes(': any') || line.includes('as any')) && !line.trim().startsWith('//')) {
+          fileAnyCount++;
         }
+      }
+      
+      if (fileAnyCount > 0) {
+        anyCount += fileAnyCount;
+        filesWithAny.push({
+          file: path.relative(ROOT_DIR, file),
+          count: fileAnyCount
+        });
       }
     }
   }
   
   if (anyCount > 0) {
     console.log(chalk.yellow(`Found ${anyCount} uses of "any" type in production code`));
-    console.log(chalk.yellow('Consider replacing with proper types for better type safety'));
+    
+    // List the top 5 files with the most 'any' usages
+    console.log(chalk.yellow('\nTop files with "any" usage:'));
+    filesWithAny
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+      .forEach(item => {
+        console.log(chalk.yellow(`  - ${item.file}: ${item.count} occurrences`));
+      });
+      
+    console.log(chalk.yellow('\nConsider replacing with proper types for better type safety'));
+    
+    // Consider this a failure if there are excessive 'any' types in strict mode
+    // isStrictMode will be checked in the main function
+    return false;
   } else {
     console.log(chalk.green('✓ No "any" types found in production code'));
+    return true;
   }
-  
-  // This is a warning, not an error, so return true
-  return true;
 }
 
 /**
@@ -250,6 +272,12 @@ function main() {
   console.log(chalk.bold('🔍 TypeScript Validator'));
   console.log(chalk.bold('================================'));
   
+  // Check for --strict flag
+  const isStrictMode = process.argv.includes('--strict');
+  if (isStrictMode) {
+    console.log(chalk.blue('Running in strict mode - performing comprehensive validation'));
+  }
+  
   const noCheckResult = findTsNoCheckInProduction();
   const anyUsageResult = findAnyUsage();
   const moduleExportsResult = checkModuleExports();
@@ -262,9 +290,16 @@ function main() {
   if (!noCheckResult) {
     console.log(chalk.red('\n❌ Validation failed. Please fix the issues above.'));
     process.exit(1);
+  } else if (isStrictMode && !anyUsageResult) {
+    // In strict mode, we also fail if there are excessive "any" types
+    console.log(chalk.red('\n❌ Strict validation failed: Excessive use of "any" types.'));
+    console.log(chalk.yellow('Please replace "any" with proper types for better type safety.'));
+    process.exit(1);
   } else {
     console.log(chalk.green('\n✅ Validation passed!'));
-    console.log(chalk.yellow('\nNote: We\'re gradually fixing TypeScript errors. The important thing is no @ts-nocheck directives in production code.'));
+    if (!isStrictMode) {
+      console.log(chalk.yellow('\nNote: We\'re gradually fixing TypeScript errors. The important thing is no @ts-nocheck directives in production code.'));
+    }
   }
 }
 

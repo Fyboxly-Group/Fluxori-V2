@@ -1,4 +1,3 @@
-// @ts-nocheck - Added by final-ts-fix.js
 import { Types, Model } from 'mongoose';
 import { MongooseDocument } from '../utils/mongoose-document';
 
@@ -6,9 +5,9 @@ import { MongooseDocument } from '../utils/mongoose-document';
  * Base interface for Shipment (raw data)
  */
 export interface IShipment {
-  name?: any;
+  name?: string;
   type?: string;
-  required: any;
+  required?: boolean;
   // _id is provided by MongooseDocument
   createdAt?: Date;
   updatedAt?: Date;

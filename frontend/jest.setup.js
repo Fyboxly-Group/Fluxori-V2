@@ -1,38 +1,70 @@
-// jest.setup.js
-import '@testing-library/jest-dom'
+// Learn more: https://github.com/testing-library/jest-dom
+import '@testing-library/jest-dom';
+import { server } from './src/mocks/server';
+import 'jest-canvas-mock';
+import 'jest-axe/extend-expect';
 
-// Mock Next.js router
-jest.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: jest.fn(),
-    replace: jest.fn(),
-    prefetch: jest.fn(),
-    back: jest.fn(),
-    pathname: '/',
-    query: {},
-  }),
-  usePathname: jest.fn().mockReturnValue('/'),
-  useSearchParams: jest.fn().mockReturnValue({
-    get: jest.fn(),
-    getAll: jest.fn(),
-    entries: jest.fn(),
-    keys: jest.fn(),
-    values: jest.fn(),
-    toString: jest.fn(),
-    forEach: jest.fn(),
-    has: jest.fn(),
-  }),
-}))
+// Mock GSAP to avoid issues with requestAnimationFrame and DOM manipulation
+jest.mock('gsap', () => {
+  return {
+    to: jest.fn(() => ({
+      pause: jest.fn(),
+      invalidate: jest.fn(),
+      restart: jest.fn(),
+      kill: jest.fn(),
+    })),
+    from: jest.fn(() => ({
+      pause: jest.fn(),
+      invalidate: jest.fn(),
+      restart: jest.fn(),
+      kill: jest.fn(),
+    })),
+    set: jest.fn(),
+    timeline: jest.fn(() => ({
+      pause: jest.fn(),
+      play: jest.fn(),
+      to: jest.fn(() => ({
+        pause: jest.fn(),
+        invalidate: jest.fn(),
+        restart: jest.fn(),
+        kill: jest.fn(),
+      })),
+      from: jest.fn(() => ({
+        pause: jest.fn(),
+        invalidate: jest.fn(),
+        restart: jest.fn(),
+        kill: jest.fn(),
+      })),
+      add: jest.fn(),
+      kill: jest.fn(),
+    })),
+    registerPlugin: jest.fn(),
+    config: jest.fn(),
+    defaults: {},
+    core: {
+      Tween: {
+        selector: jest.fn(),
+      },
+    },
+  };
+});
 
-// Mock localStorage
-global.localStorage = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
-  key: jest.fn(),
-  length: 0,
-}
+// Mock ResizeObserver
+global.ResizeObserver = jest.fn().mockImplementation(() => ({
+  observe: jest.fn(),
+  unobserve: jest.fn(),
+  disconnect: jest.fn(),
+}));
+
+// Mock IntersectionObserver
+global.IntersectionObserver = jest.fn().mockImplementation(() => ({
+  observe: jest.fn(),
+  unobserve: jest.fn(),
+  disconnect: jest.fn(),
+  root: null,
+  rootMargin: '',
+  thresholds: [],
+}));
 
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
@@ -41,22 +73,19 @@ Object.defineProperty(window, 'matchMedia', {
     matches: false,
     media: query,
     onchange: null,
-    addListener: jest.fn(), // deprecated
-    removeListener: jest.fn(), // deprecated
+    addListener: jest.fn(), // Deprecated
+    removeListener: jest.fn(), // Deprecated
     addEventListener: jest.fn(),
     removeEventListener: jest.fn(),
     dispatchEvent: jest.fn(),
   })),
-})
+});
 
-// Suppress console errors during tests
-const originalConsoleError = console.error
-console.error = (...args) => {
-  if (args[0] && args[0].includes && args[0].includes('Warning: ReactDOM.render')) {
-    return
-  }
-  if (args[0] && args[0].includes && args[0].includes('Error: Uncaught [')) {
-    return
-  }
-  originalConsoleError(...args)
-}
+// Start msw server before tests
+beforeAll(() => server.listen());
+
+// Reset handlers after each test
+afterEach(() => server.resetHandlers());
+
+// Clean up after all tests
+afterAll(() => server.close());

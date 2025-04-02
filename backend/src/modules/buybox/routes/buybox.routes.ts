@@ -4,49 +4,259 @@
  * API routes for Buy Box functionality
  */
 import { Router } from 'express';
+import { container } from '../../../config/inversify';
 import { BuyBoxController } from '../controllers/buybox.controller';
-import { authenticate } from '../../../middleware/auth.middleware';
+import { authMiddleware } from '../../../middleware/auth.middleware';
+
+const router = Router();
+const buyBoxController = container.get(BuyBoxController);
 
 /**
- * Initialize Buy Box routes
- * @returns Express router
+ * @swagger
+ * tags:
+ *   name: BuyBox
+ *   description: API endpoints for Buy Box monitoring
  */
-export function initBuyBoxRoutes(): Router {
-  const router = Router();
-  const controller = new BuyBoxController();
-  
-  // Apply authentication middleware
-  router.use(authenticate);
-  
-  // Initialize Buy Box monitoring for a product
-  router.post('/init', controller.initializeMonitoring.bind(controller));
-  
-  // Stop Buy Box monitoring for a product
-  router.post('/stop', controller.stopMonitoring.bind(controller));
-  
-  // Initialize Buy Box monitoring for all products on a marketplace
-  router.post('/init-marketplace', controller.initializeMonitoringForMarketplace.bind(controller));
-  
-  // Check Buy Box status for a product
-  router.post('/check', controller.checkBuyBoxStatus.bind(controller));
-  
-  // Get Buy Box history for a product
-  router.get('/history/:productId/:marketplaceId', controller.getBuyBoxHistory.bind(controller));
-  
-  // Get Buy Box histories for a marketplace
-  router.get('/marketplace/:marketplaceId', controller.getBuyBoxHistoriesByMarketplace.bind(controller));
-  
-  // Apply repricing rules
-  router.post('/apply-rules', controller.applyRepricingRules.bind(controller));
-  
-  return router;
-}
 
 /**
- * Initialize API routes in main application
- * @param app Express application
+ * @swagger
+ * /api/buybox/init:
+ *   post:
+ *     summary: Initialize Buy Box monitoring for a product
+ *     tags: [BuyBox]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - productId
+ *               - marketplaceId
+ *               - sku
+ *             properties:
+ *               productId:
+ *                 type: string
+ *               marketplaceId:
+ *                 type: string
+ *               marketplaceProductId:
+ *                 type: string
+ *               sku:
+ *                 type: string
+ *               monitoringFrequency:
+ *                 type: integer
+ *                 default: 60
+ *     responses:
+ *       200:
+ *         description: Buy Box monitoring initialized
+ *       400:
+ *         description: Invalid request body
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server Error
  */
-export function initApiRoutes(app: any): void {
-  const buyBoxRoutes = initBuyBoxRoutes();
-  app.use('/api/buybox', buyBoxRoutes);
-}
+router.post('/init', authMiddleware, buyBoxController.initializeMonitoring);
+
+/**
+ * @swagger
+ * /api/buybox/stop:
+ *   post:
+ *     summary: Stop Buy Box monitoring for a product
+ *     tags: [BuyBox]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - productId
+ *               - marketplaceId
+ *             properties:
+ *               productId:
+ *                 type: string
+ *               marketplaceId:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Buy Box monitoring stopped
+ *       400:
+ *         description: Invalid request body
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Monitoring not found
+ *       500:
+ *         description: Server Error
+ */
+router.post('/stop', authMiddleware, buyBoxController.stopMonitoring);
+
+/**
+ * @swagger
+ * /api/buybox/init-marketplace:
+ *   post:
+ *     summary: Initialize Buy Box monitoring for all products on a marketplace
+ *     tags: [BuyBox]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - marketplaceId
+ *             properties:
+ *               marketplaceId:
+ *                 type: string
+ *               monitoringFrequency:
+ *                 type: integer
+ *                 default: 60
+ *     responses:
+ *       200:
+ *         description: Buy Box monitoring initialized for all products
+ *       400:
+ *         description: Invalid request body
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server Error
+ */
+router.post('/init-marketplace', authMiddleware, buyBoxController.initializeMonitoringForMarketplace);
+
+/**
+ * @swagger
+ * /api/buybox/check:
+ *   post:
+ *     summary: Check Buy Box status for a product
+ *     tags: [BuyBox]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - productId
+ *               - marketplaceId
+ *             properties:
+ *               productId:
+ *                 type: string
+ *               marketplaceId:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Buy Box status
+ *       400:
+ *         description: Invalid request body
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Product not found
+ *       500:
+ *         description: Server Error
+ */
+router.post('/check', authMiddleware, buyBoxController.checkBuyBoxStatus);
+
+/**
+ * @swagger
+ * /api/buybox/history/{productId}/{marketplaceId}:
+ *   get:
+ *     summary: Get Buy Box history for a product
+ *     tags: [BuyBox]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: productId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: marketplaceId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Buy Box history
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: History not found
+ *       500:
+ *         description: Server Error
+ */
+router.get('/history/:productId/:marketplaceId', authMiddleware, buyBoxController.getBuyBoxHistory);
+
+/**
+ * @swagger
+ * /api/buybox/marketplace/{marketplaceId}:
+ *   get:
+ *     summary: Get Buy Box histories for a marketplace
+ *     tags: [BuyBox]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: marketplaceId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Buy Box histories
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server Error
+ */
+router.get('/marketplace/:marketplaceId', authMiddleware, buyBoxController.getBuyBoxHistoriesByMarketplace);
+
+/**
+ * @swagger
+ * /api/buybox/apply-rules:
+ *   post:
+ *     summary: Apply repricing rules
+ *     tags: [BuyBox]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - productId
+ *               - marketplaceId
+ *             properties:
+ *               productId:
+ *                 type: string
+ *               marketplaceId:
+ *                 type: string
+ *               ruleIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       200:
+ *         description: Repricing rules applied
+ *       400:
+ *         description: Invalid request body
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server Error
+ */
+router.post('/apply-rules', authMiddleware, buyBoxController.applyRepricingRules);
+
+export default router;

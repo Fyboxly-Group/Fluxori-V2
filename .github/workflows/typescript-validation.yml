@@ -1,0 +1,68 @@
+name: TypeScript Validation
+
+on:
+  pull_request:
+    branches: [ main, development ]
+    paths:
+      - '**/*.ts'
+      - '**/*.tsx'
+      - '**/tsconfig.json'
+      - '**/package.json'
+      - '**/package-lock.json'
+      - '.github/workflows/typescript-validation.yml'
+
+jobs:
+  validate-backend:
+    name: Validate Backend TypeScript
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: './backend/package-lock.json'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run TypeScript validator
+        run: node scripts/typescript-validator.js --strict
+      
+      - name: Run TypeScript compiler check
+        run: npx tsc --noEmit
+  
+  validate-frontend:
+    name: Validate Frontend TypeScript
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: './frontend/package-lock.json'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run ESLint Chakra UI v3 checks
+        run: npx eslint --ext .ts,.tsx src/ -c .eslintrc.js
+      
+      - name: Validate Chakra imports
+        run: node scripts/validate-chakra-imports.js
+      
+      - name: Run TypeScript compiler check
+        run: npx tsc --noEmit

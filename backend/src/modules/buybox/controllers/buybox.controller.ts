@@ -4,23 +4,26 @@
  * Handles API requests for Buy Box functionality
  */
 import { Request, Response } from 'express';
-import { getBuyBoxMonitoringService } from '../services/buybox-monitoring.service';
-import { getBuyBoxHistoryRepository } from '../repositories/buybox-history.repository';
-import { getBuyBoxMonitorFactory } from '../factories/buybox-monitor.factory';
-import { Logger } from '../../../utils/logger';
+import { injectable, inject } from 'inversify';
+import { Logger } from 'winston';
+import { BuyBoxMonitoringService } from '../services/buybox-monitoring.service';
+import { BuyBoxHistoryRepository } from '../repositories/buybox-history.repository';
+import { BuyBoxMonitorFactory } from '../factories/buybox-monitor.factory';
 
 /**
  * Buy Box controller
  */
+@injectable()
 export class BuyBoxController {
-  private readonly logger: Logger;
-  
   /**
    * Constructor
    */
-  constructor() {
-    this.logger = new Logger('BuyBoxController');
-  }
+  constructor(
+    @inject('Logger') private logger: Logger,
+    @inject(BuyBoxMonitoringService) private buyBoxMonitoringService: BuyBoxMonitoringService,
+    @inject(BuyBoxHistoryRepository) private buyBoxHistoryRepository: BuyBoxHistoryRepository,
+    @inject(BuyBoxMonitorFactory) private buyBoxMonitorFactory: BuyBoxMonitorFactory
+  ) {}
   
   /**
    * Initialize Buy Box monitoring for a product
@@ -41,19 +44,17 @@ export class BuyBoxController {
       }
       
       // Check if marketplace is supported
-      const factory = getBuyBoxMonitorFactory();
-      if (!factory.isMarketplaceSupported(marketplaceId)) {
+      if (!this.buyBoxMonitorFactory.isMarketplaceSupported(marketplaceId)) {
         res.status(400).json({
           success: false,
           message: `Marketplace not supported for Buy Box monitoring: ${marketplaceId}`,
-          supportedMarketplaces: factory.getSupportedMarketplaces()
+          supportedMarketplaces: this.buyBoxMonitorFactory.getSupportedMarketplaces()
         });
         return;
       }
       
       // Initialize monitoring
-      const service = getBuyBoxMonitoringService();
-      const history = await service.initializeMonitoring(
+      const history = await this.buyBoxMonitoringService.initializeMonitoring(
         productId,
         marketplaceId,
         marketplaceProductId,
@@ -94,8 +95,7 @@ export class BuyBoxController {
       }
       
       // Stop monitoring
-      const service = getBuyBoxMonitoringService();
-      const success = await service.stopMonitoring(productId, marketplaceId);
+      const success = await this.buyBoxMonitoringService.stopMonitoring(productId, marketplaceId);
       
       if (success) {
         res.status(200).json({
@@ -137,19 +137,17 @@ export class BuyBoxController {
       }
       
       // Check if marketplace is supported
-      const factory = getBuyBoxMonitorFactory();
-      if (!factory.isMarketplaceSupported(marketplaceId)) {
+      if (!this.buyBoxMonitorFactory.isMarketplaceSupported(marketplaceId)) {
         res.status(400).json({
           success: false,
           message: `Marketplace not supported for Buy Box monitoring: ${marketplaceId}`,
-          supportedMarketplaces: factory.getSupportedMarketplaces()
+          supportedMarketplaces: this.buyBoxMonitorFactory.getSupportedMarketplaces()
         });
         return;
       }
       
       // Initialize monitoring for all products
-      const service = getBuyBoxMonitoringService();
-      const count = await service.initializeMonitoringForMarketplace(
+      const count = await this.buyBoxMonitoringService.initializeMonitoringForMarketplace(
         marketplaceId,
         monitoringFrequency
       );
@@ -188,8 +186,7 @@ export class BuyBoxController {
       }
       
       // Check Buy Box status
-      const service = getBuyBoxMonitoringService();
-      const snapshot = await service.checkBuyBoxStatus(
+      const snapshot = await this.buyBoxMonitoringService.checkBuyBoxStatus(
         productId,
         marketplaceId,
         marketplaceProductId
@@ -229,9 +226,8 @@ export class BuyBoxController {
       }
       
       // Get Buy Box history
-      const repository = getBuyBoxHistoryRepository();
       const historyId = `${productId}_${marketplaceId}`;
-      const history = await repository.getById(historyId);
+      const history = await this.buyBoxHistoryRepository.findById(historyId);
       
       if (!history) {
         res.status(404).json({
@@ -275,20 +271,11 @@ export class BuyBoxController {
       }
       
       // Get Buy Box histories
-      const repository = getBuyBoxHistoryRepository();
-      const result = await repository.getByMarketplace(
-        marketplaceId,
-        limit ? parseInt(limit as string) : undefined,
-        startAfter as any
-      );
+      const histories = await this.buyBoxHistoryRepository.findByMarketplaceId(marketplaceId);
       
       res.status(200).json({
         success: true,
-        data: result.histories,
-        pagination: {
-          hasMore: !!result.lastDoc,
-          lastDoc: result.lastDoc ? result.lastDoc.id : null
-        }
+        data: histories
       });
     } catch (error) {
       this.logger.error('Failed to get Buy Box histories by marketplace', error);
@@ -308,8 +295,8 @@ export class BuyBoxController {
   async applyRepricingRules(req: Request, res: Response): Promise<void> {
     try {
       // Apply repricing rules
-      const service = getBuyBoxMonitoringService();
-      const count = await service.applyRepricingRules();
+      const { productId, marketplaceId, ruleIds } = req.body;
+      const count = await this.buyBoxMonitoringService.applyRepricingRules(productId, marketplaceId, ruleIds);
       
       res.status(200).json({
         success: true,

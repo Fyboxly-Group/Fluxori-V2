@@ -1,0 +1,818 @@
+import { injectable, inject } from 'inversify';
+import { Logger } from 'winston';
+import { Timestamp } from 'firebase-admin/firestore';
+import { 
+  BuyBoxHistory, 
+  RepricingRule, 
+  RepricingStrategy, 
+  RepricingEvent,
+  BuyBoxOwnershipStatus 
+} from '../../../models/firestore/buybox.schema';
+import { BuyBoxHistoryRepository } from '../repositories/buybox-history.repository';
+import { RepricingRuleRepository } from '../repositories/repricing-rule.repository';
+import { RepricingEventRepository } from '../repositories/repricing-event.repository';
+import { MarketplaceAdapterFactory } from '../../marketplaces/services/marketplace-adapter-factory.service';
+import { IMarketplaceAdapter } from '../../marketplaces/adapters/interfaces/marketplace-adapter.interface';
+import { PriceUpdatePayload } from '../../marketplaces/models/marketplace.models';
+import { CreditService } from '../../credits/services/credit.service';
+import { PRICING_UPDATE_CREDIT_COST } from '../constants/credit-costs';
+
+/**
+ * Repricing Engine Service
+ * 
+ * Responsible for executing repricing rules against Buy Box data and
+ * updating product prices on marketplaces according to configured strategies.
+ */
+@injectable()
+export class RepricingEngineService {
+  constructor(
+    @inject('Logger') private logger: Logger,
+    @inject(BuyBoxHistoryRepository) private buyBoxRepository: BuyBoxHistoryRepository,
+    @inject(RepricingRuleRepository) private ruleRepository: RepricingRuleRepository,
+    @inject(RepricingEventRepository) private eventRepository: RepricingEventRepository,
+    @inject(MarketplaceAdapterFactory) private marketplaceAdapterFactory: MarketplaceAdapterFactory,
+    @inject(CreditService) private creditService: CreditService
+  ) {}
+
+  /**
+   * Executes all active repricing rules that are due for execution
+   */
+  public async executeScheduledRules(): Promise<void> {
+    try {
+      this.logger.info('Starting scheduled repricing rule execution');
+      
+      // Get all active rules due for execution
+      const now = Timestamp.now();
+      const rules = await this.ruleRepository.findActiveRulesDueForExecution(now);
+      
+      this.logger.info(`Found ${rules.length} rules due for execution`);
+      
+      // Group rules by organization for credit checks
+      const rulesByOrg: Record<string, RepricingRule[]> = {};
+      
+      rules.forEach(rule => {
+        if (!rulesByOrg[rule.orgId]) {
+          rulesByOrg[rule.orgId] = [];
+        }
+        rulesByOrg[rule.orgId].push(rule);
+      });
+      
+      // Process rules by organization
+      for (const [orgId, orgRules] of Object.entries(rulesByOrg)) {
+        await this.processRulesForOrganization(orgId, orgRules);
+      }
+      
+      this.logger.info('Completed scheduled repricing rule execution');
+    } catch (error) {
+      this.logger.error('Error executing scheduled repricing rules', { error });
+      throw error;
+    }
+  }
+  
+  /**
+   * Processes rules for a specific organization, checking credit availability first
+   */
+  private async processRulesForOrganization(orgId: string, rules: RepricingRule[]): Promise<void> {
+    try {
+      // Sort rules by priority (higher number = higher priority)
+      const sortedRules = [...rules].sort((a, b) => b.priority - a.priority);
+      
+      // Get all products with Buy Box data for this organization
+      const buyBoxHistories = await this.buyBoxRepository.findByOrgId(orgId);
+      
+      // Calculate maximum possible credit usage (worst case: all products get repriced)
+      const maxCreditCost = buyBoxHistories.length * PRICING_UPDATE_CREDIT_COST;
+      
+      // Check if organization has enough credits
+      const hasCredits = await this.creditService.hasAvailableCredits(orgId, maxCreditCost);
+      
+      if (!hasCredits) {
+        this.logger.warn(`Organization ${orgId} does not have enough credits for repricing operation`);
+        return;
+      }
+      
+      // Track which products have already been repriced to avoid multiple rule applications
+      const repricedProducts = new Set<string>();
+      
+      // Process each rule
+      for (const rule of sortedRules) {
+        await this.executeRule(rule, buyBoxHistories, repricedProducts);
+        
+        // Update the rule's last run time and next run time
+        await this.ruleRepository.updateRuleExecutionTimes(
+          rule.id, 
+          Timestamp.now(), 
+          new Timestamp(
+            Math.floor(Date.now() / 1000) + (rule.updateFrequency * 60), 
+            0
+          )
+        );
+      }
+    } catch (error) {
+      this.logger.error(`Error processing rules for organization ${orgId}`, { error });
+      throw error;
+    }
+  }
+
+  /**
+   * Executes a single repricing rule
+   */
+  private async executeRule(
+    rule: RepricingRule, 
+    buyBoxHistories: BuyBoxHistory[], 
+    repricedProducts: Set<string>
+  ): Promise<void> {
+    try {
+      this.logger.info(`Executing rule: ${rule.name} (${rule.id})`);
+      
+      // Filter Buy Box histories to those matching the rule's filter criteria
+      const matchingHistories = this.filterHistoriesByRule(buyBoxHistories, rule);
+      
+      this.logger.info(`Found ${matchingHistories.length} products matching rule criteria`);
+      
+      // Group by marketplace for batch processing
+      const historiesByMarketplace: Record<string, BuyBoxHistory[]> = {};
+      
+      for (const history of matchingHistories) {
+        // Skip if already repriced by a higher priority rule
+        if (repricedProducts.has(`${history.productId}_${history.marketplaceId}`)) {
+          continue;
+        }
+        
+        // Skip if marketplace not supported by this rule
+        if (!rule.marketplaces.includes(history.marketplaceId)) {
+          continue;
+        }
+        
+        if (!historiesByMarketplace[history.marketplaceId]) {
+          historiesByMarketplace[history.marketplaceId] = [];
+        }
+        
+        historiesByMarketplace[history.marketplaceId].push(history);
+      }
+      
+      // Process each marketplace
+      for (const [marketplaceId, histories] of Object.entries(historiesByMarketplace)) {
+        await this.processMarketplaceRules(rule, marketplaceId, histories, repricedProducts);
+      }
+    } catch (error) {
+      this.logger.error(`Error executing repricing rule ${rule.id}`, { error });
+      throw error;
+    }
+  }
+  
+  /**
+   * Processes rules for products in a specific marketplace
+   */
+  private async processMarketplaceRules(
+    rule: RepricingRule,
+    marketplaceId: string,
+    histories: BuyBoxHistory[],
+    repricedProducts: Set<string>
+  ): Promise<void> {
+    try {
+      // Get marketplace adapter
+      const adapter = await this.getMarketplaceAdapter(marketplaceId, histories[0].userId, histories[0].orgId);
+      
+      if (!adapter) {
+        this.logger.error(`Failed to get adapter for marketplace ${marketplaceId}`);
+        return;
+      }
+      
+      // Calculate new prices based on rule strategy
+      const priceUpdates: PriceUpdatePayload[] = [];
+      const repricingEvents: RepricingEvent[] = [];
+      
+      for (const history of histories) {
+        // Apply pricing strategy to get new price
+        const result = this.calculateNewPrice(rule, history);
+        
+        if (!result.shouldUpdate) {
+          continue;
+        }
+        
+        // Add to price updates
+        priceUpdates.push({
+          sku: history.sku,
+          price: result.newPrice
+        });
+        
+        // Create repricing event
+        const event: RepricingEvent = {
+          id: `${history.id}_${Date.now()}`,
+          ruleId: rule.id,
+          productId: history.productId,
+          sku: history.sku,
+          marketplaceId: history.marketplaceId,
+          timestamp: Timestamp.now(),
+          previousPrice: history.lastSnapshot.ownSellerPrice,
+          newPrice: result.newPrice,
+          reason: result.reason,
+          buyBoxStatusBefore: history.lastSnapshot.ownBuyBoxStatus,
+          success: false // To be updated after price update
+        };
+        
+        repricingEvents.push(event);
+        
+        // Mark product as repriced
+        repricedProducts.add(`${history.productId}_${history.marketplaceId}`);
+      }
+      
+      // If there are price updates, apply them
+      if (priceUpdates.length > 0) {
+        // Deduct credits for each price update
+        const creditCost = priceUpdates.length * PRICING_UPDATE_CREDIT_COST;
+        await this.creditService.useCredits(
+          histories[0].orgId, 
+          creditCost, 
+          `Repricing rule execution: ${rule.name}`,
+          rule.id // Rule ID as reference
+        );
+        
+        // Update prices on marketplace
+        const result = await adapter.updatePrices(priceUpdates);
+        
+        // Update repricing events with success/failure
+        for (const event of repricingEvents) {
+          if (result.success) {
+            // Check if this SKU was successful
+            const wasSuccessful = !result.data?.failed.some(f => f.sku === event.sku);
+            event.success = wasSuccessful;
+            
+            if (!wasSuccessful) {
+              // Find the failure reason
+              const failureData = result.data?.failed.find(f => f.sku === event.sku);
+              event.errorMessage = failureData?.reason || 'Unknown error';
+            }
+          } else {
+            event.success = false;
+            event.errorMessage = result.error?.message || 'Unknown error';
+          }
+          
+          // Save the event
+          await this.eventRepository.createEvent(event);
+        }
+      }
+    } catch (error) {
+      this.logger.error(`Error processing marketplace ${marketplaceId} for rule`, { error });
+      throw error;
+    }
+  }
+  
+  /**
+   * Calculates new price based on a rule and Buy Box data
+   */
+  private calculateNewPrice(rule: RepricingRule, history: BuyBoxHistory): {
+    shouldUpdate: boolean;
+    newPrice: number;
+    reason: string;
+  } {
+    // Default response
+    const response = {
+      shouldUpdate: false,
+      newPrice: history.lastSnapshot.ownSellerPrice,
+      reason: 'No price change needed'
+    };
+    
+    // Get current Buy Box data
+    const { lastSnapshot } = history;
+    
+    // If there's no Buy Box, we can't reprice based on it
+    if (lastSnapshot.ownBuyBoxStatus === BuyBoxOwnershipStatus.NO_BUY_BOX) {
+      return response;
+    }
+    
+    // Get the Buy Box price (if any)
+    const buyBoxPrice = lastSnapshot.buyBoxPrice;
+    
+    // Apply strategy
+    switch (rule.strategy) {
+      case RepricingStrategy.MATCH_BUY_BOX:
+        return this.applyMatchBuyBoxStrategy(rule, history);
+        
+      case RepricingStrategy.BEAT_BUY_BOX:
+        return this.applyBeatBuyBoxStrategy(rule, history);
+        
+      case RepricingStrategy.FIXED_PERCENTAGE:
+        return this.applyFixedPercentageStrategy(rule, history);
+        
+      case RepricingStrategy.DYNAMIC_PRICING:
+        return this.applyDynamicPricingStrategy(rule, history);
+        
+      case RepricingStrategy.MAINTAIN_MARGIN:
+        return this.applyMaintainMarginStrategy(rule, history);
+        
+      default:
+        // Unknown strategy
+        return response;
+    }
+  }
+  
+  /**
+   * Match Buy Box strategy - sets price to match current Buy Box price
+   */
+  private applyMatchBuyBoxStrategy(rule: RepricingRule, history: BuyBoxHistory): {
+    shouldUpdate: boolean;
+    newPrice: number;
+    reason: string;
+  } {
+    const { lastSnapshot } = history;
+    const currentPrice = lastSnapshot.ownSellerPrice;
+    const buyBoxPrice = lastSnapshot.buyBoxPrice;
+    
+    // If we don't have a Buy Box price, we can't match it
+    if (!buyBoxPrice) {
+      return {
+        shouldUpdate: false,
+        newPrice: currentPrice,
+        reason: 'No Buy Box price available to match'
+      };
+    }
+    
+    // If we already match the Buy Box price, no change needed
+    if (Math.abs(currentPrice - buyBoxPrice) < 0.01) {
+      return {
+        shouldUpdate: false,
+        newPrice: currentPrice,
+        reason: 'Already matching Buy Box price'
+      };
+    }
+    
+    // Check price constraints
+    const minPrice = rule.parameters.minPrice || 0;
+    const maxPrice = rule.parameters.maxPrice || Number.MAX_SAFE_INTEGER;
+    
+    if (buyBoxPrice < minPrice) {
+      // If Buy Box price is below minimum, set to minimum
+      return {
+        shouldUpdate: currentPrice !== minPrice,
+        newPrice: minPrice,
+        reason: `Buy Box price (${buyBoxPrice}) is below minimum price (${minPrice})`
+      };
+    }
+    
+    if (buyBoxPrice > maxPrice) {
+      // If Buy Box price is above maximum, set to maximum
+      return {
+        shouldUpdate: currentPrice !== maxPrice,
+        newPrice: maxPrice,
+        reason: `Buy Box price (${buyBoxPrice}) is above maximum price (${maxPrice})`
+      };
+    }
+    
+    // Match Buy Box price
+    return {
+      shouldUpdate: true,
+      newPrice: buyBoxPrice,
+      reason: `Matching Buy Box price (${buyBoxPrice})`
+    };
+  }
+  
+  /**
+   * Beat Buy Box strategy - sets price slightly lower than Buy Box
+   */
+  private applyBeatBuyBoxStrategy(rule: RepricingRule, history: BuyBoxHistory): {
+    shouldUpdate: boolean;
+    newPrice: number;
+    reason: string;
+  } {
+    const { lastSnapshot } = history;
+    const currentPrice = lastSnapshot.ownSellerPrice;
+    const buyBoxPrice = lastSnapshot.buyBoxPrice;
+    
+    // If we already own the Buy Box and we're not in shared mode, no need to undercut
+    if (
+      lastSnapshot.ownBuyBoxStatus === BuyBoxOwnershipStatus.OWNED &&
+      rule.parameters.onlyUndercutIfNotOwned
+    ) {
+      return {
+        shouldUpdate: false,
+        newPrice: currentPrice,
+        reason: 'Already own Buy Box, no need to undercut'
+      };
+    }
+    
+    // If we don't have a Buy Box price, we can't beat it
+    if (!buyBoxPrice) {
+      return {
+        shouldUpdate: false,
+        newPrice: currentPrice,
+        reason: 'No Buy Box price available to beat'
+      };
+    }
+    
+    // Determine how to beat the Buy Box price
+    let newPrice = buyBoxPrice;
+    let reason = '';
+    
+    if (rule.parameters.priceDifferenceAmount) {
+      // Fixed amount less than Buy Box
+      newPrice = buyBoxPrice - rule.parameters.priceDifferenceAmount;
+      reason = `Undercutting Buy Box by ${rule.parameters.priceDifferenceAmount}`;
+    } else if (rule.parameters.priceDifferencePercentage) {
+      // Percentage less than Buy Box
+      const reduction = buyBoxPrice * (rule.parameters.priceDifferencePercentage / 100);
+      newPrice = buyBoxPrice - reduction;
+      reason = `Undercutting Buy Box by ${rule.parameters.priceDifferencePercentage}%`;
+    } else {
+      // Default to $0.01 less
+      newPrice = buyBoxPrice - 0.01;
+      reason = 'Undercutting Buy Box by $0.01';
+    }
+    
+    // Check price constraints
+    const minPrice = rule.parameters.minPrice || 0;
+    const maxPrice = rule.parameters.maxPrice || Number.MAX_SAFE_INTEGER;
+    
+    if (newPrice < minPrice) {
+      return {
+        shouldUpdate: currentPrice !== minPrice,
+        newPrice: minPrice,
+        reason: `Cannot beat Buy Box price (${buyBoxPrice}) as it would go below minimum price (${minPrice})`
+      };
+    }
+    
+    if (newPrice > maxPrice) {
+      return {
+        shouldUpdate: currentPrice !== maxPrice,
+        newPrice: maxPrice,
+        reason: `Calculated price (${newPrice}) is above maximum price (${maxPrice})`
+      };
+    }
+    
+    // If the new price is very close to current price, don't update
+    if (Math.abs(newPrice - currentPrice) < 0.01) {
+      return {
+        shouldUpdate: false,
+        newPrice: currentPrice,
+        reason: 'New price is too close to current price to justify update'
+      };
+    }
+    
+    return {
+      shouldUpdate: true,
+      newPrice,
+      reason
+    };
+  }
+  
+  /**
+   * Fixed Percentage strategy - sets price as percentage of reference price
+   */
+  private applyFixedPercentageStrategy(rule: RepricingRule, history: BuyBoxHistory): {
+    shouldUpdate: boolean;
+    newPrice: number;
+    reason: string;
+  } {
+    // Need additional product data for this strategy that includes cost
+    // For now, we'll implement a simplified version
+    const { lastSnapshot } = history;
+    const currentPrice = lastSnapshot.ownSellerPrice;
+    const buyBoxPrice = lastSnapshot.buyBoxPrice;
+    
+    // If no percentage specified, cannot continue
+    if (!rule.parameters.targetMargin) {
+      return {
+        shouldUpdate: false,
+        newPrice: currentPrice,
+        reason: 'No target margin specified for fixed percentage strategy'
+      };
+    }
+    
+    // For demonstration, assuming a simple markup over cost
+    // In a real implementation, we'd fetch the product cost from the database
+    const assumedCost = currentPrice * 0.7; // Simple assumption: cost is 70% of current price
+    const targetMargin = rule.parameters.targetMargin;
+    
+    // Calculate new price based on cost and desired margin
+    // Formula: price = cost / (1 - margin%)
+    const newPrice = assumedCost / (1 - (targetMargin / 100));
+    
+    // Check price constraints
+    const minPrice = rule.parameters.minPrice || 0;
+    const maxPrice = rule.parameters.maxPrice || Number.MAX_SAFE_INTEGER;
+    
+    if (newPrice < minPrice) {
+      return {
+        shouldUpdate: currentPrice !== minPrice,
+        newPrice: minPrice,
+        reason: `Calculated price (${newPrice}) is below minimum price (${minPrice})`
+      };
+    }
+    
+    if (newPrice > maxPrice) {
+      return {
+        shouldUpdate: currentPrice !== maxPrice,
+        newPrice: maxPrice,
+        reason: `Calculated price (${newPrice}) is above maximum price (${maxPrice})`
+      };
+    }
+    
+    // If new price is very close to current price, don't update
+    if (Math.abs(newPrice - currentPrice) < 0.01) {
+      return {
+        shouldUpdate: false,
+        newPrice: currentPrice,
+        reason: 'New price is too close to current price to justify update'
+      };
+    }
+    
+    return {
+      shouldUpdate: true,
+      newPrice,
+      reason: `Setting price to maintain ${targetMargin}% margin`
+    };
+  }
+  
+  /**
+   * Dynamic Pricing strategy - uses AI/ML suggestions for optimal pricing
+   */
+  private applyDynamicPricingStrategy(rule: RepricingRule, history: BuyBoxHistory): {
+    shouldUpdate: boolean;
+    newPrice: number;
+    reason: string;
+  } {
+    const { lastSnapshot } = history;
+    const currentPrice = lastSnapshot.ownSellerPrice;
+    
+    // Check if there's already a suggested price from Buy Box analysis
+    if (!lastSnapshot.suggestedPrice) {
+      return {
+        shouldUpdate: false,
+        newPrice: currentPrice,
+        reason: 'No suggested price available from Buy Box analysis'
+      };
+    }
+    
+    const suggestedPrice = lastSnapshot.suggestedPrice;
+    
+    // Check if suggested price is different enough from current price
+    if (Math.abs(suggestedPrice - currentPrice) < 0.01) {
+      return {
+        shouldUpdate: false,
+        newPrice: currentPrice,
+        reason: 'Suggested price is too close to current price to justify update'
+      };
+    }
+    
+    // Check price constraints
+    const minPrice = rule.parameters.minPrice || 0;
+    const maxPrice = rule.parameters.maxPrice || Number.MAX_SAFE_INTEGER;
+    
+    if (suggestedPrice < minPrice) {
+      return {
+        shouldUpdate: currentPrice !== minPrice,
+        newPrice: minPrice,
+        reason: `Suggested price (${suggestedPrice}) is below minimum price (${minPrice})`
+      };
+    }
+    
+    if (suggestedPrice > maxPrice) {
+      return {
+        shouldUpdate: currentPrice !== maxPrice,
+        newPrice: maxPrice,
+        reason: `Suggested price (${suggestedPrice}) is above maximum price (${maxPrice})`
+      };
+    }
+    
+    return {
+      shouldUpdate: true,
+      newPrice: suggestedPrice,
+      reason: lastSnapshot.suggestedPriceReason || 'Using AI-suggested optimal price'
+    };
+  }
+  
+  /**
+   * Maintain Margin strategy - ensure minimum profit margin while winning Buy Box
+   */
+  private applyMaintainMarginStrategy(rule: RepricingRule, history: BuyBoxHistory): {
+    shouldUpdate: boolean;
+    newPrice: number;
+    reason: string;
+  } {
+    const { lastSnapshot } = history;
+    const currentPrice = lastSnapshot.ownSellerPrice;
+    const buyBoxPrice = lastSnapshot.buyBoxPrice;
+    
+    // For demonstration, assuming a simple cost structure
+    // In a real implementation, we'd fetch the product cost from the database
+    const assumedCost = currentPrice * 0.7; // Simple assumption: cost is 70% of current price
+    
+    // If no target margin specified, cannot continue
+    if (!rule.parameters.targetMargin) {
+      return {
+        shouldUpdate: false,
+        newPrice: currentPrice,
+        reason: 'No target margin specified for maintain margin strategy'
+      };
+    }
+    
+    // Calculate minimum price based on cost and desired margin
+    const targetMargin = rule.parameters.targetMargin;
+    const minPriceForMargin = assumedCost / (1 - (targetMargin / 100));
+    
+    // If we don't have Buy Box price, just maintain minimum margin
+    if (!buyBoxPrice) {
+      // If current price already meets margin requirements, no change
+      if (currentPrice >= minPriceForMargin) {
+        return {
+          shouldUpdate: false,
+          newPrice: currentPrice,
+          reason: 'Current price already meets margin requirements'
+        };
+      }
+      
+      return {
+        shouldUpdate: true,
+        newPrice: minPriceForMargin,
+        reason: `Increasing price to maintain minimum ${targetMargin}% margin`
+      };
+    }
+    
+    // If Buy Box price is below our minimum margin price, we can't beat it
+    if (buyBoxPrice < minPriceForMargin) {
+      // If current price already at minimum margin, no change
+      if (Math.abs(currentPrice - minPriceForMargin) < 0.01) {
+        return {
+          shouldUpdate: false,
+          newPrice: currentPrice,
+          reason: 'Already at minimum margin price'
+        };
+      }
+      
+      return {
+        shouldUpdate: true,
+        newPrice: minPriceForMargin,
+        reason: `Cannot match Buy Box price (${buyBoxPrice}) as it would not maintain ${targetMargin}% margin`
+      };
+    }
+    
+    // We can match or beat the Buy Box while maintaining margin
+    let newPrice: number;
+    let reason: string;
+    
+    if (lastSnapshot.ownBuyBoxStatus === BuyBoxOwnershipStatus.OWNED) {
+      // If we already own the Buy Box, try to increase price while keeping it
+      newPrice = Math.min(buyBoxPrice, currentPrice * 1.05); // 5% increase or Buy Box price, whichever is lower
+      reason = 'Increasing price while maintaining Buy Box ownership';
+    } else {
+      // Otherwise, try to win Buy Box with minimal price reduction
+      newPrice = Math.max(minPriceForMargin, buyBoxPrice - 0.01);
+      reason = 'Setting price to win Buy Box while maintaining margin';
+    }
+    
+    // Check price constraints from rule
+    const ruleMinPrice = rule.parameters.minPrice || 0;
+    const ruleMaxPrice = rule.parameters.maxPrice || Number.MAX_SAFE_INTEGER;
+    
+    // Take the higher of rule min price and margin min price
+    const effectiveMinPrice = Math.max(ruleMinPrice, minPriceForMargin);
+    
+    if (newPrice < effectiveMinPrice) {
+      return {
+        shouldUpdate: currentPrice !== effectiveMinPrice,
+        newPrice: effectiveMinPrice,
+        reason: `Cannot go below minimum price (${effectiveMinPrice}) required for ${targetMargin}% margin`
+      };
+    }
+    
+    if (newPrice > ruleMaxPrice) {
+      return {
+        shouldUpdate: currentPrice !== ruleMaxPrice,
+        newPrice: ruleMaxPrice,
+        reason: `Calculated price (${newPrice}) is above maximum price (${ruleMaxPrice})`
+      };
+    }
+    
+    // If new price is very close to current price, don't update
+    if (Math.abs(newPrice - currentPrice) < 0.01) {
+      return {
+        shouldUpdate: false,
+        newPrice: currentPrice,
+        reason: 'New price is too close to current price to justify update'
+      };
+    }
+    
+    return {
+      shouldUpdate: true,
+      newPrice,
+      reason
+    };
+  }
+  
+  /**
+   * Filters Buy Box histories based on rule criteria
+   */
+  private filterHistoriesByRule(
+    histories: BuyBoxHistory[], 
+    rule: RepricingRule
+  ): BuyBoxHistory[] {
+    if (!rule.productFilter) {
+      return histories;
+    }
+    
+    return histories.filter(history => {
+      // Filter by SKUs if provided
+      if (rule.productFilter.skus?.length) {
+        if (!rule.productFilter.skus.includes(history.sku)) {
+          return false;
+        }
+      }
+      
+      // Filter out excluded SKUs
+      if (rule.productFilter.excludedSkus?.length) {
+        if (rule.productFilter.excludedSkus.includes(history.sku)) {
+          return false;
+        }
+      }
+      
+      // Filter by price range if provided
+      if (rule.productFilter.minPrice !== undefined) {
+        if (history.lastSnapshot.ownSellerPrice < rule.productFilter.minPrice) {
+          return false;
+        }
+      }
+      
+      if (rule.productFilter.maxPrice !== undefined) {
+        if (history.lastSnapshot.ownSellerPrice > rule.productFilter.maxPrice) {
+          return false;
+        }
+      }
+      
+      // For categories and tags, we'd need additional product data
+      // This would be implemented in a real system, but for now we'll skip that filtering
+      
+      return true;
+    });
+  }
+  
+  /**
+   * Gets marketplace adapter for given marketplace ID
+   */
+  private async getMarketplaceAdapter(
+    marketplaceId: string,
+    userId: string,
+    orgId: string
+  ): Promise<IMarketplaceAdapter | null> {
+    try {
+      return await this.marketplaceAdapterFactory.getAdapter(marketplaceId, userId, orgId);
+    } catch (error) {
+      this.logger.error(`Failed to get marketplace adapter for ${marketplaceId}`, { error });
+      return null;
+    }
+  }
+  
+  /**
+   * Manually execute a specific repricing rule
+   */
+  public async executeRuleManually(ruleId: string): Promise<{
+    success: boolean;
+    message: string;
+    updates: number;
+  }> {
+    try {
+      // Get the rule
+      const rule = await this.ruleRepository.findById(ruleId);
+      
+      if (!rule) {
+        return {
+          success: false,
+          message: 'Rule not found',
+          updates: 0
+        };
+      }
+      
+      // Get Buy Box histories for this organization
+      const buyBoxHistories = await this.buyBoxRepository.findByOrgId(rule.orgId);
+      
+      // Track which products are repriced
+      const repricedProducts = new Set<string>();
+      
+      // Execute the rule
+      await this.executeRule(rule, buyBoxHistories, repricedProducts);
+      
+      // Update the rule's last run time
+      await this.ruleRepository.updateRuleExecutionTimes(
+        rule.id,
+        Timestamp.now(),
+        new Timestamp(
+          Math.floor(Date.now() / 1000) + (rule.updateFrequency * 60),
+          0
+        )
+      );
+      
+      return {
+        success: true,
+        message: `Rule executed successfully. ${repricedProducts.size} products were repriced.`,
+        updates: repricedProducts.size
+      };
+    } catch (error) {
+      this.logger.error(`Error manually executing rule ${ruleId}`, { error });
+      return {
+        success: false,
+        message: `Error executing rule: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        updates: 0
+      };
+    }
+  }
+}

@@ -66,6 +66,9 @@ import conversationRoutes from './modules/ai-cs-agent/routes/conversation.routes
 import ragRetrievalRoutes from './modules/rag-retrieval/routes/rag-retrieval.routes';
 import notificationRoutes from './modules/notifications/routes/notification.routes';
 import creditRoutes from './modules/credits/routes/credit.routes';
+import buyboxRoutes from './modules/buybox/routes/buybox.routes';
+import repricingRoutes from './modules/buybox/routes/repricing.routes';
+import { insightRoutes } from './modules/ai-insights/routes/insight.routes';
 
 // Module route registration
 app.use('/api/international-trade', internationalTradeRoutes);
@@ -74,6 +77,9 @@ app.use('/api/conversations', conversationRoutes);
 app.use('/api/rag', ragRetrievalRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/credits', creditRoutes);
+app.use('/api/buybox', buyboxRoutes);
+app.use('/api/repricing', repricingRoutes);
+app.use('/api/insights', insightRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

@@ -1,0 +1,106 @@
+export const mockInventoryItems = [
+  {
+    id: 'inv-001',
+    sku: 'SKU-12345',
+    name: 'Premium Headphones',
+    description: 'Noise-cancelling wireless headphones with high-quality audio',
+    price: 199.99,
+    cost: 120.00,
+    stockLevel: 42,
+    category: 'Electronics',
+    images: [
+      'https://example.com/images/headphones-1.jpg',
+      'https://example.com/images/headphones-2.jpg',
+    ],
+    attributes: {
+      color: 'Black',
+      brand: 'AudioTech',
+      weight: '250g',
+      connectivity: 'Bluetooth 5.0',
+    },
+    createdAt: '2024-03-15T12:00:00Z',
+    updatedAt: '2024-03-30T10:15:00Z',
+    marketplaceStatus: {
+      amazon: {
+        listed: true,
+        price: 199.99,
+        buyBoxOwner: true,
+        asin: 'B0123456789',
+      },
+      takealot: {
+        listed: true,
+        price: 209.99,
+        stock: 38,
+      },
+    },
+  },
+  {
+    id: 'inv-002',
+    sku: 'SKU-67890',
+    name: 'Ergonomic Office Chair',
+    description: 'Adjustable office chair with lumbar support and breathable mesh',
+    price: 249.99,
+    cost: 150.00,
+    stockLevel: 15,
+    category: 'Furniture',
+    images: [
+      'https://example.com/images/chair-1.jpg',
+      'https://example.com/images/chair-2.jpg',
+    ],
+    attributes: {
+      color: 'Gray',
+      brand: 'OfficePro',
+      maxWeight: '150kg',
+      material: 'Mesh and metal',
+    },
+    createdAt: '2024-02-10T09:30:00Z',
+    updatedAt: '2024-03-25T14:20:00Z',
+    marketplaceStatus: {
+      amazon: {
+        listed: true,
+        price: 259.99,
+        buyBoxOwner: false,
+        asin: 'B0987654321',
+      },
+      takealot: {
+        listed: false,
+        price: null,
+        stock: 0,
+      },
+    },
+  },
+  {
+    id: 'inv-003',
+    sku: 'SKU-13579',
+    name: 'Smartphone Power Bank',
+    description: '20,000mAh power bank with fast charging and multiple ports',
+    price: 49.99,
+    cost: 22.50,
+    stockLevel: 78,
+    category: 'Electronics',
+    images: [
+      'https://example.com/images/powerbank-1.jpg',
+    ],
+    attributes: {
+      color: 'White',
+      brand: 'PowerMax',
+      capacity: '20,000mAh',
+      ports: 'USB-C, 2x USB-A',
+    },
+    createdAt: '2024-01-20T11:45:00Z',
+    updatedAt: '2024-03-18T09:10:00Z',
+    marketplaceStatus: {
+      amazon: {
+        listed: true,
+        price: 49.99,
+        buyBoxOwner: true,
+        asin: 'B0567891234',
+      },
+      takealot: {
+        listed: true,
+        price: 54.99,
+        stock: 65,
+      },
+    },
+  },
+];

@@ -55,8 +55,8 @@ export class InternationalTradeService {
       await shipment.save();
       return shipment;
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw new Error(`Failed to create shipment: ${(error as Error).message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to create shipment: ${errorMessage}`);
     }
   }
 
@@ -88,7 +88,7 @@ export class InternationalTradeService {
       const declaration = new CustomsDeclaration({
         ...declarationData,
         declarationId,
-        shipment)Id: new mongoose.Types.ObjectId( shipment._id,
+        shipmentId: new mongoose.Types.ObjectId(shipment._id),
         userId: new mongoose.Types.ObjectId(userId),
         organizationId: new mongoose.Types.ObjectId(organizationId),
         status: 'draft'
@@ -103,8 +103,8 @@ export class InternationalTradeService {
 
       return declaration;
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw new Error(`Failed to create customs declaration: ${(error as Error).message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to create customs declaration: ${errorMessage}`);
     }
   }
 
@@ -176,8 +176,8 @@ export class InternationalTradeService {
 
       return documents;
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw new Error(`Failed to generate shipment documents: ${(error as Error).message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to generate shipment documents: ${errorMessage}`);
     }
   }
 
@@ -234,8 +234,8 @@ export class InternationalTradeService {
       await shippingRate.save();
       return shippingRate;
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw new Error(`Failed to get shipping rates: ${(error as Error).message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to get shipping rates: ${errorMessage}`);
     }
   }
 
@@ -267,8 +267,8 @@ export class InternationalTradeService {
 
       return shippingRate;
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw new Error(`Failed to select shipping rate: ${(error as Error).message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to select shipping rate: ${errorMessage}`);
     }
   }
 
@@ -305,7 +305,7 @@ export class InternationalTradeService {
       // Create a new compliance record
       const compliance = new TradeCompliance({
         complianceId,
-        shipment)Id: new mongoose.Types.ObjectId( shipment._id,
+        shipmentId: new mongoose.Types.ObjectId(shipment._id),
         status: results.status,
         checks: results.checks,
         requiredDocuments: results.requiredDocuments,
@@ -334,8 +334,8 @@ export class InternationalTradeService {
 
       return compliance;
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw new Error(`Failed to run compliance checks: ${(error as Error).message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to run compliance checks: ${errorMessage}`);
     }
   }
 
@@ -371,8 +371,8 @@ export class InternationalTradeService {
         complianceCheck: complianceCheck || undefined
       };
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw new Error(`Failed to get shipment details: ${(error as Error).message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to get shipment details: ${errorMessage}`);
     }
   }
 
@@ -417,8 +417,8 @@ export class InternationalTradeService {
 
       return shipment;
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw new Error(`Failed to update shipment status: ${(error as Error).message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to update shipment status: ${errorMessage}`);
     }
   }
 
@@ -481,8 +481,8 @@ export class InternationalTradeService {
         totalPages
       };
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw new Error(`Failed to list shipments: ${(error as Error).message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to list shipments: ${errorMessage}`);
     }
   }
 }

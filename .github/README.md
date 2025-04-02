@@ -5,6 +5,7 @@ This directory contains GitHub Actions workflows for continuous integration and 
 ## Workflows
 
 - `backend-cicd.yml`: CI/CD pipeline for the backend service
+- `typescript-validation.yml`: TypeScript and Chakra UI v3 code quality validation
 
 ## Required Secrets
 
@@ -59,6 +60,55 @@ To set up Workload Identity Federation, follow these steps:
 4. Set the required secrets in your GitHub repository settings.
 
 ## Workflow Details
+
+### TypeScript Validation Workflow
+
+The `typescript-validation.yml` workflow runs on Pull Requests to validate TypeScript code quality.
+
+#### What it does:
+
+1. **Backend TypeScript Validation**:
+   - Runs the TypeScript validator script in strict mode
+   - Checks for `@ts-nocheck` directives in production code
+   - Verifies TypeScript compilation
+
+2. **Frontend TypeScript Validation**:
+   - Validates Chakra UI v3 import patterns
+   - Runs ESLint with custom Chakra UI rules
+   - Verifies TypeScript compilation
+
+#### Triggers:
+
+- Pull requests to `main` or `development` branches
+- Changes to `.ts`, `.tsx`, `tsconfig.json`, or `package.json` files
+
+#### Common Fixes:
+
+1. **Backend TypeScript Issues**:
+   - Remove `@ts-nocheck` directives from production code
+   - Replace `any` types with proper type definitions
+   - Fix error handling patterns in services
+
+2. **Frontend Chakra UI v3 Issues**:
+   - Replace barrel imports with direct imports:
+     ```typescript
+     // ❌ Don't do this:
+     import { Box, Flex } from '@chakra-ui/react';
+     
+     // ✅ Do this:
+     import { Box } from '@chakra-ui/react/box';
+     import { Flex } from '@chakra-ui/react/flex';
+     ```
+   - Use the compatibility layer for hooks:
+     ```typescript
+     import { useToast } from '@/utils/chakra-compat';
+     ```
+   - Run `npm run fix:chakra-imports -- path/to/file.tsx` to fix imports automatically
+
+#### Documentation:
+
+- See `backend/TYPESCRIPT-PREVENTION-GUIDE.md` for backend TypeScript guidelines
+- See `frontend/CHAKRA-UI-V3-IMPORT-GUIDE.md` for frontend Chakra UI guidelines
 
 ### Backend CI/CD Pipeline
 

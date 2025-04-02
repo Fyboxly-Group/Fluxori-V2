@@ -1,7 +1,0 @@
-src/features/warehouse/components/StockTransfer.tsx (7)
-src/features/connections/components/MarketplaceSyncStatusWidget.tsx (6)
-src/features/inventory/components/InventoryList.tsx (5)
-src/features/warehouse/components/StockUpdateForm.tsx (5)
-src/features/credits/components/CreditHistoryTable.tsx (3)
-src/features/warehouse/components/WarehouseSelector.tsx (3)
-src/features/feedback/components/FeedbackAnalytics.tsx (2)

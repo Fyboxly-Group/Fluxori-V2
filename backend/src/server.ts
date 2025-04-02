@@ -15,6 +15,8 @@ import { initializeCreditModule, creditRoutes } from './modules/credits';
 import { initializeAICsAgentModule, conversationRoutes } from './modules/ai-cs-agent';
 import { initializeRagRetrievalModule, ragRetrievalRoutes } from './modules/rag-retrieval';
 import { initializeNotificationsModule, notificationRoutes } from './modules/notifications';
+import { initializeBuyBoxModule, buyboxRoutes, repricingRoutes } from './modules/buybox';
+import { initializeAIInsightsModule, insightRoutes } from './modules/ai-insights';
 
 // Routes
 import authRoutes from './routes/auth.routes';
@@ -62,6 +64,8 @@ connectDB().then(async () => {
   initializeAICsAgentModule(httpServer);
   initializeRagRetrievalModule();
   initializeNotificationsModule(httpServer);
+  initializeBuyBoxModule();
+  initializeAIInsightsModule();
 }).catch((error) => {
   console.error('Error initializing system:', error);
 });
@@ -95,7 +99,10 @@ app.use('/api/credits', creditRoutes);
 app.use('/api/ai-cs-agent', conversationRoutes);
 app.use('/api/rag-retrieval', ragRetrievalRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/buybox', buyboxRoutes);
+app.use('/api/repricing', repricingRoutes);
 app.use('/api', marketplaceProductRoutes);
+app.use('/api/insights', insightRoutes);
 
 // Health check endpoint
 app.get('/health', (req: Request, res: Response) => {

@@ -1,4 +1,3 @@
-// @ts-nocheck - Added by final-ts-fix.js
 import { Types, Model } from 'mongoose';
 import { MongooseDocument } from '../utils/mongoose-document';
 
@@ -6,10 +5,10 @@ import { MongooseDocument } from '../utils/mongoose-document';
  * Base interface for Task (raw data)
  */
 export interface ITask {
-  name?: any;
+  name?: string;
   type?: string;
-  required: any;
-  trim?: any;
+  required?: boolean;
+  trim?: boolean;
   // _id is provided by MongooseDocument
   createdAt?: Date;
   updatedAt?: Date;

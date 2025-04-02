@@ -1,4 +1,3 @@
-// @ts-nocheck - Added by final-ts-fix.js
 import { Types, Model } from 'mongoose';
 import { MongooseDocument } from '../utils/mongoose-document';
 
@@ -6,9 +5,9 @@ import { MongooseDocument } from '../utils/mongoose-document';
  * Base interface for Customer (raw data)
  */
 export interface ICustomer {
-  street?: any;
+  street?: string;
   type?: string;
-  trim?: any;
+  trim?: string;
   // _id is provided by MongooseDocument
   createdAt?: Date;
   updatedAt?: Date;

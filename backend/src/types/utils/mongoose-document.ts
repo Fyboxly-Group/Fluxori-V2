@@ -1,4 +1,3 @@
-// @ts-nocheck - Added by final-ts-fix.js
 /**
  * Utility types for working with Mongoose Documents
  */
@@ -32,13 +31,13 @@ export function toObjectId(id: string | Types.ObjectId | null | undefined): Type
 /**
  * Type guard for ObjectId
  */
-export function isObjectId(value: any): value is Types.ObjectId {
+export function isObjectId(value: unknown): value is Types.ObjectId {
   return value instanceof Types.ObjectId;
 }
 
 /**
  * Type guard for ObjectId string
  */
-export function isObjectIdString(value: any): value is string {
+export function isObjectIdString(value: unknown): value is string {
   return typeof value === 'string' && Types.ObjectId.isValid(value);
 }

@@ -1,4 +1,3 @@
-// @ts-nocheck - Added by final-ts-fix.js
 import { Types, Model } from 'mongoose';
 import { MongooseDocument } from '../utils/mongoose-document';
 
