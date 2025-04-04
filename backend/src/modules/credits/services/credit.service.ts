@@ -111,6 +111,7 @@ export class CreditService {
           session = await mongoose.startSession();
           session.startTransaction();
         } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
           // If transactions aren't supported (e.g. in tests), continue without them
           console.warn('MongoDB transactions not supported, proceeding without transaction support');
           session = null;
@@ -123,6 +124,7 @@ export class CreditService {
         try {
           creditBalance = await this.getBalance(userId, organizationId);
         } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
           // If balance not found, initialize a default one
           creditBalance = await this.initializeBalance(userId, SubscriptionTier.EXPLORER, organizationId);
         }
@@ -157,17 +159,19 @@ export class CreditService {
         
         return creditBalance;
       } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
         if (session) {
           await session.abortTransaction();
         }
-        throw error;
+        throw error instanceof Error ? error : new Error(String(error));
       } finally {
         if (session) {
           session.endSession();
         }
       }
     } catch (error) {
-      throw error;
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 
@@ -202,6 +206,7 @@ export class CreditService {
           session = await mongoose.startSession();
           session.startTransaction();
         } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
           // If transactions aren't supported (e.g. in tests), continue without them
           console.warn('MongoDB transactions not supported, proceeding without transaction support');
           session = null;
@@ -249,17 +254,19 @@ export class CreditService {
         
         return creditBalance;
       } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
         if (session) {
           await session.abortTransaction();
         }
-        throw error;
+        throw error instanceof Error ? error : new Error(String(error));
       } finally {
         if (session) {
           session.endSession();
         }
       }
     } catch (error) {
-      throw error;
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 

@@ -7,15 +7,67 @@
  * responses to customer inquiries.
  */
 
-import { BaseApiModule, ApiRequestOptions, ApiResponse } from '../core/api-module';
-import { AmazonSPApi } from '../schemas/amazon.generated';
-import { AmazonErrorUtil, AmazonErrorCode } from '../utils/amazon-error';
+import { ApiRequestFunction, ApiResponse, BaseModule } from '../../../core/base-module.interface';
+import AmazonErrorHandler, { AmazonErrorCode } from '../../../utils/amazon-error';
 
 /**
- * Type aliases from schema
+ * Types of messages that can be sent
  */
-export type MessageType = AmazonSPApi.Messaging.MessageType;
-export type Attachment = AmazonSPApi.Messaging.Attachment;
+export type MessageType = 
+  | 'WARRANTY'
+  | 'PRODUCT_DETAIL'
+  | 'PRODUCT_CUSTOMIZATION'
+  | 'AMAZON_PAY'
+  | 'ORDER_FULFILLMENT'
+  | 'ORDER_DETAIL'
+  | 'ORDER_RETURN'
+  | 'UNEXPECTED_PROBLEM'
+  | 'OTHER';
+
+/**
+ * Message attachment
+ */
+export interface Attachment {
+  /**
+   * MIME content type of the attachment
+   */
+  contentType: string;
+  
+  /**
+   * Filename of the attachment
+   */
+  fileName: string;
+  
+  /**
+   * Base64-encoded attachment data
+   */
+  attachmentData: string;
+}
+
+/**
+ * Single messaging action available for an order
+ */
+export interface MessagingAction {
+  /**
+   * Name/type of the action
+   */
+  name: MessageType;
+  
+  /**
+   * Whether the action is enabled
+   */
+  enabled: boolean;
+}
+
+/**
+ * Response for messaging actions query
+ */
+export interface GetMessagingActionsForOrderResponse {
+  /**
+   * List of available messaging actions
+   */
+  actions: MessagingAction[];
+}
 
 /**
  * Get messaging configuration options
@@ -113,35 +165,162 @@ export interface SendMessageOptions {
 }
 
 /**
+ * Tracking details for a shipment
+ */
+export interface TrackingDetails {
+  /**
+   * Tracking number
+   */
+  trackingNumber: string;
+  
+  /**
+   * Carrier for the shipment (e.g. USPS, UPS, FedEx)
+   */
+  carrier: string;
+}
+
+/**
+ * Fulfillment information for sending a fulfillment message
+ */
+export interface FulfillmentInfo {
+  /**
+   * Tracking details for the shipment
+   */
+  tracking?: TrackingDetails;
+  
+  /**
+   * Additional message to include
+   */
+  additionalMessage?: string;
+}
+
+/**
+ * Order details information for sending a message
+ */
+export interface OrderDetailsInfo {
+  /**
+   * Subject of the message
+   */
+  subject: string;
+  
+  /**
+   * Body of the message
+   */
+  body: string;
+}
+
+/**
+ * Warranty information for sending a warranty message
+ */
+export interface WarrantyInfo {
+  /**
+   * Subject of the message
+   */
+  subject: string;
+  
+  /**
+   * Body of the message
+   */
+  body: string;
+  
+  /**
+   * Warranty document to attach
+   */
+  attachment?: {
+    /**
+     * Name of the attachment
+     */
+    fileName: string;
+    
+    /**
+     * Content of the attachment in base64 format
+     */
+    data: string;
+  };
+}
+
+/**
+ * Interface for messaging module options
+ */
+export interface MessagingModuleOptions {
+  /**
+   * Default marketplace ID to use if not specified
+   */
+  defaultMarketplaceId?: string;
+}
+
+/**
+ * Generic message response
+ */
+export interface MessageResponse {
+  /**
+   * Success status of the message
+   */
+  success: boolean;
+}
+
+/**
  * Implementation of the Amazon Messaging API
  */
-export class MessagingModule extends BaseApiModule {
+export class MessagingModule implements BaseModule<MessagingModuleOptions> {
+  /**
+   * The unique identifier for this module
+   */
+  public readonly moduleId: string = 'messaging';
+  
+  /**
+   * The human-readable name of this module
+   */
+  public readonly moduleName: string = 'Messaging';
+  
+  /**
+   * The base URL path for API requests
+   */
+  public readonly basePath: string = '/messaging/v1';
+  
+  /**
+   * API version
+   */
+  public readonly apiVersion: string;
+  
+  /**
+   * Marketplace ID
+   */
+  public readonly marketplaceId: string;
+  
+  /**
+   * Additional configuration options for this module
+   */
+  public readonly options: MessagingModuleOptions = {};
+  
+  /**
+   * The API request function used by this module
+   */
+  public readonly apiRequest: ApiRequestFunction;
+  
   /**
    * Constructor
    * @param apiVersion API version
-   * @param makeApiRequest Function to make API requests
+   * @param apiRequest Function to make API requests
    * @param marketplaceId Marketplace ID
+   * @param options Optional module-specific configuration
    */
   constructor(
     apiVersion: string,
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string
+    apiRequest: ApiRequestFunction,
+    marketplaceId: string,
+    options?: MessagingModuleOptions
   ) {
-    super('messaging', apiVersion, makeApiRequest, marketplaceId);
-  }
-  
-  /**
-   * Initialize the module
-   * @param config Module-specific configuration
-   * @returns Promise<any> that resolves when initialization is complete
-   */
-  protected async initializeModule(config?: any): Promise<void> {
-    // No specific initialization required for this module
-    return Promise<any>.resolve();
+    this.apiVersion = apiVersion;
+    this.apiRequest = apiRequest;
+    this.marketplaceId = marketplaceId;
+    
+    if (options) {
+      this.options = {
+        ...this.options,
+        ...options
+      };
+    }
   }
   
   /**
@@ -151,37 +330,40 @@ export class MessagingModule extends BaseApiModule {
    * @returns Messaging configuration for the order
    */
   public async getMessagingConfiguration(
-    amazonOrderId: string,
+    amazonOrderId: string, 
     options: GetMessagingConfigOptions
-  ): Promise<ApiResponse<AmazonSPApi.Messaging.GetMessagingActionsForOrderResponse>> {
+  ): Promise<ApiResponse<GetMessagingActionsForOrderResponse>> {
     if (!amazonOrderId) {
-      throw AmazonErrorUtil.createError(
-        'Amazon Order ID is required to get messaging configuration',
+      throw AmazonErrorHandler.createError(
+        'Amazon Order ID is required to get messaging configuration', 
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     if (!options.marketplaceId) {
-      throw AmazonErrorUtil.createError(
-        'Marketplace ID is required to get messaging configuration',
+      throw AmazonErrorHandler.createError(
+        'Marketplace ID is required to get messaging configuration', 
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     try {
-      return await this.makeRequest<AmazonSPApi.Messaging.GetMessagingActionsForOrderResponse>({
-        method: 'GET',
-        path: `/orders/${amazonOrderId}/messaging`,
-        params: {
-          marketplaceIds: options.marketplaceId
+      return await this.apiRequest<GetMessagingActionsForOrderResponse>(
+        `${this.basePath}/orders/${encodeURIComponent(amazonOrderId)}/messaging`,
+        'GET',
+        {
+          params: {
+            marketplaceIds: options.marketplaceId
+          }
         }
-      });
+      );
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getMessagingConfiguration`);
+      throw error instanceof Error
+        ? AmazonErrorHandler.createError(error.message, AmazonErrorCode.OPERATION_FAILED)
+        : AmazonErrorHandler.createError('Unknown error', AmazonErrorCode.UNKNOWN_ERROR);
     }
   }
-
+  
   /**
    * Send a message to a buyer
    * @param amazonOrderId Amazon order ID
@@ -189,33 +371,33 @@ export class MessagingModule extends BaseApiModule {
    * @returns Response indicating message success
    */
   public async sendMessage(
-    amazonOrderId: string,
+    amazonOrderId: string, 
     options: SendMessageOptions
-  ): Promise<ApiResponse<AmazonSPApi.Messaging.CreateConfirmCustomizationDetailsResponse>> {
+  ): Promise<ApiResponse<MessageResponse>> {
     if (!amazonOrderId) {
-      throw AmazonErrorUtil.createError(
-        'Amazon Order ID is required to send a message',
+      throw AmazonErrorHandler.createError(
+        'Amazon Order ID is required to send a message', 
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     if (!options.marketplaceId) {
-      throw AmazonErrorUtil.createError(
-        'Marketplace ID is required to send a message',
+      throw AmazonErrorHandler.createError(
+        'Marketplace ID is required to send a message', 
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     if (!options.messageType) {
-      throw AmazonErrorUtil.createError(
-        'Message type is required to send a message',
+      throw AmazonErrorHandler.createError(
+        'Message type is required to send a message', 
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     if (!options.htmlBody && !options.textBody) {
-      throw AmazonErrorUtil.createError(
-        'Either HTML body or text body is required to send a message',
+      throw AmazonErrorHandler.createError(
+        'Either HTML body or text body is required to send a message', 
         AmazonErrorCode.INVALID_INPUT
       );
     }
@@ -237,7 +419,7 @@ export class MessagingModule extends BaseApiModule {
     
     // Add attachments if provided
     if (options.attachments && options.attachments.length > 0) {
-      messageData.attachments = options.attachments.map((attachment: any) => ({
+      messageData.attachments = options.attachments.map(attachment => ({
         contentType: attachment.contentType,
         fileName: attachment.fileName,
         attachmentData: attachment.attachmentData
@@ -245,22 +427,25 @@ export class MessagingModule extends BaseApiModule {
     }
     
     try {
-      const endpoint = `/orders/${amazonOrderId}/messages/${options.messageType.toLowerCase()}`;
+      const endpoint = `/orders/${encodeURIComponent(amazonOrderId)}/messages/${options.messageType.toLowerCase()}`;
       
-      return await this.makeRequest<AmazonSPApi.Messaging.CreateConfirmCustomizationDetailsResponse>({
-        method: 'POST',
-        path: endpoint,
-        params: {
-          marketplaceIds: options.marketplaceId
-        },
-        data: messageData
-      });
+      return await this.apiRequest<MessageResponse>(
+        `${this.basePath}${endpoint}`,
+        'POST',
+        {
+          params: {
+            marketplaceIds: options.marketplaceId
+          },
+          data: messageData
+        }
+      );
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.sendMessage`);
+      throw error instanceof Error
+        ? AmazonErrorHandler.createError(error.message, AmazonErrorCode.OPERATION_FAILED)
+        : AmazonErrorHandler.createError('Unknown error', AmazonErrorCode.UNKNOWN_ERROR);
     }
   }
-
+  
   /**
    * Send a confirmation message for order fulfillment
    * @param amazonOrderId Amazon order ID
@@ -269,40 +454,20 @@ export class MessagingModule extends BaseApiModule {
    * @returns Response indicating message success
    */
   public async sendOrderFulfillmentMessage(
-    amazonOrderId: string,
-    marketplaceId: string,
-    fulfillmentInfo: {
-      /**
-       * Tracking details for the shipment
-       */
-      tracking?: {
-        /**
-         * Tracking number
-         */
-        trackingNumber: string;
-        
-        /**
-         * Carrier for the shipment (e.g. USPS, UPS, FedEx)
-         */
-        carrier: string;
-      };
-      
-      /**
-       * Additional message to include
-       */
-      additionalMessage?: string;
-    }
-  ): Promise<ApiResponse<AmazonSPApi.Messaging.CreateConfirmDeliveryDetailsResponse>> {
+    amazonOrderId: string, 
+    marketplaceId: string, 
+    fulfillmentInfo: FulfillmentInfo
+  ): Promise<ApiResponse<MessageResponse>> {
     if (!amazonOrderId) {
-      throw AmazonErrorUtil.createError(
-        'Amazon Order ID is required to send order fulfillment message',
+      throw AmazonErrorHandler.createError(
+        'Amazon Order ID is required to send order fulfillment message', 
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     if (!marketplaceId) {
-      throw AmazonErrorUtil.createError(
-        'Marketplace ID is required to send order fulfillment message',
+      throw AmazonErrorHandler.createError(
+        'Marketplace ID is required to send order fulfillment message', 
         AmazonErrorCode.INVALID_INPUT
       );
     }
@@ -333,37 +498,27 @@ export class MessagingModule extends BaseApiModule {
    * @returns Response indicating message success
    */
   public async sendOrderDetailsMessage(
-    amazonOrderId: string,
-    marketplaceId: string,
-    detailsInfo: {
-      /**
-       * Subject of the message
-       */
-      subject: string;
-      
-      /**
-       * Body of the message
-       */
-      body: string;
-    }
-  ): Promise<ApiResponse<AmazonSPApi.Messaging.CreateLegalDisclosureResponse>> {
+    amazonOrderId: string, 
+    marketplaceId: string, 
+    detailsInfo: OrderDetailsInfo
+  ): Promise<ApiResponse<MessageResponse>> {
     if (!amazonOrderId) {
-      throw AmazonErrorUtil.createError(
-        'Amazon Order ID is required to send order details message',
+      throw AmazonErrorHandler.createError(
+        'Amazon Order ID is required to send order details message', 
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     if (!marketplaceId) {
-      throw AmazonErrorUtil.createError(
-        'Marketplace ID is required to send order details message',
+      throw AmazonErrorHandler.createError(
+        'Marketplace ID is required to send order details message', 
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     if (!detailsInfo.subject || !detailsInfo.body) {
-      throw AmazonErrorUtil.createError(
-        'Subject and body are required to send order details message',
+      throw AmazonErrorHandler.createError(
+        'Subject and body are required to send order details message', 
         AmazonErrorCode.INVALID_INPUT
       );
     }
@@ -384,37 +539,27 @@ export class MessagingModule extends BaseApiModule {
    * @returns Response indicating message success
    */
   public async sendOrderReturnMessage(
-    amazonOrderId: string,
-    marketplaceId: string,
-    returnInfo: {
-      /**
-       * Subject of the message
-       */
-      subject: string;
-      
-      /**
-       * Body of the message
-       */
-      body: string;
-    }
-  ): Promise<ApiResponse<AmazonSPApi.Messaging.CreateNegativeFeedbackRemovalResponse>> {
+    amazonOrderId: string, 
+    marketplaceId: string, 
+    returnInfo: OrderDetailsInfo
+  ): Promise<ApiResponse<MessageResponse>> {
     if (!amazonOrderId) {
-      throw AmazonErrorUtil.createError(
-        'Amazon Order ID is required to send order return message',
+      throw AmazonErrorHandler.createError(
+        'Amazon Order ID is required to send order return message', 
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     if (!marketplaceId) {
-      throw AmazonErrorUtil.createError(
-        'Marketplace ID is required to send order return message',
+      throw AmazonErrorHandler.createError(
+        'Marketplace ID is required to send order return message', 
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     if (!returnInfo.subject || !returnInfo.body) {
-      throw AmazonErrorUtil.createError(
-        'Subject and body are required to send order return message',
+      throw AmazonErrorHandler.createError(
+        'Subject and body are required to send order return message', 
         AmazonErrorCode.INVALID_INPUT
       );
     }
@@ -435,52 +580,27 @@ export class MessagingModule extends BaseApiModule {
    * @returns Response indicating message success
    */
   public async sendWarrantyMessage(
-    amazonOrderId: string,
-    marketplaceId: string,
-    warrantyInfo: {
-      /**
-       * Subject of the message
-       */
-      subject: string;
-      
-      /**
-       * Body of the message
-       */
-      body: string;
-      
-      /**
-       * Warranty document to attach
-       */
-      attachment?: {
-        /**
-         * Name of the attachment
-         */
-        fileName: string;
-        
-        /**
-         * Content of the attachment in base64 format
-         */
-        data: string;
-      };
-    }
-  ): Promise<ApiResponse<AmazonSPApi.Messaging.CreateWarrantyResponse>> {
+    amazonOrderId: string, 
+    marketplaceId: string, 
+    warrantyInfo: WarrantyInfo
+  ): Promise<ApiResponse<MessageResponse>> {
     if (!amazonOrderId) {
-      throw AmazonErrorUtil.createError(
-        'Amazon Order ID is required to send warranty message',
+      throw AmazonErrorHandler.createError(
+        'Amazon Order ID is required to send warranty message', 
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     if (!marketplaceId) {
-      throw AmazonErrorUtil.createError(
-        'Marketplace ID is required to send warranty message',
+      throw AmazonErrorHandler.createError(
+        'Marketplace ID is required to send warranty message', 
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     if (!warrantyInfo.subject || !warrantyInfo.body) {
-      throw AmazonErrorUtil.createError(
-        'Subject and body are required to send warranty message',
+      throw AmazonErrorHandler.createError(
+        'Subject and body are required to send warranty message', 
         AmazonErrorCode.INVALID_INPUT
       );
     }
@@ -512,15 +632,15 @@ export class MessagingModule extends BaseApiModule {
    * @returns Whether the specified message type is allowed
    */
   public async isMessagingAllowed(
-    amazonOrderId: string,
-    messageType: MessageType,
+    amazonOrderId: string, 
+    messageType: MessageType, 
     marketplaceId?: string
   ): Promise<boolean> {
     const mktId = marketplaceId || this.marketplaceId;
     
     if (!mktId) {
-      throw AmazonErrorUtil.createError(
-        'Marketplace ID is required to check if messaging is allowed',
+      throw AmazonErrorHandler.createError(
+        'Marketplace ID is required to check if messaging is allowed', 
         AmazonErrorCode.INVALID_INPUT
       );
     }
@@ -529,16 +649,15 @@ export class MessagingModule extends BaseApiModule {
       const response = await this.getMessagingConfiguration(amazonOrderId, {
         marketplaceId: mktId
       });
-
+      
       // Check if the message type is in the allowed actions
-      return response.data.actions.some((action: any) => action.name === messageType);
+      return response.data?.actions?.some(action => action.name === messageType) || false;
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error(`Error checking if messaging is allowed for order ${amazonOrderId}:`, error);
       return false;
     }
   }
-
+  
   /**
    * Get message templates for the allowed message types
    * @param amazonOrderId Amazon order ID
@@ -546,14 +665,14 @@ export class MessagingModule extends BaseApiModule {
    * @returns Configuration with allowed message types
    */
   public async getAllowedMessageTypes(
-    amazonOrderId: string,
+    amazonOrderId: string, 
     marketplaceId?: string
   ): Promise<MessageConfiguration> {
     const mktId = marketplaceId || this.marketplaceId;
     
     if (!mktId) {
-      throw AmazonErrorUtil.createError(
-        'Marketplace ID is required to get allowed message types',
+      throw AmazonErrorHandler.createError(
+        'Marketplace ID is required to get allowed message types', 
         AmazonErrorCode.INVALID_INPUT
       );
     }
@@ -562,45 +681,46 @@ export class MessagingModule extends BaseApiModule {
       const response = await this.getMessagingConfiguration(amazonOrderId, {
         marketplaceId: mktId
       });
-
+      
       const config: MessageConfiguration = {};
       
       // Check which message types are allowed
-      response.data.actions.forEach((action: any) => {
-        switch (action.name) {
-          case 'WARRANTY':
-            config.allowsWarranty = true;
-            break;
-          case 'PRODUCT_DETAIL':
-            config.allowsProductDetails = true;
-            break;
-          case 'PRODUCT_CUSTOMIZATION':
-            config.allowsProductCustomization = true;
-            break;
-          case 'AMAZON_PAY':
-            config.allowsAmazonPay = true;
-            break;
-          case 'ORDER_FULFILLMENT':
-            config.allowsOrderFulfillment = true;
-            break;
-          case 'ORDER_DETAIL':
-            config.allowsOrderDetails = true;
-            break;
-          case 'ORDER_RETURN':
-            config.allowsOrderReturn = true;
-            break;
-          case 'UNEXPECTED_PROBLEM':
-            config.allowsUnexpectedProblem = true;
-            break;
-          case 'OTHER':
-            config.allowsOther = true;
-            break;
-        }
-      });
-
+      if (response.data?.actions) {
+        response.data.actions.forEach(action => {
+          switch (action.name) {
+            case 'WARRANTY':
+              config.allowsWarranty = true;
+              break;
+            case 'PRODUCT_DETAIL':
+              config.allowsProductDetails = true;
+              break;
+            case 'PRODUCT_CUSTOMIZATION':
+              config.allowsProductCustomization = true;
+              break;
+            case 'AMAZON_PAY':
+              config.allowsAmazonPay = true;
+              break;
+            case 'ORDER_FULFILLMENT':
+              config.allowsOrderFulfillment = true;
+              break;
+            case 'ORDER_DETAIL':
+              config.allowsOrderDetails = true;
+              break;
+            case 'ORDER_RETURN':
+              config.allowsOrderReturn = true;
+              break;
+            case 'UNEXPECTED_PROBLEM':
+              config.allowsUnexpectedProblem = true;
+              break;
+            case 'OTHER':
+              config.allowsOther = true;
+              break;
+          }
+        });
+      }
+      
       return config;
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error(`Error getting allowed message types for order ${amazonOrderId}:`, error);
       return {};
     }

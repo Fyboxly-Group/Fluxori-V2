@@ -1,78 +1,288 @@
+// TypeScript checked
 import { Server as HttpServer } from 'http';
-import { Server } from 'socket.io';
-import jwt from 'jsonwebtoken';
-import { WebSocketHandler } from '../controllers/conversation.controller';
+import { Server as SocketIOServer, Socket } from 'socket.io';
+import { ConversationService } from '../services/conversation.service';
+import { VertexAIService } from '../services/vertex-ai.service';
+import { RAGService } from '../services/rag.service';
 
 /**
- * Initialize WebSocket server for AI Customer Service Agent
- * @param httpServer HTTP server instance
+ * Socket event types for AI CS Agent
  */
-export const initializeWebSocket = (httpServer: HttpServer): void => {
-  const io = new Server(httpServer, {
-    path: '/api/ws/ai-cs-agent',
+export enum AICsAgentEvent {
+  CONNECT = 'connect',
+  START_CONVERSATION = 'conversation:start',
+  SEND_MESSAGE = 'message:send',
+  RECEIVE_MESSAGE = 'message:receive', 
+  TYPING_START = 'typing:start',
+  TYPING_END = 'typing:end',
+  CONVERSATION_END = 'conversation:end',
+  ERROR = 'error',
+  DISCONNECT = 'disconnect'
+}
+
+/**
+ * Socket message format
+ */
+export interface AICsAgentMessage {
+  conversationId?: string;
+  userId?: string;
+  message?: string;
+  messageId?: string;
+  metadata?: {
+    source?: string;
+    timestamp?: number;
+    attachments?: any[];
+    context?: any;
+  };
+}
+
+/**
+ * Socket client data for tracking
+ */
+interface ClientData {
+  userId: string;
+  conversationId?: string;
+  lastActivity: Date;
+}
+
+/**
+ * WebSocket server for AI Customer Service Agent
+ */
+export const initializeWebSocket = (httpServer: HttpServer): SocketIOServer => {
+  // Create Socket.IO server
+  const io = new SocketIOServer(httpServer, {
     cors: {
-      origin: process.env.CORS_ORIGIN || '*',
+      origin: '*',
       methods: ['GET', 'POST']
-    }
+    },
+    path: '/ai-cs-agent/socket'
   });
   
-  // Middleware for authentication
-  io.use((socket, next) => {
-    try {
-      const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
-      
-      // Skip auth in development if flag is set
-      if (process.env.NODE_ENV === 'development' && process.env.SKIP_WS_AUTH === 'true') {
-        return next();
-      }
-      
-      if (!token) {
-        return next(new Error('Authentication token is required'));
-      }
-      
-      // Verify the token
-      const secret = process.env.JWT_SECRET || 'default_secret';
-      const secretKey = Buffer.from(secret, 'utf-8');
-      
-      jwt.verify(token, secretKey, (err, decoded) => {
-        if (err) {
-          return next(new Error('Invalid authentication token'));
-        }
-        
-        // Store the user information in socket for later use
-        socket.data.user = decoded;
-        next();
-      });
-    } catch (error) {
-      next(new Error('Authentication failed'));
-    }
-  });
+  // Client tracking map - socketId to client data
+  const clients = new Map<string, ClientData>();
   
-  // Handle connections
-  io.on('connection', (socket) => {
-    console.log('Client connected to AI Customer Service WebSocket:', socket.id);
+  // Initialize services
+  const conversationService = new ConversationService();
+  const vertexAIService = new VertexAIService();
+  const ragService = new RAGService();
+  
+  // Connection handling
+  io.on(AICsAgentEvent.CONNECT, (socket: Socket) => {
+    console.log(`AI-CS-Agent: Client connected: ${socket.id}`);
     
-    // Handle message events
-    socket.on('message', async (data) => {
+    // Initialize client tracking
+    clients.set(socket.id, {
+      userId: 'guest', // Will be updated when user is authenticated
+      lastActivity: new Date()
+    });
+    
+    // Start a new conversation
+    socket.on(AICsAgentEvent.START_CONVERSATION, async (data: AICsAgentMessage) => {
       try {
-        // Add user ID from authentication if not provided
-        if (socket.data.user && !data.userId) {
-          data.userId = socket.data.user.id || socket.data.user.userId;
+        if (!data.userId) {
+          throw new Error('User ID is required to start a conversation');
         }
         
-        // Pass to the handler
-        await WebSocketHandler.handleMessage(socket, data);
+        // Create a new conversation in the database
+        const conversation = await conversationService.createConversation(data.userId);
+        
+        // Update client tracking
+        const clientData = clients.get(socket.id);
+        if (clientData) {
+          clientData.userId = data.userId;
+          clientData.conversationId = conversation.id;
+          clientData.lastActivity = new Date();
+          clients.set(socket.id, clientData);
+        }
+        
+        // Acknowledge the new conversation
+        socket.emit(AICsAgentEvent.START_CONVERSATION, {
+          conversationId: conversation.id,
+          message: 'Conversation started'
+        });
+        
+        // Send initial greeting
+        const greeting = await vertexAIService.generateInitialGreeting(data.userId);
+        
+        // Add the greeting to the conversation
+        await conversationService.addMessage({
+          conversationId: conversation.id,
+          sender: 'agent',
+          content: greeting,
+          timestamp: new Date()
+        });
+        
+        // Send the greeting to the client
+        socket.emit(AICsAgentEvent.RECEIVE_MESSAGE, {
+          conversationId: conversation.id,
+          message: greeting,
+          messageId: Date.now().toString(),
+          metadata: {
+            source: 'agent',
+            timestamp: Date.now()
+          }
+        });
       } catch (error) {
-        console.error('Error handling WebSocket message:', error);
-        socket.emit('error', { message: 'Error processing message' });
+        const typedError = error instanceof Error ? error : new Error(String(error));
+        console.error('Error starting conversation:', typedError.message);
+        socket.emit(AICsAgentEvent.ERROR, {
+          message: 'Failed to start conversation',
+          error: typedError.message
+        });
       }
     });
     
-    // Handle disconnections
-    socket.on('disconnect', () => {
-      console.log('Client disconnected from AI Customer Service WebSocket:', socket.id);
+    // Handle incoming messages
+    socket.on(AICsAgentEvent.SEND_MESSAGE, async (data: AICsAgentMessage) => {
+      try {
+        const clientData = clients.get(socket.id);
+        if (!clientData || !clientData.conversationId) {
+          throw new Error('No active conversation');
+        }
+        
+        if (!data.message) {
+          throw new Error('Message content is required');
+        }
+        
+        // Update last activity
+        clientData.lastActivity = new Date();
+        
+        // Add the user message to the conversation
+        await conversationService.addMessage({
+          conversationId: clientData.conversationId,
+          sender: 'user',
+          content: data.message,
+          timestamp: new Date()
+        });
+        
+        // Notify that the agent is "typing"
+        socket.emit(AICsAgentEvent.TYPING_START, {
+          conversationId: clientData.conversationId
+        });
+        
+        // Process with RAG to get relevant context
+        const context = await ragService.getRelevantContext(data.message);
+        
+        // Generate a response using the AI model
+        const aiResponse = await vertexAIService.generateResponse(
+          data.message,
+          clientData.conversationId,
+          context
+        );
+        
+        // Add the AI response to the conversation
+        await conversationService.addMessage({
+          conversationId: clientData.conversationId,
+          sender: 'agent',
+          content: aiResponse,
+          timestamp: new Date()
+        });
+        
+        // Notify that the agent stopped "typing"
+        socket.emit(AICsAgentEvent.TYPING_END, {
+          conversationId: clientData.conversationId
+        });
+        
+        // Send the AI response to the client
+        socket.emit(AICsAgentEvent.RECEIVE_MESSAGE, {
+          conversationId: clientData.conversationId,
+          message: aiResponse,
+          messageId: Date.now().toString(),
+          metadata: {
+            source: 'agent',
+            timestamp: Date.now(),
+            context: context ? { used: true } : { used: false }
+          }
+        });
+      } catch (error) {
+        const typedError = error instanceof Error ? error : new Error(String(error));
+        console.error('Error processing message:', typedError.message);
+        
+        // Notify that the agent stopped "typing"
+        const clientData = clients.get(socket.id);
+        if (clientData && clientData.conversationId) {
+          socket.emit(AICsAgentEvent.TYPING_END, {
+            conversationId: clientData.conversationId
+          });
+        }
+        
+        socket.emit(AICsAgentEvent.ERROR, {
+          message: 'Failed to process message',
+          error: typedError.message
+        });
+      }
+    });
+    
+    // Handle ending a conversation
+    socket.on(AICsAgentEvent.CONVERSATION_END, async () => {
+      try {
+        const clientData = clients.get(socket.id);
+        if (!clientData || !clientData.conversationId) {
+          return; // No active conversation to end
+        }
+        
+        // Mark the conversation as ended in the database
+        await conversationService.endConversation(clientData.conversationId);
+        
+        // Remove the conversation ID from client tracking
+        clientData.conversationId = undefined;
+        clientData.lastActivity = new Date();
+        clients.set(socket.id, clientData);
+        
+        // Acknowledge the end of conversation
+        socket.emit(AICsAgentEvent.CONVERSATION_END, {
+          message: 'Conversation ended'
+        });
+      } catch (error) {
+        const typedError = error instanceof Error ? error : new Error(String(error));
+        console.error('Error ending conversation:', typedError.message);
+        socket.emit(AICsAgentEvent.ERROR, {
+          message: 'Failed to end conversation',
+          error: typedError.message
+        });
+      }
+    });
+    
+    // Handle disconnection
+    socket.on(AICsAgentEvent.DISCONNECT, async () => {
+      try {
+        console.log(`AI-CS-Agent: Client disconnected: ${socket.id}`);
+        
+        // Get client data
+        const clientData = clients.get(socket.id);
+        if (clientData && clientData.conversationId) {
+          // Mark the conversation as ended due to disconnection
+          await conversationService.endConversation(
+            clientData.conversationId,
+            'Client disconnected'
+          );
+        }
+        
+        // Remove client tracking
+        clients.delete(socket.id);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error('Error handling disconnect:', errorMessage);
+      }
     });
   });
   
-  console.log('AI Customer Service WebSocket server initialized');
+  // Set up a cleanup interval for inactive connections
+  setInterval(() => {
+    const now = new Date();
+    clients.forEach((data, socketId) => {
+      // If inactive for more than 30 minutes
+      if (now.getTime() - data.lastActivity.getTime() > 30 * 60 * 1000) {
+        const socket = io.sockets.sockets.get(socketId);
+        if (socket) {
+          console.log(`Closing inactive connection: ${socketId}`);
+          socket.disconnect(true);
+        }
+        clients.delete(socketId);
+      }
+    });
+  }, 5 * 60 * 1000); // Check every 5 minutes
+  
+  console.log('AI-CS-Agent WebSocket server initialized');
+  return io;
 };

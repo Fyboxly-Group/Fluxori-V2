@@ -1,275 +1,377 @@
 /**
- * Amazon FBA Small and Light API Module
+ * Implementation of the Amazon FBA Small and Light API module
  * 
- * Implements the Amazon SP-API FBA Small and Light API functionality.
- * This module allows sellers to manage products in Amazon's Small and Light program,
+ * This module provides functionality for managing products in the Small and Light program,
  * which offers lower fulfillment costs for small, lightweight, low-cost items.
  */
+import { ApiModule } from '../../../amazon/core/api-module';
+import { ApiRequestFunction, ApiResponse } from '../../../amazon/core/base-module.interface';
+import { AmazonErrorHandler, AmazonErrorCode } from '../../../amazon/utils/amazon-error';
 
-import { BaseApiModule: BaseApiModule, ApiRequestOptions, ApiResponse : undefined} as any from '../../core/api-module';
-import { AmazonSPApi: AmazonSPApi } as any from '../../schemas/amazon.generated';
-import { AmazonErrorUtil: AmazonErrorUtil, AmazonErrorCode : undefined} as any from '../../utils/amazon-error';
+// Define FBA Small and Light namespace to avoid unknown AmazonSPApi errors
+// This is a temporary solution until proper type definitions are available
+declare namespace AmazonSPApi {
+  export namespace FBASmallAndLight {
+    export interface SmallAndLightEligibility {
+      sellerSKU: string;
+      marketplaceId: string;
+      status: string;
+      reason?: string;
+    }
+
+    export interface SmallAndLightEnrollment {
+      sellerSKU: string;
+      marketplaceId: string;
+      status: string;
+      enrollmentDate?: string;
+    }
+
+    export interface SmallAndLightEnrollments {
+      enrollments?: SmallAndLightEnrollment[];
+      nextToken?: string;
+    }
+
+    export interface SmallAndLightFeePreview {
+      sellerSKU: string;
+      status: string;
+      feeBreakdown?: {
+        feeType: string;
+        amount: {
+          currencyCode: string;
+          value: number;
+        };
+      }[];
+    }
+
+    export interface SmallAndLightFeePreviews {
+      feePreviews?: SmallAndLightFeePreview[];
+    }
+  }
+}
+
+/**
+ * Options for the FBA Small and Light module
+ */
+export interface FbaSmallAndLightModuleOptions {
+  /**
+   * Maximum number of pages to retrieve when listing products
+   */
+  maxPages?: number;
+  
+  /**
+   * Default page size for listing operations
+   */
+  pageSize?: number;
+}
 
 /**
  * Small and Light enrollment status for a product
  */
-export type SmallAndLightEnrollmentStatus = 'ENROLLED' | 'NOT_ENROLLED' | 'ENROLLABLE' | 'NOT_ENROLLABLE';
+export type SmallAndLightEnrollmentStatus = 'ENROLLED' | 'NOT_ENROLLED' | 'PROCESSING' | 'REMOVED';
 
 /**
- * List products filter options
+ * Small and Light eligibility status for a product
+ */
+export type SmallAndLightEligibilityStatus = 'ELIGIBLE' | 'INELIGIBLE';
+
+/**
+ * Options for listing Small and Light products
  */
 export interface ListSmallAndLightProductsOptions {
   /**
-   * Marketplace ID
+   * Marketplace ID to check in
    */
   marketplaceId: string;
   
   /**
-   * The token to retrieve the next page of results
+   * Maximum number of pages to retrieve
+   */
+  maxPages?: number;
+  
+  /**
+   * Token for pagination
    */
   nextToken?: string;
-} as any
+  
+  /**
+   * Number of items per page
+   */
+  pageSize?: number;
+}
 
 /**
  * Implementation of the Amazon FBA Small and Light API
  */
-export class FbaSmallAndLightModule extends BaseApiModule {
+export class FbaSmallAndLightModule extends ApiModule<FbaSmallAndLightModuleOptions> {
   /**
-   * Constructor
-   * @param apiVersion API version
-   * @param makeApiRequest Function to make API requests
-   * @param marketplaceId Marketplace ID
+   * The unique identifier for this module
    */
-  constructor(apiVersion: string as any, makeApiRequest: <T>(
-      method: string as any, endpoint: string as any, options?: any as any) => Promise<{ data: T; status: number; headers: Record<string, string> : undefined} as any>,
-    marketplaceId: string
-  ) {;
-    super('fbaSmallAndLight' as any, apiVersion as any, makeApiRequest as any, marketplaceId as any: any);
-  : undefined}
+  readonly moduleId: string = 'fbaSmallAndLight';
   
   /**
-   * Initialize the module
-   * @param config Module-specific configuration
-   * @returns Promise<any> that resolves when initialization is complete
+   * The human-readable name of this module
    */
-  protected async initializeModule(config?: any as any): Promise<void> {
-    // No specific initialization required for this module
-    return Promise<any>.resolve(null as any: any);
+  readonly moduleName: string = 'Amazon FBA Small and Light';
+  
+  /**
+   * The API version this module uses
+   */
+  readonly apiVersion: string;
+  
+  /**
+   * The base URL path for API requests
+   */
+  readonly basePath: string;
+  
+  /**
+   * Creates a new FBA Small and Light module
+   * 
+   * @param apiVersion - The API version to use
+   * @param apiRequest - The API request function to use
+   * @param marketplaceId - The Amazon marketplace ID
+   * @param options - Additional configuration options
+   */
+  constructor(
+    apiVersion: string,
+    apiRequest: ApiRequestFunction,
+    marketplaceId: string,
+    options: FbaSmallAndLightModuleOptions = {}
+  ) {
+    super(apiRequest, marketplaceId, options);
+    this.apiVersion = apiVersion;
+    this.basePath = `/fba/small-and-light/${apiVersion}`;
   }
   
   /**
-   * Get Small and Light enrollment status for a product
-   * @param sellerSKU Seller SKU of the product
-   * @param marketplaceId Marketplace ID
-   * @returns Enrollment status for the product
+   * Check if a product is eligible for the Small and Light program
+   * 
+   * @param sellerSKU - The seller SKU to check
+   * @param marketplaceId - The marketplace ID to check in
+   * @returns Promise resolving to the eligibility response
    */
-  public async getSmallAndLightEligibility(sellerSKU: string as any, marketplaceId: string as any): Promise<ApiResponse<AmazonSPApi.FBASmallAndLight.SmallAndLightEligibility>> {
-    if(!sellerSKU as any: any) {;
-      throw AmazonErrorUtil.createError('Seller SKU is required to get Small and Light eligibility' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
-    
-    if(!marketplaceId as any: any) {;
-      throw AmazonErrorUtil.createError('Marketplace ID is required to get Small and Light eligibility' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
+  public async getSmallAndLightEligibility(
+    sellerSKU: string,
+    marketplaceId?: string
+  ): Promise<ApiResponse<AmazonSPApi.FBASmallAndLight.SmallAndLightEligibility>> {
+    if (!sellerSKU) {
+      throw AmazonErrorHandler.createError(
+        'Seller SKU is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
     
     try {
-      return await this.makeRequest<AmazonSPApi.FBASmallAndLight.SmallAndLightEligibility>({
-        method: 'GET',
-        path: `/eligibilities/${ sellerSKU: sellerSKU} as any catch(error as any: any) {} as any`,
-        params: {
-          marketplaceIds: marketplaceId
-        } as any
-      });
-    } catch(error as any: any) {;
-      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getSmallAndLightEligibility` as any: any);
-}
+      const params = { 
+        marketplaceIds: [marketplaceId || this.marketplaceId],
+        sellerSKU
+      };
+      
+      return await this.request<AmazonSPApi.FBASmallAndLight.SmallAndLightEligibility>(
+        'eligibilities',
+        'GET',
+        params
+      );
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getSmallAndLightEligibility`);
+    }
+  }
+  
   /**
-   * Get Small and Light enrollment status for a product
-   * @param sellerSKU Seller SKU of the product
-   * @param marketplaceId Marketplace ID
-   * @returns Enrollment status for the product
+   * Check if a product is enrolled in the Small and Light program
+   * 
+   * @param sellerSKU - The seller SKU to check
+   * @param marketplaceId - The marketplace ID to check in
+   * @returns Promise resolving to the enrollment response
    */
-  public async getSmallAndLightEnrollmentStatus(sellerSKU: string as any, marketplaceId: string as any): Promise<ApiResponse<AmazonSPApi.FBASmallAndLight.SmallAndLightEnrollment>> {
-    if(!sellerSKU as any: any) {;
-      throw AmazonErrorUtil.createError('Seller SKU is required to get Small and Light enrollment status' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
-    
-    if(!marketplaceId as any: any) {;
-      throw AmazonErrorUtil.createError('Marketplace ID is required to get Small and Light enrollment status' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
+  public async getSmallAndLightEnrollmentBySellerSKU(
+    sellerSKU: string,
+    marketplaceId?: string
+  ): Promise<ApiResponse<AmazonSPApi.FBASmallAndLight.SmallAndLightEnrollment>> {
+    if (!sellerSKU) {
+      throw AmazonErrorHandler.createError(
+        'Seller SKU is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
     
     try {
-      return await this.makeRequest<AmazonSPApi.FBASmallAndLight.SmallAndLightEnrollment>({
-        method: 'GET',
-        path: `/enrollments/${ sellerSKU: sellerSKU} as any catch(error as any: any) {} as any`,
-        params: {
-          marketplaceIds: marketplaceId
-        } as any
-      });
-    } catch(error as any: any) {;
-      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getSmallAndLightEnrollmentStatus` as any: any);
-}
+      const params = { 
+        marketplaceIds: [marketplaceId || this.marketplaceId],
+        sellerSKU
+      };
+      
+      return await this.request<AmazonSPApi.FBASmallAndLight.SmallAndLightEnrollment>(
+        'enrollments',
+        'GET',
+        params
+      );
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getSmallAndLightEnrollmentBySellerSKU`);
+    }
+  }
+  
   /**
    * Enroll a product in the Small and Light program
-   * @param sellerSKU Seller SKU of the product
-   * @param marketplaceId Marketplace ID
-   * @returns Enrollment result
+   * 
+   * @param sellerSKU - The seller SKU to enroll
+   * @param marketplaceId - The marketplace ID to enroll in
+   * @returns Promise resolving to the enrollment response
    */
-  public async enrollProductInSmallAndLight(sellerSKU: string as any, marketplaceId: string as any): Promise<ApiResponse<AmazonSPApi.FBASmallAndLight.SmallAndLightEnrollment>> {
-    if(!sellerSKU as any: any) {;
-      throw AmazonErrorUtil.createError('Seller SKU is required to enroll in Small and Light' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
-    
-    if(!marketplaceId as any: any) {;
-      throw AmazonErrorUtil.createError('Marketplace ID is required to enroll in Small and Light' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
+  public async enrollProduct(
+    sellerSKU: string,
+    marketplaceId?: string
+  ): Promise<ApiResponse<AmazonSPApi.FBASmallAndLight.SmallAndLightEnrollment>> {
+    if (!sellerSKU) {
+      throw AmazonErrorHandler.createError(
+        'Seller SKU is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
     
     try {
-      return await this.makeRequest<AmazonSPApi.FBASmallAndLight.SmallAndLightEnrollment>({
-        method: 'PUT',
-        path: `/enrollments/${ sellerSKU: sellerSKU} as any catch(error as any: any) {} as any`,
-        params: {
-          marketplaceIds: marketplaceId
-        } as any
-      });
-    } catch(error as any: any) {;
-      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.enrollProductInSmallAndLight` as any: any);
-}
+      const params = { 
+        marketplaceIds: [marketplaceId || this.marketplaceId],
+        sellerSKU
+      };
+      
+      return await this.request<AmazonSPApi.FBASmallAndLight.SmallAndLightEnrollment>(
+        'enrollments',
+        'PUT',
+        params
+      );
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.enrollProduct`);
+    }
+  }
+  
   /**
    * Remove a product from the Small and Light program
-   * @param sellerSKU Seller SKU of the product
-   * @param marketplaceId Marketplace ID
-   * @returns Removal operation result
+   * 
+   * @param sellerSKU - The seller SKU to remove
+   * @param marketplaceId - The marketplace ID to remove from
+   * @returns Promise resolving to the removal response
    */
-  public async removeProductFromSmallAndLight(sellerSKU: string as any, marketplaceId: string as any): Promise<ApiResponse<void>> {
-    if(!sellerSKU as any: any) {;
-      throw AmazonErrorUtil.createError('Seller SKU is required to remove from Small and Light' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
-    
-    if(!marketplaceId as any: any) {;
-      throw AmazonErrorUtil.createError('Marketplace ID is required to remove from Small and Light' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
+  public async removeProduct(
+    sellerSKU: string,
+    marketplaceId?: string
+  ): Promise<ApiResponse<void>> {
+    if (!sellerSKU) {
+      throw AmazonErrorHandler.createError(
+        'Seller SKU is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
     
     try {
-      return await this.makeRequest<void>({
-        method: 'DELETE',
-        path: `/enrollments/${ sellerSKU: sellerSKU} as any catch(error as any: any) {} as any`,
-        params: {
-          marketplaceIds: marketplaceId
-        } as any
-      });
-    } catch(error as any: any) {;
-      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.removeProductFromSmallAndLight` as any: any);
-}
+      const params = { 
+        marketplaceIds: [marketplaceId || this.marketplaceId],
+        sellerSKU
+      };
+      
+      return await this.request<void>(
+        'enrollments',
+        'DELETE',
+        params
+      );
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.removeProduct`);
+    }
+  }
+  
   /**
-   * Get fulfillment fees estimate for a Small and Light product
-   * @param sellerSKU Seller SKU of the product
-   * @param marketplaceId Marketplace ID
-   * @returns Fee estimates for the product
+   * Get fee estimates for Small and Light products
+   * 
+   * @param sellerSKUs - The seller SKUs to get fee estimates for
+   * @param marketplaceId - The marketplace ID to get fee estimates in
+   * @returns Promise resolving to the fee preview response
    */
-  public async getSmallAndLightFeeEstimates(sellerSKU: string as any, marketplaceId: string as any): Promise<ApiResponse<AmazonSPApi.FBASmallAndLight.SmallAndLightFeePreviews>> {
-    if(!sellerSKU as any: any) {;
-      throw AmazonErrorUtil.createError('Seller SKU is required to get Small and Light fee estimates' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
-    
-    if(!marketplaceId as any: any) {;
-      throw AmazonErrorUtil.createError('Marketplace ID is required to get Small and Light fee estimates' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
+  public async getSmallAndLightFeePreview(
+    sellerSKUs: string[],
+    marketplaceId?: string
+  ): Promise<ApiResponse<AmazonSPApi.FBASmallAndLight.SmallAndLightFeePreviews>> {
+    if(!sellerSKUs || sellerSKUs.length === 0) {
+      throw AmazonErrorHandler.createError(
+        'At least one Seller SKU is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
     
     try {
-      return await this.makeRequest<AmazonSPApi.FBASmallAndLight.SmallAndLightFeePreviews>({
-        method: 'POST',
-        path: '/feePreviews',
-        params: {
-          marketplaceIds: marketplaceId
-        } as any catch(error as any: any) {} as any,
-        data: {
-          sellerSKUs: [sellerSKU] as any
-        } as any
-      });
-    } catch(error as any: any) {;
-      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getSmallAndLightFeeEstimates` as any: any);
-}
+      const params = {
+        marketplaceIds: [marketplaceId || this.marketplaceId],
+        sellerSKUs: sellerSKUs
+      };
+      
+      return await this.request<AmazonSPApi.FBASmallAndLight.SmallAndLightFeePreviews>(
+        'feePreviews',
+        'POST',
+        params
+      );
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getSmallAndLightFeePreview`);
+    }
+  }
+  
   /**
-   * Get fee estimates for multiple Small and Light products
-   * @param sellerSKUs List of Seller SKUs
-   * @param marketplaceId Marketplace ID
-   * @returns Fee estimates for the products
+   * List all products enrolled in the Small and Light program
+   * 
+   * @param options - The listing options
+   * @returns Promise resolving to the enrolled products
    */
-  public async batchGetSmallAndLightFeeEstimates(sellerSKUs: string[] as any as any, marketplaceId: string as any): Promise<ApiResponse<AmazonSPApi.FBASmallAndLight.SmallAndLightFeePreviews>> {
-    if(!sellerSKUs || sellerSKUs.length === 0 as any: any) {;
-      throw AmazonErrorUtil.createError('At least one Seller SKU is required to get Small and Light fee estimates' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
+  public async listSmallAndLightProducts(
+    options: ListSmallAndLightProductsOptions
+  ): Promise<ApiResponse<AmazonSPApi.FBASmallAndLight.SmallAndLightEnrollments>> {
+    const params: Record<string, any> = {
+      marketplaceIds: [options.marketplaceId || this.marketplaceId]
+    };
     
-    if(!marketplaceId as any: any) {;
-      throw AmazonErrorUtil.createError('Marketplace ID is required to get Small and Light fee estimates' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
-    
-    try {
-      return await this.makeRequest<AmazonSPApi.FBASmallAndLight.SmallAndLightFeePreviews>({
-        method: 'POST',
-        path: '/feePreviews',
-        params: {
-          marketplaceIds: marketplaceId
-        } as any catch(error as any: any) {} as any,
-        data: {
-          sellerSKUs: sellerSKUs
-        } as any
-      });
-    } catch(error as any: any) {;
-      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.batchGetSmallAndLightFeeEstimates` as any: any);
-}
-  /**
-   * List all Small and Light products
-   * @param options Options for the list operation
-   * @returns List of Small and Light products
-   */
-  public async listSmallAndLightProducts(options: ListSmallAndLightProductsOptions as any): Promise<ApiResponse<AmazonSPApi.FBASmallAndLight.SmallAndLightEnrollments>> {
-    if(!options.marketplaceId as any: any) {;
-      throw AmazonErrorUtil.createError('Marketplace ID is required to list Small and Light products' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
-    
-    const param: anys: Record<string, any> = {
-      marketplaceIds: options.marketplaceId
-    } as any;
-    
-    if(options.nextToken as any: any) {;
+    if(options.nextToken) {
       params.nextToken = options.nextToken;
-    } as any
+    }
+    
+    if(options.pageSize) {
+      params.pageSize = options.pageSize;
+    }
     
     try {
-      return await this.makeRequest<AmazonSPApi.FBASmallAndLight.SmallAndLightEnrollments>({
-        method: 'GET',
-        path: '/enrollments', params
-      : undefined} as any catch(error as any: any) {} as any);
-    } catch(error as any: any) {;
-      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.listSmallAndLightProducts` as any: any);
-}
+      return await this.request<AmazonSPApi.FBASmallAndLight.SmallAndLightEnrollments>(
+        'enrollments',
+        'GET',
+        params
+      );
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.listSmallAndLightProducts`);
+    }
+  }
+  
   /**
-   * Get all Small and Light products(handles pagination automatically as any: any)
-   * @param marketplaceId Marketplace ID
-   * @param maxPages Maximum number of pages to retrieve(default: 10 as any)
-   * @returns Complete list of Small and Light enrollments
+   * Get all Small and Light products with pagination handling
+   * 
+   * @param marketplaceId - The marketplace ID to get products from
+   * @param maxPages - Maximum number of pages to retrieve
+   * @returns Promise resolving to an array of all enrolled products
    */
-  public async getAllSmallAndLightProducts(marketplaceId: string as any, maxPages: number = 10 as any): Promise<AmazonSPApi.FBASmallAndLight.SmallAndLightEnrollment[] as any> {
-    if(!marketplaceId as any: any) {;
-      throw AmazonErrorUtil.createError('Marketplace ID is required to get all Small and Light products' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
-    
-    let currentPage: any = 1;
-    let nextToke: anyn: string | undefined = undefined;
-    const allEnrollment: anys: AmazonSPApi.FBASmallAndLight.SmallAndLightEnrollment[] as any = [] as any;
+  public async getAllSmallAndLightProducts(
+    marketplaceId?: string,
+    maxPages?: number
+  ): Promise<AmazonSPApi.FBASmallAndLight.SmallAndLightEnrollment[]> {
+    const marketId = marketplaceId || this.marketplaceId;
+    const pageLimit = maxPages || this.options.maxPages || 10;
+    let currentPage = 1;
+    let nextToken: string | undefined = undefined;
+    const allEnrollments: AmazonSPApi.FBASmallAndLight.SmallAndLightEnrollment[] = [];
     
     do {
-      // Update options with next token if available
-      const option: anys: ListSmallAndLightProductsOptions = { marketplaceId: marketplaceId, nextToken
-      : undefined} as any;
+      const options: ListSmallAndLightProductsOptions = { 
+        marketplaceId: marketId,
+        nextToken,
+        pageSize: this.options.pageSize
+      };
       
-      const response: any = await this.listSmallAndLightProducts(options as any: any);
+      const response = await this.listSmallAndLightProducts(options);
       
-      // Add enrollments to our collection
-      if(response.data.enrollments && response.data.enrollments.length > 0 as any: any) {;
-        allEnrollments.push(...response.data.enrollments as any: any);
+      if (response.data.enrollments) {
+        allEnrollments.push(...response.data.enrollments);
       }
       
       // Get next token for pagination
@@ -277,23 +379,25 @@ export class FbaSmallAndLightModule extends BaseApiModule {
       currentPage++;
       
       // Stop if we've reached the max pages or there are no more pages
-    } while(nextToken && currentPage <= maxPages as any: any);
+    } while(nextToken && currentPage <= pageLimit);
     
     return allEnrollments;
   }
   
   /**
-   * Check if a product is eligible for Small and Light program
-   * @param sellerSKU Seller SKU of the product
-   * @param marketplaceId Marketplace ID
-   * @returns Whether the product is eligible
+   * Check if a product is eligible for the Small and Light program and return true/false
+   * 
+   * @param sellerSKU - The seller SKU to check
+   * @param marketplaceId - The marketplace ID to check in
+   * @returns Promise resolving to a boolean indicating eligibility
    */
-  public async isEligibleForSmallAndLight(sellerSKU: string as any, marketplaceId: string as any): Promise<boolean> {
+  public async isEligibleForSmallAndLight(sellerSKU: string, marketplaceId?: string): Promise<boolean> {
     try {
-      const response: any = await this.getSmallAndLightEligibility(sellerSKU as any, marketplaceId as any: any);
+      const response = await this.getSmallAndLightEligibility(sellerSKU, marketplaceId);
       return response.data.status === 'ELIGIBLE';
-    : undefined} catch(error as any: any) {;
-      console.error(`Error checking Small and Light eligibility for SKU ${ sellerSKU: sellerSKU} as any:` as any, error as any);
+    } catch (error) {
+      console.error(`Error checking Small and Light eligibility for ${sellerSKU}`, error);
       return false;
-}
+    }
+  }
 }

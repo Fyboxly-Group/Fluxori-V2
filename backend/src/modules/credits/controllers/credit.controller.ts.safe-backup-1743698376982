@@ -1,0 +1,382 @@
+import { Request, Response } from 'express';
+import { CreditService, InsufficientCreditsError } from '../services/credit.service';
+import { SubscriptionTier, CreditTransactionType } from '../models/credit.model';
+
+// Import the extended Express Request interface with user property
+import '../../../middleware/auth.middleware';
+
+// Authenticated request type
+type AuthenticatedRequest = Request & {
+  user?: {
+    id: string;
+    organizationId: string;
+    email?: string;
+    role?: string;
+  };
+};
+
+export class CreditController {
+  /**
+   * Get credit balance for the authenticated user or organization
+   * @route GET /api/credits/balance
+   */
+  public static async getBalance(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const organizationId = req.query.organizationId as string;
+
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          message: 'User ID is required'
+        });
+        return;
+      }
+
+      const balance = await CreditService.getBalance(userId, organizationId);
+
+      res.status(200).json({
+        success: true,
+        data: {
+          userId: balance.userId,
+          organizationId: balance.organizationId,
+          balance: balance.balance,
+          tier: balance.tier,
+          lastUpdated: balance.lastUpdated
+        }
+      });
+    } catch (error) {
+      if (error instanceof Error && (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) === 'Credit balance not found') {
+        res.status(404).json({
+          success: false,
+          message: 'Credit balance not found'
+        });
+      } else {
+        const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : 'Unknown error';
+        res.status(500).json({
+          success: false,
+          message: 'Failed to retrieve credit balance',
+          error: errorMessage
+        });
+      }
+    }
+  }
+
+  /**
+   * Get transaction history for the authenticated user or organization
+   * @route GET /api/credits/history
+   */
+  public static async getTransactionHistory(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const organizationId = req.query.organizationId as string;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+      const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
+
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          message: 'User ID is required'
+        });
+        return;
+      }
+
+      const transactions = await CreditService.getTransactionHistory(
+        userId,
+        organizationId,
+        limit,
+        offset
+      );
+
+      res.status(200).json({
+        success: true,
+        data: transactions.map(t => ({
+          id: (t as any)._id,
+          userId: t.userId,
+          organizationId: t.organizationId,
+          timestamp: t.timestamp,
+          amount: t.amount,
+          type: t.type,
+          description: t.description,
+          newBalance: t.newBalance,
+          referenceId: t.referenceId
+        }))
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : 'Unknown error';
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve transaction history',
+        error: errorMessage
+      });
+    }
+  }
+
+  /**
+   * Initialize credit balance (admin only)
+   * @route POST /api/credits/initialize
+   */
+  public static async initializeBalance(req: Request, res: Response): Promise<void> {
+    try {
+      const { userId, tier, organizationId, initialBalance } = req.body;
+
+      if (!userId || !tier) {
+        res.status(400).json({
+          success: false,
+          message: 'User ID and subscription tier are required'
+        });
+        return;
+      }
+
+      if (!Object.values(SubscriptionTier).includes(tier)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid subscription tier'
+        });
+        return;
+      }
+
+      const balance = await CreditService.initializeBalance(
+        userId,
+        tier,
+        organizationId,
+        initialBalance
+      );
+
+      res.status(201).json({
+        success: true,
+        message: 'Credit balance initialized successfully',
+        data: {
+          userId: balance.userId,
+          organizationId: balance.organizationId,
+          balance: balance.balance,
+          tier: balance.tier,
+          lastUpdated: balance.lastUpdated
+        }
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : 'Unknown error';
+      res.status(500).json({
+        success: false,
+        message: 'Failed to initialize credit balance',
+        error: errorMessage
+      });
+    }
+  }
+
+  /**
+   * Add credits (admin only or payment service)
+   * @route POST /api/credits/add
+   */
+  public static async addCredits(req: Request, res: Response): Promise<void> {
+    try {
+      const { userId, amount, type, description, organizationId, referenceId } = req.body;
+
+      if (!userId || !amount || !type || !description) {
+        res.status(400).json({
+          success: false,
+          message: 'User ID, amount, type, and description are required'
+        });
+        return;
+      }
+
+      if (amount <= 0) {
+        res.status(400).json({
+          success: false,
+          message: 'Amount must be a positive number'
+        });
+        return;
+      }
+
+      if (![CreditTransactionType.ALLOCATION, CreditTransactionType.PURCHASE].includes(type)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid transaction type for adding credits'
+        });
+        return;
+      }
+
+      const balance = await CreditService.addCredits(
+        userId,
+        amount,
+        type,
+        description,
+        organizationId,
+        referenceId
+      );
+
+      res.status(200).json({
+        success: true,
+        message: 'Credits added successfully',
+        data: {
+          userId: balance.userId,
+          organizationId: balance.organizationId,
+          balance: balance.balance,
+          tier: balance.tier,
+          lastUpdated: balance.lastUpdated
+        }
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : 'Unknown error';
+      res.status(500).json({
+        success: false,
+        message: 'Failed to add credits',
+        error: errorMessage
+      });
+    }
+  }
+
+  /**
+   * Deduct credits (internal use by feature services)
+   * @route POST /api/credits/deduct
+   */
+  public static async deductCredits(req: Request, res: Response): Promise<void> {
+    try {
+      const { userId, amount, description, organizationId, referenceId } = req.body;
+
+      if (!userId || !amount || !description) {
+        res.status(400).json({
+          success: false,
+          message: 'User ID, amount, and description are required'
+        });
+        return;
+      }
+
+      if (amount <= 0) {
+        res.status(400).json({
+          success: false,
+          message: 'Amount must be a positive number'
+        });
+        return;
+      }
+
+      const balance = await CreditService.deductCredits(
+        userId,
+        amount,
+        description,
+        organizationId,
+        referenceId
+      );
+
+      res.status(200).json({
+        success: true,
+        message: 'Credits deducted successfully',
+        data: {
+          userId: balance.userId,
+          organizationId: balance.organizationId,
+          balance: balance.balance,
+          tier: balance.tier,
+          lastUpdated: balance.lastUpdated
+        }
+      });
+    } catch (error) {
+      if (error instanceof InsufficientCreditsError) {
+        res.status(402).json({
+          success: false,
+          message: (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)),
+          error: 'INSUFFICIENT_CREDITS'
+        });
+      } else {
+        const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : 'Unknown error';
+        res.status(500).json({
+          success: false,
+          message: 'Failed to deduct credits',
+          error: errorMessage
+        });
+      }
+    }
+  }
+
+  /**
+   * Update subscription tier (admin only)
+   * @route PUT /api/credits/tier
+   */
+  public static async updateSubscriptionTier(req: Request, res: Response): Promise<void> {
+    try {
+      const { userId, tier, organizationId } = req.body;
+
+      if (!userId || !tier) {
+        res.status(400).json({
+          success: false,
+          message: 'User ID and subscription tier are required'
+        });
+        return;
+      }
+
+      if (!Object.values(SubscriptionTier).includes(tier)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid subscription tier'
+        });
+        return;
+      }
+
+      const balance = await CreditService.updateSubscriptionTier(
+        userId,
+        tier,
+        organizationId
+      );
+
+      res.status(200).json({
+        success: true,
+        message: 'Subscription tier updated successfully',
+        data: {
+          userId: balance.userId,
+          organizationId: balance.organizationId,
+          balance: balance.balance,
+          tier: balance.tier,
+          lastUpdated: balance.lastUpdated
+        }
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : 'Unknown error';
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update subscription tier',
+        error: errorMessage
+      });
+    }
+  }
+
+  /**
+   * Add monthly allocation (scheduled task/cron job use)
+   * @route POST /api/credits/monthly-allocation
+   */
+  public static async addMonthlyAllocation(req: Request, res: Response): Promise<void> {
+    try {
+      const { userId, organizationId } = req.body;
+
+      if (!userId) {
+        res.status(400).json({
+          success: false,
+          message: 'User ID is required'
+        });
+        return;
+      }
+
+      const balance = await CreditService.addMonthlyAllocation(
+        userId,
+        organizationId
+      );
+
+      res.status(200).json({
+        success: true,
+        message: 'Monthly allocation added successfully',
+        data: {
+          userId: balance.userId,
+          organizationId: balance.organizationId,
+          balance: balance.balance,
+          tier: balance.tier,
+          lastUpdated: balance.lastUpdated
+        }
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : 'Unknown error';
+      res.status(500).json({
+        success: false,
+        message: 'Failed to add monthly allocation',
+        error: errorMessage
+      });
+    }
+  }
+}

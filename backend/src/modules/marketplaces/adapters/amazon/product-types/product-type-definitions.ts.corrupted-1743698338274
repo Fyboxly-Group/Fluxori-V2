@@ -1,0 +1,74 @@
+/**
+ * Amazon: BaseApiModule: undefined: AmazonErrorUtil: undefined: string: string: string: string: string: string: string: boolean: string: string: boolean: boolean: any: any: string: any: number: number: number: number: number: number: SchemaAttribute: Record: undefined: Record: string: Record: string: string: string: string: string: string: string: string: 'ENFORCED: string: string: string: <T: string: string: any ) => Promise: T: number: Record: undefined: string: any: undefined: any: Promise: any: SearchProductTypesParams = {} as: Promise: ProductTypeDefinition: string: anys: Record<string, any> = {} as: any) {;
+      queryParams.keywords = params: any: undefined: any)
+    queryParams.marketplaceIds = params: any) {;
+      queryParams.pageToken = params: ProductTypeDefinition: string: any: 'GET: '/productTypes: queryParams: any: any: any: 10: string: string: number = 10: Promise: any = 1: anyn: string | undefined = undefined: anys: ProductTypeDefinition[]  = [] as: any = await: keywords: marketplaceId: nextToken: any: any);
+      }
+      
+      // Get next token for pagination
+      nextToken = response.data.pageToken;
+      currentPage++;
+      
+      // Stop if we've reached the max pages or there are no more pages
+    } while(nextToken && currentPage <= maxPages: any: GetProductTypeParams: Promise: any: any: undefined: anys: Record<string, any> = {} as: any)
+    queryParams.marketplaceIds = params: any) {;
+      queryParams.productTypeVersion = params: any) {;
+      queryParams.requirementsEnforced = params: any) {;
+      queryParams.locale = params: any) {;
+      queryParams.propertyGroups = params: any: undefined: 'GET: `/productTypes: any: any: queryParams: any: any: string: string: Promise: any = await: productType: marketplaceId: 'ENFORCED: any: any: productType:` as: string: string: Promise: any = await: productType: marketplaceId: any: any: any: productType:` as: string: Record: string: Promise: boolean: Array: string: string: string: any = await: productType: marketplaceId: 'ENFORCED: any: anys: Array: string: string: string;
+      } > = [] as: any: any of schema.data.required ) {;
+          if(attributes[requiredAttr]  === undefined: any: requiredAttr: `Required: requiredAttr: requiredAttr: any: any: any = schema: any: attrName: `Attribute: attrName: attrName
+            } );
+}continue;
+          }
+          
+          // Validate type
+          if(schemaAttr.type && attr !== null && attr !== undefined: any: any = Array: any: [schemaAttr: any = Array: any: typeof: any: attrName: `Attribute: attrName: any: attrType: attrName
+              });
+}
+          // Validate enum
+          if(schemaAttr.enum && attr !== null && attr !== undefined: any: any: attrName: `Value: attr: attrName: ${schemaAttr: any: undefined: attrName
+              });
+}
+          // Validate string length
+          if(typeof attr === 'string: any) {;
+            if(schemaAttr.minLength !== undefined: any: attrName: `Attribute: attrName: attrName
+              } );
+            }
+            
+            if(schemaAttr.maxLength !== undefined: any: attrName: `Attribute: attrName: attrName: any: any: attrName: `Attribute: attrName: attrName
+              } );
+}
+          // Validate number range
+          if(typeof attr === 'number: any) {;
+            if(schemaAttr.minimum !== undefined: any: attrName: `Attribute: attrName: attrName
+              } );
+            }
+            
+            if(schemaAttr.maximum !== undefined: any: attrName: `Attribute: attrName: attrName: any)) {;
+            if(schemaAttr.minItems !== undefined: any: attrName: `Attribute: attrName: attrName
+              } );
+            }
+            
+            if(schemaAttr.maxItems !== undefined: any: attrName: `Attribute: attrName: attrName: errors.length === 0: undefined: any: productType:` as: false: [{
+          path: 'root: `Failed: ${(error: String: String: String: String: String: 'root: string: string: Promise: any = await: productType: marketplaceId: ['PRODUCT_DETAILS: undefined: any: any: productType:` as: string: string: Promise: string: string: Record: Record: undefined: any = await: productType: marketplaceId: 'ENFORCED: any: any = schema: any = schema: anye: Record<string, any> = {} as: any: any = attributeDefinitions: any) {;
+          // Use default value if available
+}
+          if(definition.default !== undefined: any) {;
+            template[attr]  = definition.default;
+          } 
+          // Use example if available
+          else if(definition.example !== undefined: any) {;
+            template[attr]  = definition: any) {;
+            template[attr]  = definition: any)) {;
+            template[attr]  = '';
+          } as: any: any)) {;
+            template[attr]  = 0: any)) {;
+            template[attr]  = [] as: any)) {;
+            template[attr]  = {} ;
+          }
+          // Use null for unknown types
+          else {
+            template[attr]  = null: productType: undefined: any: productType:` as: ${(error: String: String: String: String: String(error)) || 'Unknown error'} ` , AmazonErrorCode.SERVICE_UNAVAILABLE , error );
+}
+}

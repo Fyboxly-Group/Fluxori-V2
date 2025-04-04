@@ -1,9 +1,27 @@
 import { Container } from 'inversify';
 import { Logger } from 'winston';
-import winston from 'winston';
 import { Firestore } from 'firebase-admin/firestore';
 import { getFirestore } from 'firebase-admin/firestore';
 import { initializeApp, cert } from 'firebase-admin/app';
+import { TYPES } from './inversify.types';
+
+// Core services
+import { LoggerService, ILoggerService } from '../services/logger.service';
+import { InventoryService, IInventoryService } from '../services/inventory.service';
+import { OrganizationService, IOrganizationService } from '../services/organization.service';
+
+// Marketplace module imports
+import { AmazonAdapter } from '../modules/marketplaces/adapters/amazon/amazon.adapter';
+import { ShopifyAdapter } from '../modules/marketplaces/adapters/shopify/shopify-adapter';
+import { TakealotAdapter } from '../modules/marketplaces/adapters/takealot/takealot-adapter';
+import { MarketplaceAdapterFactory } from '../modules/marketplaces/adapters/marketplace-adapter.factory';
+import { MarketplaceAdapterFactoryService } from '../modules/marketplaces/services/marketplace-adapter-factory.service';
+
+// Controllers
+import { InventoryController } from '../controllers/inventory.controller';
+
+// Order Ingestion module
+import { OrderIngestionController } from '../modules/order-ingestion/controllers/order-ingestion.controller';
 
 // BuyBox module
 import { RepricingRuleRepository } from '../modules/buybox/repositories/repricing-rule.repository';
@@ -22,7 +40,7 @@ import { ScheduledJobRepository } from '../modules/ai-insights/repositories/sche
 import { InsightGenerationService } from '../modules/ai-insights/services/insight-generation.service';
 import { InsightSchedulerService } from '../modules/ai-insights/services/insight-scheduler.service';
 import { InsightDataService } from '../modules/ai-insights/services/insight-data.service';
-import { DeepSeekLLMService } from '../modules/ai-insights/services/deepseek-llm.service';
+import { DeepseekLlmService } from '../modules/ai-insights/services/deepseek-llm.service';
 import { InsightController } from '../modules/ai-insights/controllers/insight.controller';
 import { ScheduledJobController } from '../modules/ai-insights/controllers/scheduled-job.controller';
 
@@ -32,22 +50,28 @@ import { CreditService } from '../modules/credits/services/credit.service';
 // Initialize container
 const container = new Container();
 
+// Import winston module types
+import * as winston from 'winston';
+// For clarity, create aliases
+const WinstonTransports = winston.transports;
+const WinstonFormat = winston.format;
+
 // Setup logger
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.json()
+  format: WinstonFormat.combine(
+    WinstonFormat.timestamp(),
+    WinstonFormat.json()
   ),
   transports: [
-    new winston.transports.Console({
-      format: winston.format.combine(
-        winston.format.colorize(),
-        winston.format.simple()
+    new WinstonTransports.Console({
+      format: WinstonFormat.combine(
+        WinstonFormat.colorize(),
+        WinstonFormat.simple()
       )
     }),
-    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'logs/combined.log' })
+    new WinstonTransports.File({ filename: 'logs/error.log', level: 'error' }),
+    new WinstonTransports.File({ filename: 'logs/combined.log' })
   ]
 });
 
@@ -72,8 +96,47 @@ try {
 }
 
 // Register common services
-container.bind<Logger>('Logger').toConstantValue(logger);
-container.bind<Firestore>('Firestore').toConstantValue(firestore);
+container.bind<Logger>(TYPES.Logger).toConstantValue(logger);
+container.bind<Firestore>(TYPES.Firestore).toConstantValue(firestore);
+
+// Register core services
+container.bind<ILoggerService>(TYPES.LoggerService).to(LoggerService).inSingletonScope();
+container.bind<IInventoryService>(TYPES.InventoryService).to(InventoryService);
+container.bind<IOrganizationService>(TYPES.OrganizationService).to(OrganizationService);
+
+// Import storage providers
+import { GCSStorageProvider } from '../services/storage/providers/gcs-provider';
+import { S3StorageProvider } from '../services/storage/providers/s3-provider';
+import { LocalStorageProvider } from '../services/storage/providers/local-provider';
+import { StorageService } from '../services/storage/storage.service';
+
+// Import PDF service providers
+import { PDFLibProvider } from '../services/pdf/providers/pdf-lib-provider';
+import { PDFKitProvider } from '../services/pdf/providers/pdfkit-provider';
+import { TemplateService, ITemplateService } from '../services/pdf/template.service';
+import { PDFGenerationService, IPDFGenerationService } from '../services/pdf/pdf-generation.service';
+import { DocumentController } from '../controllers/document.controller';
+
+// Import Auth service and controller
+import { AuthService, IAuthService } from '../services/auth.service';
+import { AuthController } from '../controllers/auth.controller';
+
+// Register storage providers
+container.bind<GCSStorageProvider>(TYPES.GCSStorageProvider).to(GCSStorageProvider).inSingletonScope();
+container.bind<S3StorageProvider>(TYPES.S3StorageProvider).to(S3StorageProvider).inSingletonScope();
+container.bind<LocalStorageProvider>(TYPES.LocalStorageProvider).to(LocalStorageProvider).inSingletonScope();
+container.bind<StorageService>(TYPES.StorageService).to(StorageService).inSingletonScope();
+
+// Register PDF providers and services
+container.bind<PDFLibProvider>(PDFLibProvider).toSelf().inSingletonScope();
+container.bind<PDFKitProvider>(PDFKitProvider).toSelf().inSingletonScope();
+container.bind<ITemplateService>(TYPES.TemplateService).to(TemplateService).inSingletonScope();
+container.bind<IPDFGenerationService>(TYPES.PDFGenerationService).to(PDFGenerationService).inSingletonScope();
+container.bind<DocumentController>(DocumentController).toSelf().inSingletonScope();
+
+// Register Auth service and controller
+container.bind<IAuthService>(TYPES.AuthService).to(AuthService).inSingletonScope();
+container.bind<AuthController>(AuthController).toSelf().inSingletonScope();
 
 // Register BuyBox module services
 container.bind<BuyBoxHistoryRepository>(BuyBoxHistoryRepository).toSelf();
@@ -92,11 +155,27 @@ container.bind<ScheduledJobRepository>(ScheduledJobRepository).toSelf();
 container.bind<InsightGenerationService>(InsightGenerationService).toSelf();
 container.bind<InsightSchedulerService>(InsightSchedulerService).toSelf();
 container.bind<InsightDataService>(InsightDataService).toSelf();
-container.bind<DeepSeekLLMService>(DeepSeekLLMService).toSelf();
+container.bind<DeepseekLlmService>(DeepseekLlmService).toSelf();
 container.bind<InsightController>(InsightController).toSelf();
 container.bind<ScheduledJobController>(ScheduledJobController).toSelf();
 
 // Register Credits module services
 container.bind<CreditService>(CreditService).toSelf();
+
+// Register Controllers
+container.bind<InventoryController>(InventoryController).toSelf().inSingletonScope();
+container.bind<OrderIngestionController>(OrderIngestionController).toSelf().inSingletonScope();
+
+// Register Product Ingestion Module
+import { ProductIngestionService, IProductIngestionService } from '../modules/product-ingestion/services/product-ingestion.service';
+container.bind<IProductIngestionService>(ProductIngestionService).toSelf().inSingletonScope();
+
+// Register Marketplace module services
+container.bind<Container>('Container').toConstantValue(container);
+container.bind<AmazonAdapter>(AmazonAdapter).toSelf().inTransientScope();
+container.bind<ShopifyAdapter>(ShopifyAdapter).toSelf().inTransientScope();
+container.bind<TakealotAdapter>(TakealotAdapter).toSelf().inTransientScope();
+container.bind<MarketplaceAdapterFactory>(MarketplaceAdapterFactory).toSelf().inSingletonScope();
+container.bind<MarketplaceAdapterFactoryService>(MarketplaceAdapterFactoryService).toSelf().inSingletonScope();
 
 export { container };

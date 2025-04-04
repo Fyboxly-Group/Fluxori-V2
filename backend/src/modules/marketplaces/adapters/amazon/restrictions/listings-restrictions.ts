@@ -5,16 +5,92 @@
  * This module allows sellers to check product listing eligibility based on Amazon's restrictions.
  */
 
-import { BaseApiModule, ApiRequestOptions, ApiResponse } from '../core/api-module';
-import { AmazonSPApi } from '../schemas/amazon.generated';
-import { AmazonErrorUtil, AmazonErrorCode } from '../utils/amazon-error';
+import { ApiRequestFunction, ApiResponse, BaseModule } from '../core/base-module.interface';
+import AmazonErrorHandler, { AmazonErrorCode } from '../utils/amazon-error';
 
 /**
- * Type aliases from schema
+ * RestrictionsIdentifierType - Type of identifier for checking restrictions
  */
-export type RestrictionsIdentifierType = AmazonSPApi.ListingsRestrictions.RestrictionsIdentifierType;
-export type Restriction = AmazonSPApi.ListingsRestrictions.Restriction;
-export type RestrictionList = AmazonSPApi.ListingsRestrictions.RestrictionList;
+export type RestrictionsIdentifierType = 'ASIN' | 'SKU' | 'GTIN';
+
+/**
+ * Restriction condition
+ */
+export type ConditionType = 
+  'new' | 
+  'new_new' | 
+  'new_open_box' | 
+  'new_oem' | 
+  'refurbished_refurbished' | 
+  'used_like_new' | 
+  'used_very_good' | 
+  'used_good' | 
+  'used_acceptable' | 
+  'collectible_like_new' | 
+  'collectible_very_good' | 
+  'collectible_good' | 
+  'collectible_acceptable' | 
+  'club_club';
+
+/**
+ * Link object for documentation of a restriction
+ */
+export interface Link {
+  /**
+   * Resource URL
+   */
+  resource: string;
+  
+  /**
+   * Title of the link
+   */
+  title?: string;
+  
+  /**
+   * Type of link
+   */
+  type?: string;
+}
+
+/**
+ * Restriction
+ */
+export interface Restriction {
+  /**
+   * Marketplace ID
+   */
+  marketplaceId: string;
+  
+  /**
+   * Condition type
+   */
+  conditionType?: string;
+  
+  /**
+   * Reason for the restriction
+   */
+  reasonCode?: string;
+  
+  /**
+   * Formatted message explaining the restriction
+   */
+  message?: string;
+  
+  /**
+   * Links to more information about the restriction
+   */
+  links?: Link[];
+}
+
+/**
+ * RestrictionList - List of restrictions for a product
+ */
+export interface RestrictionList {
+  /**
+   * Array of restrictions
+   */
+  restrictions: Restriction[];
+}
 
 /**
  * Options for checking restrictions
@@ -28,7 +104,7 @@ export interface CheckRestrictionsOptions {
   /**
    * The condition of the item that would be listed
    */
-  condition?: string;
+  condition?: ConditionType | string;
   
   /**
    * Applicable country for the listing restriction check (useful for cross-border sales)
@@ -37,35 +113,96 @@ export interface CheckRestrictionsOptions {
 }
 
 /**
+ * ListingsRestrictions module options
+ */
+export interface ListingsRestrictionsModuleOptions {
+  /**
+   * Default marketplace ID
+   */
+  defaultMarketplaceId?: string;
+  
+  /**
+   * Default reason locale
+   */
+  defaultReasonLocale?: string;
+  
+  /**
+   * Default batch size for batch operations
+   */
+  batchSize?: number;
+}
+
+/**
  * Implementation of the Amazon Listings Restrictions API
  */
-export class ListingsRestrictionsModule extends BaseApiModule {
+export class ListingsRestrictionsModule implements BaseModule<ListingsRestrictionsModuleOptions> {
+  /**
+   * The unique identifier for this module
+   */
+  public readonly moduleId: string = 'listingsRestrictions';
+  
+  /**
+   * The human-readable name of this module
+   */
+  public readonly moduleName: string = 'Listings Restrictions';
+  
+  /**
+   * The base URL path for API requests
+   */
+  public readonly basePath: string;
+  
+  /**
+   * API version
+   */
+  public readonly apiVersion: string;
+  
+  /**
+   * Marketplace ID
+   */
+  public readonly marketplaceId: string;
+  
+  /**
+   * Additional configuration options for this module
+   */
+  public readonly options: ListingsRestrictionsModuleOptions = {
+    defaultReasonLocale: 'en_US',
+    batchSize: 20
+  };
+  
+  /**
+   * The API request function used by this module
+   */
+  public readonly apiRequest: ApiRequestFunction;
+  
   /**
    * Constructor
    * @param apiVersion API version
-   * @param makeApiRequest Function to make API requests
+   * @param apiRequest Function to make API requests
    * @param marketplaceId Marketplace ID
+   * @param options Optional module-specific configuration
    */
   constructor(
     apiVersion: string,
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string
+    apiRequest: ApiRequestFunction,
+    marketplaceId: string,
+    options?: ListingsRestrictionsModuleOptions
   ) {
-    super('listingsRestrictions', apiVersion, makeApiRequest, marketplaceId);
-  }
-  
-  /**
-   * Initialize the module
-   * @param config Module-specific configuration
-   * @returns Promise<any> that resolves when initialization is complete
-   */
-  protected async initializeModule(config?: any): Promise<void> {
-    // No specific initialization required for this module
-    return Promise<any>.resolve();
+    this.apiVersion = apiVersion;
+    this.apiRequest = apiRequest;
+    this.marketplaceId = marketplaceId;
+    this.basePath = `/listings/restrictions/${apiVersion}`;
+    
+    if (options) {
+      this.options = {
+        ...this.options,
+        ...options
+      };
+    }
+    
+    // Set default marketplace ID if not provided in options
+    if (!this.options.defaultMarketplaceId) {
+      this.options.defaultMarketplaceId = marketplaceId;
+    }
   }
   
   /**
@@ -75,10 +212,16 @@ export class ListingsRestrictionsModule extends BaseApiModule {
    * @returns Restrictions information for the ASIN
    */
   public async checkRestrictionsAsin(
-    asin: string,
-    options: CheckRestrictionsOptions
+    asin: string, 
+    options: Partial<CheckRestrictionsOptions> = {}
   ): Promise<ApiResponse<RestrictionList>> {
-    return this.checkRestrictions('ASIN', asin, options);
+    const fullOptions: CheckRestrictionsOptions = {
+      marketplaceId: options.marketplaceId || this.options.defaultMarketplaceId || this.marketplaceId,
+      condition: options.condition,
+      reasonLocale: options.reasonLocale || this.options.defaultReasonLocale
+    };
+    
+    return this.checkRestrictions('ASIN', asin, fullOptions);
   }
   
   /**
@@ -88,10 +231,16 @@ export class ListingsRestrictionsModule extends BaseApiModule {
    * @returns Restrictions information for the SKU
    */
   public async checkRestrictionsSku(
-    sku: string,
-    options: CheckRestrictionsOptions
+    sku: string, 
+    options: Partial<CheckRestrictionsOptions> = {}
   ): Promise<ApiResponse<RestrictionList>> {
-    return this.checkRestrictions('SKU', sku, options);
+    const fullOptions: CheckRestrictionsOptions = {
+      marketplaceId: options.marketplaceId || this.options.defaultMarketplaceId || this.marketplaceId,
+      condition: options.condition,
+      reasonLocale: options.reasonLocale || this.options.defaultReasonLocale
+    };
+    
+    return this.checkRestrictions('SKU', sku, fullOptions);
   }
   
   /**
@@ -101,10 +250,16 @@ export class ListingsRestrictionsModule extends BaseApiModule {
    * @returns Restrictions information for the GTIN
    */
   public async checkRestrictionsGtin(
-    gtin: string,
-    options: CheckRestrictionsOptions
+    gtin: string, 
+    options: Partial<CheckRestrictionsOptions> = {}
   ): Promise<ApiResponse<RestrictionList>> {
-    return this.checkRestrictions('GTIN', gtin, options);
+    const fullOptions: CheckRestrictionsOptions = {
+      marketplaceId: options.marketplaceId || this.options.defaultMarketplaceId || this.marketplaceId,
+      condition: options.condition,
+      reasonLocale: options.reasonLocale || this.options.defaultReasonLocale
+    };
+    
+    return this.checkRestrictions('GTIN', gtin, fullOptions);
   }
   
   /**
@@ -115,26 +270,26 @@ export class ListingsRestrictionsModule extends BaseApiModule {
    * @returns Restrictions information for the product
    */
   private async checkRestrictions(
-    identifierType: RestrictionsIdentifierType,
-    identifierValue: string,
+    identifierType: RestrictionsIdentifierType, 
+    identifierValue: string, 
     options: CheckRestrictionsOptions
   ): Promise<ApiResponse<RestrictionList>> {
     if (!identifierValue) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         `${identifierType} is required to check restrictions`,
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     if (!options.marketplaceId) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'Marketplace ID is required to check restrictions',
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
-    const params: Record<string, any> = {
-      marketplaceIds: options.marketplaceId
+    const params: Record<string, string | string[]> = {
+      marketplaceIds: [options.marketplaceId]
     };
     
     // Convert identifierType to the format expected by the API
@@ -150,17 +305,18 @@ export class ListingsRestrictionsModule extends BaseApiModule {
     }
     
     try {
-      return await this.makeRequest<RestrictionList>({
-        method: 'GET',
-        path: '/restrictions',
-        params
-      });
+      return await this.apiRequest(
+        'GET',
+        `${this.basePath}/restrictions`,
+        { params }
+      );
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.checkRestrictions`);
+      throw error instanceof Error
+        ? AmazonErrorHandler.createError(error.message, AmazonErrorCode.OPERATION_FAILED, error)
+        : AmazonErrorHandler.createError('Unknown error', AmazonErrorCode.UNKNOWN_ERROR);
     }
   }
-
+  
   /**
    * Check restrictions for multiple products
    * @param items Array of items to check, with identifier type and value
@@ -171,19 +327,25 @@ export class ListingsRestrictionsModule extends BaseApiModule {
     items: Array<{
       type: RestrictionsIdentifierType;
       value: string;
-    }>,
-    options: CheckRestrictionsOptions
+    }>, 
+    options: Partial<CheckRestrictionsOptions> = {}
   ): Promise<Map<string, Restriction[] | Error>> {
     if (!items || items.length === 0) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'At least one item is required for batch restriction check',
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
+    const fullOptions: CheckRestrictionsOptions = {
+      marketplaceId: options.marketplaceId || this.options.defaultMarketplaceId || this.marketplaceId,
+      condition: options.condition,
+      reasonLocale: options.reasonLocale || this.options.defaultReasonLocale
+    };
+    
     // Check each item individually (Amazon doesn't provide a batch endpoint)
-    const promises = items.map((item: any) => 
-      this.checkRestrictions(item.type, item.value, options)
+    const promises = items.map(item => 
+      this.checkRestrictions(item.type, item.value, fullOptions)
         .then(response => ({
           value: item.value,
           restrictions: response.data.restrictions
@@ -194,19 +356,19 @@ export class ListingsRestrictionsModule extends BaseApiModule {
         }))
     );
     
-    const results = await Promise.all<any>(promises);
+    const results = await Promise.all(promises);
     
     // Build a map of identifier value to restrictions or error
     const restrictionsMap = new Map<string, Restriction[] | Error>();
     
-    results.forEach((result: any) => {
+    results.forEach(result => {
       if ('restrictions' in result) {
         restrictionsMap.set(result.value, result.restrictions);
       } else {
         restrictionsMap.set(result.value, result.error);
       }
     });
-
+    
     return restrictionsMap;
   }
   
@@ -218,23 +380,28 @@ export class ListingsRestrictionsModule extends BaseApiModule {
    * @returns Boolean indicating whether the product is eligible for listing
    */
   public async isEligibleForListing(
-    identifierType: RestrictionsIdentifierType,
-    identifierValue: string,
-    options: CheckRestrictionsOptions
+    identifierType: RestrictionsIdentifierType, 
+    identifierValue: string, 
+    options: Partial<CheckRestrictionsOptions> = {}
   ): Promise<boolean> {
     try {
-      const response = await this.checkRestrictions(identifierType, identifierValue, options);
+      const fullOptions: CheckRestrictionsOptions = {
+        marketplaceId: options.marketplaceId || this.options.defaultMarketplaceId || this.marketplaceId,
+        condition: options.condition,
+        reasonLocale: options.reasonLocale || this.options.defaultReasonLocale
+      };
+      
+      const response = await this.checkRestrictions(identifierType, identifierValue, fullOptions);
       
       // If there are no restrictions, the product is eligible
       return response.data.restrictions.length === 0;
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       // If there was an error, assume the product is not eligible
       console.error(`Error checking eligibility for ${identifierType} ${identifierValue}:`, error);
       return false;
     }
   }
-
+  
   /**
    * Get detailed restriction reasons for a product
    * @param identifierType Type of identifier (ASIN, GTIN, or SKU)
@@ -243,15 +410,21 @@ export class ListingsRestrictionsModule extends BaseApiModule {
    * @returns Array of restriction reasons
    */
   public async getRestrictionReasons(
-    identifierType: RestrictionsIdentifierType,
-    identifierValue: string,
-    options: CheckRestrictionsOptions
+    identifierType: RestrictionsIdentifierType, 
+    identifierValue: string, 
+    options: Partial<CheckRestrictionsOptions> = {}
   ): Promise<string[]> {
     try {
-      const response = await this.checkRestrictions(identifierType, identifierValue, options);
+      const fullOptions: CheckRestrictionsOptions = {
+        marketplaceId: options.marketplaceId || this.options.defaultMarketplaceId || this.marketplaceId,
+        condition: options.condition,
+        reasonLocale: options.reasonLocale || this.options.defaultReasonLocale
+      };
+      
+      const response = await this.checkRestrictions(identifierType, identifierValue, fullOptions);
       
       // Extract the reasons from the restrictions
-      return response.data.restrictions.map((restriction: any) => {
+      return response.data.restrictions.map(restriction => {
         // Build a detailed reason string
         let reason = restriction.reasonCode || 'Unknown restriction';
         
@@ -262,9 +435,79 @@ export class ListingsRestrictionsModule extends BaseApiModule {
         return reason;
       });
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error(`Error getting restriction reasons for ${identifierType} ${identifierValue}:`, error);
       return ['Error retrieving restrictions information'];
     }
+  }
+  
+  /**
+   * Check eligibility for multiple ASINs
+   * @param asins Array of ASINs to check
+   * @param options Options for the restrictions check
+   * @returns Map of ASINs to eligibility status
+   */
+  public async checkEligibilityForMultipleAsins(
+    asins: string[], 
+    options: Partial<CheckRestrictionsOptions> = {}
+  ): Promise<Map<string, boolean>> {
+    if (!asins || asins.length === 0) {
+      throw AmazonErrorHandler.createError(
+        'At least one ASIN is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    const items = asins.map(asin => ({
+      type: 'ASIN' as RestrictionsIdentifierType,
+      value: asin
+    }));
+    
+    const restrictionsMap = await this.batchCheckRestrictions(items, options);
+    const eligibilityMap = new Map<string, boolean>();
+    
+    restrictionsMap.forEach((restrictionsOrError, asin) => {
+      if (restrictionsOrError instanceof Error) {
+        // If there was an error, assume the product is not eligible
+        eligibilityMap.set(asin, false);
+      } else {
+        // If there are no restrictions, the product is eligible
+        eligibilityMap.set(asin, restrictionsOrError.length === 0);
+      }
+    });
+    
+    return eligibilityMap;
+  }
+  
+  /**
+   * Get the most common restriction reasons across multiple products
+   * @param items Array of items to check
+   * @param options Options for the restrictions check
+   * @returns Sorted array of restriction reasons with counts
+   */
+  public async getCommonRestrictionReasons(
+    items: Array<{
+      type: RestrictionsIdentifierType;
+      value: string;
+    }>, 
+    options: Partial<CheckRestrictionsOptions> = {}
+  ): Promise<Array<{ reason: string; count: number }>> {
+    const restrictionsMap = await this.batchCheckRestrictions(items, options);
+    const reasonCounts = new Map<string, number>();
+    
+    // Count occurrences of each reason
+    restrictionsMap.forEach((restrictionsOrError, itemValue) => {
+      if (!(restrictionsOrError instanceof Error)) {
+        restrictionsOrError.forEach(restriction => {
+          const reason = restriction.reasonCode || 'Unknown';
+          const count = reasonCounts.get(reason) || 0;
+          reasonCounts.set(reason, count + 1);
+        });
+      }
+    });
+    
+    // Convert to array and sort by count (descending)
+    return Array.from(reasonCounts.entries())
+      .map(([reason, count]) => ({ reason, count }))
+      .sort((a, b) => b.count - a.count);
   }
 }

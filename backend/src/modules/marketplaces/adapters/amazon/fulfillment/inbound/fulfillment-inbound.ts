@@ -5,100 +5,600 @@
  * This module handles creating and managing inbound shipment plans to Amazon FBA.
  */
 
-import { BaseApiModule, ApiRequestOptions, ApiResponse } from '../../core/api-module';
-import { AmazonErrorUtil, AmazonErrorCode } from '../../utils/amazon-error';
-import { AmazonSPApi } from '../../schemas/amazon.generated';
+import { ApiModule } from '../../core/api-module';
+import { ApiRequestFunction, ApiResponse } from '../../core/base-module.interface';
+import { AmazonErrorHandler, AmazonErrorCode } from '../../utils/amazon-error';
 
 /**
  * Address information
  */
-export type Address = AmazonSPApi.FulfillmentInbound.Address;
+export interface Address {
+  /**
+   * Name of the person or business
+   */
+  name: string;
+  
+  /**
+   * Street address line 1
+   */
+  addressLine1: string;
+  
+  /**
+   * Street address line 2 (optional)
+   */
+  addressLine2?: string;
+  
+  /**
+   * City
+   */
+  city: string;
+  
+  /**
+   * State or province
+   */
+  stateOrProvinceCode: string;
+  
+  /**
+   * Postal code
+   */
+  postalCode: string;
+  
+  /**
+   * Country code
+   */
+  countryCode: string;
+}
 
 /**
  * Inbound item information
  */
-export type InboundShipmentItem = AmazonSPApi.FulfillmentInbound.InboundShipmentItem;
+export interface InboundShipmentItem {
+  /**
+   * Seller SKU
+   */
+  sellerSKU: string;
+  
+  /**
+   * Quantity to ship
+   */
+  quantity: number;
+  
+  /**
+   * Quantity in case packaging (optional)
+   */
+  quantityInCase?: number;
+  
+  /**
+   * Prep instruction (optional)
+   */
+  prepDetails?: PrepDetails;
+}
+
+/**
+ * Preparation instruction details
+ */
+export interface PrepDetails {
+  /**
+   * Type of preparation needed
+   */
+  prepInstruction: string;
+  
+  /**
+   * Who will be doing the preparation
+   */
+  prepOwner: string;
+}
 
 /**
  * Create inbound shipment plan request
  */
-export type CreateInboundShipmentPlanRequest = AmazonSPApi.FulfillmentInbound.CreateInboundShipmentPlanRequest;
+export interface CreateInboundShipmentPlanRequest {
+  /**
+   * Address from which items will be shipped
+   */
+  shipFromAddress: Address;
+  
+  /**
+   * Label preparation preference
+   */
+  labelPrepPreference: LabelPrepPreference;
+  
+  /**
+   * Items to include in the shipment plan
+   */
+  inboundShipmentItems: InboundShipmentItem[];
+}
 
 /**
  * Create inbound shipment plan result item
  */
-export type InboundShipmentPlanItem = AmazonSPApi.FulfillmentInbound.InboundShipmentPlanItem;
+export interface InboundShipmentPlanItem {
+  /**
+   * Seller SKU
+   */
+  sellerSKU: string;
+  
+  /**
+   * Amazon ASIN
+   */
+  asin?: string;
+  
+  /**
+   * FNSKU
+   */
+  fulfillmentNetworkSKU?: string;
+  
+  /**
+   * Quantity to ship
+   */
+  quantity: number;
+  
+  /**
+   * Preparation instructions
+   */
+  prepDetailsList?: PrepDetails[];
+}
 
 /**
  * Inbound shipment plan
  */
-export type InboundShipmentPlan = AmazonSPApi.FulfillmentInbound.InboundShipmentPlan;
+export interface InboundShipmentPlan {
+  /**
+   * Shipment ID
+   */
+  shipmentId: string;
+  
+  /**
+   * Destination fulfillment center ID
+   */
+  destinationFulfillmentCenterId: string;
+  
+  /**
+   * Items in the shipment plan
+   */
+  items: InboundShipmentPlanItem[];
+  
+  /**
+   * Label preparation type
+   */
+  labelPrepType: string;
+}
+
+/**
+ * Create inbound shipment plan response
+ */
+export interface CreateInboundShipmentPlanResponse {
+  /**
+   * Response payload
+   */
+  payload: {
+    /**
+     * Inbound shipment plans
+     */
+    inboundShipmentPlans: InboundShipmentPlan[];
+  };
+}
 
 /**
  * Create inbound shipment request
  */
-export type CreateInboundShipmentRequest = AmazonSPApi.FulfillmentInbound.CreateInboundShipmentRequest;
+export interface CreateInboundShipmentRequest {
+  /**
+   * Shipment ID
+   */
+  shipmentId: string;
+  
+  /**
+   * Shipment name
+   */
+  shipmentName: string;
+  
+  /**
+   * Address from which items will be shipped
+   */
+  shipFromAddress: Address;
+  
+  /**
+   * Destination fulfillment center ID
+   */
+  destinationFulfillmentCenterId: string;
+  
+  /**
+   * Label preparation preference
+   */
+  labelPrepPreference: LabelPrepPreference;
+  
+  /**
+   * Items in the shipment
+   */
+  inboundShipmentItems: InboundShipmentItem[];
+  
+  /**
+   * Shipment status
+   */
+  shipmentStatus: ShipmentStatus;
+}
 
 /**
  * Update inbound shipment request
  */
-export type UpdateInboundShipmentRequest = AmazonSPApi.FulfillmentInbound.UpdateInboundShipmentRequest;
+export interface UpdateInboundShipmentRequest {
+  /**
+   * Shipment name (optional)
+   */
+  shipmentName?: string;
+  
+  /**
+   * Address from which items will be shipped (optional)
+   */
+  shipFromAddress?: Address;
+  
+  /**
+   * Destination fulfillment center ID (optional)
+   */
+  destinationFulfillmentCenterId?: string;
+  
+  /**
+   * Label preparation preference (optional)
+   */
+  labelPrepPreference?: LabelPrepPreference;
+  
+  /**
+   * Items in the shipment (optional)
+   */
+  inboundShipmentItems?: InboundShipmentItem[];
+  
+  /**
+   * Shipment status (optional)
+   */
+  shipmentStatus?: ShipmentStatus;
+}
+
+/**
+ * Create/update inbound shipment response
+ */
+export interface CreateInboundShipmentResponse {
+  /**
+   * Response payload
+   */
+  payload: {
+    /**
+     * Shipment ID
+     */
+    shipmentId: string;
+  };
+}
+
+/**
+ * Update inbound shipment response
+ */
+export interface UpdateInboundShipmentResponse extends CreateInboundShipmentResponse {}
 
 /**
  * Inbound shipment information
  */
-export type InboundShipmentInfo = AmazonSPApi.FulfillmentInbound.InboundShipmentInfo;
+export interface InboundShipmentInfo {
+  /**
+   * Shipment ID
+   */
+  shipmentId: string;
+  
+  /**
+   * Shipment name
+   */
+  shipmentName: string;
+  
+  /**
+   * Shipment status
+   */
+  shipmentStatus: ShipmentStatus;
+  
+  /**
+   * Label preparation type
+   */
+  labelPrepType: string;
+  
+  /**
+   * Address from which items will be shipped
+   */
+  shipFromAddress: Address;
+  
+  /**
+   * Destination fulfillment center ID
+   */
+  destinationFulfillmentCenterId: string;
+  
+  /**
+   * Box content status
+   */
+  boxContentsSource?: string;
+  
+  /**
+   * Estimated arrival date
+   */
+  estimatedBoxContentsFee?: {
+    /**
+     * Total fee
+     */
+    totalFee: {
+      /**
+       * Currency code
+       */
+      currencyCode: string;
+      
+      /**
+       * Amount
+       */
+      value: number;
+    };
+  };
+}
 
 /**
  * Get shipments filter
  */
-export type GetShipmentsFilter = AmazonSPApi.FulfillmentInbound.GetShipmentsFilter;
+export interface GetShipmentsFilter {
+  /**
+   * Shipment status list to filter by
+   */
+  shipmentStatusList?: ShipmentStatus[];
+  
+  /**
+   * Shipment ID list to filter by
+   */
+  shipmentIdList?: string[];
+  
+  /**
+   * Filter for shipments updated after this date
+   */
+  lastUpdatedAfter?: Date;
+  
+  /**
+   * Filter for shipments updated before this date
+   */
+  lastUpdatedBefore?: Date;
+}
+
+/**
+ * Get shipments response
+ */
+export interface GetShipmentsResponse {
+  /**
+   * Response payload
+   */
+  payload: {
+    /**
+     * Shipment data
+     */
+    shipmentData?: Shipment[];
+    
+    /**
+     * Pagination token
+     */
+    nextToken?: string;
+  };
+}
 
 /**
  * Shipment item information
  */
-export type ShipmentItem = AmazonSPApi.FulfillmentInbound.ShipmentItem;
+export interface ShipmentItem {
+  /**
+   * Seller SKU
+   */
+  sellerSKU: string;
+  
+  /**
+   * Quantity shipped
+   */
+  quantityShipped: number;
+  
+  /**
+   * Quantity received
+   */
+  quantityReceived?: number;
+  
+  /**
+   * Quantity in case
+   */
+  quantityInCase?: number;
+}
+
+/**
+ * Get shipment items response
+ */
+export interface GetShipmentItemsResponse {
+  /**
+   * Response payload
+   */
+  payload: {
+    /**
+     * Shipment items
+     */
+    itemData?: ShipmentItem[];
+    
+    /**
+     * Pagination token
+     */
+    nextToken?: string;
+  };
+}
 
 /**
  * Shipment information
  */
-export type Shipment = AmazonSPApi.FulfillmentInbound.Shipment;
+export interface Shipment {
+  /**
+   * Shipment ID
+   */
+  shipmentId: string;
+  
+  /**
+   * Shipment name
+   */
+  shipmentName: string;
+  
+  /**
+   * Address from which items will be shipped
+   */
+  shipFromAddress: Address;
+  
+  /**
+   * Destination fulfillment center ID
+   */
+  destinationFulfillmentCenterId: string;
+  
+  /**
+   * Shipment status
+   */
+  shipmentStatus: ShipmentStatus;
+  
+  /**
+   * Label preparation type
+   */
+  labelPrepType: string;
+  
+  /**
+   * Box contents status
+   */
+  boxContentsSource?: string;
+  
+  /**
+   * Items in the shipment
+   */
+  items?: ShipmentItem[];
+  
+  /**
+   * Estimated arrival date
+   */
+  estimatedArrivalDate?: string;
+  
+  /**
+   * Created date
+   */
+  createdDate?: string;
+  
+  /**
+   * Last updated date
+   */
+  lastUpdated?: string;
+}
 
 /**
  * Shipment status type
  */
-export type ShipmentStatus = AmazonSPApi.FulfillmentInbound.ShipmentStatus;
+export type ShipmentStatus = 
+  | 'WORKING' 
+  | 'SHIPPED' 
+  | 'RECEIVING' 
+  | 'CANCELLED' 
+  | 'DELETED' 
+  | 'CLOSED' 
+  | 'ERROR' 
+  | 'IN_TRANSIT' 
+  | 'DELIVERED' 
+  | 'CHECKED_IN';
+
+/**
+ * Label preference type
+ */
+export type LabelPrepPreference = 'SELLER_LABEL' | 'AMAZON_LABEL';
+
+/**
+ * Create shipment result
+ */
+export interface ShipmentCreationResult {
+  /**
+   * Shipment ID
+   */
+  shipmentId: string;
+  
+  /**
+   * Destination fulfillment center ID
+   */
+  destinationFulfillmentCenterId: string;
+  
+  /**
+   * Label preparation type
+   */
+  labelPrepType: string;
+  
+  /**
+   * Shipment items
+   */
+  items: InboundShipmentPlanItem[];
+}
+
+/**
+ * Ship item input
+ */
+export interface ShipItem {
+  /**
+   * Seller SKU
+   */
+  sellerSKU: string;
+  
+  /**
+   * Quantity to ship
+   */
+  quantity: number;
+  
+  /**
+   * Quantity in case packaging (optional)
+   */
+  quantityInCase?: number;
+}
+
+/**
+ * Configuration options for the FulfillmentInboundModule
+ */
+export interface FulfillmentInboundModuleOptions {
+  /**
+   * Default label preparation preference
+   */
+  defaultLabelPrepPreference?: LabelPrepPreference;
+}
 
 /**
  * Implementation of the Amazon Fulfillment Inbound API
  */
-export class FulfillmentInboundModule extends BaseApiModule {
+export class FulfillmentInboundModule extends ApiModule<FulfillmentInboundModuleOptions> {
+  /**
+   * The unique identifier for this module
+   */
+  readonly moduleId: string = 'fulfillmentInbound';
+  
+  /**
+   * The human-readable name of this module
+   */
+  readonly moduleName: string = 'Amazon Fulfillment Inbound';
+  
+  /**
+   * The API version this module uses
+   */
+  readonly apiVersion: string;
+  
+  /**
+   * The base URL path for API requests
+   */
+  readonly basePath: string;
+  
   /**
    * Constructor
    * @param apiVersion API version
-   * @param makeApiRequest Function to make API requests
+   * @param apiRequest Function to make API requests
    * @param marketplaceId Marketplace ID
+   * @param options Module-specific options
    */
   constructor(
-    apiVersion: string,
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string
+    apiVersion: string, 
+    apiRequest: ApiRequestFunction,
+    marketplaceId: string,
+    options: FulfillmentInboundModuleOptions = {}
   ) {
-    super('fulfillmentInbound', apiVersion, makeApiRequest, marketplaceId);
-  }
-  
-  /**
-   * Initialize the module
-   * @param config Module-specific configuration
-   * @returns Promise<any> that resolves when initialization is complete
-   */
-  protected async initializeModule(config?: any): Promise<void> {
-    // No specific initialization required for this module
-    return Promise<any>.resolve();
+    super(apiRequest, marketplaceId, options);
+    this.apiVersion = apiVersion;
+    this.basePath = `/fba/inbound/${apiVersion}`;
   }
   
   /**
@@ -108,16 +608,22 @@ export class FulfillmentInboundModule extends BaseApiModule {
    */
   public async createInboundShipmentPlan(
     request: CreateInboundShipmentPlanRequest
-  ): Promise<ApiResponse<AmazonSPApi.FulfillmentInbound.CreateInboundShipmentPlanResponse>> {
+  ): Promise<ApiResponse<CreateInboundShipmentPlanResponse>> {
+    if (!request) {
+      throw AmazonErrorHandler.createError(
+        'Create inbound shipment plan request is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
     try {
-      return await this.makeRequest<AmazonSPApi.FulfillmentInbound.CreateInboundShipmentPlanResponse>({
-        method: 'POST',
-        path: '/plans',
-        data: request
-      });
+      return await this.request<CreateInboundShipmentPlanResponse>(
+        'plans',
+        'POST',
+        request
+      );
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.createInboundShipmentPlan`);
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.createInboundShipmentPlan`);
     }
   }
 
@@ -128,20 +634,29 @@ export class FulfillmentInboundModule extends BaseApiModule {
    */
   public async createInboundShipment(
     request: CreateInboundShipmentRequest
-  ): Promise<ApiResponse<AmazonSPApi.FulfillmentInbound.CreateInboundShipmentResponse>> {
+  ): Promise<ApiResponse<CreateInboundShipmentResponse>> {
+    if (!request) {
+      throw AmazonErrorHandler.createError(
+        'Create inbound shipment request is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
     if (!request.shipmentId) {
-      throw AmazonErrorUtil.createError('Shipment ID is required', AmazonErrorCode.INVALID_INPUT);
+      throw AmazonErrorHandler.createError(
+        'Shipment ID is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
     }
     
     try {
-      return await this.makeRequest<AmazonSPApi.FulfillmentInbound.CreateInboundShipmentResponse>({
-        method: 'POST',
-        path: `/shipments/${request.shipmentId}`,
-        data: request
-      });
+      return await this.request<CreateInboundShipmentResponse>(
+        `shipments/${request.shipmentId}`,
+        'POST',
+        request
+      );
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.createInboundShipment`);
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.createInboundShipment`);
     }
   }
 
@@ -154,20 +669,29 @@ export class FulfillmentInboundModule extends BaseApiModule {
   public async updateInboundShipment(
     shipmentId: string,
     request: UpdateInboundShipmentRequest
-  ): Promise<ApiResponse<AmazonSPApi.FulfillmentInbound.UpdateInboundShipmentResponse>> {
+  ): Promise<ApiResponse<UpdateInboundShipmentResponse>> {
     if (!shipmentId) {
-      throw AmazonErrorUtil.createError('Shipment ID is required', AmazonErrorCode.INVALID_INPUT);
+      throw AmazonErrorHandler.createError(
+        'Shipment ID is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    if (!request) {
+      throw AmazonErrorHandler.createError(
+        'Update inbound shipment request is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
     }
     
     try {
-      return await this.makeRequest<AmazonSPApi.FulfillmentInbound.UpdateInboundShipmentResponse>({
-        method: 'PUT',
-        path: `/shipments/${shipmentId}`,
-        data: request
-      });
+      return await this.request<UpdateInboundShipmentResponse>(
+        `shipments/${shipmentId}`,
+        'PUT',
+        request
+      );
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.updateInboundShipment`);
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.updateInboundShipment`);
     }
   }
 
@@ -182,47 +706,40 @@ export class FulfillmentInboundModule extends BaseApiModule {
     filter: GetShipmentsFilter = {},
     nextToken?: string,
     marketplaceId?: string
-  ): Promise<ApiResponse<AmazonSPApi.FulfillmentInbound.GetShipmentsResponse>> {
-    const queryParams: Record<string, any> = {};
+  ): Promise<ApiResponse<GetShipmentsResponse>> {
+    const requestData: Record<string, any> = {};
     
     // Add filter parameters
     if (filter.shipmentStatusList && filter.shipmentStatusList.length > 0) {
-      for (let i = 0; i < filter.shipmentStatusList.length; i++) {
-        queryParams[`ShipmentStatusList.member.${i + 1}`] = filter.shipmentStatusList[i];
-      }
+      requestData.ShipmentStatusList = filter.shipmentStatusList;
     }
     
     if (filter.shipmentIdList && filter.shipmentIdList.length > 0) {
-      for (let i = 0; i < filter.shipmentIdList.length; i++) {
-        queryParams[`ShipmentIdList.member.${i + 1}`] = filter.shipmentIdList[i];
-      }
+      requestData.ShipmentIdList = filter.shipmentIdList;
     }
     
     if (filter.lastUpdatedAfter) {
-      queryParams.LastUpdatedAfter = filter.lastUpdatedAfter.toISOString();
+      requestData.LastUpdatedAfter = filter.lastUpdatedAfter.toISOString();
     }
     
     if (filter.lastUpdatedBefore) {
-      queryParams.LastUpdatedBefore = filter.lastUpdatedBefore.toISOString();
+      requestData.LastUpdatedBefore = filter.lastUpdatedBefore.toISOString();
     }
     
     // Add pagination token if provided
     if (nextToken) {
-      queryParams.NextToken = nextToken;
+      requestData.NextToken = nextToken;
     }
     
-    // Add marketplace ID
-    queryParams.MarketplaceId = marketplaceId || this.marketplaceId;
-    
     try {
-      return await this.makeRequest<AmazonSPApi.FulfillmentInbound.GetShipmentsResponse>({
-        method: 'GET',
-        path: '/shipments',
-        params: queryParams
-      });
+      return await this.request<GetShipmentsResponse>(
+        'shipments',
+        'GET',
+        requestData,
+        { marketplaceId: marketplaceId || this.marketplaceId }
+      );
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getShipments`);
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getShipments`);
     }
   }
 
@@ -237,30 +754,32 @@ export class FulfillmentInboundModule extends BaseApiModule {
     shipmentId: string,
     nextToken?: string,
     marketplaceId?: string
-  ): Promise<ApiResponse<AmazonSPApi.FulfillmentInbound.GetShipmentItemsResponse>> {
+  ): Promise<ApiResponse<GetShipmentItemsResponse>> {
     if (!shipmentId) {
-      throw AmazonErrorUtil.createError('Shipment ID is required', AmazonErrorCode.INVALID_INPUT);
+      throw AmazonErrorHandler.createError(
+        'Shipment ID is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
     }
     
-    const queryParams: Record<string, any> = {
-      ShipmentId: shipmentId,
-      MarketplaceId: marketplaceId || this.marketplaceId
+    const requestData: Record<string, any> = {
+      ShipmentId: shipmentId
     };
     
     // Add pagination token if provided
     if (nextToken) {
-      queryParams.NextToken = nextToken;
+      requestData.NextToken = nextToken;
     }
     
     try {
-      return await this.makeRequest<AmazonSPApi.FulfillmentInbound.GetShipmentItemsResponse>({
-        method: 'GET',
-        path: '/shipment-items',
-        params: queryParams
-      });
+      return await this.request<GetShipmentItemsResponse>(
+        'shipment-items',
+        'GET',
+        requestData,
+        { marketplaceId: marketplaceId || this.marketplaceId }
+      );
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getShipmentItems`);
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getShipmentItems`);
     }
   }
 
@@ -285,12 +804,12 @@ export class FulfillmentInboundModule extends BaseApiModule {
       const response = await this.getShipments(filter, nextToken, marketplaceId);
       
       // Add shipments to our collection
-      if (response.data.payload.shipmentData && response.data.payload.shipmentData.length > 0) {
+      if (response.data.payload?.shipmentData && response.data.payload.shipmentData.length > 0) {
         allShipments.push(...response.data.payload.shipmentData);
       }
       
       // Get next token for pagination
-      nextToken = response.data.payload.nextToken;
+      nextToken = response.data.payload?.nextToken;
       currentPage++;
       
       // Stop if we've reached the max pages or there are no more pages
@@ -342,30 +861,27 @@ export class FulfillmentInboundModule extends BaseApiModule {
    * @returns Shipment creation result
    */
   public async createAndSubmitShipment(
-    shipItems: Array<{
-      sellerSKU: string;
-      quantity: number;
-      quantityInCase?: number;
-    }>,
+    shipItems: ShipItem[],
     shipFromAddress: Address,
     shipmentName: string,
     marketplaceId?: string
-  ): Promise<{
-    shipmentId: string;
-    destinationFulfillmentCenterId: string;
-    labelPrepType: string;
-    items: InboundShipmentPlanItem[];
-  }> {
+  ): Promise<ShipmentCreationResult> {
     if (!shipItems || shipItems.length === 0) {
-      throw AmazonErrorUtil.createError('At least one item is required for shipment', AmazonErrorCode.INVALID_INPUT);
+      throw AmazonErrorHandler.createError(
+        'At least one item is required for shipment',
+        AmazonErrorCode.INVALID_INPUT
+      );
     }
     
     if (!shipFromAddress) {
-      throw AmazonErrorUtil.createError('Ship from address is required', AmazonErrorCode.INVALID_INPUT);
+      throw AmazonErrorHandler.createError(
+        'Ship from address is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
     }
     
     // Step 1: Create inbound shipment plan
-    const inboundItems: InboundShipmentItem[] = shipItems.map((item: any) => ({
+    const inboundItems: InboundShipmentItem[] = shipItems.map(item => ({
       sellerSKU: item.sellerSKU,
       quantity: item.quantity,
       quantityInCase: item.quantityInCase
@@ -373,14 +889,17 @@ export class FulfillmentInboundModule extends BaseApiModule {
     
     const planRequest: CreateInboundShipmentPlanRequest = {
       shipFromAddress: shipFromAddress,
-      labelPrepPreference: 'SELLER_LABEL',
+      labelPrepPreference: this.options.defaultLabelPrepPreference || 'SELLER_LABEL',
       inboundShipmentItems: inboundItems
     };
     
     const planResponse = await this.createInboundShipmentPlan(planRequest);
     
     if (!planResponse.data.payload.inboundShipmentPlans || planResponse.data.payload.inboundShipmentPlans.length === 0) {
-      throw AmazonErrorUtil.createError('No shipment plans were created', AmazonErrorCode.INVALID_INPUT);
+      throw AmazonErrorHandler.createError(
+        'No shipment plans were created',
+        AmazonErrorCode.INVALID_INPUT
+      );
     }
     
     // Get the first plan (in a real implementation, we might handle multiple plans)
@@ -392,7 +911,7 @@ export class FulfillmentInboundModule extends BaseApiModule {
       shipmentName: shipmentName || `Shipment ${plan.shipmentId}`,
       shipFromAddress,
       destinationFulfillmentCenterId: plan.destinationFulfillmentCenterId,
-      labelPrepPreference: 'SELLER_LABEL',
+      labelPrepPreference: this.options.defaultLabelPrepPreference || 'SELLER_LABEL',
       inboundShipmentItems: inboundItems,
       shipmentStatus: 'WORKING'
     };

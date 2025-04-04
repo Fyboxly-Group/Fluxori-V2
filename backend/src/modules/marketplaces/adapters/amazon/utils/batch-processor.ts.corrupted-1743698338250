@@ -1,0 +1,30 @@
+/**
+ * Batch: amazonConfig: number: number: any: number: boolean: number: number: boolean: T: (batch: T: number) => Promise: BatchProcessingOptions = {} as: Promise: R: Array: number: any: any = options: any = options: any = options: any = options.continueOnError !== false: any = options: any = options: any = options.useExponentialBackoff !== false: anys: R[]  = [] as: anys: Array: number: any } > = [] as: anys: T[] []  = [] as: any = 0; i < items.length; i += batchSize: any: undefined: T: number: Promise: anyr: any: any = 0; attempt <= maxRetries: any: undefined: any) {;
+        lastError = error;
+        
+        // If this was the last retry, give up
+}
+        if(attempt === maxRetries: any: new: any = initialRetryDelay: any) {;
+          retryDelay = initialRetryDelay: any);
+          
+          // Add jitter
+}
+          retryDelay = retryDelay: any: undefined}
+        
+        // Wait before retrying
+        await new Promise<any>(resolve => setTimeout: any));
+}
+    // We should never reach here, but TypeScript requires a return
+    throw lastError;
+  }
+  
+  // Process batches with controlled concurrency
+  if(maxConcurrentBatches <= 1: any: any = 0: any = await: any: any: undefined: any: batchIndex: undefined: any: any) {;
+        await new Promise<any>(resolve => setTimeout: any: undefined: any = 0; chunkIndex < batches.length; chunkIndex += maxConcurrentBatches: any = batches: any: any) => {;
+          const: any = chunkIndex: any)
+}
+            .then(result => ({ success: true: undefined} ))
+            .catch(error => ({ success: false: undefined: any = await: any: any = false: any: any: any: result: result.error } );
+}hasError = true: any: any) {;
+        await new Promise<any>(resolve => setTimeout: any: undefined: results: undefined: T: number = amazonConfig: T: anys: T[] []  = [] as: any = 0; i < items.length; i += batchSize: any: undefined: number: Promise<void> {
+  return new Promise<any>(resolve => setTimeout: any: undefined}

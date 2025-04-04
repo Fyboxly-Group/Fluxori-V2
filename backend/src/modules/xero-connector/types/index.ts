@@ -41,37 +41,52 @@ export interface XeroInvoiceResult {
 }
 
 /**
+ * Address information for a customer
+ */
+export interface FluxoriBillingAddress {
+  street: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+}
+
+/**
+ * Customer data for Xero invoice creation
+ */
+export interface FluxoriCustomerData {
+  id: string;
+  companyName: string;
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string;
+  billingAddress: FluxoriBillingAddress;
+}
+
+/**
+ * Line item for Xero invoice creation
+ */
+export interface FluxoriOrderItem {
+  id: string;
+  sku: string;
+  name: string;
+  description?: string;
+  quantity: number;
+  unitPrice: number;
+  discount?: number;
+  tax?: number;
+  subtotal: number;
+  accountCode?: string; // Xero account code, if specified
+}
+
+/**
  * Fluxori order data for Xero invoice creation
  */
 export interface FluxoriOrderData {
   orderId: string;
   orderNumber: string;
-  customerData: {
-    id: string;
-    companyName: string;
-    contactName: string;
-    contactEmail: string;
-    contactPhone: string;
-    billingAddress: {
-      street: string;
-      city: string;
-      state: string;
-      postalCode: string;
-      country: string;
-    };
-  };
-  items: {
-    id: string;
-    sku: string;
-    name: string;
-    description?: string;
-    quantity: number;
-    unitPrice: number;
-    discount?: number;
-    tax?: number;
-    subtotal: number;
-    accountCode?: string; // Xero account code, if specified
-  }[];
+  customerData: FluxoriCustomerData;
+  items: FluxoriOrderItem[];
   subtotal: number;
   taxTotal: number;
   discountTotal: number;
@@ -111,6 +126,11 @@ export interface ContactSyncData {
 export type SyncOperationType = 'full' | 'invoices' | 'contacts' | 'payments' | 'accounts' | 'tax-rates';
 
 /**
+ * Sync status tracking values
+ */
+export type SyncStatusValue = 'running' | 'completed' | 'failed';
+
+/**
  * Sync status for tracking synchronization operations
  */
 export interface SyncStatus {
@@ -118,7 +138,7 @@ export interface SyncStatus {
   type: SyncOperationType;
   startedAt: Date;
   completedAt?: Date;
-  status: 'running' | 'completed' | 'failed';
+  status: SyncStatusValue;
   progress: number;
   totalItems?: number;
   processedItems?: number;

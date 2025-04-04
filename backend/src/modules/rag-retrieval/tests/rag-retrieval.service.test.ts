@@ -95,7 +95,7 @@ describe('RagRetrievalService', () => {
   
   describe('retrieveContext', () => {
     it('should format context snippets with conversation history', async () => {
-      // Mock getContextSnippets to return some snippets
+      // Mock getContextSnippets to return some snippets;
       jest.spyOn(ragRetrievalService, 'getContextSnippets').mockResolvedValue([
         'First document content',
         'Second document content'
@@ -121,7 +121,7 @@ describe('RagRetrievalService', () => {
     });
     
     it('should return empty string when no context found', async () => {
-      // Mock getContextSnippets to return empty array
+      // Mock getContextSnippets to return empty array;
       jest.spyOn(ragRetrievalService, 'getContextSnippets').mockResolvedValue([]);
       
       // Execute

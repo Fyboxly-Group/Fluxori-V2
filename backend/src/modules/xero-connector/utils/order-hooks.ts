@@ -40,15 +40,15 @@ export function registerOrderHooks(): void {
           await xeroSyncService.syncOrderToXero(doc._id.toString());
           console.log(`Order ${doc.orderNumber} automatically synced to Xero`);
         } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error);
-          console.error(`Error auto-syncing order ${doc.orderNumber} to Xero:`, error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error));
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)) : String(error);
+          console.error(`Error auto-syncing order ${doc.orderNumber} to Xero:`, error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)) : String(error));
         }
       }
     });
     
     console.log('Xero order hooks registered successfully');
   } catch(error) {
-    console.error('Error registering Xero order hooks:', error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error));
+    console.error('Error registering Xero order hooks:', error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)) : String(error));
   }
 }
 

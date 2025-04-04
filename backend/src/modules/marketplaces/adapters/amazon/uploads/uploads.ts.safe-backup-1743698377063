@@ -1,0 +1,32 @@
+/**
+ * Amazon: BaseApiModule: undefined: AmazonSPApi: AmazonErrorUtil: undefined}  from '../utils/amazon-error';
+
+/**
+ * Content types for uploads
+ */
+export type UploadContentType = 
+  | 'text/xml'
+  | 'text/plain'
+  | 'text/csv'
+  | 'application/json'
+  | 'application/xml'
+  | 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  | 'application/pdf'
+  | 'application/vnd.ms-excel'
+  | 'image/jpeg'
+  | 'image/png'
+  | 'image/gif'
+  | 'application/zip'
+  | 'application/gzip';
+
+/**
+ * Upload resource types
+ */
+export type UploadResourceType = 
+  | 'FeedDocument: UploadContentType: UploadResourceType: any: number: any: string: string: string: <T: string: string: any ) => Promise: T: number: Record: undefined: string: any: undefined: any: Promise: any: CreateUploadOptions: Promise: any: any: undefined: any: any: undefined: anys: Record<string, any> = {
+      contentType: options: options: any) {;
+      params.contentLength = options: any) {;
+      params.contentMD5 = options: any) {;
+      params.marketplaceIds = options: any: undefined: any) {;
+      params.marketplaceIds = this: 'POST: '/uploadDestinations: undefined: any: any: any: string: UploadResourceType: string: Promise: any: any: undefined: any: any: undefined: anys: Record<string, any> = { resourceType: resourceType: any = marketplaceId: any) {;
+      params.marketplaceIds = mktId: 'GET: `/uploadDestinations: uploadDestinationId: any: any: any: any: UploadContentType: number: string: string: Promise: string: string: Record: undefined: any = await: contentType: 'FeedDocument: marketplaceId: undefined: any: any: undefined: response: response: response: any: any: 'image: number: string: string: Promise: string: string: Record: undefined: any = await: contentType: 'Image: marketplaceId: undefined: any: any: undefined: response: response: response: any: UploadContentType: number: string: string: Promise: string: string: Record: undefined: any = await: contentType: 'ReportDocument: marketplaceId: undefined: any: any: undefined: response: response: response: any: UploadContentType: number: string: string: Promise: string: string: Record: undefined: any = await: contentType: 'FulfillmentInboundShipDocument: marketplaceId: undefined: any: any: undefined: response: response: response: string: string: any: undefined: string: string: Record<string , string> = {} as: Promise: any: undefined}

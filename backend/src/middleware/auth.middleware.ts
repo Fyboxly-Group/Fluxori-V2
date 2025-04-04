@@ -1,21 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
-import * as jwt from 'jsonwebtoken';
-import User, { IUserDocument } from '../models/user.model';
-
-// Extend Express Request type to include user property
-declare global {
-  namespace Express {
-    interface Request {
-      user?: IUserDocument;
-    }
-  }
-}
-
-interface JwtPayload {
-  userId?: string;  // Used in tests
-  id?: string;      // Used in production
-  role?: string;    // Role information
-}
+import { container } from '../config/inversify';
+import { AuthService, IAuthService, JwtTokenPayload } from '../services/auth.service';
+import { AuthUser, AuthenticatedRequest } from '../types/express-extensions';
+import { ApiError } from './error.middleware';
+import { Types } from 'mongoose';
+import User from '../models/user.model';
 
 /**
  * Authentication middleware
@@ -25,65 +14,68 @@ export const authenticate = async (
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> => {
   try {
     // Get token from authorization header
     const authHeader = req.headers.authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({
-        success: false,
-        message: 'Authentication required. No token provided.',
-      });
+      throw new ApiError(401, 'Authentication required. No token provided.');
     }
     
     const token = authHeader.split(' ')[1];
     
     if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: 'Authentication required. Invalid token format.',
-      });
+      throw new ApiError(401, 'Authentication required. Invalid token format.');
     }
     
-    // Verify token
-    const secret = process.env.JWT_SECRET || 'default_secret';
-    const secretKey = Buffer.from(secret, 'utf-8');
-    const decoded = jwt.verify(
-      token,
-      secretKey
-    ) as JwtPayload;
+    // Get the auth service from container
+    const authService = container.get<IAuthService>(AuthService);
     
-    // Find user by id (support both id and userId for tests)
-    const userId = decoded.id || decoded.userId;
+    // Validate token
+    const validationResult = authService.validateToken(token);
     
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: 'Authentication failed. Invalid token payload.',
-      });
+    if (!validationResult.valid || !validationResult.payload) {
+      throw new ApiError(401, `Authentication failed. ${validationResult.error || 'Invalid token.'}`);
     }
     
+    // Extract user ID from payload
+    const userId = validationResult.payload.id;
+    
+    // Find user by ID
     const user = await User.findById(userId);
     
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Authentication failed. User not found.',
-      });
+      throw new ApiError(401, 'Authentication failed. User not found.');
     }
     
     if (!user.isActive) {
-      return res.status(403).json({
+      throw new ApiError(403, 'Access denied. Your account has been deactivated.');
+    }
+    
+    // Create authenticated user object
+    const authUser: AuthUser = {
+      _id: user._id,
+      id: user._id.toString(),
+      email: user.email,
+      organizationId: (user as any).organizationId?.toString() || '',
+      role: user.role,
+    };
+    
+    // Attach auth user to request object
+    (req as AuthenticatedRequest).user = authUser;
+    
+    // Continue to the next middleware or route handler
+    next();
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return res.status(error.statusCode).json({
         success: false,
-        message: 'Access denied. Your account has been deactivated.',
+        message: error.message,
+        errors: error.errors,
       });
     }
     
-    // Attach user to request object
-    req.user = user;
-    next();
-  } catch (error) {
     return res.status(401).json({
       success: false,
       message: 'Authentication failed. Invalid token.',
@@ -93,24 +85,86 @@ export const authenticate = async (
 
 /**
  * Role-based authorization middleware
- * Checks if the authenticated user has the required role
+ * Checks if the authenticated user has one of the required roles
+ * @param roles Authorized roles
+ * @returns Express middleware
  */
 export const authorize = (...roles: string[]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Authentication required.',
-      });
-    }
-    
-    if (!roles.includes(req.user.role)) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      const authReq = req as AuthenticatedRequest;
+      
+      if (!authReq.user) {
+        throw new ApiError(401, 'Authentication required.');
+      }
+      
+      if (roles.length > 0 && !roles.includes(authReq.user.role)) {
+        throw new ApiError(403, 'Access denied. Insufficient permissions.');
+      }
+      
+      next();
+    } catch (error) {
+      if (error instanceof ApiError) {
+        return res.status(error.statusCode).json({
+          success: false,
+          message: error.message,
+          errors: error.errors,
+        });
+      }
+      
       return res.status(403).json({
         success: false,
-        message: 'Access denied. Insufficient permissions.',
+        message: 'Access denied.',
       });
     }
-    
-    next();
+  };
+};
+
+/**
+ * Organization-based authorization middleware
+ * Checks if the authenticated user belongs to the requested organization
+ * @param paramName URL parameter name containing the organization ID
+ * @returns Express middleware
+ */
+export const authorizeOrganization = (paramName: string = 'organizationId') => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      const authReq = req as AuthenticatedRequest;
+      
+      if (!authReq.user) {
+        throw new ApiError(401, 'Authentication required.');
+      }
+      
+      const organizationId = req.params[paramName];
+      
+      if (!organizationId) {
+        throw new ApiError(400, `Organization ID parameter '${paramName}' is required.`);
+      }
+      
+      // Admin users can access any organization
+      if (authReq.user.role === 'admin') {
+        return next();
+      }
+      
+      // Check if user belongs to the requested organization
+      if (authReq.user.organizationId !== organizationId) {
+        throw new ApiError(403, 'Access denied. You cannot access this organization\'s resources.');
+      }
+      
+      next();
+    } catch (error) {
+      if (error instanceof ApiError) {
+        return res.status(error.statusCode).json({
+          success: false,
+          message: error.message,
+          errors: error.errors,
+        });
+      }
+      
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied.',
+      });
+    }
   };
 };

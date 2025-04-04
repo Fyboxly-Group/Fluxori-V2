@@ -6,8 +6,39 @@
  * set notifications, and optimize performance.
  */
 
-import { BaseApiModule, ApiRequestOptions, ApiResponse } from '../core/api-module';
-import { AmazonErrorUtil, AmazonErrorCode } from '../utils/amazon-error';
+import { ApiModule } from '../core/api-module';
+import { ApiResponse, BaseModule } from '../core/base-module.interface';
+import AmazonErrorHandler, { AmazonErrorCode } from '../utils/amazon-error';
+
+/**
+ * API Request options
+ */
+export interface ApiRequestOptions {
+  /**
+   * HTTP method for the request
+   */
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  
+  /**
+   * Path component of the URL
+   */
+  path: string;
+  
+  /**
+   * Query parameters
+   */
+  params?: Record<string, any>;
+  
+  /**
+   * Request body
+   */
+  data?: any;
+  
+  /**
+   * Additional headers
+   */
+  headers?: Record<string, string>;
+}
 
 /**
  * Usage plan tier
@@ -280,36 +311,76 @@ export interface CreateNotificationSubscriptionOptions {
 }
 
 /**
+ * Type definition for API request function
+ */
+export type ApiRequestFunction = <T = any>(path: string, method: string, data?: any) => Promise<ApiResponse<T>>;
+
+/**
+ * Options for ApplicationManagementModule
+ */
+export interface ApplicationManagementModuleOptions {
+  // Add any module-specific options here if needed
+}
+
+/**
  * Implementation of the Amazon Application Management API
  */
-export class ApplicationManagementModule extends BaseApiModule {
+export class ApplicationManagementModule implements BaseModule<ApplicationManagementModuleOptions> {
+  /**
+   * The unique identifier for this module
+   */
+  public readonly moduleId: string = 'applicationManagement';
+  
+  /**
+   * The human-readable name of this module
+   */
+  public readonly moduleName: string = 'Application Management';
+  
+  /**
+   * The API version this module uses
+   */
+  public readonly apiVersion: string;
+  
+  /**
+   * The base URL path for API requests
+   */
+  public readonly basePath: string;
+  
+  /**
+   * The API request function used by this module
+   */
+  public readonly apiRequest: ApiRequestFunction;
+  
+  /**
+   * The marketplace ID this module is associated with
+   */
+  public readonly marketplaceId: string;
+  
+  /**
+   * Module options
+   */
+  public readonly options: ApplicationManagementModuleOptions;
+  
   /**
    * Constructor
    * @param apiVersion API version
-   * @param makeApiRequest Function to make API requests
+   * @param apiRequest Function to make API requests
    * @param marketplaceId Marketplace ID
+   * @param options Module options
    */
   constructor(
     apiVersion: string,
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string
+    apiRequest: ApiRequestFunction,
+    marketplaceId: string,
+    options: ApplicationManagementModuleOptions = {}
   ) {
-    super('applicationManagement', apiVersion, makeApiRequest, marketplaceId);
+    this.apiVersion = apiVersion;
+    this.apiRequest = apiRequest;
+    this.marketplaceId = marketplaceId;
+    this.options = options;
+    this.basePath = `/application-management/${apiVersion}`;
   }
   
-  /**
-   * Initialize the module
-   * @param config Module-specific configuration
-   * @returns Promise<any> that resolves when initialization is complete
-   */
-  protected async initializeModule(config?: any): Promise<void> {
-    // No specific initialization required for this module
-    return Promise<any>.resolve();
-  }
   
   /**
    * Get the current usage plans for the application
@@ -317,16 +388,12 @@ export class ApplicationManagementModule extends BaseApiModule {
    */
   public async getApplicationUsagePlans(): Promise<ApiResponse<GetApplicationUsagePlansResponse>> {
     try {
-      return await this.makeRequest<GetApplicationUsagePlansResponse>({
+      return await this.makeApiCall<GetApplicationUsagePlansResponse>({
         method: 'GET',
         path: '/usagePlans'
       });
-    } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(
-        error,
-        `${this.moduleName}.getApplicationUsagePlans`
-      );
+    } catch(error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getApplicationUsagePlans`);
     }
   }
   
@@ -335,21 +402,13 @@ export class ApplicationManagementModule extends BaseApiModule {
    * @param options Options for filtering API usage records
    * @returns API usage records
    */
-  public async getApiUsage(
-    options: GetApiUsageOptions
-  ): Promise<ApiResponse<GetApiUsageResponse>> {
+  public async getApiUsage(options: GetApiUsageOptions): Promise<ApiResponse<GetApiUsageResponse>> {
     if (!options.startTime) {
-      throw AmazonErrorUtil.createError(
-        'Start time is required to get API usage',
-        AmazonErrorCode.INVALID_INPUT
-      );
+      throw AmazonErrorHandler.createError('Start time is required to get API usage', AmazonErrorCode.INVALID_INPUT);
     }
     
     if (!options.endTime) {
-      throw AmazonErrorUtil.createError(
-        'End time is required to get API usage',
-        AmazonErrorCode.INVALID_INPUT
-      );
+      throw AmazonErrorHandler.createError('End time is required to get API usage', AmazonErrorCode.INVALID_INPUT);
     }
     
     const params: Record<string, any> = {
@@ -378,17 +437,13 @@ export class ApplicationManagementModule extends BaseApiModule {
     }
     
     try {
-      return await this.makeRequest<GetApiUsageResponse>({
+      return await this.makeApiCall<GetApiUsageResponse>({
         method: 'GET',
         path: '/usage',
         params
       });
-    } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(
-        error,
-        `${this.moduleName}.getApiUsage`
-      );
+    } catch(error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getApiUsage`);
     }
   }
   
@@ -397,27 +452,18 @@ export class ApplicationManagementModule extends BaseApiModule {
    * @param apiName The name of the API
    * @returns The API status
    */
-  public async getApiStatus(
-    apiName: string
-  ): Promise<ApiResponse<GetApiStatusResponse>> {
+  public async getApiStatus(apiName: string): Promise<ApiResponse<GetApiStatusResponse>> {
     if (!apiName) {
-      throw AmazonErrorUtil.createError(
-        'API name is required to get API status',
-        AmazonErrorCode.INVALID_INPUT
-      );
+      throw AmazonErrorHandler.createError('API name is required to get API status', AmazonErrorCode.INVALID_INPUT);
     }
     
     try {
-      return await this.makeRequest<GetApiStatusResponse>({
+      return await this.makeApiCall<GetApiStatusResponse>({
         method: 'GET',
         path: `/apis/${apiName}/status`
       });
-    } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(
-        error,
-        `${this.moduleName}.getApiStatus`
-      );
+    } catch(error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getApiStatus`);
     }
   }
   
@@ -426,9 +472,7 @@ export class ApplicationManagementModule extends BaseApiModule {
    * @param options Options for filtering notification subscriptions
    * @returns Notification subscriptions
    */
-  public async getNotificationSubscriptions(
-    options: GetNotificationSubscriptionsOptions = {}
-  ): Promise<ApiResponse<GetNotificationSubscriptionsResponse>> {
+  public async getNotificationSubscriptions(options: GetNotificationSubscriptionsOptions = {}): Promise<ApiResponse<GetNotificationSubscriptionsResponse>> {
     const params: Record<string, any> = {};
     
     if (options.notificationTypes && options.notificationTypes.length > 0) {
@@ -444,17 +488,13 @@ export class ApplicationManagementModule extends BaseApiModule {
     }
     
     try {
-      return await this.makeRequest<GetNotificationSubscriptionsResponse>({
+      return await this.makeApiCall<GetNotificationSubscriptionsResponse>({
         method: 'GET',
         path: '/notifications/subscriptions',
         params
       });
-    } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(
-        error,
-        `${this.moduleName}.getNotificationSubscriptions`
-      );
+    } catch(error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getNotificationSubscriptions`);
     }
   }
   
@@ -463,25 +503,17 @@ export class ApplicationManagementModule extends BaseApiModule {
    * @param options Options for creating a notification subscription
    * @returns The created notification subscription
    */
-  public async createNotificationSubscription(
-    options: CreateNotificationSubscriptionOptions
-  ): Promise<ApiResponse<{ subscriptionId: string }>> {
+  public async createNotificationSubscription(options: CreateNotificationSubscriptionOptions): Promise<ApiResponse<{ subscriptionId: string }>> {
     if (!options.notificationType) {
-      throw AmazonErrorUtil.createError(
-        'Notification type is required to create a subscription',
-        AmazonErrorCode.INVALID_INPUT
-      );
+      throw AmazonErrorHandler.createError('Notification type is required to create a subscription', AmazonErrorCode.INVALID_INPUT);
     }
     
     if (!options.destination) {
-      throw AmazonErrorUtil.createError(
-        'Destination is required to create a subscription',
-        AmazonErrorCode.INVALID_INPUT
-      );
+      throw AmazonErrorHandler.createError('Destination is required to create a subscription', AmazonErrorCode.INVALID_INPUT);
     }
     
     try {
-      return await this.makeRequest<{ subscriptionId: string }>({
+      return await this.makeApiCall<{ subscriptionId: string }>({
         method: 'POST',
         path: '/notifications/subscriptions',
         data: {
@@ -490,12 +522,8 @@ export class ApplicationManagementModule extends BaseApiModule {
           format: options.format || 'JSON'
         }
       });
-    } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(
-        error,
-        `${this.moduleName}.createNotificationSubscription`
-      );
+    } catch(error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.createNotificationSubscription`);
     }
   }
   
@@ -504,27 +532,18 @@ export class ApplicationManagementModule extends BaseApiModule {
    * @param subscriptionId The ID of the subscription to delete
    * @returns Empty response
    */
-  public async deleteNotificationSubscription(
-    subscriptionId: string
-  ): Promise<ApiResponse<void>> {
+  public async deleteNotificationSubscription(subscriptionId: string): Promise<ApiResponse<void>> {
     if (!subscriptionId) {
-      throw AmazonErrorUtil.createError(
-        'Subscription ID is required to delete a subscription',
-        AmazonErrorCode.INVALID_INPUT
-      );
+      throw AmazonErrorHandler.createError('Subscription ID is required to delete a subscription', AmazonErrorCode.INVALID_INPUT);
     }
     
     try {
-      return await this.makeRequest<void>({
+      return await this.makeApiCall<void>({
         method: 'DELETE',
         path: `/notifications/subscriptions/${subscriptionId}`
       });
-    } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(
-        error,
-        `${this.moduleName}.deleteNotificationSubscription`
-      );
+    } catch(error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.deleteNotificationSubscription`);
     }
   }
   
@@ -534,10 +553,7 @@ export class ApplicationManagementModule extends BaseApiModule {
    * @param maxPages Maximum number of pages to retrieve (default: 10)
    * @returns All API usage records
    */
-  public async getAllApiUsage(
-    options: GetApiUsageOptions,
-    maxPages: number = 10
-  ): Promise<ApiUsageRecord[]> {
+  public async getAllApiUsage(options: GetApiUsageOptions, maxPages: number = 10): Promise<ApiUsageRecord[]> {
     const allRecords: ApiUsageRecord[] = [];
     let nextToken: string | undefined = options.nextToken;
     let currentPage = 1;
@@ -573,10 +589,7 @@ export class ApplicationManagementModule extends BaseApiModule {
    * @param maxPages Maximum number of pages to retrieve (default: 10)
    * @returns All notification subscriptions
    */
-  public async getAllNotificationSubscriptions(
-    options: GetNotificationSubscriptionsOptions = {},
-    maxPages: number = 10
-  ): Promise<NotificationSubscription[]> {
+  public async getAllNotificationSubscriptions(options: GetNotificationSubscriptionsOptions = {}, maxPages: number = 10): Promise<NotificationSubscription[]> {
     const allSubscriptions: NotificationSubscription[] = [];
     let nextToken: string | undefined = options.nextToken;
     let currentPage = 1;
@@ -612,18 +625,15 @@ export class ApplicationManagementModule extends BaseApiModule {
    * @param endTime End time for the period (ISO 8601 format)
    * @returns API usage statistics
    */
-  public async getApiUsageStatistics(
-    startTime: string,
-    endTime: string
-  ): Promise<{
+  public async getApiUsageStatistics(startTime: string, endTime: string): Promise<{
     totalCalls: number;
     operationCounts: Record<string, number>;
     methodCounts: Record<string, number>;
   }> {
     // Get all API usage records for the period
-    const records = await this.getAllApiUsage({
-      startTime,
-      endTime
+    const records = await this.getAllApiUsage({ 
+      startTime, 
+      endTime 
     });
     
     // Calculate statistics
@@ -650,9 +660,7 @@ export class ApplicationManagementModule extends BaseApiModule {
    * @param thresholdPercentage Percentage threshold for warnings (default: 80)
    * @returns Warning information if approaching limits
    */
-  public async checkRateLimitApproach(
-    thresholdPercentage: number = 80
-  ): Promise<{
+  public async checkRateLimitApproach(thresholdPercentage: number = 80): Promise<{
     approaching: boolean;
     warnings: Array<{
       operation: string;
@@ -705,9 +713,9 @@ export class ApplicationManagementModule extends BaseApiModule {
         const usagePercentage = (count / hourlyLimit) * 100;
         
         if (usagePercentage >= thresholdPercentage) {
-          warnings.push({
-            operation,
-            usagePercentage
+          warnings.push({ 
+            operation, 
+            usagePercentage 
           });
         }
       }
@@ -717,5 +725,30 @@ export class ApplicationManagementModule extends BaseApiModule {
       approaching: warnings.length > 0,
       warnings
     };
+  }
+  
+  /**
+   * Helper method to make API requests
+   * 
+   * @param options Request options
+   * @returns Promise resolving to the API response
+   */
+  private async makeApiCall<T>(options: ApiRequestOptions): Promise<ApiResponse<T>> {
+    const { method, path, params, data } = options;
+    
+    // Construct full path with proper URL handling
+    const fullPath = path.startsWith('/')
+      ? `${this.basePath}${path}`
+      : `${this.basePath}/${path}`;
+    
+    try {
+      return await this.apiRequest<T>(fullPath, method, {
+        ...data,
+        _params: params,
+        _marketplaceId: this.marketplaceId
+      });
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.${method} ${path}`);
+    }
   }
 }

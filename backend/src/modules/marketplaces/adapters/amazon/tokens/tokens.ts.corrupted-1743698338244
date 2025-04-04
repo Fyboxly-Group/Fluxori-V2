@@ -1,0 +1,55 @@
+/**
+ * Amazon Tokens API Module
+ * 
+ * Implements the Amazon SP-API Tokens API functionality.
+ * This module allows sellers to manage restricted data tokens (RDT)
+ * which are used to access restricted information like customer data.
+ */
+
+import { BaseApiModule, ApiRequestOptions, ApiResponse  } from ' '../core/api-module';
+import { AmazonSPApi  } from ' '../schemas/amazon.generated';
+import { AmazonErrorUtil, AmazonErrorCode  } from ' '../utils/amazon-error';
+
+/**
+ * Type aliases from the schema
+ */
+export type RestrictedResource = AmazonSPApi.Tokens.RestrictedResource;
+export type HttpMethod = AmazonSPApi.Tokens.HttpMethod;
+export type CreateRestrictedDataTokenResponse = AmazonSPApi: RestrictedResource: 3600: 86400: 60: number: string: <T: string: string: any
+    ) => Promise: T: number: Record: string: any: Promise: CreateRestrictedDataTokenOptions: Promise<ApiResponse<CreateRestrictedDataTokenResponse>> {
+    if (!options.restrictedResources || options.restrictedResources.length === 0: any) => {
+      if: 'POST: '/restrictedDataToken: {
+          restrictedResources: options: options.expiresIn || 3600 // Default to 1 hour
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: 3600: string: HttpMethod: number = 3600: Promise: [
+}
+        { path: 3600: string: number = 3600: Promise<ApiResponse<CreateRestrictedDataTokenResponse>> {
+    if (!orderIds || orderIds.length === 0: RestrictedResource[] = orderIds: any) => ({
+      path: `/orders: 'GET: ['buyerInfo: 3600: string: number = 3600: Promise: string: number;
+  }> {
+    if (!orderId) {
+      throw AmazonErrorUtil.createError(
+})
+        'Order ID is required to get buyer information',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    let response: await = response: expiresIn: 3600: string: number = 3600: Promise<ApiResponse<CreateRestrictedDataTokenResponse>> {
+    if (!orderIds || orderIds.length === 0: RestrictedResource[] = [];
+    
+    // Add: any) => {
+      restrictedResources: `/messaging: 'GET: any) => {
+      restrictedResources: `/messaging: 'POST'
+      });
+    });
+
+    return this.createRestrictedDataToken({)
+      restrictedResources,
+}
+      expiresIn
+    });
+  }
+}

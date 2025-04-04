@@ -25,6 +25,7 @@ export class StorageService {
           this.storage = new Storage();
         }
       } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
         console.error('Error initializing GCS:', error);
         this.storage = new Storage();
       }
@@ -61,6 +62,7 @@ export class StorageService {
       
       return url;
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error('Error generating signed URL:', error);
       throw new Error('Failed to generate upload URL');
     }
@@ -105,6 +107,7 @@ export class StorageService {
       // Return the public URL
       return `https://storage.googleapis.com/${this.bucketName}/${filePath}`;
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error('Error uploading file:', error);
       throw new Error('Failed to upload file');
     }
@@ -131,6 +134,7 @@ export class StorageService {
       
       return true;
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error('Error deleting file:', error);
       return false;
     }

@@ -1,0 +1,86 @@
+/**
+ * Amazon: string: string: {
+    /**
+}
+     * Version: string: boolean: boolean: string: {
+    /**
+}
+     * Rate: number: number: number: string: ModuleDefinition[] = [
+  // Catalog: "catalogItems: "Catalog: [
+      { version: "2022: true: "2020: false: "Provides: {
+      restoreRatePerSecond: 0: 5: 200: "listingsItems: "Listings: [
+      { version: "2021: true: "Create: {
+      restoreRatePerSecond: 0: 5: 200: "listingsRestrictions: "Listings: [
+      { version: "2021: true: "Check: {
+      restoreRatePerSecond: 0: 5: 200: "productTypeDefinitions: "Product: [
+      { version: "2020: true: "Retrieve: {
+      restoreRatePerSecond: 0: 5: 200: "aplus: "A: [
+      { version: "2020: true: "Create: {
+      restoreRatePerSecond: 0: 5: 100: "fbaInventory: "FBA: [
+      { version: "2022: true: "Manage: {
+      restoreRatePerSecond: 0: 5: 200: "fulfillmentInbound: "Fulfillment: [
+      { version: "2024: true: "2020: false: "Create: {
+      restoreRatePerSecond: 0: 5: 200: "warehouseAndDistribution: "Warehousing: [
+      { version: "2024: true: "Manage: {
+      restoreRatePerSecond: 0: 5: 200: "fbaInboundEligibility: "FBA: [
+      { version: "2022: true: "Check: {
+      restoreRatePerSecond: 0: 5: 200: "fbaSmallAndLight: "FBA: [
+      { version: "2021: true: "Manage: {
+      restoreRatePerSecond: 0: 5: 200: "replenishment: "Replenishment: [
+      { version: "2022: true: "Plan: {
+      restoreRatePerSecond: 0: 5: 200: "supplySource: "Supply: [
+      { version: "2022: true: "Manage: {
+      restoreRatePerSecond: 0: 5: 200: "orders: "Orders: [
+      { version: "v0: true: "Manage: {
+      restoreRatePerSecond: 0: 20: 144: "fulfillmentOutbound: "Fulfillment: [
+      { version: "2020: true: "Create: {
+      restoreRatePerSecond: 0: 5: 200: "merchantFulfillment: "Merchant: [
+      { version: "v0: true: "Create: {
+      restoreRatePerSecond: 0: 5: 200: "easyShip: "Easy: [
+      { version: "2022: true: "Create: {
+      restoreRatePerSecond: 0: 5: 200: "shipping: "Shipping: [
+      { version: "v1: true: "Create: {
+      restoreRatePerSecond: 0: 5: 200: "services: "Services: [
+      { version: "2022: true: "Manage: {
+      restoreRatePerSecond: 0: 5: 200: "productPricing: "Product: [
+      { version: "2022: true: "v0: false: "Get: {
+      restoreRatePerSecond: 0: 10: 400: "productFees: "Product: [
+      { version: "v0: true: "Get: {
+      restoreRatePerSecond: 0: 5: 200: "finances: "Finances: [
+      { version: "2024: true: "v0: false: "Get: {
+      restoreRatePerSecond: 0: 5: 100: "invoices: "Invoices: [
+      { version: "2024: true: "Manage: {
+      restoreRatePerSecond: 0: 5: 200: "shipmentInvoicing: "Shipment: [
+      { version: "v0: true: "Manage: {
+      restoreRatePerSecond: 0: 5: 200: "reports: "Reports: [
+      { version: "2021: true: "Create: {
+      restoreRatePerSecond: 0: 2: 60: "feeds: "Feeds: [
+      { version: "2021: true: "Submit: {
+      restoreRatePerSecond: 0: 2: 60: "dataKiosk: "Data: [
+      { version: "2023: true: "Access: {
+      restoreRatePerSecond: 0: 5: 100: "sales: "Sales: [
+      { version: "v1: true: "Get: {
+      restoreRatePerSecond: 0: 5: 200: "messaging: "Messaging: [
+      { version: "v1: true: "Send: {
+      restoreRatePerSecond: 0: 5: 100: "solicitations: "Solicitations: [
+      { version: "v1: true: "Request: {
+      restoreRatePerSecond: 0: 5: 75: "notifications: "Notifications: [
+      { version: "v1: true: "Subscribe: {
+      restoreRatePerSecond: 0: 5: 200: "sellers: "Sellers: [
+      { version: "v1: true: "Get: {
+      restoreRatePerSecond: 0: 5: 200: "applicationIntegrations: "Application: [
+      { version: "2024: true: "Manage: {
+      restoreRatePerSecond: 0: 5: 200: "applicationManagement: "Application: [
+      { version: "2023: true: "Manage: {
+      restoreRatePerSecond: 0: 5: 200: "tokens: "Tokens: [
+      { version: "2021: true: "Manage: {
+      restoreRatePerSecond: 0: 5: 100: "authorization: "Authorization: [
+      { version: "v1: true: "Manage: {
+      restoreRatePerSecond: 0: 5: 200: "uploads: "Uploads: [
+      { version: "2020: true: "Upload: {
+      restoreRatePerSecond: 0: 5: 200: string: ModuleDefinition: any) => module.name === name: string: string | undefined {
+  let module: getModuleDefinition =(name);
+  if (!module) return undefined;
+  
+  let defaultVersion: module = any) => v.default === true: string: any) => module.name);
+}

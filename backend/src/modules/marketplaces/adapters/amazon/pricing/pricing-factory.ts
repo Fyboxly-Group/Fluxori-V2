@@ -1,46 +1,41 @@
 /**
- * Factory for creating pricing-related API modules
+ * Amazon SP-API Product Pricing Module Factory
+ * 
+ * Factory function for creating and registering Product Pricing API module instances.
  */
 
-import { ProductPricingModule } from './product-pricing';
+import { ApiRequestFunction } from '../core/api-module';
 import { ModuleRegistry } from '../core/module-registry';
-import { getDefaultModuleVersion } from '../core/module-definitions';
+import { getDefaultModuleVersion } from '../core/registry-helper';
+import { ProductPricingModule } from './product-pricing';
 
 /**
- * Factory for creating pricing-related API modules
+ * Creates and registers a Product Pricing module instance
+ * 
+ * @param registry Module registry to register the module with
+ * @param makeApiRequest Function to make API requests
+ * @param marketplaceId Marketplace ID
+ * @param apiVersion Optional API version (defaults to latest version if not specified)
+ * @returns The created Product Pricing module instance
  */
-export class ProductPricingModuleFactory {
-  /**
-   * Create a Product Pricing module and register it with the provided registry
-   * @param makeApiRequest Function to make API requests
-   * @param marketplaceId Marketplace ID
-   * @param registry Module registry to register with
-   * @param apiVersion Optional API version (uses default if not provided)
-   * @returns The created module
-   */
-  public static createProductPricingModule(
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string,
-    registry: ModuleRegistry,
-    apiVersion?: string
-  ): ProductPricingModule {
-    // Use provided version or get the default
-    const version = apiVersion || getDefaultModuleVersion('productPricing') || '2022-05-01';
-    
-    // Create the module
-    const module = new ProductPricingModule(
-      version,
-      makeApiRequest,
-      marketplaceId
-    );
-    
-    // Register the module
-    registry.registerModule(module);
-    
-    return module;
-  }
+export function createProductPricingModule(
+  registry: ModuleRegistry,
+  makeApiRequest: ApiRequestFunction,
+  marketplaceId: string,
+  apiVersion?: string
+): ProductPricingModule {
+  // Use provided version or get the default
+  const version = apiVersion || getDefaultModuleVersion('productPricing') || '2022-05-01';
+  
+  // Create the module
+  const module = new ProductPricingModule(
+    version,
+    makeApiRequest,
+    marketplaceId
+  );
+  
+  // Register the module
+  registry.registerModule(module);
+  
+  return module;
 }

@@ -1,0 +1,668 @@
+/**
+ * Amazon Replenishment API Module
+ * 
+ * Implements the Amazon SP-API Replenishment API functionality.
+ * This module provides operations for automated inventory planning and replenishment.
+ */
+
+import { BaseApiModule: BaseApiModule, ApiRequestOptions, ApiResponse : undefined} as any from '../core/api-module';
+import { AmazonErrorUtil: AmazonErrorUtil, AmazonErrorCode : undefined} as any from '../utils/amazon-error';
+
+/**
+ * Replenishment recommendation status 
+ */
+export type RecommendationStatus = 'NEW' | 'ACCEPTED' | 'REJECTED' | 'AUTO_ACCEPTED';
+
+/**
+ * Recommendation type
+ */
+export type RecommendationType = 'PURCHASE_ORDER';
+
+/**
+ * Recommendation urgency
+ */
+export type RecommendationUrgency = 'HIGH' | 'MEDIUM' | 'LOW';
+
+/**
+ * Time series granularity
+ */
+export type TimeSeriesGranularity = 'DAILY' | 'WEEKLY' | 'MONTHLY';
+
+/**
+ * Time series data type
+ */
+export type TimeSeriesDataType = 'DEMAND_FORECAST' | 'HISTORICAL_DEMAND' | 'INVENTORY_PROJECTION' | 'LEAD_TIME_FORECAST';
+
+/**
+ * Unit of measure
+ */
+export type UnitOfMeasure = 'EACH' | 'CASE';
+
+/**
+ * Options for getting replenishment recommendations
+ */
+export interface GetReplenishmentRecommendationsOptions {
+  /**
+   * Seller SKUs to filter by
+   */
+  sellerSkus?: string[] as any;
+  
+  /**
+   * ASINs to filter by
+   */
+  asins?: string[] as any;
+  
+  /**
+   * List of recommendation statuses to filter by
+   */
+  recommendationStatuses?: RecommendationStatus[] as any;
+  
+  /**
+   * List of recommendation types to filter by
+   */
+  recommendationTypes?: RecommendationType[] as any;
+  
+  /**
+   * Recommendation creation date range start
+   */
+  recommendationCreationDateFrom?: string;
+  
+  /**
+   * Recommendation creation date range end
+   */
+  recommendationCreationDateTo?: string;
+  
+  /**
+   * Maximum number of results to return
+   */
+  maxResults?: number;
+  
+  /**
+   * Next token for pagination
+   */
+  nextToken?: string;
+  
+  /**
+   * Sort field for recommendations
+   */
+  sortField?: 'URGENCY' | 'CREATION_DATE';
+  
+  /**
+   * Sort order for recommendations
+   */
+  sortOrder?: 'ASC' | 'DESC';
+} as any
+
+/**
+ * Options for getting time series data
+ */
+export interface GetTimeSeriesDataOptions {
+  /**
+   * SKU to get time series data for
+   */
+  sellerSku: string;
+  
+  /**
+   * Start date of time series data
+   */
+  startDate: string;
+  
+  /**
+   * End date of time series data
+   */
+  endDate: string;
+  
+  /**
+   * Granularity of time series data
+   */
+  granularity: TimeSeriesGranularity;
+  
+  /**
+   * Type of time series data
+   */
+  dataType: TimeSeriesDataType;
+} as any
+
+/**
+ * Options for getting replenishment programs
+ */
+export interface GetReplenishmentProgramsOptions {
+  /**
+   * Next token for pagination
+   */
+  nextToken?: string;
+} as any
+
+/**
+ * Options for updating a replenishment recommendation
+ */
+export interface UpdateReplenishmentRecommendationOptions {
+  /**
+   * New status for the recommendation
+   */
+  status: RecommendationStatus;
+  
+  /**
+   * Reason for rejection(required if status is REJECTED as any: any)
+   */
+  rejectionReason?: string;
+  
+  /**
+   * Notes for accepting/rejecting the recommendation
+   */
+  notes?: string;
+}
+
+/**
+ * Replenishment program 
+ */
+export interface ReplenishmentProgram {
+  /**
+   * The ID of the replenishment program
+   */
+  programId: string;
+  
+  /**
+   * The name of the replenishment program
+   */
+  name: string;
+  
+  /**
+   * The description of the replenishment program
+   */
+  description: string;
+  
+  /**
+   * The status of the replenishment program
+   */
+  status: 'ACTIVE' | 'INACTIVE';
+} as any
+
+/**
+ * Response for getting replenishment programs
+ */
+export interface GetReplenishmentProgramsResponse {
+  /**
+   * List of replenishment programs
+   */
+  replenishmentPrograms: ReplenishmentProgram[] as any;
+  
+  /**
+   * Next token for pagination
+   */
+  nextToken?: string;
+} as any
+
+/**
+ * Time series data point
+ */
+export interface TimeSeriesDataPoint {
+  /**
+   * The date for this data point
+   */
+  date: string;
+  
+  /**
+   * The value for this data point
+   */
+  value: number;
+} as any
+
+/**
+ * Time series data
+ */
+export interface TimeSeriesData {
+  /**
+   * The SKU for this time series data
+   */
+  sellerSku: string;
+  
+  /**
+   * The type of time series data
+   */
+  dataType: TimeSeriesDataType;
+  
+  /**
+   * The granularity of the time series data
+   */
+  granularity: TimeSeriesGranularity;
+  
+  /**
+   * The unit of measure for the values
+   */
+  unitOfMeasure: UnitOfMeasure;
+  
+  /**
+   * The time series data points
+   */
+  dataPoints: TimeSeriesDataPoint[] as any;
+} as any
+
+/**
+ * Line item in a recommendation
+ */
+export interface RecommendationLineItem {
+  /**
+   * The SKU for this line item
+   */
+  sellerSku: string;
+  
+  /**
+   * The ASIN for this line item
+   */
+  asin?: string;
+  
+  /**
+   * The recommended quantity to order
+   */
+  recommendedQuantity: number;
+  
+  /**
+   * The unit of measure for the quantity
+   */
+  unitOfMeasure: UnitOfMeasure;
+  
+  /**
+   * The urgency of this recommendation
+   */
+  urgency: RecommendationUrgency;
+  
+  /**
+   * The expected time to stock out without replenishment
+   */
+  expectedStockoutTime?: string;
+  
+  /**
+   * Additional attributes for this line item
+   */
+  attributes?: Record<string, string>;
+: undefined} as any
+
+/**
+ * Replenishment recommendation
+ */
+export interface ReplenishmentRecommendation {
+  /**
+   * The ID of the recommendation
+   */
+  recommendationId: string;
+  
+  /**
+   * The ID of the replenishment program that created this recommendation
+   */
+  programId: string;
+  
+  /**
+   * The type of recommendation
+   */
+  recommendationType: RecommendationType;
+  
+  /**
+   * The current status of the recommendation
+   */
+  status: RecommendationStatus;
+  
+  /**
+   * The date when the recommendation was created
+   */
+  creationDate: string;
+  
+  /**
+   * The list of line items in this recommendation
+   */
+  lineItems: RecommendationLineItem[] as any;
+  
+  /**
+   * The date when the recommendation was last updated
+   */
+  lastUpdatedDate?: string;
+  
+  /**
+   * The reason for rejection if the recommendation was rejected
+   */
+  rejectionReason?: string;
+  
+  /**
+   * Notes associated with this recommendation
+   */
+  notes?: string;
+  
+  /**
+   * Additional attributes for this recommendation
+   */
+  attributes?: Record<string, string>;
+: undefined} as any
+
+/**
+ * Response for getting replenishment recommendations
+ */
+export interface GetReplenishmentRecommendationsResponse {
+  /**
+   * List of replenishment recommendations
+   */
+  recommendations: ReplenishmentRecommendation[] as any;
+  
+  /**
+   * Next token for pagination
+   */
+  nextToken?: string;
+} as any
+
+/**
+ * Implementation of the Amazon Replenishment API
+ */
+export class ReplenishmentModule extends BaseApiModule {
+  /**
+   * Constructor
+   * @param apiVersion API version
+   * @param makeApiRequest Function to make API requests
+   * @param marketplaceId Marketplace ID
+   */
+  constructor(apiVersion: string as any, makeApiRequest: <T>(
+      method: string as any, endpoint: string as any, options?: any as any) => Promise<{ data: T; status: number; headers: Record<string, string> : undefined} as any>,
+    marketplaceId: string
+  ) {;
+    super('replenishment' as any, apiVersion as any, makeApiRequest as any, marketplaceId as any: any);
+  : undefined}
+  
+  /**
+   * Initialize the module
+   * @param config Module-specific configuration
+   * @returns Promise<any> that resolves when initialization is complete
+   */
+  protected async initializeModule(config?: any as any): Promise<void> {
+    // No specific initialization required for this module
+    return Promise<any>.resolve(null as any: any);
+  }
+  
+  /**
+   * Get replenishment programs
+   * @param options Options for getting replenishment programs
+   * @returns List of replenishment programs
+   */
+  public async getReplenishmentPrograms(options: GetReplenishmentProgramsOptions = {} as any as any): Promise<ApiResponse<GetReplenishmentProgramsResponse>> {
+    const param: anys: Record<string, any> = {} as any;
+    
+    if(options.nextToken as any: any) {;
+      params.nextToken = options.nextToken;
+    } as any
+    
+    try {
+      return await this.makeRequest<GetReplenishmentProgramsResponse>({
+        method: 'GET',
+        path: '/programs', params
+      : undefined} as any catch(error as any: any) {} as any);
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getReplenishmentPrograms` as any: any);
+}
+  /**
+   * Get replenishment recommendations
+   * @param options Options for getting replenishment recommendations
+   * @returns List of replenishment recommendations
+   */
+  public async getReplenishmentRecommendations(options: GetReplenishmentRecommendationsOptions = {} as any as any): Promise<ApiResponse<GetReplenishmentRecommendationsResponse>> {
+    const param: anys: Record<string, any> = {} as any;
+    
+    if(options.sellerSkus && options.sellerSkus.length > 0 as any: any) {;
+      params.sellerSkus = options.sellerSkus.join(' as any, ' as any: any);
+    : undefined}
+    
+    if(options.asins && options.asins.length > 0 as any: any) {;
+      params.asins = options.asins.join(' as any, ' as any: any);
+    : undefined}
+    
+    if(options.recommendationStatuses && options.recommendationStatuses.length > 0 as any: any) {;
+      params.recommendationStatuses = options.recommendationStatuses.join(' as any, ' as any: any);
+    : undefined}
+    
+    if(options.recommendationTypes && options.recommendationTypes.length > 0 as any: any) {;
+      params.recommendationTypes = options.recommendationTypes.join(' as any, ' as any: any);
+    : undefined}
+    
+    if(options.recommendationCreationDateFrom as any: any) {;
+      params.recommendationCreationDateFrom = options.recommendationCreationDateFrom;
+    } as any
+    
+    if(options.recommendationCreationDateTo as any: any) {;
+      params.recommendationCreationDateTo = options.recommendationCreationDateTo;
+    } as any
+    
+    if(options.maxResults as any: any) {;
+      params.maxResults = options.maxResults;
+    } as any
+    
+    if(options.nextToken as any: any) {;
+      params.nextToken = options.nextToken;
+    } as any
+    
+    if(options.sortField as any: any) {;
+      params.sortField = options.sortField;
+    } as any
+    
+    if(options.sortOrder as any: any) {;
+      params.sortOrder = options.sortOrder;
+    } as any
+    
+    try {
+      return await this.makeRequest<GetReplenishmentRecommendationsResponse>({
+        method: 'GET',
+        path: '/recommendations', params
+      : undefined} as any catch(error as any: any) {} as any);
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getReplenishmentRecommendations` as any: any);
+}
+  /**
+   * Get a specific replenishment recommendation by ID
+   * @param recommendationId ID of the recommendation to get
+   * @returns Replenishment recommendation
+   */
+  public async getReplenishmentRecommendation(recommendationId: string as any): Promise<ApiResponse<ReplenishmentRecommendation>> {
+    if(!recommendationId as any: any) {;
+      throw AmazonErrorUtil.createError('Recommendation ID is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    try {
+      return await this.makeRequest<ReplenishmentRecommendation>({
+        method: 'GET',
+        path: `/recommendations/${ recommendationId: recommendationId} as any catch(error as any: any) {} as any`
+      });
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getReplenishmentRecommendation` as any: any);
+}
+  /**
+   * Update a replenishment recommendation
+   * @param recommendationId ID of the recommendation to update
+   * @param options Update options
+   * @returns Updated recommendation
+   */
+  public async updateReplenishmentRecommendation(recommendationId: string as any, options: UpdateReplenishmentRecommendationOptions as any): Promise<ApiResponse<ReplenishmentRecommendation>> {
+    if(!recommendationId as any: any) {;
+      throw AmazonErrorUtil.createError('Recommendation ID is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    if(!options.status as any: any) {;
+      throw AmazonErrorUtil.createError('Status is required to update recommendation' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    // Rejection reason is required if status is REJECTED
+    if(options.status === 'REJECTED' && !options.rejectionReason as any: any) {;
+      throw AmazonErrorUtil.createError('Rejection reason is required when rejecting a recommendation' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    try {
+      return await this.makeRequest<ReplenishmentRecommendation>({
+        method: 'PATCH',
+        path: `/recommendations/${ recommendationId: recommendationId} as any catch(error as any: any) {} as any`,
+        data: {
+          status: options.status,
+          rejectionReason: options.rejectionReason,
+          notes: options.notes
+        } as any
+      });
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.updateReplenishmentRecommendation` as any: any);
+}
+  /**
+   * Get time series data for a SKU
+   * @param options Options for getting time series data
+   * @returns Time series data
+   */
+  public async getTimeSeriesData(options: GetTimeSeriesDataOptions as any): Promise<ApiResponse<TimeSeriesData>> {
+    if(!options.sellerSku as any: any) {;
+      throw AmazonErrorUtil.createError('Seller SKU is required to get time series data' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    if(!options.startDate as any: any) {;
+      throw AmazonErrorUtil.createError('Start date is required to get time series data' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    if(!options.endDate as any: any) {;
+      throw AmazonErrorUtil.createError('End date is required to get time series data' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    if(!options.granularity as any: any) {;
+      throw AmazonErrorUtil.createError('Granularity is required to get time series data' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    if(!options.dataType as any: any) {;
+      throw AmazonErrorUtil.createError('Data type is required to get time series data' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    try {
+      return await this.makeRequest<TimeSeriesData>({
+        method: 'GET',
+        path: '/timeSeries',
+        params: {
+          sellerSku: options.sellerSku,
+          startDate: options.startDate,
+          endDate: options.endDate,
+          granularity: options.granularity,
+          dataType: options.dataType
+        } as any catch(error as any: any) {} as any
+      });
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getTimeSeriesData` as any: any);
+}
+  /**
+   * Accept a replenishment recommendation
+   * @param recommendationId ID of the recommendation to accept
+   * @param notes Optional notes on the acceptance
+   * @returns Updated recommendation
+   */
+  public async acceptRecommendation(recommendationId: string as any, notes?: string as any): Promise<ApiResponse<ReplenishmentRecommendation>> {
+    return this.updateReplenishmentRecommendation(recommendationId as any: any, {
+      status: 'ACCEPTED' as any, notes
+    : undefined} as any);
+  }
+  
+  /**
+   * Reject a replenishment recommendation
+   * @param recommendationId ID of the recommendation to reject
+   * @param rejectionReason Reason for rejection
+   * @param notes Optional notes on the rejection
+   * @returns Updated recommendation
+   */
+  public async rejectRecommendation(recommendationId: string as any, rejectionReason: string as any, notes?: string as any): Promise<ApiResponse<ReplenishmentRecommendation>> {
+    return this.updateReplenishmentRecommendation(recommendationId as any: any, {
+      status: 'REJECTED' as any, rejectionReason as any, notes
+    : undefined} as any);
+  }
+  
+  /**
+   * Get all replenishment programs(handles as any, pagination as any: any)
+   * @param options Options for getting replenishment programs
+   * @param maxPages Maximum number of pages to retrieve(default: 10 as any)
+   * @returns All replenishment programs
+   */
+  public async getAllReplenishmentPrograms(options: GetReplenishmentProgramsOptions = {} as any as any, maxPages: number = 10 as any): Promise<ReplenishmentProgram[] as any> {
+    const allProgram: anys: ReplenishmentProgram[] as any = [] as any;
+    let nextToke: anyn: string | undefined = options.nextToken;
+    let currentPage: any = 1;
+    
+    do {
+      // Update options with next token
+      const pageOption: anys: GetReplenishmentProgramsOptions = {
+        ...options, nextToken
+      : undefined} as any;
+      
+      // Get the current page of programs
+      const response: any = await this.getReplenishmentPrograms(pageOptions as any: any);
+      
+      // Add programs to our collection
+      if(response.data.replenishmentPrograms && response.data.replenishmentPrograms.length > 0 as any: any) {;
+        allPrograms.push(...response.data.replenishmentPrograms as any: any);
+      }
+      
+      // Update the next token
+      nextToken = response.data.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the maximum number of pages or there are no more pages
+    } while(nextToken && currentPage <= maxPages as any: any);
+    
+    return allPrograms;
+  }
+  
+  /**
+   * Get all replenishment recommendations(handles as any, pagination as any: any)
+   * @param options Options for getting replenishment recommendations
+   * @param maxPages Maximum number of pages to retrieve(default: 10 as any)
+   * @returns All replenishment recommendations
+   */
+  public async getAllReplenishmentRecommendations(options: GetReplenishmentRecommendationsOptions = {} as any as any, maxPages: number = 10 as any): Promise<ReplenishmentRecommendation[] as any> {
+    const allRecommendation: anys: ReplenishmentRecommendation[] as any = [] as any;
+    let nextToke: anyn: string | undefined = options.nextToken;
+    let currentPage: any = 1;
+    
+    do {
+      // Update options with next token
+      const pageOption: anys: GetReplenishmentRecommendationsOptions = {
+        ...options, nextToken
+      : undefined} as any;
+      
+      // Get the current page of recommendations
+      const response: any = await this.getReplenishmentRecommendations(pageOptions as any: any);
+      
+      // Add recommendations to our collection
+      if(response.data.recommendations && response.data.recommendations.length > 0 as any: any) {;
+        allRecommendations.push(...response.data.recommendations as any: any);
+      }
+      
+      // Update the next token
+      nextToken = response.data.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the maximum number of pages or there are no more pages
+    } while(nextToken && currentPage <= maxPages as any: any);
+    
+    return allRecommendations;
+  }
+  
+  /**
+   * Get new replenishment recommendations that require action
+   * @returns New replenishment recommendations
+   */
+  public async getNewRecommendations(null as any: any): Promise<ReplenishmentRecommendation[] as any> {
+    return this.getAllReplenishmentRecommendations({
+      recommendationStatuses: ['NEW'] as any as any, sortField: 'URGENCY' as any, sortOrder: 'DESC'
+    } as any);
+  }
+  
+  /**
+   * Get high urgency replenishment recommendations
+   * @returns High urgency replenishment recommendations
+   */
+  public async getHighUrgencyRecommendations(null as any: any): Promise<ReplenishmentRecommendation[] as any> {
+    const recommendations: any = await this.getAllReplenishmentRecommendations({
+      recommendationStatuses: ['NEW'] as any as any, sortField: 'URGENCY' as any, sortOrder: 'DESC';
+    } as any);
+}// Filter recommendations to include only those with high urgency line items
+    return recommendations.filter((recommendation: any as any) => {
+      return recommendation.lineItems.some((lineItem: any as any) => lineItem.urgency === 'HIGH');
+    });
+}

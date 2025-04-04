@@ -1,4 +1,3 @@
-// @ts-nocheck - Added by final-ts-fix.js
 /**
  * Inventory Repository
  * 
@@ -111,10 +110,18 @@ class InventoryRepository implements IInventoryRepository {
         return null;
       }
       
-      return doc.data() || null;
+      const data = doc.data();
+      if (!data) return null;
+      
+      // Ensure that the id is included
+      return {
+        ...data,
+        id: doc.id
+      };
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error(`Failed to get inventory item ${id}`, error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -131,10 +138,11 @@ class InventoryRepository implements IInventoryRepository {
         .withConverter(inventoryConverter)
         .get();
       
-      return snapshot.docs.map(doc => doc.data());
+      return snapshot.docs.map((doc: any) => doc.data());
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error(`Failed to get inventory items by SKU ${sku}`, error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -165,12 +173,13 @@ class InventoryRepository implements IInventoryRepository {
       const snapshot = await query.get();
       
       return {
-        items: snapshot.docs.map(doc => doc.data()),
+        items: snapshot.docs.map((doc: any) => doc.data()),
         lastDoc: snapshot.docs.length ? snapshot.docs[snapshot.docs.length - 1] : null
       };
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error('Failed to get all inventory items', error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -199,8 +208,9 @@ class InventoryRepository implements IInventoryRepository {
       
       return doc.data() as FirestoreInventoryItemWithId;
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error('Failed to create inventory item', error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -225,8 +235,9 @@ class InventoryRepository implements IInventoryRepository {
       
       return true;
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error(`Failed to update inventory item ${id}`, error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -244,8 +255,9 @@ class InventoryRepository implements IInventoryRepository {
       
       return true;
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error(`Failed to delete inventory item ${id}`, error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -272,13 +284,14 @@ class InventoryRepository implements IInventoryRepository {
       const { items } = await this.getAllInventoryItems(500);
       
       // Filter to items with the specified marketplace
-      return items.filter(item => 
+      return items.filter((item: any) => 
         item.marketplaces && 
         item.marketplaces[marketplaceId] !== undefined
       );
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error(`Failed to get products on marketplace ${marketplaceId}`, error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 }

@@ -10,7 +10,7 @@
 import { ProductPushService } from '../services/product-push.service';
 import { MarketplaceCredentialsService } from '../services/marketplace-credentials.service';
 
-async function demonstrateMultiAdapterPush() {
+async function demonstrateMultiAdapterPush() : Promise<void> {
   try {
     console.log('Setting up mock credentials for demonstration...');
     
@@ -96,12 +96,12 @@ async function demonstrateMultiAdapterPush() {
       );
     } catch (error) {
       console.log('Expected error for unsupported marketplace:', 
-        error instanceof Error ? error.message : 'Unknown error');
+        error instanceof Error ? error.message : String(error));
     }
     
     console.log('\nMulti-adapter demonstration completed successfully!');
   } catch (error) {
-    console.error('Error in multi-adapter demonstration:', error);
+    console.error('Error in multi-adapter demonstration:', error instanceof Error ? error.message : String(error));
   }
 }
 

@@ -1,9 +1,10 @@
 /**
- * Amazon API error utility classes
+ * Amazon API error utility for handling Amazon Selling Partner API errors
  */
 
+// Using require-style import for compatibility
+const axios = require('axios');
 import { MarketplaceError } from '../../../models/marketplace.models';
-import { AmazonSPApi } from '../schemas/amazon.generated';
 
 /**
  * Error codes specific to Amazon SP-API
@@ -43,28 +44,45 @@ export enum AmazonErrorCode {
 }
 
 /**
- * Amazon error utility class
- * Handles error mapping from Amazon SP-API responses to standardized marketplace errors
+ * Amazon API error shape as returned from SP-API
  */
-export class AmazonErrorUtil {
+export interface AmazonApiError {
+  code?: string;
+  message?: string;
+  details?: any;
+  error?: string;
+  error_description?: string;
+}
+
+/**
+ * Utility class for handling Amazon API errors
+ */
+export class AmazonErrorHandler {
   /**
-   * Maps an Amazon SP-API error to a standardized marketplace error
-   * @param amazonError The Amazon API error object
-   * @param context Additional context about the operation where the error occurred
-   * @returns Standardized marketplace error
+   * Map an Amazon API error to our standardized MarketplaceError format
+   * @param amazonError - The error returned by the Amazon API
+   * @param context - Additional context for the error (e.g., operation name)
+   * @returns Standardized MarketplaceError
    */
-  static mapApiError(
-    amazonError: AmazonSPApi.Common.Error,
-    context: string = 'Amazon SP-API operation'
-  ): MarketplaceError {
+  static mapApiError(amazonError: AmazonApiError, context?: string): MarketplaceError {
     const timestamp = new Date();
+    
+    // Extract error message
+    let message = amazonError.message || 
+                  amazonError.error_description || 
+                  amazonError.error || 
+                  'Unknown Amazon API error';
+                  
+    if (context) {
+      message = `${context}: ${message}`;
+    }
     
     // Map Amazon error codes to our standardized error codes
     let errorCode = AmazonErrorCode.UNKNOWN_ERROR;
     
     // Amazon's error codes are inconsistent, so we need to check the error message as well
-    const errorCodeLower = amazonError.code?.toLowerCase() || '';
-    const errorMessageLower = amazonError.message?.toLowerCase() || '';
+    const errorCodeLower = (amazonError.code || '').toLowerCase();
+    const errorMessageLower = (message || '').toLowerCase();
     
     // Determine the appropriate error code
     if (
@@ -135,23 +153,19 @@ export class AmazonErrorUtil {
     
     return {
       code: errorCode,
-      message: amazonError.message || 'Unknown Amazon API error',
-      details: {
-        amazonErrorCode: amazonError.code,
-        amazonErrorDetails: amazonError.details,
-        context
-      },
+      message,
+      details: amazonError,
       timestamp
     };
   }
   
   /**
-   * Maps an HTTP error response to a standardized marketplace error
-   * @param httpError The HTTP error (typically an Axios error)
-   * @param context Additional context about the operation where the error occurred
-   * @returns Standardized marketplace error
+   * Map an HTTP error to our standardized MarketplaceError format
+   * @param httpError - The HTTP error from Axios
+   * @param context - Additional context for the error (e.g., operation name)
+   * @returns Standardized MarketplaceError
    */
-  static mapHttpError(httpError: any, context: string = 'Amazon SP-API HTTP error'): MarketplaceError {
+  static mapHttpError(httpError: any, context?: string): MarketplaceError {
     const timestamp = new Date();
     let errorCode = AmazonErrorCode.UNKNOWN_ERROR;
     let message = httpError.message || 'Unknown HTTP error';
@@ -164,40 +178,41 @@ export class AmazonErrorUtil {
     
     // Otherwise, map based on HTTP status code
     const statusCode = httpError.response?.status;
-    if (statusCode) {
-      switch (statusCode) {
-        case 400:
-          errorCode = AmazonErrorCode.INVALID_REQUEST;
-          message = httpError.response?.data?.message || 'Invalid request';
-          break;
-        case 401:
-          errorCode = AmazonErrorCode.UNAUTHORIZED;
-          message = 'Authentication failed or token expired';
-          break;
-        case 403:
-          errorCode = AmazonErrorCode.UNAUTHORIZED;
-          message = 'Not authorized to perform this operation';
-          break;
-        case 404:
-          errorCode = AmazonErrorCode.RESOURCE_NOT_FOUND;
-          message = 'Resource not found';
-          break;
-        case 429:
-          errorCode = AmazonErrorCode.RATE_LIMIT_EXCEEDED;
-          message = 'Rate limit exceeded';
-          break;
-        case 500:
-        case 502:
-        case 503:
-        case 504:
-          errorCode = AmazonErrorCode.SERVICE_UNAVAILABLE;
-          message = `Amazon service unavailable (${statusCode})`;
-          break;
-        default:
-          errorCode = AmazonErrorCode.UNKNOWN_ERROR;
-          message = `HTTP error ${statusCode}`;
-          break;
-      }
+    
+    if (context) {
+      message = `${context}: ${message}`;
+    }
+    
+    switch (statusCode) {
+      case 400:
+        errorCode = AmazonErrorCode.INVALID_REQUEST;
+        message = `Invalid request: ${message}`;
+        break;
+      case 401:
+        errorCode = AmazonErrorCode.UNAUTHORIZED;
+        message = `Authentication error: ${message}`;
+        break;
+      case 403:
+        errorCode = AmazonErrorCode.UNAUTHORIZED;
+        message = `Not authorized: ${message}`;
+        break;
+      case 404:
+        errorCode = AmazonErrorCode.RESOURCE_NOT_FOUND;
+        message = `Resource not found: ${message}`;
+        break;
+      case 429:
+        errorCode = AmazonErrorCode.RATE_LIMIT_EXCEEDED;
+        message = `Rate limit exceeded: ${message}`;
+        break;
+      case 500:
+      case 502:
+      case 503:
+        errorCode = AmazonErrorCode.SERVICE_UNAVAILABLE;
+        message = `Amazon service unavailable: ${message}`;
+        break;
+      default:
+        errorCode = AmazonErrorCode.UNKNOWN_ERROR;
+        message = `HTTP error ${statusCode}: ${message}`;
     }
     
     return {
@@ -205,23 +220,22 @@ export class AmazonErrorUtil {
       message,
       details: {
         httpStatus: statusCode,
-        responseData: httpError.response?.data,
-        context
+        response: httpError.response?.data
       },
       timestamp
     };
   }
   
   /**
-   * Creates a generic error for Amazon-specific error cases
-   * @param message Error message
-   * @param code Error code
-   * @param details Additional error details
-   * @returns Standardized marketplace error
+   * Create a marketplace error from scratch
+   * @param message - Error message
+   * @param code - Error code
+   * @param details - Additional error details
+   * @returns Standardized MarketplaceError
    */
   static createError(
-    message: string,
-    code: AmazonErrorCode = AmazonErrorCode.UNKNOWN_ERROR,
+    message: string, 
+    code: AmazonErrorCode = AmazonErrorCode.UNKNOWN_ERROR, 
     details?: any
   ): MarketplaceError {
     return {
@@ -232,3 +246,5 @@ export class AmazonErrorUtil {
     };
   }
 }
+
+export default AmazonErrorHandler;

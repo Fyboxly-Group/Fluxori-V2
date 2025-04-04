@@ -5,40 +5,9 @@
  * This module handles product pricing information and competitive price analysis.
  */
 
-// Define necessary types for TypeScript validation
-class BaseApiModule {
-  protected moduleName: string;
-  protected marketplaceId: string;
-
-  constructor(moduleName: string, apiVersion: string, makeApiRequest: any, marketplaceId: string) {
-    this.moduleName = moduleName;
-    this.marketplaceId = marketplaceId;
-  }
-
-  protected makeRequest<T>(options: any): Promise<ApiResponse<T>> {
-    return Promise<any>.resolve({ data: {} as T, status: 200, headers: {} } as ApiResponse<T>);
-  }
-}
-
-interface ApiRequestOptions {
-  method: string;
-  path: string;
-  params?: Record<string, any>;
-  body?: any;
-}
-
-interface ApiResponse<T> {
-  data: T;
-  status: number;
-  headers: Record<string, string>;
-}
-
-// Mock AmazonSPApi namespace
-const AmazonSPApi = {
-  Pricing: {}
-};
-
-import { AmazonErrorUtil, AmazonErrorCode } from '../utils/amazon-error';
+import { ApiModule, ApiRequestFunction, ApiResponse } from '../core/api-module';
+import { AmazonErrorHandler, AmazonErrorCode } from '../utils/amazon-error';
+import { BatchProcessor } from '../utils/batch-processor';
 
 /**
  * Item identifiers for product pricing
@@ -66,6 +35,11 @@ export type ConditionType =
   | 'Club';
 
 /**
+ * Offer type for pricing
+ */
+export type OfferType = 'B2C' | 'B2B';
+
+/**
  * Get pricing parameters
  */
 export interface GetPricingParams {
@@ -87,16 +61,99 @@ export interface GetPricingParams {
   /**
    * Type of offer to get pricing for
    */
-  offerType?: 'B2C' | 'B2B';
+  offerType?: OfferType;
 }
 
 /**
- * Competitive price information for an ASIN
+ * Money type for representing prices
+ */
+export interface Money {
+  /**
+   * The numerical value of the price
+   */
+  amount: number;
+
+  /**
+   * The currency code (ISO 4217 format)
+   */
+  currencyCode: string;
+}
+
+/**
+ * Price type for representing product prices
+ */
+export interface Price {
+  /**
+   * Listing price of the product
+   */
+  listingPrice: Money;
+
+  /**
+   * Shipping price of the product
+   */
+  shippingPrice?: Money;
+
+  /**
+   * Points awarded for purchasing this product (Amazon points)
+   */
+  points?: {
+    pointsNumber: number;
+    pointsMonetaryValue: Money;
+  };
+}
+
+/**
+ * Competitive price information
+ */
+export interface CompetitivePrice {
+  /**
+   * Competitive price ID (1 = buy box price)
+   */
+  competitivePriceId: string;
+
+  /**
+   * Price information
+   */
+  price: Price;
+
+  /**
+   * Condition of the product
+   */
+  condition?: string;
+
+  /**
+   * Subcondition of the product
+   */
+  subcondition?: string;
+
+  /**
+   * Whether this price belongs to the requester
+   */
+  belongsToRequester: boolean;
+}
+
+/**
+ * Competitive pricing information for an ASIN
  */
 export interface CompetitivePriceInfo {
+  /**
+   * The ASIN of the product
+   */
   asin: string;
-  competitivePrices: any[]; // Using any instead of specific type due to reference issues
+
+  /**
+   * List of competitive prices
+   */
+  competitivePrices: CompetitivePrice[];
+
+  /**
+   * The lowest price found among competitive prices
+   */
   lowestPrice?: number;
+
+  /**
+   * The buy box price if available
+   */
   buyBoxPrice?: number;
 }
 
@@ -104,62 +161,224 @@ export interface CompetitivePriceInfo {
  * Price comparison for a SKU
  */
 export interface PriceComparison {
+  /**
+   * The SKU of the product
+   */
   sku: string;
+
+  /**
+   * The ASIN of the product
+   */
   asin?: string;
+
+  /**
+   * The seller's price for this SKU
+   */
   yourPrice?: number;
+
+  /**
+   * The lowest price available for this product
+   */
   lowestPrice?: number;
+
+  /**
+   * The buy box price for this product
+   */
   buyBoxPrice?: number;
+
+  /**
+   * The difference between your price and the lowest price
+   */
   priceDifference?: number;
+
+  /**
+   * Whether the seller is the buy box winner
+   */
   isBuyBoxWinner?: boolean;
 }
 
 /**
- * Price trends data
+ * Price trends data for historical analysis
  */
 export interface PriceTrends {
+  /**
+   * The ASIN of the product
+   */
   asin: string;
+
+  /**
+   * Dates for the price points
+   */
   dates: string[];
+
+  /**
+   * Lowest prices over time
+   */
   lowestPrices: number[];
+
+  /**
+   * Buy box prices over time
+   */
   buyBoxPrices: number[];
+
+  /**
+   * Your prices over time, if available
+   */
   yourPrices?: number[];
+}
+
+/**
+ * Namespace for Amazon SP-API Product Pricing response types
+ */
+export namespace AmazonSPApi {
+  /**
+   * Product Pricing API namespace
+   */
+  export namespace ProductPricing {
+    /**
+     * Base product identifier type (common to all responses)
+     */
+    export interface ProductIdentifier {
+      marketplaceId: string;
+      asin?: string;
+      sellerId?: string;
+      skuType?: string;
+      sellerSKU?: string;
+    }
+
+    /**
+     * Response for get pricing API
+     */
+    export interface GetPricingResponse {
+      payload: Array<{
+        /**
+         * Status of the pricing request for this item
+         */
+        status: 'Success' | 'ClientError' | 'ServiceError';
+        
+        /**
+         * Product pricing information
+         */
+        product?: {
+          /**
+           * Product identifiers
+           */
+          identifiers: {
+            marketplaceASIN?: {
+              marketplaceId: string;
+              asin: string;
+            };
+            sellerSKU?: {
+              marketplaceId: string;
+              sellerId: string;
+              sellerSKU: string;
+            };
+          };
+          
+          /**
+           * Competitive pricing information
+           */
+          competitivePricing?: {
+            competitivePrices: CompetitivePrice[];
+            numberOfOfferListings: Array<{
+              condition: string;
+              count: number;
+            }>;
+            tradeInValue?: Money;
+          };
+          
+          /**
+           * Product offers
+           */
+          offers?: Array<{
+            buyingPrice: Price;
+            regularPrice?: Money;
+            fulfillmentChannel?: string;
+            itemCondition?: string;
+            itemSubCondition?: string;
+            sellerSKU?: string;
+          }>;
+          
+          /**
+           * Sales rankings
+           */
+          salesRankings?: Array<{
+            productCategoryId: string;
+            rank: number;
+          }>;
+        };
+        
+        /**
+         * Error information if status is not Success
+         */
+        error?: {
+          code: string;
+          message: string;
+          details?: string;
+        };
+      }>;
+    }
+  }
 }
 
 /**
  * Implementation of the Amazon Product Pricing API
  */
-export class ProductPricingModule extends BaseApiModule {
+export class ProductPricingModule extends ApiModule {
+  /**
+   * Module identifier
+   */
+  readonly moduleId = 'productPricing';
+  
+  /**
+   * Human-readable module name
+   */
+  readonly moduleName = 'Product Pricing API';
+  
+  /**
+   * API version for this module
+   */
+  readonly apiVersion: string;
+  
+  /**
+   * Base path for API requests
+   */
+  readonly basePath: string;
+  
+  /**
+   * Batch processor for handling multiple items
+   */
+  private batchProcessor: BatchProcessor;
+
   /**
    * Constructor
    * @param apiVersion API version
-   * @param makeApiRequest Function to make API requests
+   * @param apiRequest Function to make API requests
    * @param marketplaceId Marketplace ID
    */
   constructor(
     apiVersion: string, 
-    makeApiRequest: <T>(method: string, endpoint: string, options?: any) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
+    apiRequest: ApiRequestFunction,
     marketplaceId: string
   ) {
-    super('productPricing', apiVersion, makeApiRequest, marketplaceId);
+    super(apiRequest, marketplaceId, {});
+    
+    this.apiVersion = apiVersion;
+    this.basePath = `/products/pricing/${apiVersion}`;
+    this.batchProcessor = new BatchProcessor(20); // Process items in batches of 20
   }
-  
-  /**
-   * Initialize the module
-   * @param config Module-specific configuration
-   * @returns Promise<any> that resolves when initialization is complete
-   */
-  protected async initializeModule(config?: any): Promise<void> {
-    // No specific initialization required for this module
-    return Promise<any>.resolve();
-  }
-  
+
   /**
    * Get pricing information for items
    * @param params Parameters for getting pricing information
    * @returns Pricing information
    */
-  public async getPricing(params: GetPricingParams): Promise<ApiResponse<any>> {
+  public async getPricing(params: GetPricingParams): Promise<ApiResponse<AmazonSPApi.ProductPricing.GetPricingResponse>> {
     if (!params.itemIdentifiers || params.itemIdentifiers.length === 0) {
-      throw AmazonErrorUtil.createError('At least one item identifier is required', AmazonErrorCode.INVALID_INPUT);
+      throw AmazonErrorHandler.createError(
+        'At least one item identifier is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
     }
     
     const queryParams: Record<string, any> = {};
@@ -167,7 +386,10 @@ export class ProductPricingModule extends BaseApiModule {
     // Ensure we have a marketplace ID
     const marketplaceId = params.marketplaceId || this.marketplaceId;
     if (!marketplaceId) {
-      throw AmazonErrorUtil.createError('Marketplace ID is required for pricing information', AmazonErrorCode.INVALID_INPUT);
+      throw AmazonErrorHandler.createError(
+        'Marketplace ID is required for pricing information',
+        AmazonErrorCode.INVALID_INPUT
+      );
     }
     
     queryParams.MarketplaceId = marketplaceId;
@@ -187,24 +409,25 @@ export class ProductPricingModule extends BaseApiModule {
     let endpoint = '';
     
     if (identifierType === 'ASIN') {
-      endpoint = '/pricing/price';
-      queryParams.Asins = params.itemIdentifiers.map((id) => id.value).join(',');
+      endpoint = 'competitive-pricing/v0/items';
+      queryParams.Asins = params.itemIdentifiers.map(id => id.value).join(',');
     } else {
-      endpoint = '/pricing/price';
-      queryParams.Skus = params.itemIdentifiers.map((id) => id.value).join(',');
+      endpoint = 'listings/pricing/v0/items';
+      queryParams.SellerSKUs = params.itemIdentifiers.map(id => id.value).join(',');
     }
     
     try {
-      return await this.makeRequest<any>({
-        method: 'GET',
-        path: endpoint,
-        params: queryParams
-      });
-    } catch (error: any) {
-      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getPricing`);
+      return await this.request<AmazonSPApi.ProductPricing.GetPricingResponse>(
+        endpoint,
+        'GET',
+        undefined,
+        { params: queryParams }
+      );
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getPricing`);
     }
   }
-
+  
   /**
    * Get pricing information for ASINs
    * @param asins ASINs to get pricing for
@@ -212,13 +435,20 @@ export class ProductPricingModule extends BaseApiModule {
    * @param offerType Offer type
    * @returns Pricing information
    */
-  public async getPricingForAsins(asins: string[], itemCondition?: ConditionType, offerType?: 'B2C' | 'B2B'): Promise<ApiResponse<any>> {
+  public async getPricingForAsins(
+    asins: string[],
+    itemCondition?: ConditionType,
+    offerType?: OfferType
+  ): Promise<ApiResponse<AmazonSPApi.ProductPricing.GetPricingResponse>> {
     if (!asins || asins.length === 0) {
-      throw AmazonErrorUtil.createError('At least one ASIN is required', AmazonErrorCode.INVALID_INPUT);
+      throw AmazonErrorHandler.createError(
+        'At least one ASIN is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
     }
     
     return this.getPricing({
-      itemIdentifiers: asins.map((asin) => ({ type: 'ASIN', value: asin })),
+      itemIdentifiers: asins.map(asin => ({ type: 'ASIN', value: asin })),
       itemCondition,
       offerType
     });
@@ -231,13 +461,20 @@ export class ProductPricingModule extends BaseApiModule {
    * @param offerType Offer type
    * @returns Pricing information
    */
-  public async getPricingForSkus(skus: string[], itemCondition?: ConditionType, offerType?: 'B2C' | 'B2B'): Promise<ApiResponse<any>> {
+  public async getPricingForSkus(
+    skus: string[],
+    itemCondition?: ConditionType,
+    offerType?: OfferType
+  ): Promise<ApiResponse<AmazonSPApi.ProductPricing.GetPricingResponse>> {
     if (!skus || skus.length === 0) {
-      throw AmazonErrorUtil.createError('At least one SKU is required', AmazonErrorCode.INVALID_INPUT);
+      throw AmazonErrorHandler.createError(
+        'At least one SKU is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
     }
     
     return this.getPricing({
-      itemIdentifiers: skus.map((sku) => ({ type: 'SellerSKU', value: sku })),
+      itemIdentifiers: skus.map(sku => ({ type: 'SellerSKU', value: sku })),
       itemCondition,
       offerType
     });
@@ -250,46 +487,63 @@ export class ProductPricingModule extends BaseApiModule {
    */
   public async getCompetitivePricingForAsins(asins: string[]): Promise<CompetitivePriceInfo[]> {
     if (!asins || asins.length === 0) {
-      throw AmazonErrorUtil.createError('At least one ASIN is required', AmazonErrorCode.INVALID_INPUT);
+      throw AmazonErrorHandler.createError(
+        'At least one ASIN is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
     }
     
-    // Get pricing information
-    const response = await this.getPricingForAsins(asins);
+    // Process ASINs in batches to avoid hitting API limits
     const results: CompetitivePriceInfo[] = [];
     
-    // Process response
-    for (const item of response.data.payload) {
-      if (item.status !== 'Success' || !item.product) {
-        continue;
-      }
-      
-      // Get ASIN from identifiers
-      const asin = item.product.identifiers.marketplaceASIN.asin;
-      
-      // Extract competitive prices
-      const competitivePrices = item.product.competitivePricing?.competitivePrices || [];
-      
-      // Find lowest price
-      let lowestPrice: number | undefined = undefined;
-      for (const price of competitivePrices) {
-        const totalPrice = (price.price.listingPrice.amount || 0) + 
-                    (price.price.shippingPrice?.amount || 0);
+    // Use batch processor to handle large numbers of ASINs
+    await this.batchProcessor.processBatch(asins, async (batchAsins) => {
+      try {
+        // Get pricing information for this batch
+        const response = await this.getPricingForAsins(batchAsins);
         
-        if (lowestPrice === undefined || totalPrice < lowestPrice) {
-          lowestPrice = totalPrice;
+        // Process response
+        if (response.data && response.data.payload) {
+          for (const item of response.data.payload) {
+            if (item.status !== 'Success' || !item.product) {
+              continue;
+            }
+            
+            // Get ASIN from identifiers
+            const asin = item.product.identifiers.marketplaceASIN?.asin;
+            if (!asin) continue;
+            
+            // Extract competitive prices
+            const competitivePrices = item.product.competitivePricing?.competitivePrices || [];
+            
+            // Find lowest price
+            let lowestPrice: number | undefined = undefined;
+            for (const price of competitivePrices) {
+              const totalPrice = (price.price.listingPrice.amount || 0) + 
+                                (price.price.shippingPrice?.amount || 0);
+              
+              if (lowestPrice === undefined || totalPrice < lowestPrice) {
+                lowestPrice = totalPrice;
+              }
+            }
+            
+            // Find buy box price (competitivePriceId = 1)
+            const buyBoxPrice = competitivePrices.find(p => 
+              p.competitivePriceId === '1')?.price.listingPrice.amount;
+            
+            results.push({
+              asin,
+              competitivePrices,
+              lowestPrice,
+              buyBoxPrice
+            });
+          }
         }
+      } catch (error) {
+        console.error(`Error processing batch of ASINs:`, error);
+        // Continue processing other batches despite errors
       }
-      
-      // Find buy box price (competitivePriceId = 1)
-      const buyBoxPrice = competitivePrices.find((p: any) => p.competitivePriceId === '1')?.price.listingPrice.amount;
-      
-      results.push({
-        asin,
-        competitivePrices,
-        lowestPrice,
-        buyBoxPrice
-      });
-    }
+    });
     
     return results;
   }
@@ -301,7 +555,10 @@ export class ProductPricingModule extends BaseApiModule {
    */
   public async getPriceComparisonForSku(sku: string): Promise<PriceComparison | null> {
     if (!sku) {
-      throw AmazonErrorUtil.createError('SKU is required', AmazonErrorCode.INVALID_INPUT);
+      throw AmazonErrorHandler.createError(
+        'SKU is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
     }
     
     try {
@@ -309,9 +566,11 @@ export class ProductPricingModule extends BaseApiModule {
       const response = await this.getPricingForSkus([sku]);
       
       // Process response
-      if (response.data.payload.length === 0 || 
-        response.data.payload[0].status !== 'Success' ||
-        !response.data.payload[0].product) {
+      if (!response.data || 
+          !response.data.payload || 
+          response.data.payload.length === 0 || 
+          response.data.payload[0].status !== 'Success' ||
+          !response.data.payload[0].product) {
         return null;
       }
       
@@ -319,7 +578,7 @@ export class ProductPricingModule extends BaseApiModule {
       const product = item.product;
       
       // Get ASIN
-      const asin = product.identifiers.marketplaceASIN.asin;
+      const asin = product.identifiers.marketplaceASIN?.asin;
       
       // Get your price
       const yourPrice = product.offers?.[0]?.buyingPrice.listingPrice.amount || 0;
@@ -331,7 +590,7 @@ export class ProductPricingModule extends BaseApiModule {
       let lowestPrice: number | undefined = undefined;
       for (const price of competitivePrices) {
         const totalPrice = (price.price.listingPrice.amount || 0) + 
-                    (price.price.shippingPrice?.amount || 0);
+                        (price.price.shippingPrice?.amount || 0);
         
         if (lowestPrice === undefined || totalPrice < lowestPrice) {
           lowestPrice = totalPrice;
@@ -339,13 +598,14 @@ export class ProductPricingModule extends BaseApiModule {
       }
       
       // Find buy box price (competitivePriceId = 1)
-      const buyBoxPrice = competitivePrices.find((p: any) => p.competitivePriceId === '1')?.price.listingPrice.amount;
+      const buyBoxPrice = competitivePrices.find(p => 
+        p.competitivePriceId === '1')?.price.listingPrice.amount;
       
       // Calculate price difference
       const priceDifference = yourPrice && lowestPrice ? yourPrice - lowestPrice : undefined;
       
       // Determine if you are the buy box winner
-      const isBuyBoxWinner = competitivePrices.some((p: any) => 
+      const isBuyBoxWinner = competitivePrices.some(p => 
         p.competitivePriceId === '1' && p.belongsToRequester === true);
       
       return {
@@ -357,12 +617,12 @@ export class ProductPricingModule extends BaseApiModule {
         priceDifference,
         isBuyBoxWinner
       };
-    } catch (error: any) {
+    } catch (error) {
       console.error(`Failed to get price comparison for SKU ${sku}:`, error);
       return null;
     }
   }
-
+  
   /**
    * Get price trends (historical pricing data)
    * This is a simulated function since the SP-API doesn't provide direct historical data
@@ -373,7 +633,10 @@ export class ProductPricingModule extends BaseApiModule {
    */
   public async getPriceTrends(asin: string, days: number = 30): Promise<PriceTrends> {
     if (!asin) {
-      throw AmazonErrorUtil.createError('ASIN is required', AmazonErrorCode.INVALID_INPUT);
+      throw AmazonErrorHandler.createError(
+        'ASIN is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
     }
     
     // This is a simulated function for demonstration purposes
@@ -384,7 +647,7 @@ export class ProductPricingModule extends BaseApiModule {
       const pricingData = await this.getCompetitivePricingForAsins([asin]);
       
       if (pricingData.length === 0) {
-        throw AmazonErrorUtil.createError(
+        throw AmazonErrorHandler.createError(
           `No pricing data available for ASIN ${asin}`,
           AmazonErrorCode.RESOURCE_NOT_FOUND
         );
@@ -422,7 +685,7 @@ export class ProductPricingModule extends BaseApiModule {
         lowestPrices,
         buyBoxPrices
       };
-    } catch (error: any) {
+    } catch (error) {
       console.error(`Failed to get price trends for ASIN ${asin}:`, error);
       throw error instanceof Error ? error : new Error(String(error));
     }

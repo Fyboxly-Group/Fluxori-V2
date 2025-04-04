@@ -1,46 +1,41 @@
 /**
- * Factory for creating Replenishment API module
+ * Amazon Replenishment API Factory
+ * 
+ * Factory function for creating and registering an Amazon Replenishment API module.
  */
 
 import { ReplenishmentModule } from './replenishment';
+import { ApiRequestFunction } from '../core/base-module.interface';
 import { ModuleRegistry } from '../core/module-registry';
-import { getDefaultModuleVersion } from '../core/module-definitions';
+import { getModuleDefaultVersion } from '../core/module-definitions';
 
 /**
- * Factory for creating Replenishment API module
+ * Creates and registers a Replenishment module
+ * 
+ * @param apiRequest API request function
+ * @param marketplaceId Marketplace ID
+ * @param registry Module registry for registration
+ * @param apiVersion Optional API version to use
+ * @returns The created Replenishment module
  */
-export class ReplenishmentModuleFactory {
-  /**
-   * Create a Replenishment module and register it with the provided registry
-   * @param makeApiRequest Function to make API requests
-   * @param marketplaceId Marketplace ID
-   * @param registry Module registry to register with
-   * @param apiVersion Optional API version (uses default if not provided)
-   * @returns The created module
-   */
-  public static createReplenishmentModule(
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string,
-    registry: ModuleRegistry,
-    apiVersion?: string
-  ): ReplenishmentModule {
-    // Use provided version or get the default
-    const version = apiVersion || getDefaultModuleVersion('replenishment') || '2022-11-07';
-    
-    // Create the module
-    const module = new ReplenishmentModule(
-      version,
-      makeApiRequest,
-      marketplaceId
-    );
-    
-    // Register the module
-    registry.registerModule(module);
-    
-    return module;
-  }
+export function createReplenishmentModule(
+  apiRequest: ApiRequestFunction,
+  marketplaceId: string,
+  registry: ModuleRegistry,
+  apiVersion?: string
+): ReplenishmentModule {
+  // Use provided version or get the default
+  const version = apiVersion || getModuleDefaultVersion('replenishment') || '2022-11-07';
+  
+  // Create the module
+  const module = new ReplenishmentModule(
+    version,
+    apiRequest,
+    marketplaceId
+  );
+  
+  // Register the module
+  registry.registerModule('replenishment', module);
+  
+  return module;
 }

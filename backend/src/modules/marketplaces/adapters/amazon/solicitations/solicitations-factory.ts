@@ -1,46 +1,45 @@
 /**
- * Factory for creating Solicitations API module
+ * Amazon Solicitations API Factory
+ * 
+ * Factory function for creating and registering a SolicitationsModule instance,
+ * which provides functionality for requesting reviews and feedback from buyers
+ * within Amazon's terms of service and policies.
  */
-
-import { SolicitationsModule } from './solicitations';
 import { ModuleRegistry } from '../core/module-registry';
-import { getDefaultModuleVersion } from '../core/module-definitions';
+import { SolicitationsModule, SolicitationsModuleOptions } from './solicitations';
+import { ApiRequestFunction } from '../core/base-module.interface';
+import { getModuleDefaultVersion } from '../core/module-definitions';
 
 /**
- * Factory for creating Solicitations API module
+ * Creates and registers a SolicitationsModule
+ * 
+ * @param apiRequest Function to make API requests
+ * @param marketplaceId Marketplace ID
+ * @param registry Module registry
+ * @param apiVersion Optional API version
+ * @param options Optional module configuration options
+ * @returns The created SolicitationsModule instance
  */
-export class SolicitationsModuleFactory {
-  /**
-   * Create a Solicitations module and register it with the provided registry
-   * @param makeApiRequest Function to make API requests
-   * @param marketplaceId Marketplace ID
-   * @param registry Module registry to register with
-   * @param apiVersion Optional API version (uses default if not provided)
-   * @returns The created module
-   */
-  public static createSolicitationsModule(
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string,
-    registry: ModuleRegistry,
-    apiVersion?: string
-  ): SolicitationsModule {
-    // Use provided version or get the default
-    const version = apiVersion || getDefaultModuleVersion('solicitations') || 'v1';
-    
-    // Create the module
-    const module = new SolicitationsModule(
-      version,
-      makeApiRequest,
-      marketplaceId
-    );
-    
-    // Register the module
-    registry.registerModule(module);
-    
-    return module;
-  }
+export function createSolicitationsModule(
+  apiRequest: ApiRequestFunction,
+  marketplaceId: string,
+  registry: ModuleRegistry,
+  apiVersion?: string,
+  options: SolicitationsModuleOptions = {}
+): SolicitationsModule {
+  // Use provided version or get the default
+  const version = apiVersion || getModuleDefaultVersion('solicitations') || 'v1';
+  
+  // Create the module
+  const module = new SolicitationsModule(
+    version,
+    apiRequest,
+    marketplaceId,
+    options
+  );
+  
+  // Register the module
+  registry.registerModule(module.moduleId, module);
+  
+  return module;
 }

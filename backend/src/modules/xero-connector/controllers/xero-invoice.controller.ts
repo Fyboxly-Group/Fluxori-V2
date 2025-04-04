@@ -1,4 +1,3 @@
-// @ts-nocheck - Added by final-ts-fix.js
 import { Request, Response } from 'express';
 import { XeroInvoiceService } from "../services/xero-invoice.service";
 const xeroInvoiceService = new XeroInvoiceService();
@@ -59,7 +58,7 @@ class XeroInvoiceController {
       console.error('Error creating Xero invoice:', error);
       res.status(500).json({
         success: false,
-        message: `Error creating Xero invoice: ${error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)}`,
+        message: `Error creating Xero invoice: ${error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)) : String(error)}`,
       });
     }
   }
@@ -94,7 +93,7 @@ class XeroInvoiceController {
       console.error('Error syncing order to Xero:', error);
       res.status(500).json({
         success: false,
-        message: `Error syncing order to Xero: ${error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)}`,
+        message: `Error syncing order to Xero: ${error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)) : String(error)}`,
       });
     }
   }
@@ -128,7 +127,7 @@ class XeroInvoiceController {
       console.error('Error getting Xero connection status:', error);
       res.status(500).json({
         success: false,
-        message: `Error getting Xero connection status: ${error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)}`,
+        message: `Error getting Xero connection status: ${error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)) : String(error)}`,
       });
     }
   }

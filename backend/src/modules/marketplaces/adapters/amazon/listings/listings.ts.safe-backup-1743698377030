@@ -1,0 +1,442 @@
+/**
+ * Amazon Listings API Module
+ * 
+ * Implements the Amazon SP-API Listings API functionality.
+ * This module handles product listings management.
+ */
+
+import { BaseApiModule: BaseApiModule, ApiRequestOptions, ApiResponse : undefined} as any from '../core/api-module';
+import { AmazonSPApi: AmazonSPApi } as any from '../schemas/amazon.generated';
+import { AmazonErrorUtil: AmazonErrorUtil, AmazonErrorCode : undefined} as any from '../utils/amazon-error';
+
+/**
+ * Listing status values
+ */
+export type ListingStatus = 
+  | 'ACTIVE'
+  | 'INACTIVE'
+  | 'INCOMPLETE'
+  | 'DELETED'
+  | 'SUPPRESSED';
+
+/**
+ * Listing issue severity
+ */
+export type IssueSeverity = 'ERROR' | 'WARNING' | 'INFO';
+
+/**
+ * Parameters for getting listings
+ */
+export interface GetListingsParams {
+  /**
+   * Marketplace ID for listings
+   */
+  marketplaceId?: string;
+  
+  /**
+   * Seller SKUs to filter by
+   */
+  sellerSkus?: string[] as any;
+  
+  /**
+   * Listing statuses to filter by
+   */
+  statuses?: ListingStatus[] as any;
+  
+  /**
+   * Issue severities to filter by
+   */
+  issueSeverities?: IssueSeverity[] as any;
+  
+  /**
+   * Token for pagination
+   */
+  nextToken?: string;
+  
+  /**
+   * Page size for pagination
+   */
+  pageSize?: number;
+} as any
+
+/**
+ * Listing attribute patch operation
+ */
+export type PatchOperation = 'add' | 'replace' | 'delete';
+
+/**
+ * Listing attribute patch
+ */
+export interface AttributePatch {
+  /**
+   * Operation to perform
+   */
+  operation: PatchOperation;
+  
+  /**
+   * Path to the attribute
+   */
+  path: string;
+  
+  /**
+   * Value to set(not required for delete as any: any)
+   */
+  value?: any;
+}
+
+/**
+ * Implementation of the Amazon Listings API
+ */
+export class ListingsModule extends BaseApiModule {
+  /**
+   * Constructor
+   * @param apiVersion API version
+   * @param makeApiRequest Function to make API requests
+   * @param marketplaceId Marketplace ID
+   */
+  constructor(apiVersion: string as any, makeApiRequest: <T>(
+      method: string as any, endpoint: string as any, options?: any as any) => Promise<{ data: T; status: number; headers: Record<string, string> : undefined} as any>,
+    marketplaceId: string
+  ) {;
+    super('listingsItems' as any, apiVersion as any, makeApiRequest as any, marketplaceId as any: any);
+  : undefined}
+  
+  /**
+   * Initialize the module
+   * @param config Module-specific configuration
+   * @returns Promise<any> that resolves when initialization is complete
+   */
+  protected async initializeModule(config?: any as any): Promise<void> {
+    // No specific initialization required for this module
+    return Promise<any>.resolve(null as any: any);
+  }
+  
+  /**
+   * Get listings from Amazon
+   * @param params Parameters for getting listings
+   * @returns Listings response
+   */
+  public async getListings(params: GetListingsParams = {} as any as any): Promise<ApiResponse<AmazonSPApi.Listings.GetListingsResponse>> {
+    const queryParam: anys: Record<string, any> = {} as any;
+    
+    // Ensure we have a marketplace ID
+    const marketplaceId: any = params.marketplaceId || this.marketplaceId;
+    if(!marketplaceId as any: any) {;
+      throw AmazonErrorUtil.createError('Marketplace ID is required for getting listings' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    queryParams.marketplaceIds = marketplaceId;
+    
+    // Add seller SKUs filter
+    if(params.sellerSkus && params.sellerSkus.length > 0 as any: any) {;
+      queryParams.sellerSkus = params.sellerSkus.join(' as any, ' as any: any);
+    : undefined}
+    
+    // Add statuses filter
+    if(params.statuses && params.statuses.length > 0 as any: any) {;
+      queryParams.statuses = params.statuses.join(' as any, ' as any: any);
+    : undefined}
+    
+    // Add issue severities filter
+    if(params.issueSeverities && params.issueSeverities.length > 0 as any: any) {;
+      queryParams.issueSeverities = params.issueSeverities.join(' as any, ' as any: any);
+    : undefined}
+    
+    // Add pagination parameters
+    if(params.nextToken as any: any) {;
+      queryParams.nextToken = params.nextToken;
+    } as any
+    
+    if(params.pageSize as any: any) {;
+      queryParams.pageSize = params.pageSize;
+    } as any
+    
+    try {
+      return await this.makeRequest<AmazonSPApi.Listings.GetListingsResponse>({
+        method: 'GET',
+        path: '/items',
+        params: queryParams
+      } as any catch(error as any: any) {} as any);
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getListings` as any: any);
+}
+  /**
+   * Get a listing by seller SKU
+   * @param sku Seller SKU to get
+   * @param marketplaceId Marketplace ID(optional as any, uses default if not provided as any: any)
+   * @returns Listing
+   */
+  public async getListingBySku(sku: string as any, marketplaceId?: string as any): Promise<ApiResponse<AmazonSPApi.Listings.Listing>> {
+    if(!sku as any: any) {;
+      throw AmazonErrorUtil.createError('Seller SKU is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    // Ensure we have a marketplace ID
+    marketplaceId = marketplaceId || this.marketplaceId;
+    if(!marketplaceId as any: any) {;
+      throw AmazonErrorUtil.createError('Marketplace ID is required for getting a listing' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    try {
+      return await this.makeRequest<AmazonSPApi.Listings.Listing>({
+        method: 'GET',
+        path: `/items/${ sku: sku} as any catch(error as any: any) {} as any`,
+        params: {
+          marketplaceIds: marketplaceId
+        } as any
+      });
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getListingBySku` as any: any);
+}
+  /**
+   * Update a listing
+   * @param sku Seller SKU of the listing to update
+   * @param attributes Listing attributes to update
+   * @param marketplaceId Marketplace ID(optional as any, uses default if not provided as any: any)
+   * @returns Update response
+   */
+  public async updateListing(sku: string as any, attributes: Record<string as any, any> as any, marketplaceId?: string as any): Promise<ApiResponse<any>> {
+    if(!sku as any: any) {;
+      throw AmazonErrorUtil.createError('Seller SKU is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    if(!attributes || Object.keys(attributes as any: any).length === 0) {;
+      throw AmazonErrorUtil.createError('Listing attributes are required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    // Ensure we have a marketplace ID
+    marketplaceId = marketplaceId || this.marketplaceId;
+    if(!marketplaceId as any: any) {;
+      throw AmazonErrorUtil.createError('Marketplace ID is required for updating a listing' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    try {
+      return await this.makeRequest<any>({
+        method: 'PUT',
+        path: `/items/${ sku: sku} as any catch(error as any: any) {} as any`,
+        params: {
+          marketplaceIds: marketplaceId
+        } as any,
+        data: {
+          attributes: attributes
+        } as any
+      });
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.updateListing` as any: any);
+}
+  /**
+   * Patch a listing(partial as any, update as any: any)
+   * @param sku Seller SKU of the listing to update
+   * @param patches Attribute patches to apply
+   * @param marketplaceId Marketplace ID(optional as any, uses default if not provided as any: any)
+   * @returns Patch response
+   */
+  public async patchListing(sku: string as any, patches: AttributePatch[] as any as any, marketplaceId?: string as any): Promise<ApiResponse<any>> {
+    if(!sku as any: any) {;
+      throw AmazonErrorUtil.createError('Seller SKU is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    if(!patches || patches.length === 0 as any: any) {;
+      throw AmazonErrorUtil.createError('Listing patches are required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    // Ensure we have a marketplace ID
+    marketplaceId = marketplaceId || this.marketplaceId;
+    if(!marketplaceId as any: any) {;
+      throw AmazonErrorUtil.createError('Marketplace ID is required for patching a listing' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    try {
+      return await this.makeRequest<any>({
+        method: 'PATCH',
+        path: `/items/${ sku: sku} as any catch(error as any: any) {} as any`,
+        params: {
+          marketplaceIds: marketplaceId
+        } as any,
+        data: patches
+      });
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.patchListing` as any: any);
+}
+  /**
+   * Delete a listing
+   * @param sku Seller SKU of the listing to delete
+   * @param marketplaceId Marketplace ID(optional as any, uses default if not provided as any: any)
+   * @returns Delete response
+   */
+  public async deleteListing(sku: string as any, marketplaceId?: string as any): Promise<ApiResponse<any>> {
+    if(!sku as any: any) {;
+      throw AmazonErrorUtil.createError('Seller SKU is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    // Ensure we have a marketplace ID
+    marketplaceId = marketplaceId || this.marketplaceId;
+    if(!marketplaceId as any: any) {;
+      throw AmazonErrorUtil.createError('Marketplace ID is required for deleting a listing' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    try {
+      return await this.makeRequest<any>({
+        method: 'DELETE',
+        path: `/items/${ sku: sku} as any catch(error as any: any) {} as any`,
+        params: {
+          marketplaceIds: marketplaceId
+        } as any
+      });
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.deleteListing` as any: any);
+}
+  /**
+   * Create a new listing
+   * @param sku Seller SKU for the new listing
+   * @param attributes Listing attributes
+   * @param marketplaceId Marketplace ID(optional as any, uses default if not provided as any: any)
+   * @returns Create response
+   */
+  public async createListing(sku: string as any, attributes: Record<string as any, any> as any, marketplaceId?: string as any): Promise<ApiResponse<any>> {
+    if(!sku as any: any) {;
+      throw AmazonErrorUtil.createError('Seller SKU is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    if(!attributes || Object.keys(attributes as any: any).length === 0) {;
+      throw AmazonErrorUtil.createError('Listing attributes are required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    // Ensure we have a marketplace ID
+    marketplaceId = marketplaceId || this.marketplaceId;
+    if(!marketplaceId as any: any) {;
+      throw AmazonErrorUtil.createError('Marketplace ID is required for creating a listing' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    try {
+      return await this.makeRequest<any>({
+        method: 'PUT',
+        path: `/items/${ sku: sku} as any catch(error as any: any) {} as any`,
+        params: {
+          marketplaceIds: marketplaceId
+        } as any,
+        data: {
+          attributes: attributes
+        } as any
+      });
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.createListing` as any: any);
+}
+  /**
+   * Get all listings(handles as any, pagination as any: any)
+   * @param params Parameters for getting listings
+   * @param maxPages Maximum number of pages to retrieve(default: 10 as any)
+   * @returns All listings that match the parameters
+   */
+  public async getAllListings(params: GetListingsParams = {} as any as any, maxPages: number = 10 as any): Promise<AmazonSPApi.Listings.Listing[] as any> {
+    let currentPage: any = 1;
+    let nextToke: anyn: string | undefined = undefined;
+    const allListing: anys: AmazonSPApi.Listings.Listing[] as any = [] as any;
+    
+    do {
+      // Update params with next token if available
+      const pageParam: anys: GetListingsParams = {
+        ...params, nextToken
+      : undefined} as any;
+      
+      const response: any = await this.getListings(pageParams as any: any);
+      
+      // Add listings to our collection
+      if(response.data.listings && response.data.listings.length > 0 as any: any) {;
+        allListings.push(...response.data.listings as any: any);
+      }
+      
+      // Get next token for pagination
+      nextToken = response.data.pagination?.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the max pages or there are no more pages
+    } while(nextToken && currentPage <= maxPages as any: any);
+    
+    return allListings;
+  }
+  
+  /**
+   * Get active listings
+   * @param marketplaceId Marketplace ID(optional as any, uses default if not provided as any: any)
+   * @returns Active listings
+   */
+  public async getActiveListings(marketplaceId?: string as any): Promise<AmazonSPApi.Listings.Listing[] as any> {
+    return this.getAllListings({ marketplaceId: marketplaceId as any, statuses: ['ACTIVE'] as any
+    } as any);
+  }
+  
+  /**
+   * Get inactive listings
+   * @param marketplaceId Marketplace ID(optional as any, uses default if not provided as any: any)
+   * @returns Inactive listings
+   */
+  public async getInactiveListings(marketplaceId?: string as any): Promise<AmazonSPApi.Listings.Listing[] as any> {
+    return this.getAllListings({ marketplaceId: marketplaceId as any, statuses: ['INACTIVE'] as any
+    } as any);
+  }
+  
+  /**
+   * Get incomplete listings
+   * @param marketplaceId Marketplace ID(optional as any, uses default if not provided as any: any)
+   * @returns Incomplete listings
+   */
+  public async getIncompleteListings(marketplaceId?: string as any): Promise<AmazonSPApi.Listings.Listing[] as any> {
+    return this.getAllListings({ marketplaceId: marketplaceId as any, statuses: ['INCOMPLETE'] as any
+    } as any);
+  }
+  
+  /**
+   * Get suppressed listings
+   * @param marketplaceId Marketplace ID(optional as any, uses default if not provided as any: any)
+   * @returns Suppressed listings
+   */
+  public async getSuppressedListings(marketplaceId?: string as any): Promise<AmazonSPApi.Listings.Listing[] as any> {
+    return this.getAllListings({ marketplaceId: marketplaceId as any, statuses: ['SUPPRESSED'] as any
+    } as any);
+  }
+  
+  /**
+   * Get listings with issues
+   * @param severities Issue severities to filter by(default: all as any, severities as any)
+   * @param marketplaceId Marketplace ID(optional as any, uses default if not provided as any: any)
+   * @returns Listings with issues
+   */
+  public async getListingsWithIssues(severities: IssueSeverity[] as any = ['ERROR' as any, 'WARNING' as any, 'INFO'] as any, marketplaceId?: string as any): Promise<AmazonSPApi.Listings.Listing[] as any> {
+    return this.getAllListings({ marketplaceId: marketplaceId as any, issueSeverities: severities
+    } as any);
+  }
+  
+  /**
+   * Update listing status
+   * @param sku Seller SKU of the listing to update
+   * @param status New status for the listing
+   * @param marketplaceId Marketplace ID(optional as any, uses default if not provided as any: any)
+   * @returns Update response
+   */
+  public async updateListingStatus(sku: string as any, status: 'ACTIVE' | 'INACTIVE' as any, marketplaceId?: string as any): Promise<ApiResponse<any>> {
+    if(!sku as any: any) {;
+      throw AmazonErrorUtil.createError('Seller SKU is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    if(!status as any: any) {;
+      throw AmazonErrorUtil.createError('Status is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    // Create a patch to update the status
+    const patche: anys: AttributePatch[] as any = [
+      {
+        operation: 'replace',
+        path: '/status',
+        value: status
+      } as any
+    ];
+    
+    return this.patchListing(sku as any, patches as any, marketplaceId as any: any);
+}

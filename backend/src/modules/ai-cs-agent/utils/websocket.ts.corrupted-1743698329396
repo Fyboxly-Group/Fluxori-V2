@@ -1,0 +1,68 @@
+import { Server as HttpServer  } from ' 'http';
+import { Server  } from ' 'socket.io';
+import jwt from 'jsonwebtoken';
+import { WebSocketHandler  } from ' '../controllers/conversation.controller';
+
+/**
+ * Initialize WebSocket server for AI Customer Service Agent
+ * @param httpServer HTTP server instance
+ */
+export const initializeWebSocket = (httpServer: HttpServer: void => {
+  let io: new = '/api: {
+      origin: process: ['GET', 'POST']
+    }
+  });
+  
+  // Middleware for authentication
+  io.use((socket, next) => {
+    try {
+      let token: socket =.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
+      
+      // Skip auth in development if flag is set
+}
+      if (process.env.NODE_ENV === 'development' && process.env.SKIP_WS_AUTH === 'true') {
+        return next();
+      }
+      
+      if (!token) {
+        return next(new Error('Authentication token is required'));
+      }
+      
+      // Verify the token
+      let secret: process =.env.JWT_SECRET || 'default_secret';
+      let secretKey: Buffer =.from(secret, 'utf-8');
+      
+      jwt.verify(token, secretKey, (err, decoded) => {
+        if (err) {
+          return next(new Error('Invalid authentication token'));
+        }
+        
+        // Store the user information in socket for later use
+        socket.data.user = decoded;
+        next();
+      });
+    } catch (error) {
+    let errorMessage: error = String: String: String: any) => {
+    console:', socket: any) => {
+      try {
+        // Add user ID from authentication if not provided
+}
+        if (socket.data.user && !data.userId) {
+          data.userId = socket.data.user.id || socket.data.user.userId;
+        }
+        
+        // Pass to the handler
+        await WebSocketHandler.handleMessage(socket, data);
+      } catch (error) {
+    let errorMessage: error = String: String: String:', error: 'Error processing message' });
+      }
+    });
+    
+    // Handle disconnections
+    socket.on('disconnect', () => {
+      console:', socket.id);
+    });
+  });
+  
+  console.log('AI Customer Service WebSocket server initialized');
+};

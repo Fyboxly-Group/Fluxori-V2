@@ -1,394 +1,413 @@
-/**
- * Service for scheduling and managing insight jobs
- */
-
-import { injectable, inject } from 'inversify';
-import { Logger } from 'winston';
-import { CronJob } from 'cron';
+import * as mongoose from 'mongoose';
+import { ApiError } from '../../../utils/error.utils';
+import { ScheduledJobRepository, IScheduledJob } from '../repositories/scheduled-job.repository';
+import { InsightGenerationService, IInsightGenerationParams } from './insight-generation.service';
 import { CreditService } from '../../credits/services/credit.service';
-import { ScheduledJobRepository } from '../repositories/scheduled-job.repository';
-import { InsightGenerationService } from './insight-generation.service';
-import { 
-  ScheduledInsightJob, 
-  InsightSource, 
-  OnDemandInsightRequest
-} from '../interfaces/insight.interface';
-import { SCHEDULED_INSIGHT_JOB_CREATION_COST } from '../constants/credit-costs';
+import { getCreditCost } from '../constants/credit-costs';
+import * as cron from 'node-cron';
 
-@injectable()
+/**
+ * Parameters to create a new scheduled job
+ */
+export interface ICreateScheduledJobParams {
+  name: string;
+  description?: string;
+  schedule: string;
+  insightType: string;
+  parameters: Record<string, any>;
+  status?: 'active' | 'inactive';
+}
+
+/**
+ * Parameters to update a scheduled job
+ */
+export interface IUpdateScheduledJobParams {
+  name?: string;
+  description?: string;
+  schedule?: string;
+  insightType?: string;
+  parameters?: Record<string, any>;
+  status?: 'active' | 'inactive';
+}
+
+/**
+ * Service for managing scheduled insight generation jobs
+ */
 export class InsightSchedulerService {
-  private cronJobs: Map<string, CronJob> = new Map();
+  private scheduledJobRepository: ScheduledJobRepository;
+  private insightGenerationService: InsightGenerationService;
+  private activeJobs: Map<string, cron.ScheduledTask> = new Map();
   
-  constructor(
-    @inject('Logger') private logger: Logger,
-    @inject(CreditService) private creditService: CreditService,
-    @inject(ScheduledJobRepository) private jobRepository: ScheduledJobRepository,
-    @inject(InsightGenerationService) private insightGenerationService: InsightGenerationService
-  ) {}
-  
-  /**
-   * Initialize the scheduler - load all active jobs and schedule them
-   */
-  public async initialize(): Promise<void> {
-    try {
-      this.logger.info('Initializing insight scheduler...');
-      
-      // Cancel any existing cron jobs
-      this.stopAllJobs();
-      
-      // Get all active jobs from the database
-      const allJobs = await this.jobRepository.findDueJobs();
-      
-      // Schedule each active job
-      let scheduledCount = 0;
-      for (const job of allJobs) {
-        if (job.isActive) {
-          this.scheduleJob(job);
-          scheduledCount++;
-        }
-      }
-      
-      this.logger.info(`Insight scheduler initialized with ${scheduledCount} active jobs`);
-    } catch (error) {
-      this.logger.error('Error initializing insight scheduler:', error);
-    }
+  constructor() {
+    this.scheduledJobRepository = new ScheduledJobRepository();
+    this.insightGenerationService = new InsightGenerationService();
+    
+    // Initialize scheduler and load active jobs
+    this.initializeScheduler();
   }
-  
+
   /**
-   * Create a new scheduled insight job
-   * @param organizationId Organization ID
-   * @param userId User ID
-   * @param jobData Job data
-   * @returns Created job
+   * Initialize the scheduler and load active jobs
    */
-  public async createJob(
-    organizationId: string,
-    userId: string,
-    jobData: Omit<ScheduledInsightJob, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'organizationId'>
-  ): Promise<ScheduledInsightJob> {
+  private async initializeScheduler() {
     try {
-      // Check if the organization has enough credits
-      const hasCredits = await this.creditService.hasAvailableCredits(
-        organizationId,
-        SCHEDULED_INSIGHT_JOB_CREATION_COST
-      );
+      // Get all active jobs
+      const activeJobs = await this.scheduledJobRepository.findDueJobs();
       
-      if (!hasCredits) {
-        throw new Error('Not enough credits to create a scheduled insight job');
-      }
-      
-      // Calculate the next run time based on frequency or cron expression
-      const nextRun = this.calculateNextRunTime(jobData.frequency, jobData.cronExpression);
-      
-      // Create the job in the database
-      const job = await this.jobRepository.createJob({
-        ...jobData,
-        userId,
-        organizationId,
-        nextRun
-      });
-      
-      // Use credits for job creation
-      await this.creditService.useCredits(
-        organizationId,
-        SCHEDULED_INSIGHT_JOB_CREATION_COST,
-        `Created scheduled insight job: ${job.name}`,
-        job.id
-      );
-      
-      // Schedule the job if it's active
-      if (job.isActive) {
+      // Schedule each job
+      for (const job of activeJobs) {
         this.scheduleJob(job);
       }
       
-      return job;
+      console.log(`Initialized scheduler with ${this.activeJobs.size} active jobs`);
     } catch (error) {
-      this.logger.error('Error creating scheduled insight job:', error);
-      throw new Error(`Failed to create scheduled insight job: ${error.message}`);
+      console.error('Error initializing scheduler:', error);
     }
   }
-  
+
   /**
-   * Update an existing scheduled insight job
-   * @param jobId Job ID
-   * @param organizationId Organization ID
-   * @param updateData Job data to update
-   * @returns Updated job
+   * Schedule a job to run
    */
-  public async updateJob(
-    jobId: string,
-    organizationId: string,
-    updateData: Partial<ScheduledInsightJob>
-  ): Promise<ScheduledInsightJob> {
+  private scheduleJob(job: IScheduledJob) {
     try {
-      // Get the current job
-      const currentJob = await this.jobRepository.findById(jobId);
-      
-      if (!currentJob) {
-        throw new Error('Scheduled insight job not found');
+      // Validate cron expression
+      if (!cron.validate(job.schedule)) {
+        console.error(`Invalid cron expression for job ${job.id}: ${job.schedule}`);
+        return;
       }
       
-      // Check organization access
-      if (currentJob.organizationId !== organizationId) {
-        throw new Error('You do not have permission to update this job');
+      // Create the scheduled task
+      const task = cron.schedule(job.schedule, async () => {
+        try {
+          // Execute the job
+          await this.executeJob(job);
+        } catch (error) {
+          console.error(`Error executing scheduled job ${job.id}:`, error);
+          
+          // Update job status after failed execution
+          if (job.id) {
+            await this.scheduledJobRepository.updateAfterExecution(
+              job.id,
+              false,
+              error instanceof Error ? error.message : String(error)
+            );
+          }
+        }
+      });
+      
+      // Store the active job
+      if (job.id) {
+        this.activeJobs.set(job.id, task);
+      }
+    } catch (error) {
+      console.error(`Error scheduling job ${job.id}:`, error);
+    }
+  }
+
+  /**
+   * Execute a job
+   */
+  private async executeJob(job: IScheduledJob) {
+    try {
+      console.log(`Executing scheduled job ${job.id}: ${job.name}`);
+      
+      // Check if credit cost is affordable
+      const creditCost = getCreditCost(job.insightType);
+      await CreditService.checkCredits(job.createdBy, creditCost, job.organizationId);
+      
+      // Prepare insight generation parameters
+      const params: IInsightGenerationParams = {
+        insightType: job.insightType,
+        contextData: job.parameters,
+        title: job.name
+      };
+      
+      // Generate the insight
+      const result = await this.insightGenerationService.generateInsight(
+        params,
+        job.createdBy,
+        job.organizationId
+      );
+      
+      console.log(`Successfully generated insight ${result.insightId} for job ${job.id}`);
+      
+      // Update job status after successful execution
+      if (job.id) {
+        await this.scheduledJobRepository.updateAfterExecution(job.id, true);
       }
       
-      // Calculate the next run time if frequency or cron expression changed
-      let nextRun = currentJob.nextRun;
-      if (updateData.frequency || updateData.cronExpression) {
-        const frequency = updateData.frequency || currentJob.frequency;
-        const cronExpression = updateData.cronExpression || currentJob.cronExpression;
-        nextRun = this.calculateNextRunTime(frequency, cronExpression);
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`Error executing job ${job.id}:`, errorMessage);
+      
+      // Rethrow to be handled by the scheduler
+      throw error;
+    }
+  }
+
+  /**
+   * Create a new scheduled job
+   * @param params Job parameters
+   * @param userId User ID creating the job
+   * @param organizationId Organization ID
+   * @returns The created job
+   */
+  async createScheduledJob(
+    params: ICreateScheduledJobParams,
+    userId: string,
+    organizationId: string
+  ): Promise<IScheduledJob> {
+    try {
+      // Validate cron expression
+      if (!cron.validate(params.schedule)) {
+        throw new ApiError(400, 'Invalid cron expression');
+      }
+      
+      // Prepare job data
+      const jobData: IScheduledJob = {
+        name: params.name,
+        description: params.description,
+        schedule: params.schedule,
+        insightType: params.insightType,
+        parameters: params.parameters,
+        status: params.status || 'active',
+        organizationId,
+        createdBy: userId
+      };
+      
+      // Create the job in the database
+      const createdJob = await this.scheduledJobRepository.create(jobData, organizationId, userId);
+      
+      // Schedule the job if active
+      if (createdJob.status === 'active' && createdJob.id) {
+        this.scheduleJob(createdJob);
+      }
+      
+      return createdJob;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new ApiError(500, `Error creating scheduled job: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Get all scheduled jobs for an organization
+   * @param userId User ID
+   * @param organizationId Organization ID
+   * @param limit Maximum number of jobs to return
+   * @param offset Offset for pagination
+   * @returns List of scheduled jobs
+   */
+  async getAllScheduledJobs(
+    userId: string,
+    organizationId: string,
+    limit: number = 10,
+    offset: number = 0
+  ): Promise<IScheduledJob[]> {
+    try {
+      return await this.scheduledJobRepository.findAll(organizationId, limit, offset);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new ApiError(500, `Error getting scheduled jobs: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Get a scheduled job by ID
+   * @param id Job ID
+   * @param userId User ID
+   * @param organizationId Organization ID
+   * @returns The scheduled job if found
+   */
+  async getScheduledJobById(
+    id: string,
+    userId: string,
+    organizationId: string
+  ): Promise<IScheduledJob | null> {
+    try {
+      const job = await this.scheduledJobRepository.findById(id, organizationId);
+      if (!job) {
+        throw new ApiError(404, 'Scheduled job not found');
+      }
+      return job;
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new ApiError(500, `Error getting scheduled job: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Update a scheduled job
+   * @param id Job ID
+   * @param params Update parameters
+   * @param userId User ID
+   * @param organizationId Organization ID
+   * @returns The updated job
+   */
+  async updateScheduledJob(
+    id: string,
+    params: IUpdateScheduledJobParams,
+    userId: string,
+    organizationId: string
+  ): Promise<IScheduledJob | null> {
+    try {
+      // Find the job first
+      const existingJob = await this.scheduledJobRepository.findById(id, organizationId);
+      if (!existingJob) {
+        throw new ApiError(404, 'Scheduled job not found');
+      }
+      
+      // Validate cron expression if schedule is being updated
+      if (params.schedule && !cron.validate(params.schedule)) {
+        throw new ApiError(400, 'Invalid cron expression');
       }
       
       // Update the job in the database
-      const updatedJob = await this.jobRepository.updateJob(jobId, {
-        ...updateData,
-        nextRun
-      });
+      const updatedJob = await this.scheduledJobRepository.update(id, params, organizationId);
       
-      if (!updatedJob) {
-        throw new Error('Failed to update scheduled insight job');
-      }
-      
-      // Update the scheduling if the job is active
-      if (this.cronJobs.has(jobId)) {
-        this.cronJobs.get(jobId)?.stop();
-        this.cronJobs.delete(jobId);
-      }
-      
-      if (updatedJob.isActive) {
-        this.scheduleJob(updatedJob);
+      // If the job is active and already scheduled, update it
+      if (updatedJob && updatedJob.id) {
+        const existingTask = this.activeJobs.get(updatedJob.id);
+        if (existingTask) {
+          // Stop the existing task
+          existingTask.stop();
+          this.activeJobs.delete(updatedJob.id);
+        }
+        
+        // Schedule the updated job if active
+        if (updatedJob.status === 'active') {
+          this.scheduleJob(updatedJob);
+        }
       }
       
       return updatedJob;
     } catch (error) {
-      this.logger.error(`Error updating scheduled insight job ${jobId}:`, error);
-      throw new Error(`Failed to update scheduled insight job: ${error.message}`);
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new ApiError(500, `Error updating scheduled job: ${errorMessage}`);
     }
   }
-  
+
   /**
-   * Delete a scheduled insight job
-   * @param jobId Job ID
+   * Delete a scheduled job
+   * @param id Job ID
+   * @param userId User ID
    * @param organizationId Organization ID
-   * @returns True if successful
+   * @returns True if the job was deleted
    */
-  public async deleteJob(jobId: string, organizationId: string): Promise<boolean> {
+  async deleteScheduledJob(
+    id: string,
+    userId: string,
+    organizationId: string
+  ): Promise<boolean> {
     try {
-      // Get the current job
-      const currentJob = await this.jobRepository.findById(jobId);
-      
-      if (!currentJob) {
-        throw new Error('Scheduled insight job not found');
+      // Find the job first
+      const existingJob = await this.scheduledJobRepository.findById(id, organizationId);
+      if (!existingJob) {
+        throw new ApiError(404, 'Scheduled job not found');
       }
       
-      // Check organization access
-      if (currentJob.organizationId !== organizationId) {
-        throw new Error('You do not have permission to delete this job');
-      }
-      
-      // Stop and remove any scheduled cron job
-      if (this.cronJobs.has(jobId)) {
-        this.cronJobs.get(jobId)?.stop();
-        this.cronJobs.delete(jobId);
+      // Stop the job if it's scheduled
+      const existingTask = this.activeJobs.get(id);
+      if (existingTask) {
+        existingTask.stop();
+        this.activeJobs.delete(id);
       }
       
       // Delete the job from the database
-      const success = await this.jobRepository.deleteJob(jobId);
-      
-      if (!success) {
-        throw new Error('Failed to delete scheduled insight job');
-      }
-      
-      return true;
+      return await this.scheduledJobRepository.delete(id, organizationId);
     } catch (error) {
-      this.logger.error(`Error deleting scheduled insight job ${jobId}:`, error);
-      throw new Error(`Failed to delete scheduled insight job: ${error.message}`);
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new ApiError(500, `Error deleting scheduled job: ${errorMessage}`);
     }
   }
-  
+
   /**
-   * Manually run a scheduled insight job immediately
-   * @param jobId Job ID
+   * Run a job immediately
+   * @param id Job ID
+   * @param userId User ID
    * @param organizationId Organization ID
-   * @returns Generated insight ID
+   * @returns The result of the job execution
    */
-  public async runJobNow(jobId: string, organizationId: string): Promise<string> {
+  async runJobNow(
+    id: string,
+    userId: string,
+    organizationId: string
+  ): Promise<any> {
     try {
-      // Get the job
-      const job = await this.jobRepository.findById(jobId);
-      
+      // Find the job
+      const job = await this.scheduledJobRepository.findById(id, organizationId);
       if (!job) {
-        throw new Error('Scheduled insight job not found');
-      }
-      
-      // Check organization access
-      if (job.organizationId !== organizationId) {
-        throw new Error('You do not have permission to run this job');
+        throw new ApiError(404, 'Scheduled job not found');
       }
       
       // Execute the job
-      const insightId = await this.executeJob(job);
-      
-      // Update the job's last run and next run times
-      const lastRun = new Date();
-      const nextRun = this.calculateNextRunTime(job.frequency, job.cronExpression);
-      
-      await this.jobRepository.updateJobRunTimes(jobId, lastRun, nextRun);
-      
-      return insightId;
+      return await this.executeJob(job);
     } catch (error) {
-      this.logger.error(`Error running scheduled insight job ${jobId}:`, error);
-      throw new Error(`Failed to run scheduled insight job: ${error.message}`);
-    }
-  }
-  
-  /**
-   * Schedule a job as a cron job
-   * @param job Scheduled insight job
-   */
-  private scheduleJob(job: ScheduledInsightJob): void {
-    try {
-      // If there's already a cron job for this ID, stop it
-      if (this.cronJobs.has(job.id)) {
-        this.cronJobs.get(job.id)?.stop();
+      if (error instanceof ApiError) {
+        throw error;
       }
-      
-      // Get the cron expression based on the job frequency
-      let cronExpression: string;
-      
-      if (job.cronExpression) {
-        // Use custom cron expression if provided
-        cronExpression = job.cronExpression;
-      } else {
-        // Otherwise use predefined frequency
-        switch (job.frequency) {
-          case 'daily':
-            cronExpression = '0 0 * * *'; // Run at midnight every day
-            break;
-          case 'weekly':
-            cronExpression = '0 0 * * 1'; // Run at midnight every Monday
-            break;
-          case 'monthly':
-            cronExpression = '0 0 1 * *'; // Run at midnight on first day of month
-            break;
-          default:
-            throw new Error(`Unsupported job frequency: ${job.frequency}`);
-        }
-      }
-      
-      // Create the cron job
-      const cronJob = new CronJob(cronExpression, async () => {
-        try {
-          await this.executeJob(job);
-          
-          // Update the job's last run and next run times
-          const lastRun = new Date();
-          const nextRun = this.calculateNextRunTime(job.frequency, job.cronExpression);
-          
-          await this.jobRepository.updateJobRunTimes(job.id, lastRun, nextRun);
-        } catch (error) {
-          this.logger.error(`Error executing scheduled job ${job.id}:`, error);
-        }
-      });
-      
-      // Start the cron job
-      cronJob.start();
-      
-      // Store it in our map
-      this.cronJobs.set(job.id, cronJob);
-      
-      this.logger.info(`Scheduled insight job ${job.id} - ${job.name} with cron: ${cronExpression}`);
-    } catch (error) {
-      this.logger.error(`Error scheduling insight job ${job.id}:`, error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new ApiError(500, `Error running job: ${errorMessage}`);
     }
   }
-  
+
   /**
-   * Execute a scheduled insight job
-   * @param job Scheduled insight job
-   * @returns Generated insight ID
+   * Activate a job
+   * @param id Job ID
+   * @param userId User ID
+   * @param organizationId Organization ID
+   * @returns The updated job
    */
-  private async executeJob(job: ScheduledInsightJob): Promise<string> {
+  async activateJob(
+    id: string,
+    userId: string,
+    organizationId: string
+  ): Promise<IScheduledJob | null> {
     try {
-      this.logger.info(`Executing scheduled insight job ${job.id} - ${job.name}`);
-      
-      // Create an insight request from the job
-      const request: OnDemandInsightRequest = {
-        type: job.type,
-        userId: job.userId,
-        organizationId: job.organizationId,
-        targetEntityIds: job.targetEntities?.map(entity => entity.id),
-        targetEntityType: job.targetEntities?.[0]?.type,
-        options: job.options
-      };
-      
-      // Generate the insight
-      const insight = await this.insightGenerationService.generateInsight(request);
-      
-      this.logger.info(`Successfully executed scheduled insight job ${job.id}, generated insight ${insight.id}`);
-      
-      return insight.id;
+      return await this.updateScheduledJob(
+        id,
+        { status: 'active' },
+        userId,
+        organizationId
+      );
     } catch (error) {
-      this.logger.error(`Error executing job ${job.id}:`, error);
-      throw new Error(`Failed to execute scheduled insight job: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new ApiError(500, `Error activating job: ${errorMessage}`);
     }
   }
-  
+
   /**
-   * Calculate the next run time based on frequency or cron expression
-   * @param frequency Job frequency
-   * @param cronExpression Optional custom cron expression
-   * @returns Next run date
+   * Deactivate a job
+   * @param id Job ID
+   * @param userId User ID
+   * @param organizationId Organization ID
+   * @returns The updated job
    */
-  private calculateNextRunTime(
-    frequency: string,
-    cronExpression?: string
-  ): Date {
-    const now = new Date();
-    
-    if (cronExpression) {
-      // Use the cron library to calculate the next run time
-      const tempCronJob = new CronJob(cronExpression, () => {});
-      return tempCronJob.nextDates().toDate();
+  async deactivateJob(
+    id: string,
+    userId: string,
+    organizationId: string
+  ): Promise<IScheduledJob | null> {
+    try {
+      return await this.updateScheduledJob(
+        id,
+        { status: 'inactive' },
+        userId,
+        organizationId
+      );
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new ApiError(500, `Error deactivating job: ${errorMessage}`);
     }
-    
-    // Otherwise calculate based on frequency
-    switch (frequency) {
-      case 'daily':
-        const tomorrow = new Date(now);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        tomorrow.setHours(0, 0, 0, 0);
-        return tomorrow;
-        
-      case 'weekly':
-        const nextMonday = new Date(now);
-        nextMonday.setDate(nextMonday.getDate() + (1 + 7 - nextMonday.getDay()) % 7);
-        nextMonday.setHours(0, 0, 0, 0);
-        return nextMonday;
-        
-      case 'monthly':
-        const nextMonth = new Date(now);
-        nextMonth.setMonth(nextMonth.getMonth() + 1);
-        nextMonth.setDate(1);
-        nextMonth.setHours(0, 0, 0, 0);
-        return nextMonth;
-        
-      default:
-        throw new Error(`Unsupported job frequency: ${frequency}`);
-    }
-  }
-  
-  /**
-   * Stop all scheduled cron jobs
-   */
-  private stopAllJobs(): void {
-    this.cronJobs.forEach((job, id) => {
-      job.stop();
-      this.logger.info(`Stopped scheduled insight job ${id}`);
-    });
-    
-    this.cronJobs.clear();
   }
 }

@@ -1,0 +1,131 @@
+/**
+ * Amazon Authorization API Module
+ * 
+ * Implements the Amazon SP-API Authorization API functionality.
+ * This module handles OAuth 2.0 authorization flows, token management,
+ * and role-based permissions for secure application access.
+ */
+
+import { BaseApiModule, ApiRequestOptions, ApiResponse  } from ' '../core/api-module';
+import { AmazonErrorUtil, AmazonErrorCode  } from ' '../utils/amazon-error';
+
+/**
+ * Grant type for authorization
+ */
+export type GrantType = 'authorization_code' | 'refresh_token';
+
+/**
+ * Authentication scope
+ */
+export type AuthScope = 
+  | 'sellingpartnerapi::notifications::migration::sales::feeds::orders::orders:read::orders:write::finances::listings::listings:read::listings:write::catalog::messaging::reports::fulfillment::fulfillment::shipping::tokens::tokens:read::tokens:write: string: string: number: string: string: string: string: string: string: string: string: AuthScope: string: string: 'ADMIN: boolean: string: string: string: AuthScope: boolean: 'SANDBOX: string: <T: string: string: any
+    ) => Promise: T: number: Record: string: any: Promise: AuthorizationCodeExchangeRequest: Promise: 'POST: '/token: true: {
+          grant_type: 'authorization_code: request: request: request: request: {
+          'Content: 'application/x-www-form-urlencoded'
+}
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: RefreshTokenRequest: Promise: 'POST: '/token: true: {
+          grant_type: 'refresh_token: request: request: request: {
+          'Content: 'application/x-www-form-urlencoded'
+}
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: Promise: 'GET: '/user: {
+          'Authorization: `Bearer ${accessToken}`
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: 'access_token: string: string: Promise: 'POST: '/revoke: true: {
+          token: tokenType: clientId: clientSecret: {
+          'Content: 'application/x-www-form-urlencoded'
+}
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: Promise<boolean> {
+    try {
+      await this.getUserPermissions(accessToken);
+      return true;
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: GenerateAuthorizationUrlOptions: string {
+    if (!options.clientId) {
+      throw AmazonErrorUtil.createError(
+})
+        'Client ID is required to generate authorization URL',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    if (!options.redirectUri) {
+      throw AmazonErrorUtil.createError(
+})
+        'Redirect URI is required to generate authorization URL',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    // Default scopes if not provided
+    let scopes: options =:notifications::orders::finances::listings::catalog::reports'
+    ];
+    
+    // Determine host based on environment
+    let host: options =.environment === 'SANDBOX://sellercentral: 'https://sellercentral.amazon.com';
+    
+    // Build URL with query parameters
+    let url: new = string: string: string: Promise: Array: string: string: string: string: string: string: 'GET: '/audit: {
+          'Authorization: `Bearer: {
+          startDate,
+}
+          endDate
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: string: string: string: number: Promise<TokenData> {
+    // Check if current token is still valid
+}
+    if (currentAccessToken && tokenExpiry) {
+      let currentTime: Math =.floor(Date.now() / 1000);
+      let bufferTime: 30 = currentAccessToken: refreshToken: 'bearer: tokenExpiry - currentTime
+        };
+      }
+    }
+    
+    // Token needs to be refreshed
+    let response: await = string: string: AuthScope: Promise: string: AuthScope: string;
+  }>> {
+    if (!accessToken) {
+      throw AmazonErrorUtil.createError(
+})
+        'Access token is required to create delegated access',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    if (!delegatedSellerId) {
+      throw AmazonErrorUtil.createError(
+})
+        'Delegated seller ID is required to create delegated access',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    if (!scopes || scopes.length === 0: 'POST: '/delegations: {
+          'Authorization: `Bearer: {
+          delegatedSellerId,
+}
+          scopes
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String(error);
+      throw AmazonErrorUtil.mapHttpError(
+})
+        error,
+        `${this.moduleName}.createDelegatedAccess`
+      );
+    }
+  }
+}

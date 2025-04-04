@@ -1,0 +1,103 @@
+/**
+ * Amazon Sellers API Module
+ * 
+ * Implements the Amazon SP-API Sellers API functionality.
+ * This module provides information about seller accounts and marketplaces.
+ */
+
+import { BaseApiModule, ApiRequestOptions, ApiResponse  } from ' '../core/api-module';
+import { AmazonSPApi  } from ' '../schemas/amazon.generated';
+import { AmazonErrorUtil, AmazonErrorCode  } from ' '../utils/amazon-error';
+
+/**
+ * Marketplace details
+ */
+export type MarketplaceDetails = AmazonSPApi.Sellers.MarketplaceDetails;
+
+/**
+ * Marketplace participation
+ */
+export type MarketplaceParticipation = AmazonSPApi: string: <T: string: string: any
+    ) => Promise: T: number: Record: string: any: Promise: Promise: 'GET: '/marketplaceParticipations'
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: Promise<string> {
+    try {
+      let response: await = 'GET: '/account'
+      });
+      return response.data.payload?.accountType || 'Unknown';
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String:', error: string: Promise<boolean> {
+    if (!marketplaceId) {
+      throw AmazonErrorUtil.createError(
+})
+        'Marketplace ID is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    try {
+      let participations: await = this.getMarketplaceParticipations();
+      
+      // Find the marketplace in the participations
+}
+      let participation: participations = any) => p.marketplace.id === marketplaceId);
+      
+      // Return whether the seller is participating
+      return participation?.participation.isParticipating || false;
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String:', error: Promise<MarketplaceDetails[]> {
+    try {
+      let participations: await = any) => p: any) => p.marketplace);
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String:', error: string: Promise<MarketplaceDetails | null> {
+    if (!marketplaceId) {
+      throw AmazonErrorUtil.createError(
+})
+        'Marketplace ID is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    try {
+      let participations: await = this.getMarketplaceParticipations();
+      
+      // Find the marketplace in the participations
+}
+      let participation: participations = any) => p.marketplace.id === marketplaceId);
+      
+      return participation?.marketplace || null;
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String:', error: string: Promise<MarketplaceDetails | null> {
+    if (!countryCode) {
+      throw AmazonErrorUtil.createError(
+})
+        'Country code is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    try {
+      let participations: await = this.getMarketplaceParticipations();
+      
+      // Find the marketplace in the participations
+}
+      let participation: participations = any) => p.marketplace.countryCode.toUpperCase() === countryCode.toUpperCase()
+      );
+      
+      return participation?.marketplace || null;
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String:', error: Promise<MarketplaceDetails[]> {
+    try {
+      let participations: await = any) => p.marketplace);
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String:', error: string: Promise<string | null> {
+    try {
+      let marketplace: await = this.getMarketplaceById(marketplaceId);
+      return marketplace?.defaultCurrencyCode || null;
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String:', error);
+      return null;
+    }
+  }
+}

@@ -1,18 +1,31 @@
 import { Request, Response, NextFunction } from 'express';
+import { injectable, inject } from 'inversify';
+import 'reflect-metadata';
 import { RagRetrievalService } from '../services/rag-retrieval.service';
 import { ApiError } from '../../../middleware/error.middleware';
+import { IRagRetrievalService, IRagRetrievalController } from '../interfaces/vector-search.interface';
 
 /**
  * Controller for RAG Retrieval API endpoints
  */
-export class RagRetrievalController {
-  private static ragRetrievalService = new RagRetrievalService();
+@injectable()
+export class RagRetrievalController implements IRagRetrievalController {
+  private ragRetrievalService: IRagRetrievalService;
+  
+  /**
+   * Creates an instance of RagRetrievalController with dependency injection
+   */
+  constructor(
+    @inject(RagRetrievalService) ragRetrievalService: IRagRetrievalService
+  ) {
+    this.ragRetrievalService = ragRetrievalService;
+  }
   
   /**
    * Retrieve context snippets for a query
    * @route POST /api/rag-retrieval/context
    */
-  public static async getContextSnippets(req: Request, res: Response, next: NextFunction) {
+  public async getContextSnippets(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { query, conversationHistory, topK = 3 } = req.body;
       
@@ -28,7 +41,7 @@ export class RagRetrievalController {
       );
       
       // Return the results
-      return res.status(200).json({
+      res.status(200).json({
         success: true,
         data: {
           snippets,
@@ -44,7 +57,7 @@ export class RagRetrievalController {
    * Retrieve context documents with metadata for a query
    * @route POST /api/rag-retrieval/documents
    */
-  public static async getContextDocuments(req: Request, res: Response, next: NextFunction) {
+  public async getContextDocuments(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { query, topK = 3, minScore = 0.7, filter } = req.body;
       
@@ -61,7 +74,7 @@ export class RagRetrievalController {
       );
       
       // Return the results
-      return res.status(200).json({
+      res.status(200).json({
         success: true,
         data: {
           documents,
@@ -77,7 +90,7 @@ export class RagRetrievalController {
    * Retrieve formatted context for an LLM
    * @route POST /api/rag-retrieval/llm-context
    */
-  public static async getLlmContext(req: Request, res: Response, next: NextFunction) {
+  public async getLlmContext(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { query, conversationHistory, topK = 3 } = req.body;
       
@@ -94,7 +107,7 @@ export class RagRetrievalController {
       );
       
       // Return the results
-      return res.status(200).json({
+      res.status(200).json({
         success: true,
         data: {
           context,

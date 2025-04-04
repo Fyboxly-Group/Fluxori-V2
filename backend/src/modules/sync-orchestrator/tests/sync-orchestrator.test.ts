@@ -78,7 +78,7 @@ describe('SyncOrchestratorService', () => {
     // Setup adapter factory mock
     MarketplaceAdapterFactory.getInstance = jest.fn().mockReturnValue(mockAdapterFactory);
     
-    // Setup adapter mocks to return test data
+    // Setup adapter mocks to return test data;
     mockAdapter.fetchOrders.mockResolvedValue(mockOrders);
     mockAdapter.fetchProducts.mockResolvedValue(mockProducts);
     
@@ -105,7 +105,7 @@ describe('SyncOrchestratorService', () => {
     });
     
     it('should handle processing errors', async () => {
-      // Setup - make processConnection throw an error
+      // Setup - make processConnection throw an error;
       jest.spyOn(orchestratorService, 'processConnection').mockRejectedValueOnce(new Error('Processing error'));
       
       // Execute
@@ -120,7 +120,7 @@ describe('SyncOrchestratorService', () => {
     });
     
     it('should mark overall success as false if all connections fail', async () => {
-      // Setup - make processConnection return false
+      // Setup - make processConnection return false;
       jest.spyOn(orchestratorService, 'processConnection').mockResolvedValueOnce(false);
       
       // Execute

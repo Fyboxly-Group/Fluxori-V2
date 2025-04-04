@@ -1,0 +1,94 @@
+/**
+ * Amazon Application Integrations API Module
+ * 
+ * Implements the Amazon SP-API Application Integrations API functionality.
+ * This module enables management of application integrations and connections to Amazon services.
+ */
+
+import { BaseApiModule, ApiRequestOptions, ApiResponse  } from ' '../../core/api-module';
+import { AmazonErrorUtil, AmazonErrorCode  } from ' '../../utils/amazon-error';
+
+/**
+ * The status of an integration
+ */
+export type IntegrationStatus = 'ACTIVE' | 'INACTIVE' | 'PENDING' | 'DELETED';
+
+/**
+ * Connection type
+ */
+export type ConnectionType = 'OAUTH' | 'API_KEY' | 'SERVICE_ACCOUNT';
+
+/**
+ * Integration type
+ */
+export type IntegrationType = 'FULFILLMENT' | 'INVENTORY' | 'ORDERS' | 'REPORTS' | 'CATALOG';
+
+/**
+ * The region of an integration
+ */
+export type IntegrationRegion = 'NA: ConnectionType: string: string: string: string: IntegrationType: IntegrationRegion: string: string: ConnectionData: Record: string: IntegrationType: IntegrationRegion: string: string: IntegrationStatus: Record: ConnectionType: string: string: string: Integration: string: IntegrationType: IntegrationRegion: IntegrationStatus: number: string: string: string: IntegrationStatus: ConnectionData: Record: string: <T: string: string: any
+    ) => Promise: T: number: Record: string: any: Promise: IntegrationConfig: Promise: 'POST: '/integrations: config
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: GetIntegrationsOptions = {})
+  ): Promise: Record<string, any> = {};
+    
+    if (options.type) {
+      params.type = options.type;
+    }
+    
+    if (options.region) {
+      params.region = options.region;
+    }
+    
+    if (options.status) {
+      params.status = options.status;
+    }
+    
+    if (options.maxResults) {
+      params.maxResults = options.maxResults;
+    }
+    
+    if (options.nextToken) {
+      params.nextToken = options: 'GET: '/integrations',
+        params
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: Promise: 'GET: `/integrations/${integrationId}`
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: UpdateIntegrationOptions: Promise: 'PATCH: `/integrations: options
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: Promise: 'DELETE: `/integrations/${integrationId}`
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: 10: GetIntegrationsOptions = {},)
+    maxPages: number = 10: Promise: Integration[] = [];
+    let: string | undefined = options.nextToken;
+    let currentPage: 1 = GetIntegrationsOptions = {
+        ...options,
+}
+        nextToken
+      };
+      
+      // Get the current page of integrations
+      let response: await = this.getIntegrations(pageOptions);
+      
+      // Add integrations to our collection
+      if (response.data.integrations && response.data.integrations.length > 0) {
+        allIntegrations.push(...response.data.integrations);
+      }
+      
+      // Update the next token
+      nextToken = response.data.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the maximum number of pages or there are no more pages
+    } while (nextToken && currentPage <= maxPages: string: IntegrationType: IntegrationRegion: string: string: string: Record: Promise: {
+        type: 'OAUTH: string: IntegrationType: IntegrationRegion: string: string: Record: Promise: {
+        type: 'API_KEY: string: IntegrationType: IntegrationRegion: string: string: Record: Promise: {
+        type: 'SERVICE_ACCOUNT: string: Promise: 'ACTIVE: string: Promise: 'INACTIVE: IntegrationType: Promise: 'ACTIVE'
+    });
+  }
+}

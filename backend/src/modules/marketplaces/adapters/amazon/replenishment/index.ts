@@ -1,6 +1,8 @@
 /**
- * Amazon Replenishment API Modules
- * Exports all replenishment-related modules and interfaces
+ * Amazon Replenishment API Module
+ * 
+ * Exports all replenishment-related modules, interfaces, and types.
+ * This module provides functionality for inventory planning and replenishment.
  */
 
 export * from './replenishment';

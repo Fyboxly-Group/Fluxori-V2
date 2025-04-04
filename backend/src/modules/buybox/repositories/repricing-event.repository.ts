@@ -26,8 +26,9 @@ export class RepricingEventRepository {
       
       return event;
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error('Error creating repricing event', { error });
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -43,10 +44,11 @@ export class RepricingEventRepository {
         .limit(limit)
         .get();
       
-      return snapshot.docs.map(doc => doc.data() as RepricingEvent);
+      return snapshot.docs.map((doc: any) => doc.data() as RepricingEvent);
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error(`Error finding events for rule ${ruleId}`, { error });
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -62,10 +64,11 @@ export class RepricingEventRepository {
         .limit(limit)
         .get();
       
-      return snapshot.docs.map(doc => doc.data() as RepricingEvent);
+      return snapshot.docs.map((doc: any) => doc.data() as RepricingEvent);
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error(`Error finding events for product ${productId}`, { error });
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -81,10 +84,11 @@ export class RepricingEventRepository {
         .limit(limit)
         .get();
       
-      return snapshot.docs.map(doc => doc.data() as RepricingEvent);
+      return snapshot.docs.map((doc: any) => doc.data() as RepricingEvent);
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error(`Error finding events for SKU ${sku}`, { error });
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -103,10 +107,11 @@ export class RepricingEventRepository {
         .limit(limit)
         .get();
       
-      return snapshot.docs.map(doc => doc.data() as RepricingEvent);
+      return snapshot.docs.map((doc: any) => doc.data() as RepricingEvent);
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error(`Error finding events for marketplace ${marketplaceId}`, { error });
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -121,10 +126,11 @@ export class RepricingEventRepository {
         .limit(limit)
         .get();
       
-      return snapshot.docs.map(doc => doc.data() as RepricingEvent);
+      return snapshot.docs.map((doc: any) => doc.data() as RepricingEvent);
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error('Error finding recent events', { error });
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -142,9 +148,9 @@ export class RepricingEventRepository {
         .where('ruleId', '==', ruleId)
         .get();
       
-      const events = snapshot.docs.map(doc => doc.data() as RepricingEvent);
+      const events = snapshot.docs.map((doc: any) => doc.data() as RepricingEvent);
       const totalEvents = events.length;
-      const successfulEvents = events.filter(event => event.success).length;
+      const successfulEvents = events.filter((event: any) => event.success).length;
       
       return {
         successRate: totalEvents > 0 ? (successfulEvents / totalEvents) * 100 : 0,
@@ -152,8 +158,9 @@ export class RepricingEventRepository {
         successfulEvents
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error(`Error calculating success rate for rule ${ruleId}`, { error });
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -174,10 +181,11 @@ export class RepricingEventRepository {
         .limit(limit)
         .get();
       
-      return snapshot.docs.map(doc => doc.data() as RepricingEvent);
+      return snapshot.docs.map((doc: any) => doc.data() as RepricingEvent);
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error('Error finding events by date range', { error });
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 }

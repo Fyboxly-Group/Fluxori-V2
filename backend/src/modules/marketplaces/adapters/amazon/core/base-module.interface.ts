@@ -1,49 +1,68 @@
 /**
  * Base interface for all Amazon API modules
  */
-export interface BaseModule {
+export interface BaseModule<T = any> {
   /**
-   * Unique identifier for the module
+   * The unique identifier for this module
    */
-  readonly id: string;
+  readonly moduleId: string;
   
   /**
-   * API version of the module
+   * The human-readable name of this module
    */
-  readonly version: string;
+  readonly moduleName: string;
   
   /**
-   * Module name
+   * The API version this module uses
    */
-  readonly name: string;
+  readonly apiVersion: string;
   
   /**
-   * Marketplace ID
+   * The base URL path for API requests
+   */
+  readonly basePath: string;
+  
+  /**
+   * The API request function used by this module
+   */
+  readonly apiRequest: ApiRequestFunction;
+  
+  /**
+   * The marketplace ID this module is associated with
    */
   readonly marketplaceId: string;
-}
-
-/**
- * Interface for module factory constructor functions
- */
-export interface ModuleConstructor<T extends BaseModule> {
-  new (version: string, makeApiRequest: ApiRequestFunction, marketplaceId: string): T;
+  
+  /**
+   * Additional configuration options for this module
+   */
+  readonly options: T;
 }
 
 /**
  * Type for API request function that all modules use
  */
 export type ApiRequestFunction = <T = any>(
+  path: string,
   method: string,
-  endpoint: string,
-  options?: any
+  data?: any
 ) => Promise<ApiResponse<T>>;
 
 /**
  * Common API response interface
  */
 export interface ApiResponse<T = any> {
+  /**
+   * The response data
+   */
   data: T;
+  
+  /**
+   * HTTP status code
+   */
   status: number;
+  
+  /**
+   * Response headers
+   */
   headers: Record<string, string>;
 }

@@ -5,24 +5,163 @@
  * This module handles product listings management.
  */
 
-import { BaseApiModule, ApiRequestOptions, ApiResponse } from '../core/api-module';
-import { AmazonSPApi } from '../schemas/amazon.generated';
-import { AmazonErrorUtil, AmazonErrorCode } from '../utils/amazon-error';
+import { ApiRequestFunction, ApiResponse, BaseModule } from '../../../core/base-module.interface';
+import AmazonErrorHandler, { AmazonErrorCode } from '../../../utils/amazon-error';
 
 /**
  * Listing status values
  */
-export type ListingStatus = 
-  | 'ACTIVE'
-  | 'INACTIVE'
-  | 'INCOMPLETE'
-  | 'DELETED'
-  | 'SUPPRESSED';
+export type ListingStatus = 'ACTIVE' | 'INACTIVE' | 'INCOMPLETE' | 'DELETED' | 'SUPPRESSED';
 
 /**
  * Listing issue severity
  */
 export type IssueSeverity = 'ERROR' | 'WARNING' | 'INFO';
+
+/**
+ * Pagination information
+ */
+export interface Pagination {
+  /**
+   * Next token for pagination
+   */
+  nextToken?: string;
+}
+
+/**
+ * Issue with a listing
+ */
+export interface ListingIssue {
+  /**
+   * Code for the issue
+   */
+  code: string;
+  
+  /**
+   * Message describing the issue
+   */
+  message: string;
+  
+  /**
+   * Severity of the issue
+   */
+  severity: IssueSeverity;
+  
+  /**
+   * Attribute affected by the issue
+   */
+  attributeNames?: string[];
+}
+
+/**
+ * Summary of a listing
+ */
+export interface ListingSummary {
+  /**
+   * Seller SKU
+   */
+  sku: string;
+  
+  /**
+   * Current status of the listing
+   */
+  status: ListingStatus;
+  
+  /**
+   * ASIN associated with the listing
+   */
+  asin?: string;
+  
+  /**
+   * Product type of the listing
+   */
+  productType?: string;
+  
+  /**
+   * Condition of the listing
+   */
+  condition?: string;
+  
+  /**
+   * Issues with the listing
+   */
+  issues?: ListingIssue[];
+  
+  /**
+   * Offer details
+   */
+  offer?: Record<string, any>;
+  
+  /**
+   * Fulfillment availability
+   */
+  fulfillmentAvailability?: Record<string, any>[];
+}
+
+/**
+ * Listing attributes
+ */
+export interface ListingAttributes {
+  /**
+   * Listing attributes for the product
+   */
+  [key: string]: any;
+}
+
+/**
+ * Full listing information
+ */
+export interface Listing {
+  /**
+   * Seller SKU
+   */
+  sku: string;
+  
+  /**
+   * Current status of the listing
+   */
+  status: ListingStatus;
+  
+  /**
+   * Issues with the listing
+   */
+  issues?: ListingIssue[];
+  
+  /**
+   * Offer details
+   */
+  offer?: Record<string, any>;
+  
+  /**
+   * Fulfillment availability
+   */
+  fulfillmentAvailability?: Record<string, any>[];
+  
+  /**
+   * Attributes for the listing
+   */
+  attributes?: ListingAttributes;
+  
+  /**
+   * Last updated time
+   */
+  lastUpdatedDate?: string;
+}
+
+/**
+ * Get listings response
+ */
+export interface GetListingsResponse {
+  /**
+   * List of listings
+   */
+  listings: ListingSummary[];
+  
+  /**
+   * Pagination information
+   */
+  pagination?: Pagination;
+}
 
 /**
  * Parameters for getting listings
@@ -85,35 +224,85 @@ export interface AttributePatch {
 }
 
 /**
+ * Interface for listings module options
+ */
+export interface ListingsModuleOptions {
+  /**
+   * Default page size for listing requests
+   */
+  defaultPageSize?: number;
+  
+  /**
+   * Maximum pages to retrieve in getAllListings
+   */
+  maxPages?: number;
+}
+
+/**
  * Implementation of the Amazon Listings API
  */
-export class ListingsModule extends BaseApiModule {
+export class ListingsModule implements BaseModule<ListingsModuleOptions> {
+  /**
+   * The unique identifier for this module
+   */
+  public readonly moduleId: string = 'listingsItems';
+  
+  /**
+   * The human-readable name of this module
+   */
+  public readonly moduleName: string = 'Listings Items';
+  
+  /**
+   * The base URL path for API requests
+   */
+  public readonly basePath: string = '/listings/2021-08-01';
+  
+  /**
+   * API version
+   */
+  public readonly apiVersion: string;
+  
+  /**
+   * Marketplace ID
+   */
+  public readonly marketplaceId: string;
+  
+  /**
+   * Additional configuration options for this module
+   */
+  public readonly options: ListingsModuleOptions = {
+    defaultPageSize: 10,
+    maxPages: 10
+  };
+  
+  /**
+   * The API request function used by this module
+   */
+  public readonly apiRequest: ApiRequestFunction;
+  
   /**
    * Constructor
    * @param apiVersion API version
-   * @param makeApiRequest Function to make API requests
+   * @param apiRequest Function to make API requests
    * @param marketplaceId Marketplace ID
+   * @param options Optional module-specific configuration
    */
   constructor(
     apiVersion: string,
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string
+    apiRequest: ApiRequestFunction,
+    marketplaceId: string,
+    options?: ListingsModuleOptions
   ) {
-    super('listingsItems', apiVersion, makeApiRequest, marketplaceId);
-  }
-  
-  /**
-   * Initialize the module
-   * @param config Module-specific configuration
-   * @returns Promise<any> that resolves when initialization is complete
-   */
-  protected async initializeModule(config?: any): Promise<void> {
-    // No specific initialization required for this module
-    return Promise<any>.resolve();
+    this.apiVersion = apiVersion;
+    this.apiRequest = apiRequest;
+    this.marketplaceId = marketplaceId;
+    
+    if (options) {
+      this.options = {
+        ...this.options,
+        ...options
+      };
+    }
   }
   
   /**
@@ -121,15 +310,13 @@ export class ListingsModule extends BaseApiModule {
    * @param params Parameters for getting listings
    * @returns Listings response
    */
-  public async getListings(
-    params: GetListingsParams = {}
-  ): Promise<ApiResponse<AmazonSPApi.Listings.GetListingsResponse>> {
-    const queryParams: Record<string, any> = {};
+  public async getListings(params: GetListingsParams = {}): Promise<GetListingsResponse> {
+    const queryParams: Record<string, string | number> = {};
     
     // Ensure we have a marketplace ID
     const marketplaceId = params.marketplaceId || this.marketplaceId;
     if (!marketplaceId) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'Marketplace ID is required for getting listings',
         AmazonErrorCode.INVALID_INPUT
       );
@@ -159,20 +346,22 @@ export class ListingsModule extends BaseApiModule {
     
     if (params.pageSize) {
       queryParams.pageSize = params.pageSize;
+    } else if (this.options.defaultPageSize) {
+      queryParams.pageSize = this.options.defaultPageSize;
     }
     
     try {
-      return await this.makeRequest<AmazonSPApi.Listings.GetListingsResponse>({
-        method: 'GET',
-        path: '/items',
-        params: queryParams
-      });
-    } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(
-        error,
-        `${this.moduleName}.getListings`
+      const response = await this.apiRequest<{ payload: GetListingsResponse }>(
+        `${this.basePath}/items`,
+        'GET',
+        { params: queryParams }
       );
+      
+      return response.data?.payload || { listings: [] };
+    } catch (error) {
+      throw error instanceof Error 
+        ? AmazonErrorHandler.createError(error.message, AmazonErrorCode.OPERATION_FAILED) 
+        : AmazonErrorHandler.createError('Unknown error', AmazonErrorCode.UNKNOWN_ERROR);
     }
   }
   
@@ -182,12 +371,9 @@ export class ListingsModule extends BaseApiModule {
    * @param marketplaceId Marketplace ID (optional, uses default if not provided)
    * @returns Listing
    */
-  public async getListingBySku(
-    sku: string,
-    marketplaceId?: string
-  ): Promise<ApiResponse<AmazonSPApi.Listings.Listing>> {
+  public async getListingBySku(sku: string, marketplaceId?: string): Promise<Listing> {
     if (!sku) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'Seller SKU is required',
         AmazonErrorCode.INVALID_INPUT
       );
@@ -196,26 +382,31 @@ export class ListingsModule extends BaseApiModule {
     // Ensure we have a marketplace ID
     marketplaceId = marketplaceId || this.marketplaceId;
     if (!marketplaceId) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'Marketplace ID is required for getting a listing',
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     try {
-      return await this.makeRequest<AmazonSPApi.Listings.Listing>({
-        method: 'GET',
-        path: `/items/${sku}`,
-        params: {
-          marketplaceIds: marketplaceId
+      const response = await this.apiRequest<{ payload: Listing }>(
+        `${this.basePath}/items/${encodeURIComponent(sku)}`,
+        'GET',
+        { 
+          params: {
+            marketplaceIds: marketplaceId
+          }
         }
-      });
-    } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(
-        error,
-        `${this.moduleName}.getListingBySku`
       );
+      
+      return response.data?.payload || { 
+        sku,
+        status: 'DELETED' as ListingStatus 
+      };
+    } catch (error) {
+      throw error instanceof Error 
+        ? AmazonErrorHandler.createError(error.message, AmazonErrorCode.OPERATION_FAILED) 
+        : AmazonErrorHandler.createError('Unknown error', AmazonErrorCode.UNKNOWN_ERROR);
     }
   }
   
@@ -227,19 +418,19 @@ export class ListingsModule extends BaseApiModule {
    * @returns Update response
    */
   public async updateListing(
-    sku: string,
-    attributes: Record<string, any>,
+    sku: string, 
+    attributes: Record<string, any>, 
     marketplaceId?: string
-  ): Promise<ApiResponse<any>> {
+  ): Promise<boolean> {
     if (!sku) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'Seller SKU is required',
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     if (!attributes || Object.keys(attributes).length === 0) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'Listing attributes are required',
         AmazonErrorCode.INVALID_INPUT
       );
@@ -248,29 +439,31 @@ export class ListingsModule extends BaseApiModule {
     // Ensure we have a marketplace ID
     marketplaceId = marketplaceId || this.marketplaceId;
     if (!marketplaceId) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'Marketplace ID is required for updating a listing',
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     try {
-      return await this.makeRequest<any>({
-        method: 'PUT',
-        path: `/items/${sku}`,
-        params: {
-          marketplaceIds: marketplaceId
-        },
-        data: {
-          attributes: attributes
+      const response = await this.apiRequest<{ status: string }>(
+        `${this.basePath}/items/${encodeURIComponent(sku)}`,
+        'PUT',
+        {
+          params: {
+            marketplaceIds: marketplaceId
+          },
+          data: {
+            attributes: attributes
+          }
         }
-      });
-    } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(
-        error,
-        `${this.moduleName}.updateListing`
       );
+      
+      return response.status === 200;
+    } catch (error) {
+      throw error instanceof Error 
+        ? AmazonErrorHandler.createError(error.message, AmazonErrorCode.OPERATION_FAILED) 
+        : AmazonErrorHandler.createError('Unknown error', AmazonErrorCode.UNKNOWN_ERROR);
     }
   }
   
@@ -282,19 +475,19 @@ export class ListingsModule extends BaseApiModule {
    * @returns Patch response
    */
   public async patchListing(
-    sku: string,
-    patches: AttributePatch[],
+    sku: string, 
+    patches: AttributePatch[], 
     marketplaceId?: string
-  ): Promise<ApiResponse<any>> {
+  ): Promise<boolean> {
     if (!sku) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'Seller SKU is required',
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     if (!patches || patches.length === 0) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'Listing patches are required',
         AmazonErrorCode.INVALID_INPUT
       );
@@ -303,27 +496,29 @@ export class ListingsModule extends BaseApiModule {
     // Ensure we have a marketplace ID
     marketplaceId = marketplaceId || this.marketplaceId;
     if (!marketplaceId) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'Marketplace ID is required for patching a listing',
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     try {
-      return await this.makeRequest<any>({
-        method: 'PATCH',
-        path: `/items/${sku}`,
-        params: {
-          marketplaceIds: marketplaceId
-        },
-        data: patches
-      });
-    } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(
-        error,
-        `${this.moduleName}.patchListing`
+      const response = await this.apiRequest<{ status: string }>(
+        `${this.basePath}/items/${encodeURIComponent(sku)}`,
+        'PATCH',
+        {
+          params: {
+            marketplaceIds: marketplaceId
+          },
+          data: patches
+        }
       );
+      
+      return response.status === 200;
+    } catch (error) {
+      throw error instanceof Error 
+        ? AmazonErrorHandler.createError(error.message, AmazonErrorCode.OPERATION_FAILED) 
+        : AmazonErrorHandler.createError('Unknown error', AmazonErrorCode.UNKNOWN_ERROR);
     }
   }
   
@@ -333,12 +528,9 @@ export class ListingsModule extends BaseApiModule {
    * @param marketplaceId Marketplace ID (optional, uses default if not provided)
    * @returns Delete response
    */
-  public async deleteListing(
-    sku: string,
-    marketplaceId?: string
-  ): Promise<ApiResponse<any>> {
+  public async deleteListing(sku: string, marketplaceId?: string): Promise<boolean> {
     if (!sku) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'Seller SKU is required',
         AmazonErrorCode.INVALID_INPUT
       );
@@ -347,26 +539,28 @@ export class ListingsModule extends BaseApiModule {
     // Ensure we have a marketplace ID
     marketplaceId = marketplaceId || this.marketplaceId;
     if (!marketplaceId) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'Marketplace ID is required for deleting a listing',
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     try {
-      return await this.makeRequest<any>({
-        method: 'DELETE',
-        path: `/items/${sku}`,
-        params: {
-          marketplaceIds: marketplaceId
+      const response = await this.apiRequest<{ status: string }>(
+        `${this.basePath}/items/${encodeURIComponent(sku)}`,
+        'DELETE',
+        {
+          params: {
+            marketplaceIds: marketplaceId
+          }
         }
-      });
-    } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(
-        error,
-        `${this.moduleName}.deleteListing`
       );
+      
+      return response.status === 200;
+    } catch (error) {
+      throw error instanceof Error 
+        ? AmazonErrorHandler.createError(error.message, AmazonErrorCode.OPERATION_FAILED) 
+        : AmazonErrorHandler.createError('Unknown error', AmazonErrorCode.UNKNOWN_ERROR);
     }
   }
   
@@ -378,19 +572,19 @@ export class ListingsModule extends BaseApiModule {
    * @returns Create response
    */
   public async createListing(
-    sku: string,
-    attributes: Record<string, any>,
+    sku: string, 
+    attributes: Record<string, any>, 
     marketplaceId?: string
-  ): Promise<ApiResponse<any>> {
+  ): Promise<boolean> {
     if (!sku) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'Seller SKU is required',
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     if (!attributes || Object.keys(attributes).length === 0) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'Listing attributes are required',
         AmazonErrorCode.INVALID_INPUT
       );
@@ -399,45 +593,44 @@ export class ListingsModule extends BaseApiModule {
     // Ensure we have a marketplace ID
     marketplaceId = marketplaceId || this.marketplaceId;
     if (!marketplaceId) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'Marketplace ID is required for creating a listing',
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     try {
-      return await this.makeRequest<any>({
-        method: 'PUT',
-        path: `/items/${sku}`,
-        params: {
-          marketplaceIds: marketplaceId
-        },
-        data: {
-          attributes: attributes
+      const response = await this.apiRequest<{ status: string }>(
+        `${this.basePath}/items/${encodeURIComponent(sku)}`,
+        'PUT',
+        {
+          params: {
+            marketplaceIds: marketplaceId
+          },
+          data: {
+            attributes: attributes
+          }
         }
-      });
-    } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(
-        error,
-        `${this.moduleName}.createListing`
       );
+      
+      return response.status === 200;
+    } catch (error) {
+      throw error instanceof Error 
+        ? AmazonErrorHandler.createError(error.message, AmazonErrorCode.OPERATION_FAILED) 
+        : AmazonErrorHandler.createError('Unknown error', AmazonErrorCode.UNKNOWN_ERROR);
     }
   }
   
   /**
    * Get all listings (handles pagination)
    * @param params Parameters for getting listings
-   * @param maxPages Maximum number of pages to retrieve (default: 10)
    * @returns All listings that match the parameters
    */
-  public async getAllListings(
-    params: GetListingsParams = {},
-    maxPages: number = 10
-  ): Promise<AmazonSPApi.Listings.Listing[]> {
+  public async getAllListings(params: GetListingsParams = {}): Promise<ListingSummary[]> {
     let currentPage = 1;
     let nextToken: string | undefined = undefined;
-    const allListings: AmazonSPApi.Listings.Listing[] = [];
+    const allListings: ListingSummary[] = [];
+    const maxPages = this.options.maxPages || 10;
     
     do {
       // Update params with next token if available
@@ -449,12 +642,12 @@ export class ListingsModule extends BaseApiModule {
       const response = await this.getListings(pageParams);
       
       // Add listings to our collection
-      if (response.data.listings && response.data.listings.length > 0) {
-        allListings.push(...response.data.listings);
+      if (response.listings && response.listings.length > 0) {
+        allListings.push(...response.listings);
       }
       
       // Get next token for pagination
-      nextToken = response.data.pagination?.nextToken;
+      nextToken = response.pagination?.nextToken;
       currentPage++;
       
       // Stop if we've reached the max pages or there are no more pages
@@ -468,11 +661,9 @@ export class ListingsModule extends BaseApiModule {
    * @param marketplaceId Marketplace ID (optional, uses default if not provided)
    * @returns Active listings
    */
-  public async getActiveListings(
-    marketplaceId?: string
-  ): Promise<AmazonSPApi.Listings.Listing[]> {
-    return this.getAllListings({
-      marketplaceId,
+  public async getActiveListings(marketplaceId?: string): Promise<ListingSummary[]> {
+    return this.getAllListings({ 
+      marketplaceId: marketplaceId, 
       statuses: ['ACTIVE']
     });
   }
@@ -482,11 +673,9 @@ export class ListingsModule extends BaseApiModule {
    * @param marketplaceId Marketplace ID (optional, uses default if not provided)
    * @returns Inactive listings
    */
-  public async getInactiveListings(
-    marketplaceId?: string
-  ): Promise<AmazonSPApi.Listings.Listing[]> {
-    return this.getAllListings({
-      marketplaceId,
+  public async getInactiveListings(marketplaceId?: string): Promise<ListingSummary[]> {
+    return this.getAllListings({ 
+      marketplaceId: marketplaceId, 
       statuses: ['INACTIVE']
     });
   }
@@ -496,11 +685,9 @@ export class ListingsModule extends BaseApiModule {
    * @param marketplaceId Marketplace ID (optional, uses default if not provided)
    * @returns Incomplete listings
    */
-  public async getIncompleteListings(
-    marketplaceId?: string
-  ): Promise<AmazonSPApi.Listings.Listing[]> {
-    return this.getAllListings({
-      marketplaceId,
+  public async getIncompleteListings(marketplaceId?: string): Promise<ListingSummary[]> {
+    return this.getAllListings({ 
+      marketplaceId: marketplaceId, 
       statuses: ['INCOMPLETE']
     });
   }
@@ -510,11 +697,9 @@ export class ListingsModule extends BaseApiModule {
    * @param marketplaceId Marketplace ID (optional, uses default if not provided)
    * @returns Suppressed listings
    */
-  public async getSuppressedListings(
-    marketplaceId?: string
-  ): Promise<AmazonSPApi.Listings.Listing[]> {
-    return this.getAllListings({
-      marketplaceId,
+  public async getSuppressedListings(marketplaceId?: string): Promise<ListingSummary[]> {
+    return this.getAllListings({ 
+      marketplaceId: marketplaceId, 
       statuses: ['SUPPRESSED']
     });
   }
@@ -528,9 +713,9 @@ export class ListingsModule extends BaseApiModule {
   public async getListingsWithIssues(
     severities: IssueSeverity[] = ['ERROR', 'WARNING', 'INFO'],
     marketplaceId?: string
-  ): Promise<AmazonSPApi.Listings.Listing[]> {
-    return this.getAllListings({
-      marketplaceId,
+  ): Promise<ListingSummary[]> {
+    return this.getAllListings({ 
+      marketplaceId: marketplaceId, 
       issueSeverities: severities
     });
   }
@@ -543,19 +728,19 @@ export class ListingsModule extends BaseApiModule {
    * @returns Update response
    */
   public async updateListingStatus(
-    sku: string,
-    status: 'ACTIVE' | 'INACTIVE',
+    sku: string, 
+    status: 'ACTIVE' | 'INACTIVE', 
     marketplaceId?: string
-  ): Promise<ApiResponse<any>> {
+  ): Promise<boolean> {
     if (!sku) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'Seller SKU is required',
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     if (!status) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'Status is required',
         AmazonErrorCode.INVALID_INPUT
       );
@@ -571,5 +756,100 @@ export class ListingsModule extends BaseApiModule {
     ];
     
     return this.patchListing(sku, patches, marketplaceId);
+  }
+  
+  /**
+   * Get listings by ASIN
+   * @param asin ASIN to search for
+   * @param marketplaceId Marketplace ID (optional, uses default if not provided)
+   * @returns Listings that match the ASIN
+   */
+  public async getListingsByAsin(asin: string, marketplaceId?: string): Promise<ListingSummary[]> {
+    if (!asin) {
+      throw AmazonErrorHandler.createError(
+        'ASIN is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    // Get all listings and filter by ASIN
+    const allListings = await this.getAllListings({ marketplaceId });
+    
+    return allListings.filter(listing => listing.asin === asin);
+  }
+  
+  /**
+   * Get listings by product type
+   * @param productType Product type to filter by
+   * @param marketplaceId Marketplace ID (optional, uses default if not provided)
+   * @returns Listings that match the product type
+   */
+  public async getListingsByProductType(
+    productType: string, 
+    marketplaceId?: string
+  ): Promise<ListingSummary[]> {
+    if (!productType) {
+      throw AmazonErrorHandler.createError(
+        'Product type is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    // Get all listings and filter by product type
+    const allListings = await this.getAllListings({ marketplaceId });
+    
+    return allListings.filter(listing => listing.productType === productType);
+  }
+  
+  /**
+   * Get listings by condition
+   * @param condition Condition to filter by
+   * @param marketplaceId Marketplace ID (optional, uses default if not provided)
+   * @returns Listings that match the condition
+   */
+  public async getListingsByCondition(
+    condition: string, 
+    marketplaceId?: string
+  ): Promise<ListingSummary[]> {
+    if (!condition) {
+      throw AmazonErrorHandler.createError(
+        'Condition is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    // Get all listings and filter by condition
+    const allListings = await this.getAllListings({ marketplaceId });
+    
+    return allListings.filter(listing => listing.condition === condition);
+  }
+  
+  /**
+   * Get listings with specific issue code
+   * @param issueCode Issue code to filter by
+   * @param marketplaceId Marketplace ID (optional, uses default if not provided)
+   * @returns Listings that have the specified issue
+   */
+  public async getListingsByIssueCode(
+    issueCode: string, 
+    marketplaceId?: string
+  ): Promise<ListingSummary[]> {
+    if (!issueCode) {
+      throw AmazonErrorHandler.createError(
+        'Issue code is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    // Get all listings with issues
+    const listingsWithIssues = await this.getListingsWithIssues(
+      ['ERROR', 'WARNING', 'INFO'], 
+      marketplaceId
+    );
+    
+    // Filter by issue code
+    return listingsWithIssues.filter(listing => 
+      listing.issues?.some(issue => issue.code === issueCode)
+    );
   }
 }

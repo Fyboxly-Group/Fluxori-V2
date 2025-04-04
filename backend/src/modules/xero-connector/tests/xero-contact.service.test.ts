@@ -100,7 +100,7 @@ describe('XeroContactService', () => {
     });
     
     it('should throw error when API call fails', async() => {
-      // Mock getContacts to throw error
+      // Mock getContacts to throw error instanceof Error ? error : new Error(String(error));
       mockAccountingApi.getContacts.mockRejectedValue(new Error('API error'));
       
       // Call the method under test and expect error
@@ -275,7 +275,7 @@ describe('XeroContactService', () => {
       const mockCustomerModel = mongoose.model('Customer');
       (mockCustomerModel.findById as jest.Mock).mockResolvedValue(mockCustomer);
       
-      // Mock getContacts to return existing contact
+      // Mock getContacts to return existing contact;
       mockAccountingApi.getContacts.mockResolvedValue({
         body: {
           contacts: [
@@ -335,7 +335,7 @@ describe('XeroContactService', () => {
       const mockCustomerModel = mongoose.model('Customer');
       (mockCustomerModel.findById as jest.Mock).mockResolvedValue(mockCustomer);
       
-      // Mock getContacts to return no existing contacts
+      // Mock getContacts to return no existing contacts;
       mockAccountingApi.getContacts.mockResolvedValue({
         body: {
           contacts: [], // No existing contacts
@@ -369,7 +369,7 @@ describe('XeroContactService', () => {
     });
     
     it('should return error when customer is not found', async() => {
-      // Mock mongoose Customer.findById to return null
+      // Mock mongoose Customer.findById to return null;
       const mockCustomerModel = mongoose.model('Customer');
       (mockCustomerModel.findById as jest.Mock).mockResolvedValue(null);
       
@@ -395,7 +395,7 @@ describe('XeroContactService', () => {
       const mockCustomerModel = mongoose.model('Customer');
       (mockCustomerModel.findById as jest.Mock).mockResolvedValue(mockCustomer);
       
-      // Mock getContacts to throw error
+      // Mock getContacts to throw error instanceof Error ? error : new Error(String(error));
       mockAccountingApi.getContacts.mockRejectedValue(new Error('API connection error'));
       
       // Call the method under test

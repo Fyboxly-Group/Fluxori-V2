@@ -68,9 +68,9 @@ export const getMilestones = async (req: Request, res: Response, next: NextFunct
     // My milestones filter (if user wants to see milestones they're involved in)
     if (req.query.myMilestones && req.user) {
       query.$or = [
-        { owner: req.user._id },
-        { reviewers: req.user._id },
-        { createdBy: req.user._id },
+        { owner: (req.user as any)._id },
+        { reviewers: (req.user as any)._id },
+        { createdBy: (req.user as any)._id },
       ];
     }
     
@@ -110,6 +110,7 @@ export const getMilestones = async (req: Request, res: Response, next: NextFunct
       data: milestones,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -121,7 +122,7 @@ export const getMilestones = async (req: Request, res: Response, next: NextFunct
  */
 export const getMilestoneById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const milestoneId = req.params.id;
+    const milestoneId = req.params.id as any;
     
     if (!mongoose.Types.ObjectId.isValid(milestoneId)) {
       throw new ApiError(400, 'Invalid milestone ID');
@@ -151,6 +152,7 @@ export const getMilestoneById = async (req: Request, res: Response, next: NextFu
       data: milestone,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -227,11 +229,11 @@ export const createMilestone = async (req: Request, res: Response, next: NextFun
       await ActivityService.logActivity({
         description: `Milestone "${title}" created for project "${projectExists.name}"`,
         entityType: 'user',
-        entityId: req.user._id,
+        entityId: (req.user as any)._id,
         action: 'create',
         status: 'completed',
-        userId: req.user._id,
-        metadata: { milestoneId: milestone._id, projectId: project },
+        userId: (req.user as any)._id,
+        metadata: { milestoneId: (milestone as any)._id, projectId: project },
       });
     }
     
@@ -240,6 +242,7 @@ export const createMilestone = async (req: Request, res: Response, next: NextFun
       data: milestone,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -251,7 +254,7 @@ export const createMilestone = async (req: Request, res: Response, next: NextFun
  */
 export const updateMilestone = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const milestoneId = req.params.id;
+    const milestoneId = req.params.id as any;
     
     if (!mongoose.Types.ObjectId.isValid(milestoneId)) {
       throw new ApiError(400, 'Invalid milestone ID');
@@ -268,9 +271,9 @@ export const updateMilestone = async (req: Request, res: Response, next: NextFun
     // For example, only milestone owner or creator can update
     if (
       req.user && 
-      !req.user.role.includes('admin') && 
-      milestone.owner.toString() !== req.user._id.toString() && 
-      milestone.createdBy.toString() !== req.user._id.toString()
+      !req.user?.role.includes('admin') && 
+      milestone.owner.toString() !== (req.user as any)._id.toString() && 
+      milestone.createdBy.toString() !== (req.user as any)._id.toString()
     ) {
       throw new ApiError(403, 'You do not have permission to update this milestone');
     }
@@ -317,11 +320,11 @@ export const updateMilestone = async (req: Request, res: Response, next: NextFun
       await ActivityService.logActivity({
         description: `Milestone "${milestone.title}" updated`,
         entityType: 'user',
-        entityId: req.user._id,
+        entityId: (req.user as any)._id,
         action: 'update',
         status: 'completed',
-        userId: req.user._id,
-        metadata: { milestoneId: milestone._id, updates },
+        userId: (req.user as any)._id,
+        metadata: { milestoneId: (milestone as any)._id, updates },
       });
     }
     
@@ -330,6 +333,7 @@ export const updateMilestone = async (req: Request, res: Response, next: NextFun
       data: milestone,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -341,7 +345,7 @@ export const updateMilestone = async (req: Request, res: Response, next: NextFun
  */
 export const deleteMilestone = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const milestoneId = req.params.id;
+    const milestoneId = req.params.id as any;
     
     if (!mongoose.Types.ObjectId.isValid(milestoneId)) {
       throw new ApiError(400, 'Invalid milestone ID');
@@ -357,6 +361,16 @@ export const deleteMilestone = async (req: Request, res: Response, next: NextFun
     // Check for dependent tasks
     // This would require importing Task model
     // const dependentTasks = await Task.countDocuments({ milestone: milestoneId });
+
+// Authenticated request type
+type AuthenticatedRequest = Request & {
+  user?: {
+    id: string;
+    organizationId: string;
+    email?: string;
+    role?: string;
+  };
+};
     // if (dependentTasks > 0) {
     //   throw new ApiError(400, `Cannot delete milestone: ${dependentTasks} task(s) are associated with this milestone`);
     // }
@@ -378,10 +392,10 @@ export const deleteMilestone = async (req: Request, res: Response, next: NextFun
       await ActivityService.logActivity({
         description: `Milestone "${milestoneTitle}" deleted`,
         entityType: 'user',
-        entityId: req.user._id,
+        entityId: (req.user as any)._id,
         action: 'delete',
         status: 'completed',
-        userId: req.user._id,
+        userId: (req.user as any)._id,
         metadata: { milestoneId },
       });
     }
@@ -391,6 +405,7 @@ export const deleteMilestone = async (req: Request, res: Response, next: NextFun
       message: 'Milestone deleted successfully',
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -402,7 +417,7 @@ export const deleteMilestone = async (req: Request, res: Response, next: NextFun
  */
 export const approveMilestone = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const milestoneId = req.params.id;
+    const milestoneId = req.params.id as any;
     
     if (!mongoose.Types.ObjectId.isValid(milestoneId)) {
       throw new ApiError(400, 'Invalid milestone ID');
@@ -424,7 +439,7 @@ export const approveMilestone = async (req: Request, res: Response, next: NextFu
       reviewer => reviewer.toString() === req.user?._id.toString()
     );
     
-    if (!isReviewer && req.user.role !== 'admin') {
+    if (!isReviewer && req.user?.role !== 'admin') {
       throw new ApiError(403, 'You are not authorized to approve this milestone');
     }
     
@@ -438,17 +453,17 @@ export const approveMilestone = async (req: Request, res: Response, next: NextFu
     }
     
     // Add user to approvals
-    milestone.approvedBy = [...(milestone.approvedBy || []), req.user._id];
+    milestone.approvedBy = [...(milestone.approvedBy || []), (req.user as any)._id];
     await milestone.save();
     
     // Log activity
     await ActivityService.logActivity({
       description: `Milestone "${milestone.title}" approved`,
       entityType: 'user',
-      entityId: req.user._id,
+      entityId: (req.user as any)._id,
       action: 'update',
       status: 'completed',
-      userId: req.user._id,
+      userId: (req.user as any)._id,
       metadata: { milestoneId },
     });
     
@@ -458,6 +473,7 @@ export const approveMilestone = async (req: Request, res: Response, next: NextFu
       data: { approvedBy: milestone.approvedBy },
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -469,7 +485,7 @@ export const approveMilestone = async (req: Request, res: Response, next: NextFu
  */
 export const updateMilestoneProgress = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const milestoneId = req.params.id;
+    const milestoneId = req.params.id as any;
     
     if (!mongoose.Types.ObjectId.isValid(milestoneId)) {
       throw new ApiError(400, 'Invalid milestone ID');
@@ -508,10 +524,10 @@ export const updateMilestoneProgress = async (req: Request, res: Response, next:
       await ActivityService.logActivity({
         description: `Milestone "${milestone.title}" progress updated to ${progress}%`,
         entityType: 'user',
-        entityId: req.user._id,
+        entityId: (req.user as any)._id,
         action: 'update',
         status: 'completed',
-        userId: req.user._id,
+        userId: (req.user as any)._id,
         metadata: { milestoneId, progress },
       });
     }
@@ -525,6 +541,7 @@ export const updateMilestoneProgress = async (req: Request, res: Response, next:
       },
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };

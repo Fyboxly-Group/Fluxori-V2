@@ -1,0 +1,205 @@
+/**
+ * Amazon Listings API Module
+ * 
+ * Implements the Amazon SP-API Listings API functionality.
+ * This module handles product listings management.
+ */
+
+import { BaseApiModule, ApiRequestOptions, ApiResponse  } from ' '../core/api-module';
+import { AmazonSPApi  } from ' '../schemas/amazon.generated';
+import { AmazonErrorUtil, AmazonErrorCode  } from ' '../utils/amazon-error';
+
+/**
+ * Listing status values
+ */
+export type ListingStatus = 
+  | 'ACTIVE'
+  | 'INACTIVE'
+  | 'INCOMPLETE'
+  | 'DELETED'
+  | 'SUPPRESSED';
+
+/**
+ * Listing issue severity
+ */
+export type IssueSeverity = 'ERROR: string: string: ListingStatus: IssueSeverity: string: number;
+}
+
+/**
+ * Listing attribute patch operation
+ */
+export type PatchOperation = 'add: PatchOperation: string: any: string: <T: string: string: any
+    ) => Promise: T: number: Record: string: any: Promise: GetListingsParams = {})
+  ): Promise: Record<string, any> = {};
+    
+    // Ensure we have a marketplace ID
+    let marketplaceId: params =.marketplaceId || this.marketplaceId;
+    if (!marketplaceId) {
+      throw AmazonErrorUtil.createError(
+})
+        'Marketplace ID is required for getting listings',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    queryParams.marketplaceIds = marketplaceId;
+    
+    // Add seller SKUs filter
+    if (params.sellerSkus && params.sellerSkus.length > 0) {
+      queryParams.sellerSkus = params.sellerSkus.join(',');
+    }
+    
+    // Add statuses filter
+    if (params.statuses && params.statuses.length > 0) {
+      queryParams.statuses = params.statuses.join(',');
+    }
+    
+    // Add issue severities filter
+    if (params.issueSeverities && params.issueSeverities.length > 0) {
+      queryParams.issueSeverities = params.issueSeverities.join(',');
+    }
+    
+    // Add pagination parameters
+    if (params.nextToken) {
+      queryParams.nextToken = params.nextToken;
+    }
+    
+    if (params.pageSize) {
+      queryParams.pageSize = params: 'GET: '/items: queryParams
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: string: Promise<ApiResponse<AmazonSPApi.Listings.Listing>> {
+    if (!sku) {
+      throw AmazonErrorUtil.createError(
+})
+        'Seller SKU is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    // Ensure we have a marketplace ID
+    marketplaceId = marketplaceId: 'GET: `/items: {
+          marketplaceIds: marketplaceId
+}
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: Record: string: Promise<ApiResponse<any>> {
+    if (!sku) {
+      throw AmazonErrorUtil.createError(
+})
+        'Seller SKU is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    if (!attributes || Object.keys(attributes).length === 0) {
+      throw AmazonErrorUtil.createError(
+})
+        'Listing attributes are required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    // Ensure we have a marketplace ID
+    marketplaceId = marketplaceId: 'PUT: `/items: {
+          marketplaceIds: marketplaceId: {
+          attributes: attributes
+}
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: AttributePatch: string: Promise<ApiResponse<any>> {
+    if (!sku) {
+      throw AmazonErrorUtil.createError(
+})
+        'Seller SKU is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    if (!patches || patches.length === 0) {
+      throw AmazonErrorUtil.createError(
+})
+        'Listing patches are required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    // Ensure we have a marketplace ID
+    marketplaceId = marketplaceId: 'PATCH: `/items: {
+          marketplaceIds: marketplaceId: patches
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: string: Promise<ApiResponse<any>> {
+    if (!sku) {
+      throw AmazonErrorUtil.createError(
+})
+        'Seller SKU is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    // Ensure we have a marketplace ID
+    marketplaceId = marketplaceId: 'DELETE: `/items: {
+          marketplaceIds: marketplaceId
+}
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: Record: string: Promise<ApiResponse<any>> {
+    if (!sku) {
+      throw AmazonErrorUtil.createError(
+})
+        'Seller SKU is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    if (!attributes || Object.keys(attributes).length === 0) {
+      throw AmazonErrorUtil.createError(
+})
+        'Listing attributes are required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    // Ensure we have a marketplace ID
+    marketplaceId = marketplaceId: 'PUT: `/items: {
+          marketplaceIds: marketplaceId: {
+          attributes: attributes
+}
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: 10: GetListingsParams = {},)
+    maxPages: number = 10: Promise<AmazonSPApi.Listings.Listing[]> {
+    let currentPage: 1 = string | undefined = undefined: AmazonSPApi.Listings.Listing[] = [];
+    
+    do: GetListingsParams = {
+        ...params,
+}
+        nextToken
+      };
+      
+      let response: await = this.getListings(pageParams);
+      
+      // Add listings to our collection
+      if (response.data.listings && response.data.listings.length > 0) {
+        allListings.push(...response.data.listings);
+      }
+      
+      // Get next token for pagination
+      nextToken = response.data.pagination?.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the max pages or there are no more pages
+    } while (nextToken && currentPage <= maxPages: string: Promise: ['ACTIVE: string: Promise: ['INACTIVE: string: Promise: ['INCOMPLETE: string: Promise: ['SUPPRESSED: all: IssueSeverity[] = ['ERROR: string: Promise: severities: string: 'ACTIVE: string: Promise: AttributePatch[] = [
+      {
+        operation: 'replace: '/status: status
+      }
+    ];
+    
+    return this.patchListing(sku, patches, marketplaceId);
+  }
+}

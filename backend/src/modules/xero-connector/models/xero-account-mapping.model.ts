@@ -1,7 +1,7 @@
 /**
  * Xero Account Mapping Model (Firestore)
  */
-import { Timestamp } from 'firebase-admin/firestore';
+import { Timestamp, DocumentData, QueryDocumentSnapshot } from 'firebase-admin/firestore';
 import { xeroAccountMappingCollection } from '../../../config/firestore';
 import { AccountMapping } from '../types';
 
@@ -26,7 +26,7 @@ export interface IXeroAccountMappingWithId extends IXeroAccountMapping {
  * Converter for Firestore
  */
 export const xeroAccountMappingConverter = {
-  toFirestore(mapping: IXeroAccountMapping): FirebaseFirestore.DocumentData {
+  toFirestore(mapping: IXeroAccountMapping): DocumentData {
     // Ensure timestamps are correct
     const now = Timestamp.now();
     
@@ -46,7 +46,7 @@ export const xeroAccountMappingConverter = {
     };
   },
   
-  fromFirestore(snapshot: FirebaseFirestore.QueryDocumentSnapshot): IXeroAccountMappingWithId {
+  fromFirestore(snapshot: QueryDocumentSnapshot): IXeroAccountMappingWithId {
     const data = snapshot.data();
     return {
       id: snapshot.id,
@@ -60,7 +60,7 @@ export const xeroAccountMappingConverter = {
       isDefault: data.isDefault,
       createdAt: data.createdAt,
       updatedAt: data.updatedAt
-    } as IXeroAccountMappingWithId;
+    };
   }
 };
 
@@ -78,7 +78,11 @@ export const XeroAccountMapping = {
   async create(mapping: IXeroAccountMapping): Promise<IXeroAccountMappingWithId> {
     const docRef = await XeroAccountMappingCollectionWithConverter.add(mapping);
     const snapshot = await docRef.get();
-    return snapshot.data() as IXeroAccountMappingWithId;
+    const data = snapshot.data();
+    if (!data) {
+      throw new Error('Failed to create Xero account mapping');
+    }
+    return data;
   },
 
   /**
@@ -111,6 +115,17 @@ export const XeroAccountMapping = {
       .get();
     
     return snapshot.empty ? null : snapshot.docs[0].data() as IXeroAccountMappingWithId;
+  },
+
+  /**
+   * Find all mappings for an organization
+   */
+  async findByOrganizationId(organizationId: string): Promise<IXeroAccountMappingWithId[]> {
+    const snapshot = await XeroAccountMappingCollectionWithConverter
+      .where('organizationId', '==', organizationId)
+      .get();
+    
+    return snapshot.docs.map(doc => doc.data() as IXeroAccountMappingWithId);
   },
 
   /**

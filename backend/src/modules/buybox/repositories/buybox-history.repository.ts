@@ -1,10 +1,10 @@
-// @ts-nocheck - Added by final-ts-fix.js
 /**
  * Buy Box History Repository
  * 
  * Repository for managing Buy Box history data in Firestore
  */
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, DocumentSnapshot, Query } from 'firebase-admin/firestore';
+import { injectable } from 'inversify';
 import { 
   BuyBoxHistory, 
   buyBoxHistoryConverter,
@@ -23,6 +23,13 @@ export interface IBuyBoxHistoryRepository {
    * @returns Buy Box history or null if not found
    */
   getById(id: string): Promise<BuyBoxHistory | null>;
+  
+  /**
+   * Find a Buy Box history by ID
+   * @param id The history ID
+   * @returns Buy Box history or null if not found
+   */
+  findById(id: string): Promise<BuyBoxHistory | null>;
   
   /**
    * Create a new Buy Box history
@@ -54,22 +61,34 @@ export interface IBuyBoxHistoryRepository {
   getByProduct(productId: string): Promise<BuyBoxHistory[]>;
   
   /**
+   * Find all Buy Box histories for a marketplace
+   * @param marketplaceId The marketplace ID
+   * @param limit Optional limit on number of results
+   * @returns Array of Buy Box histories
+   */
+  findByMarketplaceId(marketplaceId: string, limit?: number): Promise<BuyBoxHistory[]>;
+  
+  /**
    * Get all Buy Box histories for a marketplace
    * @param marketplaceId The marketplace ID
    * @param limit Optional limit on number of results
    * @param startAfter Optional document to start after for pagination
-   * @returns Array of Buy Box histories
+   * @returns Object containing histories and last document for pagination
    */
   getByMarketplace(
     marketplaceId: string, 
     limit?: number, 
-    startAfter?: any
+    startAfter?: DocumentSnapshot
   ): Promise<{
     histories: BuyBoxHistory[],
-    lastDoc: any
+    lastDoc: DocumentSnapshot | null
+  }>;
   
-  getRules(itemId: string): Promise<any[]>;
-}>;
+  /**
+   * Get all repricing rules
+   * @returns Array of repricing rules
+   */
+  getRules(): Promise<RepricingRule[]>;
   
   /**
    * Get all Buy Box histories that are set for monitoring
@@ -87,7 +106,8 @@ export interface IBuyBoxHistoryRepository {
 /**
  * Implementation of Buy Box history repository
  */
-class BuyBoxHistoryRepository implements IBuyBoxHistoryRepository {
+@injectable()
+export class BuyBoxHistoryRepository implements IBuyBoxHistoryRepository {
   private readonly collectionName = 'buyBoxHistories';
   private readonly rulesCollectionName = 'repricingRules';
   private readonly logger: Logger;
@@ -114,8 +134,21 @@ class BuyBoxHistoryRepository implements IBuyBoxHistoryRepository {
       return doc.data() || null;
     } catch (error) {
       this.logger.error(`Failed to get Buy Box history ${id}`, error);
-      throw error;
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error(String(error));
+      }
     }
+  }
+  
+  /**
+   * Find a Buy Box history by ID
+   * @param id The history ID
+   * @returns Buy Box history or null if not found
+   */
+  async findById(id: string): Promise<BuyBoxHistory | null> {
+    return this.getById(id);
   }
   
   /**
@@ -135,7 +168,11 @@ class BuyBoxHistoryRepository implements IBuyBoxHistoryRepository {
       return history;
     } catch (error) {
       this.logger.error(`Failed to create Buy Box history`, error);
-      throw error;
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error(String(error));
+      }
     }
   }
   
@@ -156,7 +193,11 @@ class BuyBoxHistoryRepository implements IBuyBoxHistoryRepository {
       return await this.getById(id);
     } catch (error) {
       this.logger.error(`Failed to update Buy Box history ${id}`, error);
-      throw error;
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error(String(error));
+      }
     }
   }
   
@@ -175,7 +216,11 @@ class BuyBoxHistoryRepository implements IBuyBoxHistoryRepository {
       return true;
     } catch (error) {
       this.logger.error(`Failed to delete Buy Box history ${id}`, error);
-      throw error;
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error(String(error));
+      }
     }
   }
   
@@ -192,10 +237,42 @@ class BuyBoxHistoryRepository implements IBuyBoxHistoryRepository {
         .withConverter(buyBoxHistoryConverter)
         .get();
       
-      return snapshot.docs.map(doc => doc.data());
+      return snapshot.docs.map(doc => doc.data() as BuyBoxHistory);
     } catch (error) {
       this.logger.error(`Failed to get Buy Box histories for product ${productId}`, error);
-      throw error;
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error(String(error));
+      }
+    }
+  }
+  
+  /**
+   * Find all Buy Box histories for a marketplace
+   * @param marketplaceId The marketplace ID
+   * @param limit Optional limit on number of results
+   * @returns Array of Buy Box histories
+   */
+  async findByMarketplaceId(marketplaceId: string, limit: number = 20): Promise<BuyBoxHistory[]> {
+    try {
+      const db = getFirestore();
+      const query = db.collection(this.collectionName)
+        .where('marketplaceId', '==', marketplaceId)
+        .orderBy('updatedAt', 'desc')
+        .limit(limit)
+        .withConverter(buyBoxHistoryConverter);
+      
+      const snapshot = await query.get();
+      
+      return snapshot.docs.map(doc => doc.data() as BuyBoxHistory);
+    } catch (error) {
+      this.logger.error(`Failed to find Buy Box histories for marketplace ${marketplaceId}`, error);
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error(String(error));
+      }
     }
   }
   
@@ -204,15 +281,15 @@ class BuyBoxHistoryRepository implements IBuyBoxHistoryRepository {
    * @param marketplaceId The marketplace ID
    * @param limit Optional limit on number of results
    * @param startAfter Optional document to start after for pagination
-   * @returns Array of Buy Box histories
+   * @returns Object containing histories and last document for pagination
    */
   async getByMarketplace(
     marketplaceId: string, 
     limit: number = 20, 
-    startAfter: any = null
+    startAfter: DocumentSnapshot | null = null
   ): Promise<{
     histories: BuyBoxHistory[],
-    lastDoc: any
+    lastDoc: DocumentSnapshot | null
   }> {
     try {
       const db = getFirestore();
@@ -223,18 +300,22 @@ class BuyBoxHistoryRepository implements IBuyBoxHistoryRepository {
         .withConverter(buyBoxHistoryConverter);
       
       if (startAfter) {
-        query = query.startAfter(startAfter);
+        query = query.startAfter(startAfter) as Query<BuyBoxHistory>;
       }
       
       const snapshot = await query.get();
       
       return {
-        histories: snapshot.docs.map(doc => doc.data()),
+        histories: snapshot.docs.map(doc => doc.data() as BuyBoxHistory),
         lastDoc: snapshot.docs.length ? snapshot.docs[snapshot.docs.length - 1] : null
       };
     } catch (error) {
       this.logger.error(`Failed to get Buy Box histories for marketplace ${marketplaceId}`, error);
-      throw error;
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error(String(error));
+      }
     }
   }
   
@@ -250,10 +331,14 @@ class BuyBoxHistoryRepository implements IBuyBoxHistoryRepository {
         .withConverter(buyBoxHistoryConverter)
         .get();
       
-      return snapshot.docs.map(doc => doc.data());
+      return snapshot.docs.map(doc => doc.data() as BuyBoxHistory);
     } catch (error) {
       this.logger.error(`Failed to get monitored Buy Box histories`, error);
-      throw error;
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error(String(error));
+      }
     }
   }
   
@@ -271,6 +356,10 @@ class BuyBoxHistoryRepository implements IBuyBoxHistoryRepository {
       
       // Filter to those that need checking based on last update time and frequency
       return monitoredHistories.filter(history => {
+        if (!history.lastSnapshot || !history.lastSnapshot.lastChecked) {
+          return true; // First time checking, should check immediately
+        }
+        
         const lastChecked = history.lastSnapshot.lastChecked.toDate();
         const frequencyMs = history.monitoringFrequency * 60 * 1000; // Convert minutes to ms
         const nextCheckTime = new Date(lastChecked.getTime() + frequencyMs);
@@ -279,7 +368,11 @@ class BuyBoxHistoryRepository implements IBuyBoxHistoryRepository {
       });
     } catch (error) {
       this.logger.error(`Failed to get products to check`, error);
-      throw error;
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error(String(error));
+      }
     }
   }
   
@@ -296,10 +389,14 @@ class BuyBoxHistoryRepository implements IBuyBoxHistoryRepository {
         .withConverter(repricingRuleConverter)
         .get();
       
-      return snapshot.docs.map(doc => doc.data());
+      return snapshot.docs.map(doc => doc.data() as RepricingRule);
     } catch (error) {
       this.logger.error(`Failed to get repricing rules`, error);
-      throw error;
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error(String(error));
+      }
     }
   }
 }

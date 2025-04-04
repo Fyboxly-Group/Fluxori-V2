@@ -262,7 +262,7 @@ export class UserOrganizationService {
       
       // Update all other default orgs to not be default
       const batch = userOrganizationsCollection.firestore.batch();
-      userOrgsSnapshot.docs.forEach(doc => {
+      userOrgsSnapshot.docs.forEach((doc: any) => {
         batch.update(doc.ref, { isDefault: false, updatedAt: Timestamp.now() });
       });
       
@@ -415,7 +415,7 @@ export class UserOrganizationService {
       .where('status', '==', MembershipStatus.ACTIVE)
       .get();
     
-    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    return snapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
   }
   
   /**
@@ -430,7 +430,7 @@ export class UserOrganizationService {
       .where('status', '==', MembershipStatus.ACTIVE)
       .get();
     
-    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    return snapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
   }
   
   /**
@@ -450,7 +450,7 @@ export class UserOrganizationService {
       .where('roles', 'array-contains', roleId)
       .get();
     
-    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    return snapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
   }
   
   /**
@@ -763,7 +763,7 @@ export class UserOrganizationService {
     }
     
     // Remove permission from the list
-    const updatedCustomPermissions = customPermissions.filter(p => p !== permission);
+    const updatedCustomPermissions = customPermissions.filter((p: any) => p !== permission);
     
     // Update user-organization
     return await this.updateUserOrganization(
@@ -877,7 +877,7 @@ export class UserOrganizationService {
     }
     
     // Remove restriction from the list
-    const updatedRestrictedPermissions = restrictedPermissions.filter(p => p !== permission);
+    const updatedRestrictedPermissions = restrictedPermissions.filter((p: any) => p !== permission);
     
     // Update user-organization
     return await this.updateUserOrganization(

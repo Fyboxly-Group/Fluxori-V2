@@ -1,4 +1,3 @@
-// @ts-nocheck - Added by final-ts-fix.js
 /**
  * Firestore Inventory Service
  * 
@@ -36,7 +35,7 @@ export class InventoryService {
   /**
    * Create a new inventory item in Firestore
    * @param itemData Inventory item data to create
-   * @returns Promise with created item ID
+   * @returns Promise<any> with created item ID
    */
   static async createInventoryItem(itemData: FirestoreInventoryItem): Promise<string> {
     try {
@@ -58,14 +57,14 @@ export class InventoryService {
       return itemRef.id;
     } catch (error) {
       console.error('Error creating inventory item in Firestore:', error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
   /**
    * Get an inventory item by ID
    * @param itemId The ID of the inventory item to retrieve
-   * @returns Promise with inventory item data or null if not found
+   * @returns Promise<any> with inventory item data or null if not found
    */
   static async getInventoryItemById(itemId: string): Promise<FirestoreInventoryItemWithId | null> {
     try {
@@ -81,7 +80,7 @@ export class InventoryService {
       return itemDoc.data() as FirestoreInventoryItemWithId;
     } catch (error) {
       console.error(`Error getting inventory item ${itemId} from Firestore:`, error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -90,7 +89,7 @@ export class InventoryService {
    * @param sku The SKU of the inventory item
    * @param userId The user ID (optional if orgId is provided)
    * @param orgId The org ID (optional if userId is provided)
-   * @returns Promise with inventory item data or null if not found
+   * @returns Promise<any> with inventory item data or null if not found
    */
   static async getInventoryItemBySku(
     sku: string,
@@ -123,7 +122,7 @@ export class InventoryService {
       return snapshot.docs[0].data() as FirestoreInventoryItemWithId;
     } catch (error) {
       console.error(`Error getting inventory item by SKU ${sku} from Firestore:`, error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -133,7 +132,7 @@ export class InventoryService {
    * @param marketplaceProductId The marketplace product ID
    * @param userId The user ID (optional if orgId is provided)
    * @param orgId The org ID (optional if userId is provided)
-   * @returns Promise with inventory item data or null if not found
+   * @returns Promise<any> with inventory item data or null if not found
    */
   static async getInventoryItemByMarketplaceId(
     marketplaceId: string,
@@ -171,7 +170,7 @@ export class InventoryService {
       return snapshot.docs[0].data() as FirestoreInventoryItemWithId;
     } catch (error) {
       console.error(`Error getting inventory item by marketplace ID ${marketplaceProductId} from Firestore:`, error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -179,7 +178,7 @@ export class InventoryService {
    * Update an existing inventory item
    * @param itemId The ID of the inventory item to update
    * @param updateData The data to update
-   * @returns Promise with success status
+   * @returns Promise<any> with success status
    */
   static async updateInventoryItem(
     itemId: string,
@@ -201,7 +200,7 @@ export class InventoryService {
       return true;
     } catch (error) {
       console.error(`Error updating inventory item ${itemId} in Firestore:`, error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -211,7 +210,7 @@ export class InventoryService {
    * @param warehouseId The warehouse ID
    * @param quantityOnHand The new quantity on hand
    * @param quantityAllocated The new quantity allocated
-   * @returns Promise with success status
+   * @returns Promise<any> with success status
    */
   static async updateStockLevel(
     itemId: string,
@@ -261,7 +260,7 @@ export class InventoryService {
       return true;
     } catch (error) {
       console.error(`Error updating stock level for item ${itemId} in Firestore:`, error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -270,7 +269,7 @@ export class InventoryService {
    * @param itemId The ID of the inventory item
    * @param marketplaceId The marketplace ID (e.g., 'takealot', 'amazon_us')
    * @param listingData The marketplace listing data
-   * @returns Promise with success status
+   * @returns Promise<any> with success status
    */
   static async updateMarketplaceListing(
     itemId: string,
@@ -292,14 +291,14 @@ export class InventoryService {
       return true;
     } catch (error) {
       console.error(`Error updating marketplace listing for item ${itemId} in Firestore:`, error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
   /**
    * Delete an inventory item
    * @param itemId The ID of the inventory item to delete
-   * @returns Promise with success status
+   * @returns Promise<any> with success status
    */
   static async deleteInventoryItem(itemId: string): Promise<boolean> {
     try {
@@ -307,14 +306,14 @@ export class InventoryService {
       return true;
     } catch (error) {
       console.error(`Error deleting inventory item ${itemId} from Firestore:`, error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
   /**
    * Fetch inventory items with pagination and filtering
    * @param options Options for fetching inventory items
-   * @returns Promise with array of inventory items and last document for pagination
+   * @returns Promise<any> with array of inventory items and last document for pagination
    */
   static async fetchInventoryItems(
     options: InventoryFetchOptions
@@ -420,7 +419,7 @@ export class InventoryService {
       return { items, lastDoc };
     } catch (error) {
       console.error('Error fetching inventory items from Firestore:', error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -428,7 +427,7 @@ export class InventoryService {
    * Get count of inventory items by status for a specific user or organization
    * @param userId The user ID (optional if orgId is provided)
    * @param orgId The org ID (optional if userId is provided)
-   * @returns Promise with counts by status
+   * @returns Promise<any> with counts by status
    */
   static async getInventoryCountsByStatus(
     userId?: string,
@@ -453,7 +452,7 @@ export class InventoryService {
       // Count items by status
       const countsByStatus: Record<string, number> = {};
       
-      snapshot.docs.forEach(doc => {
+      snapshot.docs.forEach((doc) => {
         const data = doc.data();
         const status = data.status || 'unknown';
         
@@ -467,7 +466,7 @@ export class InventoryService {
       return countsByStatus;
     } catch (error) {
       console.error('Error getting inventory counts by status from Firestore:', error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -475,7 +474,7 @@ export class InventoryService {
    * Batch create or update inventory items
    * @param items Array of inventory items to create or update
    * @param createOrUpdate Whether to create or update
-   * @returns Promise with success status
+   * @returns Promise<any> with success status
    */
   static async batchCreateOrUpdateInventoryItems(
     items: FirestoreInventoryItem[],
@@ -529,7 +528,7 @@ export class InventoryService {
       return true;
     } catch (error) {
       console.error('Error batch processing inventory items in Firestore:', error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 }

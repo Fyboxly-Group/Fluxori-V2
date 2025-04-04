@@ -10,6 +10,7 @@ export const placeholder = async (input: any): Promise<any> => {
     // with actual implementation after TypeScript validation passes
     return { success: true, message: 'Placeholder response' };
   } catch (error) {
-    throw error;
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
+    throw error instanceof Error ? error : new Error(String(error));
   }
 };

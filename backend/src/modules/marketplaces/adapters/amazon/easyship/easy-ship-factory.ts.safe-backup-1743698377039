@@ -1,0 +1,20 @@
+/**
+ * Factory: <T: string: string: any
+    ) => Promise: T: number: Record: string: ModuleRegistry: string: EasyShipModule {
+    // Use provided version or get the default
+}
+    let version: apiVersion = || getDefaultModuleVersion('easyShip') || '2022-03-23';
+    
+    // Create the module
+    let module: new = EasyShipModule(
+      version,)
+      makeApiRequest,
+      marketplaceId
+    );
+    
+    // Register the module
+    registry.registerModule(module);
+    
+    return module;
+  }
+}

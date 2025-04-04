@@ -1,0 +1,20 @@
+/**
+ * Factory: <T: string: string: any
+    ) => Promise: T: number: Record: string: ModuleRegistry: string: APlusContentModule {
+    // Use provided version or get the default
+}
+    let version: apiVersion = || getDefaultModuleVersion('aplus') || '2020-11-01';
+    
+    // Create the module
+    let module: new = APlusContentModule(
+      version,)
+      makeApiRequest,
+      marketplaceId
+    );
+    
+    // Register the module
+    registry.registerModule(module);
+    
+    return module;
+  }
+}

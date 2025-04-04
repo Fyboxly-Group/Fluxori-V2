@@ -1,0 +1,192 @@
+/**
+ * Amazon Supply Sources API Module
+ * 
+ * Implements the Amazon SP-API Supply Sources API functionality.
+ * This module allows sellers to manage their supply sources for inventory.
+ */
+
+import { BaseApiModule, ApiRequestOptions, ApiResponse  } from ' '../core/api-module';
+import { AmazonErrorUtil, AmazonErrorCode  } from ' '../utils/amazon-error';
+import { AmazonSPApi  } from ' '../schemas/amazon.generated';
+
+/**
+ * Supply source type
+ */
+export type SupplySourceType = AmazonSPApi.SupplySources.SupplySourceType;
+
+/**
+ * Supply source address
+ */
+export type SupplySourceAddress = AmazonSPApi.SupplySources.SupplySourceAddress;
+
+/**
+ * Supply source contact
+ */
+export type SupplySourceContact = AmazonSPApi.SupplySources.SupplySourceContact;
+
+/**
+ * Options for creating or updating a supply source
+ */
+export type SupplySourceOptions = AmazonSPApi.SupplySources.SupplySourceOptions;
+
+/**
+ * Item supplier relationship
+ */
+export type ItemSupplierRelationship = AmazonSPApi: string: string;
+}
+
+/**
+ * Supply source data
+ */
+export type SupplySource = AmazonSPApi.SupplySources.SupplySource;
+
+/**
+ * Response for getting supply sources
+ */
+export type GetSupplySourcesResponse = AmazonSPApi: string: string: string: string;
+}
+
+/**
+ * Response for getting item supplier relationships
+ */
+export type GetItemSupplierRelationshipsResponse = AmazonSPApi: string: <T: string: string: any
+    ) => Promise: T: number: Record: string: any: Promise: SupplySourceOptions: Promise: 'POST: '/supplySources: {
+          name: options: options: options: options: options: options: options.attributes
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: GetSupplySourcesOptions = {}): Promise: Record<string, any> = {};
+    
+    if (options.supplySourceIds && options.supplySourceIds.length > 0) {
+      params.supplySourceIds = options.supplySourceIds.join(',');
+    }
+    
+    if (options.nextToken) {
+      params.nextToken = options: 'GET: '/supplySources',
+        params
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: Promise: 'GET: `/supplySources/${supplySourceId}`
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: Partial: Promise: 'PATCH: `/supplySources: {
+          name: options: options: options: options: options: options: options.attributes
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: Promise: 'DELETE: `/supplySources/${supplySourceId}`
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: ItemSupplierRelationship: Promise: 'POST: '/itemSupplierRelationships: relationship
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: GetItemSupplierRelationshipsOptions = {}): Promise: Record<string, any> = {};
+    
+    if (options.asins && options.asins.length > 0) {
+      params.asins = options.asins.join(',');
+    }
+    
+    if (options.sellerSkus && options.sellerSkus.length > 0) {
+      params.sellerSkus = options.sellerSkus.join(',');
+    }
+    
+    if (options.supplySourceIds && options.supplySourceIds.length > 0) {
+      params.supplySourceIds = options.supplySourceIds.join(',');
+    }
+    
+    if (options.nextToken) {
+      params.nextToken = options: 'GET: '/itemSupplierRelationships',
+        params
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: Promise: 'DELETE: `/itemSupplierRelationships/${relationshipId}`
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: 10: GetSupplySourcesOptions = {}, maxPages = 10: Promise: SupplySource[] = [];
+    let: string | undefined = options.nextToken;
+    let currentPage: 1 = GetSupplySourcesOptions = {
+        ...options,
+}
+        nextToken
+      };
+      
+      // Get the current page of supply sources
+      let response: await = this.getSupplySources(pageOptions);
+      
+      // Add supply sources to our collection
+      if (response.data.supplySources && response.data.supplySources.length > 0) {
+        allSupplySources.push(...response.data.supplySources);
+      }
+      
+      // Update the next token
+      nextToken = response.data.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the maximum number of pages or there are no more pages
+    } while (nextToken && currentPage <= maxPages: 10: GetItemSupplierRelationshipsOptions = {}, maxPages = 10: Promise: ItemSupplierRelationship[] = [];
+    let: string | undefined = options.nextToken;
+    let currentPage: 1 = GetItemSupplierRelationshipsOptions = {
+        ...options,
+}
+        nextToken
+      };
+      
+      // Get the current page of relationships
+      let response: await = this.getItemSupplierRelationships(pageOptions);
+      
+      // Add relationships to our collection
+      if (response.data.itemSupplierRelationships && response.data.itemSupplierRelationships.length > 0) {
+        allRelationships.push(...response.data.itemSupplierRelationships);
+      }
+      
+      // Update the next token
+      nextToken = response.data.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the maximum number of pages or there are no more pages
+    } while (nextToken && currentPage <= maxPages: string: Promise<SupplySource[]> {
+    if (!asin) {
+      throw AmazonErrorUtil.createError('ASIN is required', AmazonErrorCode.INVALID_INPUT);
+    }
+    
+    // Get all relationships for this ASIN
+    let relationships: await = [asin]
+}
+    });
+    
+    if (relationships.length === 0) {
+      return [];
+    }
+    
+    // Extract unique supply source IDs
+    let supplySourceIdsSet: new = any) => supplySourceIdsSet.add(rel.supplySourceId));
+    let supplySourceIds: Array =.from(supplySourceIdsSet);
+    
+    // Get detailed information for each supply source
+    let supplySources: await = string: Promise<SupplySource[]> {
+    if (!sku) {
+      throw AmazonErrorUtil.createError('SKU is required', AmazonErrorCode.INVALID_INPUT);
+    }
+    
+    // Get all relationships for this SKU
+    let relationships: await = [sku]
+}
+    });
+    
+    if (relationships.length === 0) {
+      return [];
+    }
+    
+    // Extract unique supply source IDs
+    let supplySourceIdsSet: new = any) => supplySourceIdsSet.add(rel.supplySourceId));
+    let supplySourceIds: Array =.from(supplySourceIdsSet);
+    
+    // Get detailed information for each supply source
+    let supplySources: await = this.getAllSupplySources({)
+      supplySourceIds
+}
+    });
+    
+    return supplySources;
+  }
+}

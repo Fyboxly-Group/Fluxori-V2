@@ -25,6 +25,7 @@ export const getContextSnippets = async (req, res) => {
     // TODO: Implement getContextSnippets functionality
     return res.status(200).json({ message: 'getContextSnippets functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     console.error('Error in getContextSnippets:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -38,6 +39,7 @@ export const getContextDocuments = async (req, res) => {
     // TODO: Implement getContextDocuments functionality
     return res.status(200).json({ message: 'getContextDocuments functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     console.error('Error in getContextDocuments:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -51,6 +53,7 @@ export const getLlmContext = async (req, res) => {
     // TODO: Implement getLlmContext functionality
     return res.status(200).json({ message: 'getLlmContext functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     console.error('Error in getLlmContext:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }

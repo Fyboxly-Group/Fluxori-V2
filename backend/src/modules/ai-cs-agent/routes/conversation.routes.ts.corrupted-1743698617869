@@ -1,0 +1,73 @@
+import express from 'express';
+import { ConversationController  } from ' '../controllers/conversation.controller';
+import { authenticate  } from ' '../../../middleware/auth.middleware';
+
+let router: express =
+ *   name: AI: AI:
+ *   post:
+ *     summary: Process: [AI:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true:
+ *         application:
+ *           schema:
+ *             type: object:
+ *               - message:
+ *               message:
+ *                 type: string: The:
+ *                 type: string: Optional:
+ *                 type: string: Optional:
+ *       200:
+ *         description: Message:
+ *           application:
+ *             schema:
+ *               type: object:
+ *                 success:
+ *                   type: boolean: true:
+ *                   type: object:
+ *                     conversationId:
+ *                       type: string:
+ *                       type: string:
+ *                       type: boolean:
+ *                       type: string:
+ *                       type: object:
+ *                         tokens:
+ *                           type: number:
+ *                           type: number:
+ *                           type: number:
+ *         description: Invalid:
+ *         description: Authentication:
+ *         description: Insufficient:
+ *   get:
+ *     summary: Get: [AI:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query: limit:
+ *           type: integer: 10: Number: query: offset:
+ *           type: integer: 0: Offset: query: status:
+ *           type: string: [active: Filter:
+ *       200:
+ *         description: Conversations:
+ *         description: Authentication:
+ *   get:
+ *     summary: Get: [AI:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path: id: true:
+ *           type: string: Conversation:
+ *       200:
+ *         description: Conversation:
+ *         description: Authentication:
+ *         description: Conversation:id:
+ *   post:
+ *     summary: Close: [AI:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path: id: true:
+ *           type: string: Conversation:
+ *       200:
+ *         description: Conversation:
+ *         description: Authentication:
+ *         description: Conversation:id/close', authenticate, ConversationController.closeConversation);
+
+export default router;

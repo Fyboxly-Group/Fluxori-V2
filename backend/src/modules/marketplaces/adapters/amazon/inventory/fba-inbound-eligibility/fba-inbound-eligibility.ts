@@ -2,385 +2,457 @@
  * Amazon FBA Inbound Eligibility API Module
  * 
  * Implements the Amazon SP-API FBA Inbound Eligibility API functionality.
- * This module provides operations to check product eligibility for fulfillment by Amazon.
+ * This module provides operations for checking FBA inbound eligibility for items.
  */
 
-// Define necessary types for TypeScript validation
-class BaseApiModule {
-  protected moduleName: string;
-  protected marketplaceId: string;
-
-  constructor(moduleName: string, apiVersion: string, makeApiRequest: any, marketplaceId: string) {
-    this.moduleName = moduleName;
-    this.marketplaceId = marketplaceId;
-  }
-
-  protected makeRequest<T>(options: any): Promise<ApiResponse<T>> {
-    return Promise<any>.resolve({ data: {} as T, status: 200, headers: {} } as ApiResponse<T>);
-  }
-}
-
-interface ApiRequestOptions {
-  method: string;
-  path: string;
-  data?: any;
-  params?: Record<string, any>;
-}
-
-interface ApiResponse<T> {
-  data: T;
-  status: number;
-  headers: Record<string, string>;
-}
-
-import { AmazonErrorUtil, AmazonErrorCode } from '../../utils/amazon-error';
+import { ApiModule } from '../../../core/api-module';
+import { ApiRequestFunction, ApiResponse } from '../../../core/base-module.interface';
+import AmazonErrorHandler, { AmazonErrorCode } from '../../../utils/amazon-error';
 
 /**
- * Eligibility status for FBA inbound
+ * Inbound eligibility status values
  */
-export enum EligibilityStatus {
-  ELIGIBLE = 'ELIGIBLE',
-  INELIGIBLE = 'INELIGIBLE',
-  UNKNOWN = 'UNKNOWN'
-}
+export type EligibilityStatus = 'ELIGIBLE' | 'INELIGIBLE' | 'NOT_APPLICABLE';
 
 /**
- * Type for ineligibility reason codes
+ * Program eligibility reason codes
  */
-export type IneligibilityReasonCode = 
-  | 'FBA_INB_0004' // ASIN not found
-  | 'FBA_INB_0006' // Dangerous goods(hazmat) require Amazon approval
-  | 'FBA_INB_0007' // This product requires approval for selling on the marketplace
-  | 'FBA_INB_0008' // Hazmat compliance information is missing
-  | 'FBA_INB_0009' // This product cannot be inbounded because it has been prohibited by Amazon
-  | 'FBA_INB_0010' // This storage type is incompatible or invalid for this product
-  | 'FBA_INB_0012' // This is an adult product, and your account is not approved to sell it
-  | 'FBA_INB_0013' // This product exceeds FBA product restrictions
-  | 'FBA_INB_0014' // This product is an FBA prohibited product
-  | 'FBA_INB_0197' // This product is too large for FBA program
-  | 'FBA_INB_0201' // Package dimensions exceed maximum allowed
-  | 'UNKNOWN';
+export type ReasonCode = 'FBA_INB_0004' | 'FBA_INB_0006' | 'FBA_INB_0007' | 
+  'FBA_INB_0008' | 'FBA_INB_0009' | 'FBA_INB_0010' | 'FBA_INB_0011' | 
+  'FBA_INB_0012' | 'FBA_INB_0013' | 'FBA_INB_0014' | 'FBA_INB_0015' | 
+  'FBA_INB_0016' | 'FBA_INB_0017' | 'FBA_INB_0018' | 'FBA_INB_0019' | 
+  'FBA_INB_0034' | 'FBA_INB_0035' | 'FBA_INB_0036' | 'FBA_INB_0037' | 
+  'FBA_INB_0038' | 'FBA_INB_0050' | 'FBA_INB_0051' | 'FBA_INB_0053' | 
+  'FBA_INB_0055' | 'FBA_INB_0056' | 'FBA_INB_0059' | 'FBA_INB_0065' | 
+  'FBA_INB_0066' | 'FBA_INB_0067' | 'FBA_INB_0068' | 'FBA_INB_0095' | 
+  'FBA_INB_0097' | 'FBA_INB_0098' | 'FBA_INB_0099' | 'FBA_INB_0100' | 
+  'FBA_INB_0103' | 'FBA_INB_0104';
 
 /**
- * A reason for ineligibility
+ * Inbound eligibility request for a single item
  */
-export interface IneligibilityReason {
+export interface InboundEligibilityRequest {
   /**
-   * A code indicating the reason for ineligibility
-   */
-  reasonCode: IneligibilityReasonCode;
-  
-  /**
-   * A human-readable description of the reason for ineligibility
-   */
-  reasonDescription: string;
-}
-
-/**
- * Response data for an item's eligibility status
- */
-export interface ItemEligibilityResponse {
-  /**
-   * The identifier for the item (either ASIN or SKU)
-   */
-  itemIdentifier: string;
-  
-  /**
-   * The program for which eligibility was determined
-   */
-  program: string;
-  
-  /**
-   * Eligibility status for the item
-   */
-  eligibilityStatus: EligibilityStatus;
-  
-  /**
-   * Reasons for ineligibility if the item is ineligible
-   */
-  ineligibilityReasons?: IneligibilityReason[];
-}
-
-/**
- * Response wrapper for FBA Inbound Eligibility API
- */
-export interface GetItemEligibilityResponse {
-  /**
-   * The item eligibility response data
-   */
-  payload: ItemEligibilityResponse;
-}
-
-/**
- * Options for checking product eligibility
- */
-export interface GetItemEligibilityOptions {
-  /**
-   * The marketplace identifier for which eligibility status is required
-   */
-  marketplaceId?: string;
-  
-  /**
-   * The Amazon Standard Identification Number of the item
+   * ASIN to check
    */
   asin?: string;
   
   /**
-   * The Seller SKU of the item
+   * Seller SKU to check
    */
-  sellerSku?: string;
+  sellerSKU?: string;
   
   /**
-   * The program for which eligibility status is required
+   * Marketplace ID to check in
    */
-  program?: 'INBOUND' | 'COMMINGLING';
+  marketplaceIds: string[];
+  
+  /**
+   * Program to check eligibility for (currently only "INBOUND" is supported)
+   */
+  program?: string;
 }
 
 /**
- * Eligibility result
+ * Inbound eligibility reason
  */
-export interface EligibilityResult {
+export interface EligibilityReason {
   /**
-   * Whether the item is eligible
+   * Reason code
    */
-  isEligible: boolean;
+  reasonCode: ReasonCode;
   
   /**
-   * Reasons for ineligibility, if any
+   * Translated description of the reason
    */
-  reasons: IneligibilityReason[];
+  translatedDescription?: string;
+}
+
+/**
+ * Inbound eligibility response for a single item
+ */
+export interface InboundEligibilityResult {
+  /**
+   * ASIN of the item
+   */
+  asin?: string;
+  
+  /**
+   * Seller SKU of the item
+   */
+  sellerSKU?: string;
+  
+  /**
+   * Marketplace ID for this result
+   */
+  marketplaceId: string;
+  
+  /**
+   * Program eligibility was checked for
+   */
+  program: string;
+  
+  /**
+   * Whether the item is eligible for the program
+   */
+  isEligibleForProgram: boolean;
+  
+  /**
+   * Eligibility status
+   */
+  eligibilityStatus?: EligibilityStatus;
+  
+  /**
+   * List of reasons for the eligibility status
+   */
+  eligibilityReasons?: EligibilityReason[];
+}
+
+/**
+ * Get inbound eligibility response
+ */
+export interface GetInboundEligibilityResponse {
+  /**
+   * List of eligibility results
+   */
+  payload: InboundEligibilityResult[];
+}
+
+/**
+ * Interface for FBA inbound eligibility module options
+ */
+export interface FBAInboundEligibilityModuleOptions {
+  // Optional configuration specific to FBA inbound eligibility module
 }
 
 /**
  * Implementation of the Amazon FBA Inbound Eligibility API
  */
-export class FbaInboundEligibilityModule extends BaseApiModule {
+export class FBAInboundEligibilityModule extends ApiModule<FBAInboundEligibilityModuleOptions> {
+  /**
+   * The unique identifier for this module
+   */
+  readonly moduleId: string = 'fbaInboundEligibility';
+  
+  /**
+   * The human-readable name of this module
+   */
+  readonly moduleName: string = 'FBA Inbound Eligibility';
+  
+  /**
+   * The API version this module uses
+   */
+  readonly apiVersion: string;
+  
+  /**
+   * The base URL path for API requests
+   */
+  readonly basePath: string;
+  
   /**
    * Constructor
    * @param apiVersion API version
-   * @param makeApiRequest Function to make API requests
+   * @param apiRequest Function to make API requests
    * @param marketplaceId Marketplace ID
+   * @param options Module-specific options
    */
   constructor(
     apiVersion: string,
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string
+    apiRequest: ApiRequestFunction,
+    marketplaceId: string,
+    options: FBAInboundEligibilityModuleOptions = {}
   ) {
-    super('fbaInboundEligibility', apiVersion, makeApiRequest, marketplaceId);
+    super(apiRequest, marketplaceId, options);
+    this.apiVersion = apiVersion;
+    this.basePath = `/fba/inbound/${apiVersion}/eligibility`;
   }
   
   /**
-   * Initialize the module
-   * @param config Module-specific configuration
-   * @returns Promise<any> that resolves when initialization is complete
+   * Get inbound eligibility for a list of items
+   * @param requests List of inbound eligibility requests
+   * @returns List of inbound eligibility results
    */
-  protected async initializeModule(config?: any): Promise<void> {
-    // No specific initialization required for this module
-    return Promise<any>.resolve();
-  }
-  
-  /**
-   * Get the eligibility status of an item for the FBA Inbound program
-   * @param options Options for checking product eligibility
-   * @returns Eligibility status response
-   */
-  public async getItemEligibility(options: GetItemEligibilityOptions): Promise<ApiResponse<GetItemEligibilityResponse>> {
-    const queryParams: Record<string, any> = {};
-    
-    // Add marketplace ID
-    const marketplaceId = options.marketplaceId || this.marketplaceId;
-    if (!marketplaceId) {
-      throw AmazonErrorUtil.createError(
-        'Marketplace ID is required to check eligibility',
-        AmazonErrorCode.INVALID_INPUT
-      );
-    }
-    queryParams.marketplaceIds = marketplaceId;
-    
-    // Add item identifier (either ASIN or SKU)
-    if (options.asin) {
-      queryParams.asin = options.asin;
-    } else if (options.sellerSku) {
-      queryParams.sellerSKU = options.sellerSku;
-    } else {
-      throw AmazonErrorUtil.createError(
-        'Either ASIN or SellerSKU is required to check eligibility',
-        AmazonErrorCode.INVALID_INPUT
-      );
-    }
-    
-    // Add program
-    if (options.program) {
-      queryParams.program = options.program;
-    } else {
-      queryParams.program = 'INBOUND';
-    }
-    
-    try {
-      return await this.makeRequest<GetItemEligibilityResponse>({
-        method: 'GET',
-        path: '/items/eligibility',
-        params: queryParams
-      });
-    } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getItemEligibility`);
-    }
-  }
-  
-  /**
-   * Check if an item is eligible for FBA inbound by ASIN
-   * @param asin ASIN of the item to check
-   * @param marketplaceId Optional marketplace ID
-   * @returns Eligibility result
-   */
-  public async isEligibleByAsin(asin: string, marketplaceId?: string): Promise<EligibilityResult> {
-    if (!asin) {
-      throw AmazonErrorUtil.createError(
-        'ASIN is required to check eligibility',
+  public async getInboundEligibility(
+    requests: InboundEligibilityRequest[]
+  ): Promise<InboundEligibilityResult[]> {
+    if (!requests || requests.length === 0) {
+      throw AmazonErrorHandler.createError(
+        'At least one eligibility request is required',
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     try {
-      const response = await this.getItemEligibility({
-        asin,
-        marketplaceId,
-        program: 'INBOUND'
-      });
+      // Process requests in batches of 10 (Amazon limitation)
+      const batchSize = 10;
+      const results: InboundEligibilityResult[] = [];
       
-      const eligibilityData = response.data.payload;
-      
-      return {
-        isEligible: eligibilityData.eligibilityStatus === EligibilityStatus.ELIGIBLE,
-        reasons: eligibilityData.ineligibilityReasons || []
-      };
-    } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.isEligibleByAsin`);
-    }
-  }
-  
-  /**
-   * Check if an item is eligible for FBA inbound by SKU
-   * @param sku SKU of the item to check
-   * @param marketplaceId Optional marketplace ID
-   * @returns Eligibility result
-   */
-  public async isEligibleBySku(sku: string, marketplaceId?: string): Promise<EligibilityResult> {
-    if (!sku) {
-      throw AmazonErrorUtil.createError(
-        'SKU is required to check eligibility',
-        AmazonErrorCode.INVALID_INPUT
-      );
-    }
-    
-    try {
-      const response = await this.getItemEligibility({
-        sellerSku: sku,
-        marketplaceId,
-        program: 'INBOUND'
-      });
-      
-      const eligibilityData = response.data.payload;
-      
-      return {
-        isEligible: eligibilityData.eligibilityStatus === EligibilityStatus.ELIGIBLE,
-        reasons: eligibilityData.ineligibilityReasons || []
-      };
-    } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.isEligibleBySku`);
-    }
-  }
-  
-  /**
-   * Check if an item is eligible for commingling by ASIN
-   * @param asin ASIN of the item to check
-   * @param marketplaceId Optional marketplace ID
-   * @returns Eligibility result
-   */
-  public async isEligibleForComminglingByAsin(asin: string, marketplaceId?: string): Promise<EligibilityResult> {
-    if (!asin) {
-      throw AmazonErrorUtil.createError(
-        'ASIN is required to check commingling eligibility',
-        AmazonErrorCode.INVALID_INPUT
-      );
-    }
-    
-    try {
-      const response = await this.getItemEligibility({
-        asin,
-        marketplaceId,
-        program: 'COMMINGLING'
-      });
-      
-      const eligibilityData = response.data.payload;
-      
-      return {
-        isEligible: eligibilityData.eligibilityStatus === EligibilityStatus.ELIGIBLE,
-        reasons: eligibilityData.ineligibilityReasons || []
-      };
-    } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.isEligibleForComminglingByAsin`);
-    }
-  }
-  
-  /**
-   * Check eligibility for multiple ASINs
-   * @param asins Array of ASINs to check
-   * @param marketplaceId Optional marketplace ID
-   * @returns Map of ASIN to eligibility result
-   */
-  public async bulkCheckEligibilityByAsins(asins: string[], marketplaceId?: string): Promise<Map<string, EligibilityResult>> {
-    if (!asins || asins.length === 0) {
-      throw AmazonErrorUtil.createError(
-        'At least one ASIN is required for bulk eligibility check',
-        AmazonErrorCode.INVALID_INPUT
-      );
-    }
-    
-    const results = new Map<string, EligibilityResult>();
-    
-    // Process in batches to avoid rate limiting
-    const batchSize = 20;
-    for (let i = 0; i < asins.length; i += batchSize) {
-      const batch = asins.slice(i, i + batchSize);
-      
-      // Process batch in parallel
-      const batchPromise<any>s = batch.map((asin: any) => 
-        this.isEligibleByAsin(asin, marketplaceId)
-          .then(result => ({ asin, result }))
-          .catch(error => ({
-            asin,
-            result: {
-              isEligible: false,
-              reasons: [{
-                reasonCode: 'UNKNOWN' as IneligibilityReasonCode,
-                reasonDescription: (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) || 'Unknown error occurred'
-              }]
-            }
-          }))
-      );
-      
-      const batchResults = await Promise.all<any>(batchPromise<any>s);
-      
-      // Add results to the map
-      batchResults.forEach(({ asin, result }) => {
-        results.set(asin, result);
-      });
-      
-      // Rate limit prevention
-      if (i + batchSize < asins.length) {
-        await new Promise<any>(resolve => setTimeout(resolve, 1000));
+      for (let i = 0; i < requests.length; i += batchSize) {
+        const batch = requests.slice(i, i + batchSize);
+        
+        // Process each batch
+        for (const request of batch) {
+          // Validate required parameters
+          if (!request.marketplaceIds || request.marketplaceIds.length === 0) {
+            throw AmazonErrorHandler.createError(
+              'At least one marketplace ID is required',
+              AmazonErrorCode.INVALID_INPUT
+            );
+          }
+          
+          // Either ASIN or sellerSKU must be provided
+          if (!request.asin && !request.sellerSKU) {
+            throw AmazonErrorHandler.createError(
+              'Either ASIN or sellerSKU must be provided',
+              AmazonErrorCode.INVALID_INPUT
+            );
+          }
+          
+          // Build query parameters
+          const queryParams: Record<string, any> = {};
+          
+          // Add marketplaceIds as an array
+          queryParams.marketplaceIds = request.marketplaceIds;
+          
+          // Add asin or sellerSKU
+          if (request.asin) {
+            queryParams.asin = request.asin;
+          }
+          
+          if (request.sellerSKU) {
+            queryParams.sellerSKU = request.sellerSKU;
+          }
+          
+          // Add program (default to INBOUND)
+          queryParams.program = request.program || 'INBOUND';
+          
+          // Make the API request
+          const response = await this.request<GetInboundEligibilityResponse>(
+            '',
+            'GET',
+            queryParams
+          );
+          
+          if (response.data.payload && response.data.payload.length > 0) {
+            results.push(...response.data.payload);
+          }
+        }
       }
+      
+      return results;
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getInboundEligibility`);
+    }
+  }
+  
+  /**
+   * Get inbound eligibility for a single item by ASIN
+   * @param asin ASIN to check
+   * @param marketplaceIds Marketplace IDs to check in
+   * @returns Inbound eligibility results
+   */
+  public async getInboundEligibilityByAsin(
+    asin: string,
+    marketplaceIds?: string[]
+  ): Promise<InboundEligibilityResult[]> {
+    if (!asin) {
+      throw AmazonErrorHandler.createError(
+        'ASIN is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
     }
     
-    return results;
+    try {
+      return await this.getInboundEligibility([{
+        asin,
+        marketplaceIds: marketplaceIds || [this.marketplaceId],
+        program: 'INBOUND'
+      }]);
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getInboundEligibilityByAsin`);
+    }
+  }
+  
+  /**
+   * Get inbound eligibility for a single item by SKU
+   * @param sku Seller SKU to check
+   * @param marketplaceIds Marketplace IDs to check in
+   * @returns Inbound eligibility results
+   */
+  public async getInboundEligibilityBySku(
+    sku: string,
+    marketplaceIds?: string[]
+  ): Promise<InboundEligibilityResult[]> {
+    if (!sku) {
+      throw AmazonErrorHandler.createError(
+        'SKU is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    try {
+      return await this.getInboundEligibility([{
+        sellerSKU: sku,
+        marketplaceIds: marketplaceIds || [this.marketplaceId],
+        program: 'INBOUND'
+      }]);
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getInboundEligibilityBySku`);
+    }
+  }
+  
+  /**
+   * Check if an item is eligible for inbound by ASIN
+   * @param asin ASIN to check
+   * @param marketplaceId Marketplace ID to check in
+   * @returns Whether the item is eligible for inbound
+   */
+  public async isEligibleForInboundByAsin(
+    asin: string,
+    marketplaceId?: string
+  ): Promise<boolean> {
+    try {
+      const results = await this.getInboundEligibilityByAsin(
+        asin,
+        marketplaceId ? [marketplaceId] : [this.marketplaceId]
+      );
+      
+      // Return true if any result indicates eligibility
+      return results.some(result => result.isEligibleForProgram);
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.isEligibleForInboundByAsin`);
+    }
+  }
+  
+  /**
+   * Check if an item is eligible for inbound by SKU
+   * @param sku Seller SKU to check
+   * @param marketplaceId Marketplace ID to check in
+   * @returns Whether the item is eligible for inbound
+   */
+  public async isEligibleForInboundBySku(
+    sku: string,
+    marketplaceId?: string
+  ): Promise<boolean> {
+    try {
+      const results = await this.getInboundEligibilityBySku(
+        sku, 
+        marketplaceId ? [marketplaceId] : [this.marketplaceId]
+      );
+      
+      // Return true if any result indicates eligibility
+      return results.some(result => result.isEligibleForProgram);
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.isEligibleForInboundBySku`);
+    }
+  }
+  
+  /**
+   * Get ineligibility reasons for an ASIN
+   * @param asin ASIN to check
+   * @param marketplaceId Marketplace ID to check in
+   * @returns List of ineligibility reasons, or empty array if eligible
+   */
+  public async getIneligibilityReasonsByAsin(
+    asin: string,
+    marketplaceId?: string
+  ): Promise<EligibilityReason[]> {
+    try {
+      const results = await this.getInboundEligibilityByAsin(
+        asin,
+        marketplaceId ? [marketplaceId] : [this.marketplaceId]
+      );
+      
+      // Find the result for the specified marketplace
+      const result = results.find(r => 
+        r.marketplaceId === (marketplaceId || this.marketplaceId)
+      );
+      
+      // Return reasons if item is ineligible
+      if (result && !result.isEligibleForProgram && result.eligibilityReasons) {
+        return result.eligibilityReasons;
+      }
+      
+      return [];
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getIneligibilityReasonsByAsin`);
+    }
+  }
+  
+  /**
+   * Get ineligibility reasons for a SKU
+   * @param sku Seller SKU to check
+   * @param marketplaceId Marketplace ID to check in
+   * @returns List of ineligibility reasons, or empty array if eligible
+   */
+  public async getIneligibilityReasonsBySku(
+    sku: string,
+    marketplaceId?: string
+  ): Promise<EligibilityReason[]> {
+    try {
+      const results = await this.getInboundEligibilityBySku(
+        sku,
+        marketplaceId ? [marketplaceId] : [this.marketplaceId]
+      );
+      
+      // Find the result for the specified marketplace
+      const result = results.find(r => 
+        r.marketplaceId === (marketplaceId || this.marketplaceId)
+      );
+      
+      // Return reasons if item is ineligible
+      if (result && !result.isEligibleForProgram && result.eligibilityReasons) {
+        return result.eligibilityReasons;
+      }
+      
+      return [];
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getIneligibilityReasonsBySku`);
+    }
+  }
+  
+  /**
+   * Get eligibility status for a list of items
+   * @param items List of items to check (can be mix of ASINs and SKUs)
+   * @param marketplaceId Marketplace ID to check in
+   * @returns Map of item identifier to eligibility result
+   */
+  public async batchCheckEligibility(
+    items: Array<{ asin?: string; sku?: string }>,
+    marketplaceId?: string
+  ): Promise<Map<string, boolean>> {
+    if (!items || items.length === 0) {
+      throw AmazonErrorHandler.createError(
+        'At least one item is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    try {
+      // Create requests for each item
+      const requests: InboundEligibilityRequest[] = items.map(item => ({
+        asin: item.asin,
+        sellerSKU: item.sku,
+        marketplaceIds: [marketplaceId || this.marketplaceId],
+        program: 'INBOUND'
+      }));
+      
+      // Get eligibility for all items
+      const results = await this.getInboundEligibility(requests);
+      
+      // Create a map of item identifier to eligibility status
+      const eligibilityMap = new Map<string, boolean>();
+      
+      results.forEach(result => {
+        const identifier = result.asin || result.sellerSKU;
+        if (identifier) {
+          eligibilityMap.set(identifier, result.isEligibleForProgram);
+        }
+      });
+      
+      return eligibilityMap;
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.batchCheckEligibility`);
+    }
   }
 }

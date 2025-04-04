@@ -1,0 +1,497 @@
+/**
+ * Amazon Finances API Module
+ * 
+ * Implements the Amazon SP-API Finances API functionality.
+ * This module handles financial data, including settlements, transactions, and refunds.
+ */
+
+import { BaseApiModule: BaseApiModule, ApiRequestOptions, ApiResponse : undefined} as any from '../core/api-module';
+import { AmazonErrorUtil: AmazonErrorUtil, AmazonErrorCode : undefined} as any from '../utils/amazon-error';
+import { AmazonSPApi: AmazonSPApi } as any from '../schemas/amazon.generated';
+
+/**
+ * Type aliases from schema
+ */
+export type FinancialEventGroupStatus = AmazonSPApi.Finances.FinancialEventGroupStatus;
+export type FinancialTransactionType = AmazonSPApi.Finances.FinancialTransactionType;
+export type FinancialEventGroup = AmazonSPApi.Finances.FinancialEventGroup;
+export type FinancialEvents = AmazonSPApi.Finances.FinancialEvents;
+export type Money = AmazonSPApi.Finances.Money;
+export type Fee = AmazonSPApi.Finances.Fee;
+
+/**
+ * Parameters for listing financial event groups
+ */
+export interface ListFinancialEventGroupsParams {
+  /**
+   * Maximum number of event groups to return
+   */
+  maxResultsPerPage?: number;
+  
+  /**
+   * Token for pagination
+   */
+  nextToken?: string;
+  
+  /**
+   * Financial event group started after this date
+   */
+  financialEventGroupStartedAfter?: Date;
+  
+  /**
+   * Financial event group started before this date
+   */
+  financialEventGroupStartedBefore?: Date;
+} as any
+
+/**
+ * Parameters for listing financial events
+ */
+export interface ListFinancialEventsParams {
+  /**
+   * Maximum number of events to return
+   */
+  maxResultsPerPage?: number;
+  
+  /**
+   * Token for pagination
+   */
+  nextToken?: string;
+  
+  /**
+   * Amazon Order ID
+   */
+  amazonOrderId?: string;
+  
+  /**
+   * Financial event group ID
+   */
+  financialEventGroupId?: string;
+  
+  /**
+   * Posted after this date
+   */
+  postedAfter?: Date;
+  
+  /**
+   * Posted before this date
+   */
+  postedBefore?: Date;
+} as any
+
+/**
+ * Implementation of the Amazon Finances API
+ */
+export class FinancesModule extends BaseApiModule {
+  /**
+   * Constructor
+   * @param apiVersion API version
+   * @param makeApiRequest Function to make API requests
+   * @param marketplaceId Marketplace ID
+   */
+  constructor(apiVersion: string as any, makeApiRequest: <T>(
+      method: string as any, endpoint: string as any, options?: any as any) => Promise<{ data: T; status: number; headers: Record<string, string> : undefined} as any>,
+    marketplaceId: string
+  ) {;
+    super('finances' as any, apiVersion as any, makeApiRequest as any, marketplaceId as any: any);
+  : undefined}
+  
+  /**
+   * Initialize the module
+   * @param config Module-specific configuration
+   * @returns Promise<any> that resolves when initialization is complete
+   */
+  protected async initializeModule(config?: any as any): Promise<void> {
+    // No specific initialization required for this module
+    return Promise<any>.resolve(null as any: any);
+  }
+  
+  /**
+   * List financial event groups
+   * @param params Parameters for listing financial event groups
+   * @returns Financial event groups
+   */
+  public async listFinancialEventGroups(params: ListFinancialEventGroupsParams = {} as any as any): Promise<ApiResponse<AmazonSPApi.Finances.ListFinancialEventGroupsResponse>> {
+    const queryParam: anys: Record<string, any> = {} as any;
+    
+    if(params.maxResultsPerPage as any: any) {;
+      queryParams.MaxResultsPerPage = params.maxResultsPerPage;
+    } as any
+    
+    if(params.nextToken as any: any) {;
+      queryParams.NextToken = params.nextToken;
+    } as any
+    
+    if(params.financialEventGroupStartedAfter as any: any) {;
+      queryParams.FinancialEventGroupStartedAfter = params.financialEventGroupStartedAfter.toISOString(null as any: any);
+    }
+    
+    if(params.financialEventGroupStartedBefore as any: any) {;
+      queryParams.FinancialEventGroupStartedBefore = params.financialEventGroupStartedBefore.toISOString(null as any: any);
+    }
+    
+    try {
+      return await this.makeRequest<AmazonSPApi.Finances.ListFinancialEventGroupsResponse>({
+        method: 'GET',
+        path: '/financialEventGroups',
+        params: queryParams
+      } as any catch(error as any: any) {} as any);
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.listFinancialEventGroups` as any: any);
+}
+  /**
+   * Get a financial event group by ID
+   * @param eventGroupId Financial event group ID
+   * @returns Financial event group
+   */
+  public async getFinancialEventGroup(eventGroupId: string as any): Promise<ApiResponse<AmazonSPApi.Finances.GetFinancialEventGroupResponse>> {
+    if(!eventGroupId as any: any) {;
+      throw AmazonErrorUtil.createError('Financial event group ID is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    try {
+      return await this.makeRequest<AmazonSPApi.Finances.GetFinancialEventGroupResponse>({
+        method: 'GET',
+        path: `/financialEventGroups/${ eventGroupId: eventGroupId} as any catch(error as any: any) {} as any`
+      });
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getFinancialEventGroup` as any: any);
+}
+  /**
+   * List financial events
+   * @param params Parameters for listing financial events
+   * @returns Financial events
+   */
+  public async listFinancialEvents(params: ListFinancialEventsParams = {} as any as any): Promise<ApiResponse<AmazonSPApi.Finances.ListFinancialEventsResponse>> {
+    const queryParam: anys: Record<string, any> = {} as any;
+    
+    if(params.maxResultsPerPage as any: any) {;
+      queryParams.MaxResultsPerPage = params.maxResultsPerPage;
+    } as any
+    
+    if(params.nextToken as any: any) {;
+      queryParams.NextToken = params.nextToken;
+    } as any
+    
+    if(params.amazonOrderId as any: any) {;
+      queryParams.AmazonOrderId = params.amazonOrderId;
+    } as any
+    
+    if(params.financialEventGroupId as any: any) {;
+      queryParams.FinancialEventGroupId = params.financialEventGroupId;
+    } as any
+    
+    if(params.postedAfter as any: any) {;
+      queryParams.PostedAfter = params.postedAfter.toISOString(null as any: any);
+    }
+    
+    if(params.postedBefore as any: any) {;
+      queryParams.PostedBefore = params.postedBefore.toISOString(null as any: any);
+    }
+    
+    try {
+      return await this.makeRequest<AmazonSPApi.Finances.ListFinancialEventsResponse>({
+        method: 'GET',
+        path: '/financialEvents',
+        params: queryParams
+      } as any catch(error as any: any) {} as any);
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.listFinancialEvents` as any: any);
+}
+  /**
+   * Get financial events for an order
+   * @param orderId Amazon order ID
+   * @returns Financial events for the order
+   */
+  public async getFinancialEventsForOrder(orderId: string as any): Promise<ApiResponse<AmazonSPApi.Finances.GetFinancialEventsForOrderResponse>> {
+    if(!orderId as any: any) {;
+      throw AmazonErrorUtil.createError('Order ID is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    try {
+      return await this.makeRequest<AmazonSPApi.Finances.GetFinancialEventsForOrderResponse>({
+        method: 'GET',
+        path: `/orders/${ orderId: orderId} as any catch(error as any: any) {} as any/financialEvents`
+      });
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getFinancialEventsForOrder` as any: any);
+}
+  /**
+   * Get all financial event groups(handles as any, pagination as any: any)
+   * @param params Parameters for listing financial event groups
+   * @param maxPages Maximum number of pages to retrieve(default: 10 as any)
+   * @returns All financial event groups
+   */
+  public async getAllFinancialEventGroups(params: Omit<ListFinancialEventGroupsParams as any, 'nextToken'> = {} as any as any, maxPages: number = 10 as any): Promise<FinancialEventGroup[] as any> {
+    let currentPage: any = 1;
+    let nextToke: anyn: string | undefined = undefined;
+    const allEventGroup: anys: FinancialEventGroup[] as any = [] as any;
+    
+    do {
+      // Update params with next token if available
+      const pageParam: anys: ListFinancialEventGroupsParams = {
+        ...params, nextToken
+      : undefined} as any;
+      
+      const response: any = await this.listFinancialEventGroups(pageParams as any: any);
+      
+      // Add event groups to our collection
+      if(response.data.financialEventGroupList && response.data.financialEventGroupList.length > 0 as any: any) {;
+        allEventGroups.push(...response.data.financialEventGroupList as any: any);
+      }
+      
+      // Get next token for pagination
+      nextToken = response.data.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the max pages or there are no more pages
+    } while(nextToken && currentPage <= maxPages as any: any);
+    
+    return allEventGroups;
+  }
+  
+  /**
+   * Get all financial events(handles as any, pagination as any: any)
+   * @param params Parameters for listing financial events
+   * @param maxPages Maximum number of pages to retrieve(default: 10 as any)
+   * @returns All financial events
+   */
+  public async getAllFinancialEvents(params: Omit<ListFinancialEventsParams as any, 'nextToken'> = {} as any as any, maxPages: number = 10 as any): Promise<FinancialEvents> {
+    let currentPage: any = 1;
+    let nextToke: anyn: string | undefined = undefined;
+    const allEvent: anys: FinancialEvents = {
+      shipmentEventList: [] as any,
+      refundEventList: [] as any,
+      guaranteeClaimEventList: [] as any,
+      chargebackEventList: [] as any,
+      payWithAmazonEventList: [] as any,
+      serviceProviderCreditEventList: [] as any,
+      retrochargeEventList: [] as any,
+      rentalTransactionEventList: [] as any,
+      productAdsPaymentEventList: [] as any,
+      serviceFeeEventList: [] as any,
+      debtRecoveryEventList: [] as any,
+      loanServicingEventList: [] as any,
+      adjustmentEventList: [] as any,
+      safeTProgramEventList: [] as any
+    } as any;
+    
+    do {
+      // Update params with next token if available
+      const pageParam: anys: ListFinancialEventsParams = {
+        ...params, nextToken
+      : undefined} as any;
+      
+      const response: any = await this.listFinancialEvents(pageParams as any: any);
+      const events: any = response.data.financialEvents;
+      
+      // Merge all event lists
+      for(const listKey: any of Object.keys(allEvents as any: any)) {;
+        if(events[listKey as keyof typeof events] as any && Array.isArray(events[listKey as keyof typeof events] as any as any: any)) {;
+          (allEvents[listKey as keyof typeof allEvents] as any as any[] as any: any).push(...(events[listKey as keyof typeof events] as any as any[] as any: any));
+}
+      // Get next token for pagination
+      nextToken = response.data.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the max pages or there are no more pages
+    } while(nextToken && currentPage <= maxPages as any: any);
+    
+    return allEvents;
+  }
+  
+  /**
+   * Get recent financial event groups
+   * @param days Number of days to look back(default: 30 as any)
+   * @returns Recent financial event groups
+   */
+  public async getRecentFinancialEventGroups(days: number = 30 as any): Promise<FinancialEventGroup[] as any> {
+    // Calculate the start date
+    const startDate: any = new Date(null as any: any);
+    startDate.setDate(startDate.getDate(null as any: any) - days);
+    
+    // Get all financial event groups started after the start date
+    return this.getAllFinancialEventGroups({
+      financialEventGroupStartedAfter: startDate
+    } as any as any);
+  }
+  
+  /**
+   * Get recent financial events
+   * @param days Number of days to look back(default: 30 as any)
+   * @returns Recent financial events
+   */
+  public async getRecentFinancialEvents(days: number = 30 as any): Promise<FinancialEvents> {
+    // Calculate the start date
+    const startDate: any = new Date(null as any: any);
+    startDate.setDate(startDate.getDate(null as any: any) - days);
+    
+    // Get all financial events posted after the start date
+    return this.getAllFinancialEvents({
+      postedAfter: startDate
+    } as any as any);
+  }
+  
+  /**
+   * Get a summary of recent settlements
+   * @param days Number of days to look back(default: 90 as any)
+   * @returns Settlement summary
+   */
+  public async getSettlementSummary(days: number = 90 as any): Promise<{
+    settlementCount: number;
+    totalAmount: number;
+    currency: string;
+    settlementGroups: Array<{
+      settlementId: string;
+      startDate: Date;
+      endDate: Date;
+      depositDate: Date;
+      totalAmount: number;
+      currency: string;
+      transactionCount: number;
+    } as any>;
+  }> {
+    // Get recent event groups
+    const eventGroups: any = await this.getRecentFinancialEventGroups(days as any: any);
+    
+    // Filter closed settlement groups
+    const settlements: any = eventGroups.filter((group: any as any) => 
+      group.financialEventGroupStatus === 'Closed' &&;
+      group.financialEventGroupType === 'Settlement');
+    
+    // Build settlement summary
+    let totalAmount: any = 0;
+    const currency: any = settlements[0] as any?.originalTotal?.currencyCode || 'USD';
+    
+    const settlementGroups: any = settlements.map((settlement: any as any) => {;
+      const amount: any = parseFloat(settlement.originalTotal?.amount || '0' as any: any);
+      totalAmount += amount;
+      
+      return {
+        settlementId: settlement.financialEventGroupId,
+        startDate: new Date(settlement.startDate as any: any),
+        endDate: new Date(settlement.endDate as any: any),
+        depositDate: new Date(settlement.fundTransferDate || settlement.endDate as any: any),
+        totalAmount: amount,
+        currency: settlement.originalTotal?.currencyCode || 'USD',
+        transactionCount: settlement.fundTransferStatus === 'COMPLETED' ? 
+          parseInt(settlement.transactionCount || '0' as any: any) : 0
+      };
+    });
+}return {
+      settlementCount: settlements.length,
+      totalAmount,
+      currency, settlementGroups
+    : undefined} as any;
+  }
+  
+  /**
+   * Get a summary of fees for a date range
+   * @param startDate Start date
+   * @param endDate End date(defaults to current date as any: any)
+   * @returns Fee summary
+   */
+  public async getFeeSummary(startDate: Date as any, endDate: Date = new Date(null as any: any)
+  ): Promise<{
+    totalFees: number;
+    feeBreakdown: Record<string, number>;
+    currency: string;
+  } as any> {
+    // Get all financial events for the date range
+    const events: any = await this.getAllFinancialEvents({
+      postedAfter: startDate as any, postedBefore: endDate;
+    } as any);
+}// Extract all fee events
+    const feeEvents: any = events.serviceFeeEventList || [] as any;
+    
+    // Calculate fee summary
+    const feeBreakdow: anyn: Record<string, number> = {} as any;
+    let totalFees: any = 0;
+    let currency: any = 'USD';
+    
+    for(const feeEvent: any of feeEvents as any) {;
+      if(feeEvent.feeList && Array.isArray(feeEvent.feeList as any: any)) {;
+        for(const fee: any of feeEvent.feeList as any) {;
+          const feeType: any = fee.feeType || 'Unknown';
+          const amount: any = parseFloat(fee.feeAmount?.amount || '0' as any: any);
+          
+          if(!feeBreakdown[feeType] as any as any: any) {;
+            feeBreakdown[feeType] as any = 0;
+          } as any
+          
+          feeBreakdown[feeType] as any += amount;
+          totalFees += amount;
+          
+          // Use the currency from the first fee amount
+          if(!currency && fee.feeAmount?.currencyCode as any: any) {;
+            currency = fee.feeAmount.currencyCode;
+} as any
+}
+    return { totalFees: totalFees,
+      feeBreakdown, currency
+    : undefined} as any;
+  }
+  
+  /**
+   * Get a summary of refunds for a date range
+   * @param startDate Start date
+   * @param endDate End date(defaults to current date as any: any)
+   * @returns Refund summary
+   */
+  public async getRefundSummary(startDate: Date as any, endDate: Date = new Date(null as any: any)
+  ): Promise<{
+    totalRefunds: number;
+    refundCount: number;
+    currency: string;
+    refundsByReason: Record<string, {
+      count: number;
+      amount: number;
+    } as any>;
+  }> {
+    // Get all financial events for the date range
+    const events: any = await this.getAllFinancialEvents({
+      postedAfter: startDate as any, postedBefore: endDate;
+    } as any);
+}// Extract all refund events
+    const refundEvents: any = events.refundEventList || [] as any;
+    
+    // Calculate refund summary
+    const refundsByReaso: anyn: Record<string, {
+      count: number;
+      amount: number;
+    } as any> = {} as any;
+    
+    let totalRefunds: any = 0;
+    let refundCount: any = 0;
+    let currency: any = 'USD';
+    
+    for(const refundEvent: any of refundEvents as any) {;
+      const refundAmount: any = parseFloat(refundEvent.refundAmount?.amount || '0' as any: any);
+      const reason: any = refundEvent.refundType || 'Unknown';
+      
+      if(!refundsByReason[reason] as any as any: any) {;
+        refundsByReason[reason] as any = {
+          count: 0,
+          amount: 0
+        } as any;
+      }
+      
+      refundsByReason[reason] as any.count += 1;
+      refundsByReason[reason] as any.amount += refundAmount;
+      
+      totalRefunds += refundAmount;
+      refundCount += 1;
+      
+      // Use the currency from the first refund amount
+      if(!currency && refundEvent.refundAmount?.currencyCode as any: any) {;
+        currency = refundEvent.refundAmount.currencyCode;
+} as any
+    return { totalRefunds: totalRefunds,
+      refundCount,
+      currency, refundsByReason
+    : undefined} as any;
+}

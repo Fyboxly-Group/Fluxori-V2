@@ -5,7 +5,12 @@ import Conversation, {
   IMessage, 
   MessageRole 
 } from '../models/conversation.model';
-import { VertexAIService, IVertexMessage, ILlmResponse } from './vertex-ai.service';
+import { 
+  VertexAIService, 
+  IVertexMessage, 
+  ILlmResponse, 
+  LlmModel 
+} from './vertex-ai.service';
 import { RAGService } from './rag.service';
 import { CreditService } from '../../credits/services/credit.service';
 
@@ -24,7 +29,7 @@ export interface IProcessedResponse {
     tokens: number;
     credits: number;
     confidence: number;
-  };
+  }
 }
 
 /**
@@ -47,24 +52,19 @@ export class ConversationService {
    * @param organizationId Optional organization ID
    * @returns The processed response
    */
-  public async processMessage(
-    userId: string,
-    message: string,
-    conversationId?: string,
-    organizationId?: string
-  ): Promise<IProcessedResponse> {
+  public async processMessage(userId: string, message: string, conversationId?: string, organizationId?: string): Promise<IProcessedResponse> {
     try {
       // Get or create the conversation
       let conversation: IConversationDocument;
-      if (conversationId) {
+      if(conversationId) {
         conversation = await this.getConversation(conversationId, userId);
         
         // Check if conversation is already escalated or closed
-        if (conversation.status === ConversationStatus.ESCALATED) {
+        if(conversation.status === ConversationStatus.ESCALATED) {
           throw new Error('This conversation has been escalated to a human agent');
         }
         
-        if (conversation.status === ConversationStatus.CLOSED) {
+        if(conversation.status === ConversationStatus.CLOSED) {
           throw new Error('This conversation is closed');
         }
       } else {
@@ -87,8 +87,7 @@ export class ConversationService {
       
       // Get relevant context from RAG
       const recentMessages = conversation.messages.slice(-3)
-        .map(m => `${m.role}: ${m.content}`)
-        .join('\n');
+        .map((m) => `${m.role}: ${m.content}`).join('\n');
       
       const ragContext = await this.ragService.retrieveContext(message, recentMessages);
       
@@ -122,9 +121,9 @@ export class ConversationService {
       conversation.messages.push(assistantMessage);
       
       // Update escalation status if needed
-      if (escalationResult.escalate) {
+      if(escalationResult.escalate) {
         conversation.status = ConversationStatus.ESCALATED;
-        if (!conversation.metadata) {
+        if(!conversation.metadata) {
           conversation.metadata = {};
         }
         conversation.metadata.escalationReason = escalationResult.reason;
@@ -154,7 +153,7 @@ export class ConversationService {
           organizationId,
           conversation._id.toString()
         );
-      } catch (error) {
+      } catch(error) {
         console.error('Error deducting credits:', error);
         // We'll still return the response even if credit deduction fails
         // In production, you might want to handle this differently
@@ -172,20 +171,20 @@ export class ConversationService {
           confidence: confidenceScore
         }
       };
-    } catch (error) {
+    } catch(error) {
       console.error('Error processing message:', error);
       throw error;
     }
   }
-  
+
   /**
    * Format conversation messages for the LLM
    * @param messages Array of messages to format
    * @returns Formatted messages for LLM
    */
   private formatMessagesForLLM(messages: IMessage[]): IVertexMessage[] {
-    return messages.map(message => ({
-      role: message.role,
+    return messages.map((message) => ({ 
+      role: message.role, 
       content: message.content
     }));
   }
@@ -219,19 +218,19 @@ export class ConversationService {
     // Build reason
     let reason = `Selected model: ${model}. `;
     
-    if (historyLength > 15) {
+    if(historyLength > 15) {
       reason += `Long conversation (${historyLength} messages). `;
     }
     
-    if (foundTechnicalTerms.length > 0) {
+    if(foundTechnicalTerms.length > 0) {
       reason += `Technical query detected (${foundTechnicalTerms.join(', ')}). `;
     }
     
-    if (foundComplexTerms.length > 0) {
+    if(foundComplexTerms.length > 0) {
       reason += `Complex reasoning needed (${foundComplexTerms.join(', ')}). `;
     }
     
-    if (historyLength <= 15 && foundTechnicalTerms.length === 0 && foundComplexTerms.length === 0) {
+    if(historyLength <= 15 && foundTechnicalTerms.length === 0 && foundComplexTerms.length === 0) {
       reason += 'General customer service query.';
     }
     
@@ -248,22 +247,22 @@ export class ConversationService {
     try {
       const conversation = await Conversation.findById(conversationId);
       
-      if (!conversation) {
+      if(!conversation) {
         throw new Error('Conversation not found');
       }
       
       // Verify the conversation belongs to the user
-      if (conversation.userId.toString() !== userId) {
+      if(conversation.userId.toString() !== userId) {
         throw new Error('Unauthorized access to conversation');
       }
       
       return conversation;
-    } catch (error) {
+    } catch(error) {
       console.error('Error getting conversation:', error);
       throw error;
     }
   }
-  
+
   /**
    * Create a new conversation
    * @param userId User ID
@@ -272,25 +271,26 @@ export class ConversationService {
    */
   public async createConversation(userId: string, organizationId?: string): Promise<IConversationDocument> {
     try {
-      const conversation = new Conversation({
+      const conversationData: Partial<IConversationDocument> = {
         userId: new mongoose.Types.ObjectId(userId),
         status: ConversationStatus.ACTIVE,
         messages: [],
         lastMessageAt: new Date()
-      });
+      };
       
-      if (organizationId) {
-        conversation.organizationId = new mongoose.Types.ObjectId(organizationId);
+      if(organizationId) {
+        conversationData.organizationId = new mongoose.Types.ObjectId(organizationId);
       }
       
+      const conversation = new Conversation(conversationData);
       await conversation.save();
       return conversation;
-    } catch (error) {
+    } catch(error) {
       console.error('Error creating conversation:', error);
       throw error;
     }
   }
-  
+
   /**
    * Get conversation history for a user
    * @param userId User ID
@@ -300,15 +300,15 @@ export class ConversationService {
    * @returns Array of conversations
    */
   public async getUserConversations(
-    userId: string,
-    limit: number = 10,
-    offset: number = 0,
+    userId: string, 
+    limit: number = 10, 
+    offset: number = 0, 
     status?: ConversationStatus
   ): Promise<IConversationDocument[]> {
     try {
       const query: any = { userId: new mongoose.Types.ObjectId(userId) };
       
-      if (status) {
+      if(status) {
         query.status = status;
       }
       
@@ -318,12 +318,12 @@ export class ConversationService {
         .limit(limit);
         
       return conversations;
-    } catch (error) {
+    } catch(error) {
       console.error('Error getting user conversations:', error);
       throw error;
     }
   }
-  
+
   /**
    * Close a conversation
    * @param conversationId Conversation ID
@@ -335,7 +335,7 @@ export class ConversationService {
       const conversation = await this.getConversation(conversationId, userId);
       
       conversation.status = ConversationStatus.CLOSED;
-      if (!conversation.metadata) {
+      if(!conversation.metadata) {
         conversation.metadata = {};
       }
       conversation.metadata.closedAt = new Date();
@@ -350,7 +350,7 @@ export class ConversationService {
       
       await conversation.save();
       return conversation;
-    } catch (error) {
+    } catch(error) {
       console.error('Error closing conversation:', error);
       throw error;
     }

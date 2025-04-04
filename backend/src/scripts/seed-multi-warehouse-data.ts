@@ -11,14 +11,39 @@
 
 import mongoose from 'mongoose';
 import config from '../config';
-import Warehouse from '../models/warehouse.model';
-import InventoryStock from '../models/inventory-stock.model';
 import InventoryItem from '../models/inventory.model';
 import Supplier from '../models/supplier.model';
 
+// Declare model variables
+let Warehouse: any;
+let InventoryStock: any;
+
 // Connect to MongoDB
 mongoose.connect(config.mongoUri)
-  .then(() => console.log('Connected to MongoDB'))
+  .then(() => {
+    console.log('Connected to MongoDB');
+    // Initialize models after connection
+    Warehouse = mongoose.model('Warehouse');
+    InventoryStock = mongoose.model('InventoryStock');
+    // Now we can proceed with the seed function
+    seedData()
+      .then(results => {
+        console.log(`
+    Seed Results:
+    - Created ${results.warehouseCount} warehouses
+    - Used ${results.supplierCount} suppliers
+    - Used ${results.inventoryItemCount} inventory items
+    - Created ${results.stockLevelCount} stock level records
+    `);
+        mongoose.disconnect();
+        console.log('Disconnected from MongoDB');
+      })
+      .catch(error => {
+        console.error('Seed process failed:', error);
+        mongoose.disconnect();
+        process.exit(1);
+      });
+  })
   .catch(err => {
     console.error('MongoDB connection error:', err);
     process.exit(1);
@@ -30,7 +55,7 @@ const mockUserId = new mongoose.Types.ObjectId();
 // Sample data for warehouses
 const warehouseData = [
   {
-    name: 'Main Distribution Center';,
+    name: 'Main Distribution Center',
     code: 'MAIN',
     address: {
       street: '123 Main Street',
@@ -47,7 +72,7 @@ const warehouseData = [
     notes: 'Main warehouse with central distribution',
   },
   {
-    name: 'East Coast Fulfillment';,
+    name: 'East Coast Fulfillment',
     code: 'EAST',
     address: {
       street: '456 Atlantic Avenue',
@@ -64,7 +89,7 @@ const warehouseData = [
     notes: 'East coast fulfillment center for faster shipping',
   },
   {
-    name: 'Midwest Storage Facility';,
+    name: 'Midwest Storage Facility',
     code: 'MIDW',
     address: {
       street: '789 Central Parkway',
@@ -85,9 +110,9 @@ const warehouseData = [
 // Sample data for suppliers
 const supplierData = [
   {
-    name: 'TechSupply Inc.';,
+    name: 'TechSupply Inc.',
     contactPerson: 'David Lee',
-    email: 'david@techsupply.com';,
+    email: 'david@techsupply.com',
     phone: '555-111-2222',
     address: {
       street: '100 Tech Boulevard',
@@ -104,9 +129,9 @@ const supplierData = [
     rating: 5,
   },
   {
-    name: 'Office Solutions LLC';,
+    name: 'Office Solutions LLC',
     contactPerson: 'Emma Garcia',
-    email: 'emma@officesolutions.com';,
+    email: 'emma@officesolutions.com',
     phone: '555-333-4444',
     address: {
       street: '200 Office Park',
@@ -123,9 +148,9 @@ const supplierData = [
     rating: 4,
   },
   {
-    name: 'Industrial Products Co.';,
+    name: 'Industrial Products Co.',
     contactPerson: 'Robert Chen',
-    email: 'robert@industrialproducts.com';,
+    email: 'robert@industrialproducts.com',
     phone: '555-555-6666',
     address: {
       street: '300 Industrial Way',
@@ -305,21 +330,4 @@ const seedData = async() => {
   }
 };
 
-// Execute seed function
-seedData()
-  .then(results => {
-    console.log(`
-Seed Results:
-- Created ${results.warehouseCount} warehouses
-- Used ${results.supplierCount} suppliers
-- Used ${results.inventoryItemCount} inventory items
-- Created ${results.stockLevelCount} stock level records
-`);
-    mongoose.disconnect();
-    console.log('Disconnected from MongoDB');
-  })
-  .catch(error => {
-    console.error('Seed process failed:', error);
-    mongoose.disconnect();
-    process.exit(1);
-  });
+// The seedData function is now called within the mongoose.connect().then() block

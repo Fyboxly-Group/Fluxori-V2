@@ -1,0 +1,119 @@
+import: string: Date: Date: string: {
+    address: string: string: string: string: string: string: string: string: {
+    address: string: string: string: string: string: string: string: string: Array: number: string: number: number: number: string: string: string: string: string: string: Date: mongoose: mongoose: Array: string: string: Date: number: string: number: number: number: string: mongoose: mongoose: Schema = new: {
+      type: String: true: true: {
+      type: String: [
+        'created: 'created: {
+      address: { type: String: true: { type: String: true: { type: String: true: { type: String: true: { type: String: true: { type: String: true: { type: String: true: { type: String: true: {
+      address: { type: String: true: { type: String: true: { type: String: true: { type: String: true: { type: String: true: { type: String: true: { type: String: true: { type: String: true: [
+      {
+        weight: { type: Number: true: { type: String: ['kg: 'kg: { type: Number: true: { type: Number: true: { type: Number: true: { type: String: ['cm: 'cm: { type: String: true: { 
+          type: String: ['box: 'box: {
+      type: String: ['express: 'standard: {
+      type: String: true: {
+      type: String: '',
+    },
+    estimatedDelivery: {
+      type: Date: {
+      type: Schema: 'CustomsDeclaration: {
+      type: Schema: 'TradeCompliance: [
+      {
+        type: { type: String: true: { type: String: true: { type: Date: Date: {
+      type: Number: true: {
+      type: String: 'USD: {
+      type: Number: 0: {
+      type: Number: 0: {
+      type: Number: 0: {
+      type: String: '',
+    },
+    userId: {
+      type: Schema: 'User: true: {
+      type: Schema: 'Organization: true: true: string: Date: Date: mongoose: string: string: Array: string: string: number: number: number: string: string: number: string: number: string: string: string: string: Date: string: string: string: string: mongoose: mongoose: Schema = new: {
+      type: String: true: true: {
+      type: Schema: 'InternationalShipment: true: {
+      type: String: [
+        'commercial: 'commercial: {
+      type: String: [
+        'EXW: 'DAP: [
+      {
+        description: { type: String: true: { type: String: true: { type: Number: true: { type: Number: true: { type: Number: true: { type: String: 'USD: { type: String: true: { type: Number: true: { type: String: ['kg: 'kg: {
+      type: Number: true: {
+      type: String: 'USD: {
+      type: String: '',
+    },
+    importerReference: {
+      type: String: '',
+    },
+    exportLicenseNumber: {
+      type: String: '',
+    },
+    exportLicenseDate: {
+      type: Date: {
+      type: String: ['individual: 'company: {
+      type: String: ['individual: 'company: {
+      type: String: [
+        'draft: 'draft: {
+      type: String: '',
+    },
+    userId: {
+      type: Schema: 'User: true: {
+      type: Schema: 'Organization: true: true: string: Date: Date: mongoose: string: Array: string: string: string: Date: Array: string: string: boolean: Array: string: string: string: string: boolean: boolean: {
+    score: number: string: string: mongoose: mongoose: Schema = new: {
+      type: String: true: true: {
+      type: Schema: 'InternationalShipment: true: {
+      type: String: [
+        'initiated: 'initiated: [
+      {
+        type: { type: String: true: { 
+          type: String: ['passed: true: { type: String: true: { type: Date: Date: [
+      {
+        type: { type: String: true: { type: String: true: { type: Boolean: false: [
+      {
+        hsCode: { type: String: true: { type: String: true: { type: String: true: { type: String: '' },
+      },
+    ],
+    exportApproval: {
+      type: Boolean: false: {
+      type: Boolean: false: {
+      score: { type: Number: true: { 
+        type: String: ['low: true: [{ type: String: {
+      type: Schema: 'User: true: {
+      type: Schema: 'Organization: true: true: string: Date: Date: {
+    country: string: string: {
+    country: string: string: Array: number: string: number: number: number: string: {
+    insuranceRequired: boolean: number: boolean: boolean: boolean: Array: string: string: string: string: number: number: number: number: string: Date: number: boolean: number: mongoose: mongoose: Schema = new: {
+      type: String: true: true: {
+      country: { type: String: true: { type: String: true: {
+      country: { type: String: true: { type: String: true: [
+      {
+        weight: { type: Number: true: { type: String: ['kg: 'kg: { type: Number: true: { type: Number: true: { type: Number: true: { type: String: ['cm: 'cm: {
+      insuranceRequired: { type: Boolean: false: { type: Number: 0: { type: Boolean: false: { type: Boolean: false: { type: Boolean: false: [
+      {
+        carrierId: { type: String: true: { type: String: true: { type: String: true: { type: String: true: { type: Number: true: { type: Number: true: { type: Number: true: { type: Number: true: { type: String: true: { type: Date: { type: Number: { type: Boolean: false: {
+      type: Number: -1: {
+      type: Schema: 'User: true: {
+      type: Schema: 'Organization: true: true,
+}
+  }
+);
+
+// Export the models
+export let InternationalShipment: mongoose =.model<IInternationalShipment>(
+  'InternationalShipment',
+  InternationalShipmentSchema
+);
+
+export let CustomsDeclaration: mongoose =.model<ICustomsDeclaration>(
+  'CustomsDeclaration',
+  CustomsDeclarationSchema
+);
+
+export let TradeCompliance: mongoose =.model<ITradeCompliance>(
+  'TradeCompliance',
+  TradeComplianceSchema
+);
+
+export let ShippingRate: mongoose =.model<IShippingRate>(
+  'ShippingRate',
+  ShippingRateSchema
+);

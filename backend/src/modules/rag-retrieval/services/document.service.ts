@@ -1,10 +1,13 @@
 import { Storage } from '@google-cloud/storage';
-import { DocumentChunk, DocumentMetadata } from '../interfaces/vector-search.interface';
+import { DocumentChunk, DocumentMetadata, IDocumentService } from '../interfaces/vector-search.interface';
+import { injectable } from 'inversify';
+import 'reflect-metadata';
 
 /**
  * Service for retrieving and managing document chunks in the knowledge base
  */
-export class DocumentService {
+@injectable()
+export class DocumentService implements IDocumentService {
   private storage: Storage;
   private bucketName: string;
   private documentCacheMap: Map<string, DocumentChunk>;
@@ -70,7 +73,12 @@ export class DocumentService {
       return [...cachedDocs, ...fetchedDocs];
     } catch (error) {
       console.error('Error getting document chunks:', error);
-      throw new Error(`Failed to get document chunks: ${error.message}`);
+      
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error(`Failed to get document chunks: ${String(error)}`);
+      }
     }
   }
   
@@ -205,7 +213,12 @@ export class DocumentService {
       return results;
     } catch (error) {
       console.error('Error fetching documents from storage:', error);
-      throw new Error(`Failed to fetch documents: ${error.message}`);
+      
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error(`Failed to fetch documents: ${String(error)}`);
+      }
     }
   }
   

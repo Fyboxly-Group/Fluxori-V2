@@ -1,46 +1,40 @@
 /**
- * Factory for creating Authorization API module
+ * Factory for creating Authorization module
  */
-
-import { AuthorizationModule } from './authorization';
+import { ApiRequestFunction } from '../core/base-module.interface';
 import { ModuleRegistry } from '../core/module-registry';
-import { getDefaultModuleVersion } from '../core/module-definitions';
+import { getModuleDefaultVersion } from '../core/module-definitions';
+import { AuthorizationModule } from './authorization';
 
 /**
- * Factory for creating Authorization API module
+ * Create an Authorization module
+ * 
+ * @param apiRequest - Function to make Amazon API requests
+ * @param marketplaceId - Amazon marketplace ID
+ * @param registry - Module registry for Amazon modules
+ * @param apiVersion - Optional API version to use (defaults to latest)
+ * @returns AuthorizationModule instance
  */
-export class AuthorizationModuleFactory {
-  /**
-   * Create an Authorization module and register it with the provided registry
-   * @param makeApiRequest Function to make API requests
-   * @param marketplaceId Marketplace ID
-   * @param registry Module registry to register with
-   * @param apiVersion Optional API version (uses default if not provided)
-   * @returns The created module
-   */
-  public static createAuthorizationModule(
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string,
-    registry: ModuleRegistry,
-    apiVersion?: string
-  ): AuthorizationModule {
-    // Use provided version or get the default
-    const version = apiVersion || getDefaultModuleVersion('authorization') || 'v1';
-    
-    // Create the module
-    const module = new AuthorizationModule(
-      version,
-      makeApiRequest,
-      marketplaceId
-    );
-    
-    // Register the module
-    registry.registerModule(module);
-    
-    return module;
-  }
+export function createAuthorizationModule(
+  apiRequest: ApiRequestFunction,
+  marketplaceId: string,
+  registry: ModuleRegistry,
+  apiVersion?: string
+): AuthorizationModule {
+  // Use provided version or get the default
+  const version = apiVersion || getModuleDefaultVersion('authorization') || 'v1';
+  
+  // Create the module
+  const module = new AuthorizationModule(
+    version,
+    apiRequest,
+    marketplaceId
+  );
+  
+  // Register the module
+  registry.registerModule('authorization', module);
+  
+  return module;
 }
+
+export default createAuthorizationModule;

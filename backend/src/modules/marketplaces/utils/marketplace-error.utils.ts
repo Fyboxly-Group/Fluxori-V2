@@ -1,4 +1,3 @@
-// @ts-nocheck - Added by final-ts-fix.js
 /**
  * Marketplace-specific error handling utilities
  */
@@ -79,7 +78,7 @@ export class MarketplaceApiError extends MarketplaceError {
       transient: boolean;
       retryable: boolean;
       retryAfter: number;
-      context: Record<string, any>;
+      context: Record<string, unknown>;
       suggestion: string;
     }>,
     originalError?: Error
@@ -104,7 +103,7 @@ export class MarketplaceApiError extends MarketplaceError {
     marketplaceId: string,
     message = 'Marketplace API rate limit exceeded',
     retryAfter = 60000,
-    details?: Record<string, any>,
+    details?: Record<string, unknown>,
     originalError?: Error
   ): MarketplaceApiError {
     return new MarketplaceApiError(
@@ -129,7 +128,7 @@ export class MarketplaceApiError extends MarketplaceError {
   static authentication(
     marketplaceId: string,
     message = 'Marketplace authentication failed',
-    details?: Record<string, any>,
+    details?: Record<string, unknown>,
     originalError?: Error
   ): MarketplaceApiError {
     return new MarketplaceApiError(
@@ -153,7 +152,7 @@ export class MarketplaceApiError extends MarketplaceError {
   static credentialsExpired(
     marketplaceId: string,
     message = 'Marketplace credentials have expired',
-    details?: Record<string, any>,
+    details?: Record<string, unknown>,
     originalError?: Error
   ): MarketplaceApiError {
     return new MarketplaceApiError(
@@ -178,7 +177,7 @@ export class MarketplaceApiError extends MarketplaceError {
     marketplaceId: string,
     resourceType: string,
     resourceId?: string,
-    details?: Record<string, any>,
+    details?: Record<string, unknown>,
     originalError?: Error
   ): MarketplaceApiError {
     const message = resourceId
@@ -210,7 +209,7 @@ export class MarketplaceApiError extends MarketplaceError {
     marketplaceId: string,
     message = 'Marketplace data validation failed',
     errors?: Record<string, string[]>,
-    details?: Record<string, any>,
+    details?: Record<string, unknown>,
     originalError?: Error
   ): MarketplaceApiError {
     const error = new MarketplaceApiError(
@@ -241,7 +240,7 @@ export class MarketplaceApiError extends MarketplaceError {
     marketplaceId: string,
     message = 'Marketplace is currently unavailable',
     retryAfter = 300000, // 5 minutes
-    details?: Record<string, any>,
+    details?: Record<string, unknown>,
     originalError?: Error
   ): MarketplaceApiError {
     return new MarketplaceApiError(
@@ -266,7 +265,7 @@ export class MarketplaceApiError extends MarketplaceError {
   static network(
     marketplaceId: string,
     message = 'Network error connecting to marketplace',
-    details?: Record<string, any>,
+    details?: Record<string, unknown>,
     originalError?: Error
   ): MarketplaceApiError {
     return new MarketplaceApiError(
@@ -291,7 +290,7 @@ export class MarketplaceApiError extends MarketplaceError {
   static timeout(
     marketplaceId: string,
     message = 'Marketplace request timed out',
-    details?: Record<string, any>,
+    details?: Record<string, unknown>,
     originalError?: Error
   ): MarketplaceApiError {
     return new MarketplaceApiError(
@@ -317,7 +316,7 @@ export class MarketplaceApiError extends MarketplaceError {
     marketplaceId: string,
     message = 'Marketplace synchronization failed',
     partial = false,
-    details?: Record<string, any>,
+    details?: Record<string, unknown>,
     originalError?: Error
   ): MarketplaceApiError {
     return new MarketplaceApiError(
@@ -342,7 +341,7 @@ export class MarketplaceApiError extends MarketplaceError {
    */
   static fromError(
     marketplaceId: string,
-    error: any,
+    error: unknown,
     defaultMessage = 'Marketplace operation failed'
   ): MarketplaceApiError {
     // If already a MarketplaceApiError, return it
@@ -351,10 +350,10 @@ export class MarketplaceApiError extends MarketplaceError {
     }
     
     // Handle Axios errors
-    if (error.isAxiosError) {
+    if (typeof error === 'object' && error !== null && 'isAxiosError' in error && error.isAxiosError) {
       const statusCode = error.response?.status || 500;
       const responseData = error.response?.data || {};
-      const errorMessage = responseData?.message || error.message || defaultMessage;
+      const errorMessage = responseData?.message || (error instanceof Error ? error.message : String(error)) || defaultMessage;
       
       // Rate limit errors
       if (statusCode === 429 || responseData?.rateLimitExceeded) {
@@ -432,7 +431,7 @@ export class MarketplaceApiError extends MarketplaceError {
       }
       
       // Network errors
-      if (!error.response || error.code === 'ECONNABORTED' || error.code === 'ECONNREFUSED') {
+      if (!error.response || ('code' in error && (error.code === 'ECONNABORTED' || error.code === 'ECONNREFUSED'))) {
         return MarketplaceApiError.network(
           marketplaceId,
           errorMessage,
@@ -446,7 +445,7 @@ export class MarketplaceApiError extends MarketplaceError {
       }
       
       // Timeout errors
-      if (error.code === 'ETIMEDOUT' || error.message?.includes('timeout')) {
+      if (('code' in error && error.code === 'ETIMEDOUT') || (error instanceof Error ? error.message : String(error)).includes('timeout')) {
         return MarketplaceApiError.timeout(
           marketplaceId,
           errorMessage,
@@ -493,10 +492,10 @@ export class MarketplaceApiError extends MarketplaceError {
     }
     
     // Handle AmazonApiError
-    if (error.name === 'AmazonApiError') {
+    if (typeof error === 'object' && error !== null && 'name' in error && error.name === 'AmazonApiError') {
       return new MarketplaceApiError(
         marketplaceId,
-        error.message,
+        error instanceof Error ? error.message : String(error),
         `AMAZON_${error.errorCode}`,
         error.statusCode,
         {
@@ -515,7 +514,7 @@ export class MarketplaceApiError extends MarketplaceError {
     // Generic error fallback
     return new MarketplaceApiError(
       marketplaceId,
-      error.message || defaultMessage,
+      error instanceof Error ? error.message : String(error) || defaultMessage,
       MarketplaceErrorCode.UNKNOWN_ERROR,
       500,
       {

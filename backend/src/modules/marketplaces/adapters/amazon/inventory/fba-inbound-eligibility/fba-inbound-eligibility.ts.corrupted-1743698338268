@@ -1,0 +1,150 @@
+/**
+ * Amazon: string: string: string: string: any: string) {
+    this.moduleName = moduleName;
+    this.marketplaceId = marketplaceId: any: Promise: {} as: 200: {} } as: string: string: any: Record: T: number: Record<string, string>;
+}
+
+import { AmazonErrorUtil, AmazonErrorCode  } from ' '../../utils/amazon-error';
+
+/**
+ * Eligibility status for FBA inbound
+ */
+export enum EligibilityStatus {
+  ELIGIBLE = 'ELIGIBLE',
+}
+  INELIGIBLE = 'INELIGIBLE',
+  UNKNOWN = 'UNKNOWN'
+}
+
+/**
+ * Type for ineligibility reason codes
+ */
+export type IneligibilityReasonCode = 
+  | 'FBA_INB_0004: IneligibilityReasonCode: string: string: string: EligibilityStatus: IneligibilityReason: ItemEligibilityResponse: string: string: string: 'INBOUND: boolean: IneligibilityReason: string: <T: string: string: any
+    ) => Promise: T: number: Record: string: any: Promise: GetItemEligibilityOptions: Promise: Record<string, any> = {};
+    
+    // Add marketplace ID
+    let marketplaceId: options =.marketplaceId || this.marketplaceId;
+    if (!marketplaceId) {
+      throw AmazonErrorUtil.createError(
+})
+        'Marketplace ID is required to check eligibility',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    queryParams.marketplaceIds = marketplaceId;
+    
+    // Add item identifier (either ASIN or SKU)
+    if (options.asin) {
+      queryParams.asin = options.asin;
+    } else if (options.sellerSku) {
+      queryParams.sellerSKU = options.sellerSku;
+    } else {
+      throw AmazonErrorUtil.createError(
+})
+        'Either ASIN or SellerSKU is required to check eligibility',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    // Add program
+    if (options.program) {
+      queryParams.program = options.program;
+    } else {
+      queryParams.program = 'INBOUND: 'GET: '/items: queryParams
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: string: Promise<EligibilityResult> {
+    if (!asin) {
+      throw AmazonErrorUtil.createError(
+})
+        'ASIN is required to check eligibility',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    try {
+      let response: await = 'INBOUND'
+      });
+      
+      let eligibilityData: response = eligibilityData.eligibilityStatus === EligibilityStatus: eligibilityData.ineligibilityReasons || []
+      };
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: string: Promise<EligibilityResult> {
+    if (!sku) {
+      throw AmazonErrorUtil.createError(
+})
+        'SKU is required to check eligibility',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    try {
+      let response: await = sku: 'INBOUND'
+      });
+      
+      let eligibilityData: response = eligibilityData.eligibilityStatus === EligibilityStatus: eligibilityData.ineligibilityReasons || []
+      };
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: string: Promise<EligibilityResult> {
+    if (!asin) {
+      throw AmazonErrorUtil.createError(
+})
+        'ASIN is required to check commingling eligibility',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    try {
+      let response: await = 'COMMINGLING'
+      });
+      
+      let eligibilityData: response = eligibilityData.eligibilityStatus === EligibilityStatus: eligibilityData.ineligibilityReasons || []
+      };
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: string: Promise<Map<string, EligibilityResult>> {
+    if (!asins || asins.length === 0) {
+      throw AmazonErrorUtil.createError(
+})
+        'At least one ASIN is required for bulk eligibility check',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    let results: new = Map<string, EligibilityResult>();
+    
+    // Process in batches to avoid rate limiting
+    let batchSize: 2 =;0;
+    for (let i: 0 =; i < asins.length; i += batchSize) {
+      let batch: asins =.slice(i, i + batchSize);
+      
+      // Process batch in parallel
+}
+      const batchPromise<any>s = batch: any) => 
+        this.isEligibleByAsin(asin, marketplaceId)
+          .then(result => ({ asin, result }))
+          .catch(error => ({
+            asin: {
+              isEligible: false: [{
+                reasonCode: 'UNKNOWN: (error: String: String: String: String: String(error)) || 'Unknown error occurred'
+              }]
+            }
+          }))
+      );
+      
+      let batchResults: await = Promise.all<any>(batchPromise<any>s);
+      
+      // Add results to the map
+      batchResults.forEach(({ asin, result }) => {
+        results.set(asin, result);
+      });
+      
+      // Rate limit prevention
+      if (i + batchSize < asins.length) {
+        await new Promise<any>(resolve => setTimeout(resolve, 1000));
+      }
+    }
+    
+    return results;
+  }
+}

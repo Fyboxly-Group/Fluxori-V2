@@ -1,22 +1,52 @@
-import express from 'express';
-import { ConversationController } from '../controllers/conversation.controller';
-import { authenticate } from '../../../middleware/auth.middleware';
+import { Router } from 'express';
+import { conversationController } from '../controllers/conversation.controller';
+import { authMiddleware } from '../../../middleware/auth.middleware';
 
-const router = express.Router();
+const router = Router();
 
 /**
  * @swagger
- * tags:
- *   name: AI Customer Service
- *   description: AI-powered customer service agent endpoints
+ * /api/conversations:
+ *   get:
+ *     tags:
+ *       - ai-cs-agent
+ *     summary: Get all conversations for authenticated user
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Success
  */
+router.get('/', authMiddleware, conversationController.getUserConversations.bind(conversationController));
 
 /**
  * @swagger
- * /ai-cs-agent/message:
+ * /api/conversations/{id}:
+ *   get:
+ *     tags:
+ *       - ai-cs-agent
+ *     summary: Get conversation by ID
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Success
+ */
+router.get('/:id', authMiddleware, conversationController.getConversation.bind(conversationController));
+
+/**
+ * @swagger
+ * /api/conversations/message:
  *   post:
- *     summary: Process a user message and get AI response
- *     tags: [AI Customer Service]
+ *     tags:
+ *       - ai-cs-agent
+ *     summary: Process a new message in conversation
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -25,141 +55,36 @@ const router = express.Router();
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - message
  *             properties:
  *               message:
  *                 type: string
- *                 description: The user's message
  *               conversationId:
  *                 type: string
- *                 description: Optional ID of an existing conversation
- *               organizationId:
- *                 type: string
- *                 description: Optional organization ID for billing
  *     responses:
  *       200:
- *         description: Message processed successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   type: object
- *                   properties:
- *                     conversationId:
- *                       type: string
- *                     aiResponse:
- *                       type: string
- *                     isEscalated:
- *                       type: boolean
- *                     escalationReason:
- *                       type: string
- *                     usage:
- *                       type: object
- *                       properties:
- *                         tokens:
- *                           type: number
- *                         credits:
- *                           type: number
- *                         confidence:
- *                           type: number
- *       400:
- *         description: Invalid request
- *       401:
- *         description: Authentication required
- *       402:
- *         description: Insufficient credits
+ *         description: Success
  */
-router.post('/message', authenticate, ConversationController.processMessage);
+router.post('/message', authMiddleware, conversationController.processMessage.bind(conversationController));
 
 /**
  * @swagger
- * /ai-cs-agent/conversations:
- *   get:
- *     summary: Get user's conversations
- *     tags: [AI Customer Service]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 10
- *         description: Number of conversations to return
- *       - in: query
- *         name: offset
- *         schema:
- *           type: integer
- *           default: 0
- *         description: Offset for pagination
- *       - in: query
- *         name: status
- *         schema:
- *           type: string
- *           enum: [active, escalated, closed]
- *         description: Filter by conversation status
- *     responses:
- *       200:
- *         description: Conversations retrieved successfully
- *       401:
- *         description: Authentication required
- */
-router.get('/conversations', authenticate, ConversationController.getUserConversations);
-
-/**
- * @swagger
- * /ai-cs-agent/conversations/{id}:
- *   get:
- *     summary: Get a specific conversation by ID
- *     tags: [AI Customer Service]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: Conversation ID
- *     responses:
- *       200:
- *         description: Conversation retrieved successfully
- *       401:
- *         description: Authentication required
- *       404:
- *         description: Conversation not found
- */
-router.get('/conversations/:id', authenticate, ConversationController.getConversation);
-
-/**
- * @swagger
- * /ai-cs-agent/conversations/{id}/close:
- *   post:
+ * /api/conversations/{id}/close:
+ *   put:
+ *     tags:
+ *       - ai-cs-agent
  *     summary: Close a conversation
- *     tags: [AI Customer Service]
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
+ *       - name: id
+ *         in: path
  *         required: true
  *         schema:
  *           type: string
- *         description: Conversation ID
  *     responses:
  *       200:
- *         description: Conversation closed successfully
- *       401:
- *         description: Authentication required
- *       404:
- *         description: Conversation not found
+ *         description: Success
  */
-router.post('/conversations/:id/close', authenticate, ConversationController.closeConversation);
+router.put('/:id/close', authMiddleware, conversationController.closeConversation.bind(conversationController));
 
 export default router;

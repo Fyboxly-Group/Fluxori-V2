@@ -136,7 +136,7 @@ export abstract class BaseMarketplaceAdapter implements IMarketplaceAdapter {
     let code = 'API_ERROR';
     
     // Extract error message
-    let message = error.message || `Error during ${operation}`;
+    let message = (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) || `Error during ${operation}`;
     
     // Try to extract more specific error information if available
     if (error.response) {

@@ -1,11 +1,10 @@
-// @ts-nocheck - Added by final-ts-fix.js
 /// <reference path="../../../types/declarations/secret-manager.d.ts" />
 
 import mongoose from 'mongoose';
 import MarketplaceConnection, {
   AuthenticationType,
   ConnectionStatus,
-  IMarketplaceConnectionDocument,
+  IMarketplaceConnectionWithId as IMarketplaceConnectionDocument,
   MarketplaceType,
 } from '../models/connection.model';
 import secretsService from './secrets.service';
@@ -105,8 +104,9 @@ class ConnectionService {
       
       return await connection.save();
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error('Error creating connection:', error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 
@@ -294,7 +294,7 @@ class ConnectionService {
         message: result.message,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       
       // Update the connection status
       await this.updateConnectionStatus(
@@ -334,7 +334,7 @@ class ConnectionService {
     } catch (error) {
       return {
         connected: false,
-        message: `Validation failed: ${error instanceof Error ? error.message : String(error)}`,
+        message: `Validation failed: ${error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)}`,
       };
     }
   }

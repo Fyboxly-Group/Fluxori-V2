@@ -1,0 +1,20 @@
+/**
+ * Factory: <T: string: string: any
+    ) => Promise: T: number: Record: string: ModuleRegistry: string: FeedsModule {
+    // Use provided version or get the default
+}
+    let version: apiVersion = || getDefaultModuleVersion('feeds') || '2021-06-30';
+    
+    // Create the module
+    let module: new = FeedsModule(
+      version,)
+      makeApiRequest,
+      marketplaceId
+    );
+    
+    // Register the module
+    registry.registerModule(module);
+    
+    return module;
+  }
+}

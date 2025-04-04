@@ -1,22 +1,22 @@
 
 # TypeScript Quality Report
 
-Generated: 2025-04-02T07:15:34.616Z
+Generated: 2025-04-04T18:16:07.579Z
 
 ## Summary
 
-- Total TypeScript files: 543
-- Production files: 472
-- Test files: 71
+- Total TypeScript files: 584
+- Production files: 512
+- Test files: 72
 
 ## Type Safety Metrics
 
 | Metric | Count | Files Affected | Severity |
 |--------|-------|---------------|----------|
-| `any` usage | 1346 | Various | Medium |
-| `@ts-ignore` usage | 32 | Various | High |
+| `any` usage | 671 | Various | Medium |
+| `@ts-ignore` usage | 30 | Various | High |
 | `@ts-nocheck` usage in production | 0 | None | Critical |
-| `@ts-nocheck` usage in tests | 74 | Test files only | Acceptable |
+| `@ts-nocheck` usage in tests | 39 | Test files only | Acceptable |
 
 ## Progress
 

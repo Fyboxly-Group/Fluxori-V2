@@ -293,7 +293,7 @@ export class OrganizationService {
       .get();
     
     const batch = userOrganizationsCollection.firestore.batch();
-    userOrgsSnapshot.docs.forEach(doc => {
+    userOrgsSnapshot.docs.forEach((doc: any) => {
       batch.delete(doc.ref);
     });
     
@@ -324,7 +324,7 @@ export class OrganizationService {
     }
     
     // Get organization IDs
-    const orgIds = userOrgsSnapshot.docs.map(doc => doc.data().organizationId);
+    const orgIds = userOrgsSnapshot.docs.map((doc: any) => doc.data().organizationId);
     
     // Get organizations
     const organizations: IOrganizationWithId[] = [];
@@ -350,7 +350,7 @@ export class OrganizationService {
       .where('parentId', '==', parentId)
       .get();
     
-    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    return snapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
   }
   
   /**
@@ -364,7 +364,7 @@ export class OrganizationService {
       .where('type', '==', type)
       .get();
     
-    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    return snapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
   }
   
   /**

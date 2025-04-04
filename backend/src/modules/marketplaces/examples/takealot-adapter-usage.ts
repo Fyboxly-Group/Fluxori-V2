@@ -79,7 +79,7 @@ async function takealotAdapterExample(): Promise<void> {
         console.log(`Successfully updated ${stockUpdateResult.data.successful.length} products`);
         if (stockUpdateResult.data.failed.length > 0) {
           console.warn(`Failed to update ${stockUpdateResult.data.failed.length} products:`);
-          stockUpdateResult.data.failed.forEach(failure => {
+          stockUpdateResult.data.failed.forEach((failure: any) => {
             console.warn(`- SKU ${failure.sku}: ${failure.reason}`);
           });
         }
@@ -101,7 +101,7 @@ async function takealotAdapterExample(): Promise<void> {
         console.log(`Successfully updated ${priceUpdateResult.data.successful.length} prices`);
         if (priceUpdateResult.data.failed.length > 0) {
           console.warn(`Failed to update ${priceUpdateResult.data.failed.length} prices:`);
-          priceUpdateResult.data.failed.forEach(failure => {
+          priceUpdateResult.data.failed.forEach((failure: any) => {
             console.warn(`- SKU ${failure.sku}: ${failure.reason}`);
           });
         }
@@ -123,7 +123,7 @@ async function takealotAdapterExample(): Promise<void> {
         console.log(`Successfully updated ${statusUpdateResult.data.successful.length} statuses`);
         if (statusUpdateResult.data.failed.length > 0) {
           console.warn(`Failed to update ${statusUpdateResult.data.failed.length} statuses:`);
-          statusUpdateResult.data.failed.forEach(failure => {
+          statusUpdateResult.data.failed.forEach((failure: any) => {
             console.warn(`- SKU ${failure.sku}: ${failure.reason}`);
           });
         }
@@ -187,6 +187,7 @@ async function takealotAdapterExample(): Promise<void> {
       console.error(`Failed to connect to ${takealotAdapter.marketplaceName}: ${connectionStatus.message}`);
     }
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     const errorMessage = error && typeof error === 'object' && 'message' in error
       ? (error as Error).message
       : 'Unknown error';

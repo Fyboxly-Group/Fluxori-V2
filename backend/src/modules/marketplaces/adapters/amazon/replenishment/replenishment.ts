@@ -5,8 +5,8 @@
  * This module provides operations for automated inventory planning and replenishment.
  */
 
-import { BaseApiModule, ApiRequestOptions, ApiResponse } from '../core/api-module';
-import { AmazonErrorUtil, AmazonErrorCode } from '../utils/amazon-error';
+import { ApiRequestFunction, ApiResponse, BaseModule } from '../core/base-module.interface';
+import AmazonErrorHandler, { AmazonErrorCode } from '../utils/amazon-error';
 
 /**
  * Replenishment recommendation status 
@@ -349,35 +349,65 @@ export interface GetReplenishmentRecommendationsResponse {
 }
 
 /**
+ * Interface for replenishment module options
+ */
+export interface ReplenishmentModuleOptions {
+  // Optional configuration specific to replenishment module
+}
+
+/**
  * Implementation of the Amazon Replenishment API
  */
-export class ReplenishmentModule extends BaseApiModule {
+export class ReplenishmentModule implements BaseModule<ReplenishmentModuleOptions> {
+  /**
+   * The unique identifier for this module
+   */
+  public readonly moduleId: string = 'replenishment';
+  
+  /**
+   * The human-readable name of this module
+   */
+  public readonly moduleName: string = 'Amazon Replenishment';
+  
+  /**
+   * The base URL path for API requests
+   */
+  public readonly basePath: string = '/replenishment';
+  
+  /**
+   * API version
+   */
+  public readonly apiVersion: string;
+  
+  /**
+   * Marketplace ID
+   */
+  public readonly marketplaceId: string;
+  
+  /**
+   * Additional configuration options for this module
+   */
+  public readonly options: ReplenishmentModuleOptions = {};
+  
+  /**
+   * The API request function used by this module
+   */
+  public readonly apiRequest: ApiRequestFunction;
+  
   /**
    * Constructor
    * @param apiVersion API version
-   * @param makeApiRequest Function to make API requests
+   * @param apiRequest Function to make API requests
    * @param marketplaceId Marketplace ID
    */
   constructor(
     apiVersion: string,
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
+    apiRequest: ApiRequestFunction,
     marketplaceId: string
   ) {
-    super('replenishment', apiVersion, makeApiRequest, marketplaceId);
-  }
-  
-  /**
-   * Initialize the module
-   * @param config Module-specific configuration
-   * @returns Promise<any> that resolves when initialization is complete
-   */
-  protected async initializeModule(config?: any): Promise<void> {
-    // No specific initialization required for this module
-    return Promise<any>.resolve();
+    this.apiVersion = apiVersion;
+    this.apiRequest = apiRequest;
+    this.marketplaceId = marketplaceId;
   }
   
   /**
@@ -385,7 +415,7 @@ export class ReplenishmentModule extends BaseApiModule {
    * @param options Options for getting replenishment programs
    * @returns List of replenishment programs
    */
-  public async getReplenishmentPrograms(options: GetReplenishmentProgramsOptions = {}): Promise<ApiResponse<GetReplenishmentProgramsResponse>> {
+  public async getReplenishmentPrograms(options: GetReplenishmentProgramsOptions = {}): Promise<GetReplenishmentProgramsResponse> {
     const params: Record<string, any> = {};
     
     if (options.nextToken) {
@@ -393,23 +423,26 @@ export class ReplenishmentModule extends BaseApiModule {
     }
     
     try {
-      return await this.makeRequest<GetReplenishmentProgramsResponse>({
-        method: 'GET',
-        path: '/programs',
+      const response = await this.apiRequest(
+        `${this.basePath}/programs`,
+        'GET',
         params
-      });
+      );
+      
+      return response.data as GetReplenishmentProgramsResponse;
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getReplenishmentPrograms`);
+      throw error instanceof Error 
+        ? AmazonErrorHandler.createError(error.message, AmazonErrorCode.OPERATION_FAILED)
+        : AmazonErrorHandler.createError('Unknown error', AmazonErrorCode.UNKNOWN_ERROR);
     }
   }
-
+  
   /**
    * Get replenishment recommendations
    * @param options Options for getting replenishment recommendations
    * @returns List of replenishment recommendations
    */
-  public async getReplenishmentRecommendations(options: GetReplenishmentRecommendationsOptions = {}): Promise<ApiResponse<GetReplenishmentRecommendationsResponse>> {
+  public async getReplenishmentRecommendations(options: GetReplenishmentRecommendationsOptions = {}): Promise<GetReplenishmentRecommendationsResponse> {
     const params: Record<string, any> = {};
     
     if (options.sellerSkus && options.sellerSkus.length > 0) {
@@ -453,41 +486,47 @@ export class ReplenishmentModule extends BaseApiModule {
     }
     
     try {
-      return await this.makeRequest<GetReplenishmentRecommendationsResponse>({
-        method: 'GET',
-        path: '/recommendations',
+      const response = await this.apiRequest(
+        `${this.basePath}/recommendations`,
+        'GET',
         params
-      });
+      );
+      
+      return response.data as GetReplenishmentRecommendationsResponse;
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getReplenishmentRecommendations`);
+      throw error instanceof Error 
+        ? AmazonErrorHandler.createError(error.message, AmazonErrorCode.OPERATION_FAILED)
+        : AmazonErrorHandler.createError('Unknown error', AmazonErrorCode.UNKNOWN_ERROR);
     }
   }
-
+  
   /**
    * Get a specific replenishment recommendation by ID
    * @param recommendationId ID of the recommendation to get
    * @returns Replenishment recommendation
    */
-  public async getReplenishmentRecommendation(recommendationId: string): Promise<ApiResponse<ReplenishmentRecommendation>> {
+  public async getReplenishmentRecommendation(recommendationId: string): Promise<ReplenishmentRecommendation> {
     if (!recommendationId) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'Recommendation ID is required',
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     try {
-      return await this.makeRequest<ReplenishmentRecommendation>({
-        method: 'GET',
-        path: `/recommendations/${recommendationId}`
-      });
+      const response = await this.apiRequest(
+        `${this.basePath}/recommendations/${recommendationId}`,
+        'GET'
+      );
+      
+      return response.data as ReplenishmentRecommendation;
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getReplenishmentRecommendation`);
+      throw error instanceof Error 
+        ? AmazonErrorHandler.createError(error.message, AmazonErrorCode.OPERATION_FAILED)
+        : AmazonErrorHandler.createError('Unknown error', AmazonErrorCode.UNKNOWN_ERROR);
     }
   }
-
+  
   /**
    * Update a replenishment recommendation
    * @param recommendationId ID of the recommendation to update
@@ -497,16 +536,16 @@ export class ReplenishmentModule extends BaseApiModule {
   public async updateReplenishmentRecommendation(
     recommendationId: string,
     options: UpdateReplenishmentRecommendationOptions
-  ): Promise<ApiResponse<ReplenishmentRecommendation>> {
+  ): Promise<ReplenishmentRecommendation> {
     if (!recommendationId) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'Recommendation ID is required',
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     if (!options.status) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'Status is required to update recommendation',
         AmazonErrorCode.INVALID_INPUT
       );
@@ -514,97 +553,100 @@ export class ReplenishmentModule extends BaseApiModule {
     
     // Rejection reason is required if status is REJECTED
     if (options.status === 'REJECTED' && !options.rejectionReason) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'Rejection reason is required when rejecting a recommendation',
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     try {
-      return await this.makeRequest<ReplenishmentRecommendation>({
-        method: 'PATCH',
-        path: `/recommendations/${recommendationId}`,
-        data: {
+      const response = await this.apiRequest(
+        `${this.basePath}/recommendations/${recommendationId}`,
+        'PATCH',
+        {
           status: options.status,
           rejectionReason: options.rejectionReason,
           notes: options.notes
         }
-      });
+      );
+      
+      return response.data as ReplenishmentRecommendation;
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.updateReplenishmentRecommendation`);
+      throw error instanceof Error 
+        ? AmazonErrorHandler.createError(error.message, AmazonErrorCode.OPERATION_FAILED)
+        : AmazonErrorHandler.createError('Unknown error', AmazonErrorCode.UNKNOWN_ERROR);
     }
   }
-
+  
   /**
    * Get time series data for a SKU
    * @param options Options for getting time series data
    * @returns Time series data
    */
-  public async getTimeSeriesData(options: GetTimeSeriesDataOptions): Promise<ApiResponse<TimeSeriesData>> {
+  public async getTimeSeriesData(options: GetTimeSeriesDataOptions): Promise<TimeSeriesData> {
     if (!options.sellerSku) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'Seller SKU is required to get time series data',
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     if (!options.startDate) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'Start date is required to get time series data',
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     if (!options.endDate) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'End date is required to get time series data',
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     if (!options.granularity) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'Granularity is required to get time series data',
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     if (!options.dataType) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'Data type is required to get time series data',
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     try {
-      return await this.makeRequest<TimeSeriesData>({
-        method: 'GET',
-        path: '/timeSeries',
-        params: {
+      const response = await this.apiRequest(
+        `${this.basePath}/timeSeries`,
+        'GET',
+        {
           sellerSku: options.sellerSku,
           startDate: options.startDate,
           endDate: options.endDate,
           granularity: options.granularity,
           dataType: options.dataType
         }
-      });
+      );
+      
+      return response.data as TimeSeriesData;
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getTimeSeriesData`);
+      throw error instanceof Error 
+        ? AmazonErrorHandler.createError(error.message, AmazonErrorCode.OPERATION_FAILED)
+        : AmazonErrorHandler.createError('Unknown error', AmazonErrorCode.UNKNOWN_ERROR);
     }
   }
-
+  
   /**
    * Accept a replenishment recommendation
    * @param recommendationId ID of the recommendation to accept
    * @param notes Optional notes on the acceptance
    * @returns Updated recommendation
    */
-  public async acceptRecommendation(
-    recommendationId: string,
-    notes?: string
-  ): Promise<ApiResponse<ReplenishmentRecommendation>> {
+  public async acceptRecommendation(recommendationId: string, notes?: string): Promise<ReplenishmentRecommendation> {
     return this.updateReplenishmentRecommendation(recommendationId, {
       status: 'ACCEPTED',
       notes
@@ -618,11 +660,7 @@ export class ReplenishmentModule extends BaseApiModule {
    * @param notes Optional notes on the rejection
    * @returns Updated recommendation
    */
-  public async rejectRecommendation(
-    recommendationId: string,
-    rejectionReason: string,
-    notes?: string
-  ): Promise<ApiResponse<ReplenishmentRecommendation>> {
+  public async rejectRecommendation(recommendationId: string, rejectionReason: string, notes?: string): Promise<ReplenishmentRecommendation> {
     return this.updateReplenishmentRecommendation(recommendationId, {
       status: 'REJECTED',
       rejectionReason,
@@ -636,10 +674,7 @@ export class ReplenishmentModule extends BaseApiModule {
    * @param maxPages Maximum number of pages to retrieve (default: 10)
    * @returns All replenishment programs
    */
-  public async getAllReplenishmentPrograms(
-    options: GetReplenishmentProgramsOptions = {},
-    maxPages: number = 10
-  ): Promise<ReplenishmentProgram[]> {
+  public async getAllReplenishmentPrograms(options: GetReplenishmentProgramsOptions = {}, maxPages: number = 10): Promise<ReplenishmentProgram[]> {
     const allPrograms: ReplenishmentProgram[] = [];
     let nextToken: string | undefined = options.nextToken;
     let currentPage = 1;
@@ -655,12 +690,12 @@ export class ReplenishmentModule extends BaseApiModule {
       const response = await this.getReplenishmentPrograms(pageOptions);
       
       // Add programs to our collection
-      if (response.data.replenishmentPrograms && response.data.replenishmentPrograms.length > 0) {
-        allPrograms.push(...response.data.replenishmentPrograms);
+      if (response.replenishmentPrograms && response.replenishmentPrograms.length > 0) {
+        allPrograms.push(...response.replenishmentPrograms);
       }
       
       // Update the next token
-      nextToken = response.data.nextToken;
+      nextToken = response.nextToken;
       currentPage++;
       
       // Stop if we've reached the maximum number of pages or there are no more pages
@@ -675,10 +710,7 @@ export class ReplenishmentModule extends BaseApiModule {
    * @param maxPages Maximum number of pages to retrieve (default: 10)
    * @returns All replenishment recommendations
    */
-  public async getAllReplenishmentRecommendations(
-    options: GetReplenishmentRecommendationsOptions = {},
-    maxPages: number = 10
-  ): Promise<ReplenishmentRecommendation[]> {
+  public async getAllReplenishmentRecommendations(options: GetReplenishmentRecommendationsOptions = {}, maxPages: number = 10): Promise<ReplenishmentRecommendation[]> {
     const allRecommendations: ReplenishmentRecommendation[] = [];
     let nextToken: string | undefined = options.nextToken;
     let currentPage = 1;
@@ -694,12 +726,12 @@ export class ReplenishmentModule extends BaseApiModule {
       const response = await this.getReplenishmentRecommendations(pageOptions);
       
       // Add recommendations to our collection
-      if (response.data.recommendations && response.data.recommendations.length > 0) {
-        allRecommendations.push(...response.data.recommendations);
+      if (response.recommendations && response.recommendations.length > 0) {
+        allRecommendations.push(...response.recommendations);
       }
       
       // Update the next token
-      nextToken = response.data.nextToken;
+      nextToken = response.nextToken;
       currentPage++;
       
       // Stop if we've reached the maximum number of pages or there are no more pages
@@ -732,8 +764,8 @@ export class ReplenishmentModule extends BaseApiModule {
     });
     
     // Filter recommendations to include only those with high urgency line items
-    return recommendations.filter((recommendation: any) => {
-      return recommendation.lineItems.some((lineItem: any) => lineItem.urgency === 'HIGH');
+    return recommendations.filter((recommendation) => {
+      return recommendation.lineItems.some((lineItem) => lineItem.urgency === 'HIGH');
     });
   }
 }

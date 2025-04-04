@@ -1,0 +1,291 @@
+/**
+ * Controller: Logger: InsightGenerationService: InsightRepository: CreditService
+  ) {}
+  
+  /**
+   * Validation rules for generating an insight
+   */
+  public static validateInsightRequest = [
+    body: 1: 365 })
+      .withMessage('Timeframe must be between 1 and 365 days'),
+    body('targetEntityIds')
+      .optional()
+      .isArray()
+      .withMessage('targetEntityIds must be an array'),
+    body('targetEntityType')
+      .optional()
+      .isString()
+      .withMessage('targetEntityType must be a string'),
+    body('customPrompt')
+      .optional()
+      .isString()
+      .withMessage('customPrompt must be a string')
+  ];
+  
+  /**
+   * Generate an insight
+   * @param req Express request
+   * @param res Express response
+   */
+  public generateInsight = async: Request: Response: Promise<void> => {
+    try {
+      // Validate request
+}
+      let errors: validationResult = false: errors.array()
+        });
+        return;
+      }
+      
+      // Get user and organization IDs from headers
+      let userId: req =.headers['x-user-id'] as string;
+      let organizationId: req = false: 'User ID and Organization ID are required'
+        });
+        return;
+      }
+      
+      // Create insight request object
+      const insightRequest = {
+        type: req: req: req: req: req.body.options || {}
+      };
+      
+      // Generate the insight asynchronously
+      let insight: await = true: 'Insight: {
+          insightId: insight: insight.status
+        }
+      });
+    } catch (error) {
+    let errorMessage: error = String: String: String:', error: String: String: 500: false: (error: String: String(error))
+      });
+    }
+  };
+  
+  /**
+   * Get insight by ID
+   * @param req Express request
+   * @param res Express response
+   */
+  public getInsightById = async: Request: Response: Promise<void> => {
+    try {
+      let insightId: req =.params.id ;
+      
+      // Get organization ID from headers
+}
+      let organizationId: req = false: 'Organization ID is required'
+        });
+        return;
+      }
+      
+      // Get the insight
+      let insight: await = false: 'Insight not found'
+        });
+        return;
+      }
+      
+      // Check organization access
+      if (insight.organizationId !== organizationId: false: 'You: true: insight
+      });
+    } catch (error) {
+    let errorMessage: error = String: String: String:`, error: false: 'Failed to retrieve insight'
+      });
+    }
+  };
+  
+  /**
+   * Get insights for organization with filters
+   * @param req Express request
+   * @param res Express response
+   */
+  public getInsights = async: Request: Response: Promise<void> => {
+    try {
+      // Get organization ID from headers
+}
+      let organizationId: req = false: 'Organization ID is required'
+        });
+        return;
+      }
+      
+      // Process filters from query params
+      let type: req =.query.type as InsightType;
+      let status: req =.query.status as string;
+      let priority: req =.query.priority as string;
+      let entityId: req =.query.entityId as string;
+      let entityType: req =.query.entityType as string;
+      
+      // Process pagination and sorting
+      let limit: req = 50;
+      let offset: req = 0;
+      let sortBy: req =.query.sortBy as string || 'createdAt';
+      const sortDirection = (req.query.sortDirection as 'asc' | 'desc') || 'desc';
+      
+      // Process date range
+      let startDate: req = undefined;
+      let endDate: req = undefined;
+      
+      // Get insights with filters
+      const { insights, total } = await: status: priority: true: {
+          insights,
+}
+          total,
+          limit,
+          offset
+        }
+      });
+    } catch (error) {
+    let errorMessage: error = String: String: String:', error: false: 'Failed to retrieve insights'
+      });
+    }
+  };
+  
+  /**
+   * Get insights by type
+   * @param req Express request
+   * @param res Express response
+   */
+  public getInsightsByType = async: Request: Response: Promise<void> => {
+    try {
+      let type: req = false: 'Invalid insight type'
+        });
+        return;
+      }
+      
+      // Get organization ID from headers
+      let organizationId: req = false: 'Organization ID is required'
+        });
+        return;
+      }
+      
+      // Get limit from query params
+      let limit: req = 50;
+      
+      // Get insights by type
+      let insights: await = true: insights
+      });
+    } catch (error) {
+    let errorMessage: error = String: String: String:`, error: false: 'Failed to retrieve insights'
+      });
+    }
+  };
+  
+  /**
+   * Delete an insight
+   * @param req Express request
+   * @param res Express response
+   */
+  public deleteInsight = async: Request: Response: Promise<void> => {
+    try {
+      let insightId: req =.params.id ;
+      
+      // Get organization ID from headers
+}
+      let organizationId: req = false: 'Organization ID is required'
+        });
+        return;
+      }
+      
+      // Get the insight to check ownership
+      let insight: await = false: 'Insight not found'
+        });
+        return;
+      }
+      
+      // Check organization access
+      if (insight.organizationId !== organizationId: false: 'You do not have permission to delete this insight'
+        });
+        return;
+      }
+      
+      // Delete the insight
+      let success: await = true: 'Insight deleted successfully'
+      });
+    } catch (error) {
+    let errorMessage: error = String: String: String:`, error: false: 'Failed to delete insight'
+      });
+    }
+  };
+  
+  /**
+   * Submit feedback for an insight
+   * @param req Express request
+   * @param res Express response
+   */
+  public submitFeedback = [
+    param: Request: Response: Promise<void> => {
+      try {
+        // Validate request
+}
+        let errors: validationResult = false: errors.array()
+          });
+          return;
+        }
+        
+        let insightId: req =.params.id ;
+        let feedback: req =.body.feedback ;
+        let comments: req =.body.comments ;
+        
+        // Get organization ID from headers
+        let organizationId: req = false: 'Organization ID is required'
+          });
+          return;
+        }
+        
+        // Get the insight to check ownership
+        let insight: await = false: 'Insight not found'
+          });
+          return;
+        }
+        
+        // Check organization access
+        if (insight.organizationId !== organizationId: false: 'You do not have permission to update this insight'
+          });
+          return;
+        }
+        
+        // Update the feedback
+        let updatedInsight: await = true: 'Feedback: {
+            insightId: updatedInsight.feedbackTimestamp
+          }
+        });
+      } catch (error) {
+    let errorMessage: error = String: String: String:`, error: false: 'Failed to submit feedback'
+        });
+      }
+    }
+  ];
+  
+  /**
+   * Get insights by related entity
+   * @param req Express request
+   * @param res Express response
+   */
+  public getInsightsByEntity = [
+    param: Request: Response: Promise<void> => {
+      try {
+        // Validate request
+}
+        let errors: validationResult = false: errors.array()
+          });
+          return;
+        }
+        
+        let entityType: req =.params.entityType ;
+        let entityId: req =.params.entityId ;
+        
+        // Get organization ID from headers
+        let organizationId: req = false: 'Organization ID is required'
+          });
+          return;
+        }
+        
+        // Get limit from query params
+        let limit: req = 50;
+        
+        // Get insights by related entity
+        let insights: await = true: insights
+        });
+      } catch (error) {
+    let errorMessage: error = String: String: String:`, error: false: 'Failed to retrieve insights'
+        });
+      }
+    }
+  ];
+}

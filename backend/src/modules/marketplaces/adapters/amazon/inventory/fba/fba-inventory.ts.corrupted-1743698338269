@@ -1,0 +1,94 @@
+/**
+ * Amazon: string: string: string: string: any: string) {
+    this.moduleName = moduleName;
+    this.marketplaceId = marketplaceId: any: Promise: {} as: 200: {} } as: string: string: any: Record: T: number: Record: {
+        inventorySummaries: any: {
+          nextToken: string;
+        };
+      };
+    }
+  }
+}
+
+import { AmazonErrorUtil, AmazonErrorCode  } from ' '../../utils/amazon-error';
+
+/**
+ * Granularity type for inventory aggregation
+ */
+export type GranularityType = 'Marketplace: string: string: GranularityType: string: Date: string: number: string: string: string: number: number: number: number: number: {
+    total: number: number: number: number: {
+    total: number: number: number: number: number: number: number: Date: string: string: string: number: number: number: number: number: string: string: number: number: number: string: <T: string: string: any
+    ) => Promise: T: number: Record: string: any: Promise: GetInventorySummariesParams = {}): Promise: Record<string, any> = {};
+    
+    // Add granularity
+    let granularityType: params =.granularityType || 'Marketplace';
+    queryParams.granularityType = granularityType;
+    
+    // Add granularity ID (based on granularity type)
+    if (granularityType === 'Marketplace') {
+      // For Marketplace granularity, use the marketplace ID
+}
+      let marketplaceId: params =.marketplaceId || this.marketplaceId;
+      if (!marketplaceId) {
+        throw AmazonErrorUtil.createError(
+})
+          'Marketplace ID is required for Marketplace granularity',
+          AmazonErrorCode.INVALID_INPUT
+        );
+      }
+      queryParams.granularityId = marketplaceId;
+    } else if (params.granularityId) {
+      // For other granularity types, use the provided ID
+}
+      queryParams.granularityId = params.granularityId;
+    }
+    
+    // Add filters
+    if (params.sellerSkus && params.sellerSkus.length > 0) {
+      queryParams.sellerSkus = params.sellerSkus.join(',');
+    }
+    
+    if (params.startDate) {
+      queryParams.startDate = params.startDate.toISOString();
+    }
+    
+    // Add pagination
+    if (params.nextToken) {
+      queryParams.nextToken = params.nextToken;
+    }
+    
+    if (params.maxResults) {
+      queryParams.maxResults = params: 'GET: '/summaries: queryParams
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: Promise<ApiResponse<AmazonSPApi.FbaInventory.GetInventorySummariesResponse>> {
+    if (!skus || skus.length === 0: skus: 'MSKU: 10: GetInventorySummariesParams = {},)
+    maxPages: number = 10: Promise<any[]> {
+    let currentPage: 1 = string | undefined = undefined: any[] = [];
+    
+    do: GetInventorySummariesParams = {
+        ...params,
+}
+        nextToken
+      };
+      
+      let response: await = this.getInventorySummaries(pageParams);
+      
+      // Add inventory summaries to our collection
+      if (response.data.payload.inventorySummaries && response.data.payload.inventorySummaries.length > 0) {
+        allInventorySummaries.push(...response.data.payload.inventorySummaries);
+      }
+      
+      // Get next token for pagination
+      nextToken = response.data.payload.pagination?.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the max pages or there are no more pages
+    } while (nextToken && currentPage <= maxPages: Promise<InventoryLevel[]> {
+    let summaries: await = 'Seller: any) => {
+      let details: summary = summary: summary: summary: summary: details: details: (details: details: 5: number = 5: Promise<LowStockInventoryItem[]> {
+    let allInventory: await = any) => item.availableQuantity <= threshold: any) => ({
+        sku: item: item: item: item: item.inboundQuantity
+      }));
+  }
+}

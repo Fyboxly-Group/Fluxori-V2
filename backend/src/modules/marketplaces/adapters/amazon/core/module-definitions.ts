@@ -1,594 +1,612 @@
 /**
  * Amazon SP-API Module Definitions
  * 
- * Defines all available Amazon Selling Partner API modules with their
- * namespaces, versions, and related metadata.
+ * This file defines all available Amazon Selling Partner API modules
+ * with their configuration details including versions, rate limits, etc.
  */
 
 /**
- * Module definition interface
+ * Module definition interface for Amazon API modules
  */
-export interface ModuleDefinition {
+export interface ModuleDefinition<T = any> {
   /**
-   * Module name/namespace
+   * The unique identifier for this module
+   */
+  moduleId: string;
+  
+  /**
+   * Human-readable name of the module
    */
   name: string;
   
   /**
-   * Display name for the module
-   */
-  displayName: string;
-  
-  /**
-   * Available versions
-   */
-  versions: {
-    /**
-     * Version string
-     */
-    version: string;
-    
-    /**
-     * Whether this is the default/recommended version
-     */
-    default?: boolean;
-    
-    /**
-     * Whether this version is deprecated
-     */
-    deprecated?: boolean;
-  }[];
-  
-  /**
-   * Brief description of the module
+   * Description of what this module provides
    */
   description: string;
   
   /**
-   * Rate limit details
+   * Available API versions for this module
    */
-  rateLimit?: {
+  versions: Array<{
     /**
-     * Rate limit restore rate per second
+     * Version identifier (e.g., "2022-09-10", "v1")
+     */
+    version: string;
+    
+    /**
+     * Whether this is the default version to use
+     */
+    default: boolean;
+  }>;
+  
+  /**
+   * Rate limit configuration for this module
+   */
+  rateLimit: {
+    /**
+     * Maximum requests per second
+     */
+    requestsPerSecond: number;
+    
+    /**
+     * Restored rate per second (for token bucket algorithm)
      */
     restoreRatePerSecond: number;
     
     /**
-     * Burst capacity (maximum tokens)
+     * Maximum bucket size (for token bucket algorithm)
      */
-    burstCapacity: number;
-    
-    /**
-     * Maximum daily request quota
-     */
-    maximumRequestQuota?: number;
+    maxBucketSize: number;
   };
   
   /**
-   * Module dependencies
+   * Additional module-specific configuration options
    */
-  dependencies?: string[];
+  options?: T;
 }
 
 /**
- * All available SP-API modules
+ * All available Amazon SP-API modules
  */
 export const SP_API_MODULES: ModuleDefinition[] = [
-  // Catalog Management Modules
+  // Catalog & Product Information
   {
-    name: "catalogItems",
-    displayName: "Catalog Items API",
+    moduleId: "catalogItems",
+    name: "Catalog Items",
+    description: "Provides detailed product information from Amazon's catalog",
     versions: [
       { version: "2022-04-01", default: true },
-      { version: "2020-12-01", deprecated: false }
+      { version: "2020-12-01", default: false }
     ],
-    description: "Provides product catalog information and management",
     rateLimit: {
+      requestsPerSecond: 5,
       restoreRatePerSecond: 0.5,
-      burstCapacity: 5,
-      maximumRequestQuota: 200
+      maxBucketSize: 200
     }
   },
+  
+  // Listings & Restrictions
   {
-    name: "listingsItems",
-    displayName: "Listings API",
+    moduleId: "listingsItems",
+    name: "Listings Items",
+    description: "Create and manage product listings on Amazon",
     versions: [
       { version: "2021-08-01", default: true }
     ],
-    description: "Create and manage product listings",
     rateLimit: {
+      requestsPerSecond: 5,
       restoreRatePerSecond: 0.5,
-      burstCapacity: 5,
-      maximumRequestQuota: 200
+      maxBucketSize: 200
     }
   },
   {
-    name: "listingsRestrictions",
-    displayName: "Listings Restrictions API",
+    moduleId: "listingsRestrictions",
+    name: "Listings Restrictions",
+    description: "Check restrictions on creating listings for products",
     versions: [
       { version: "2021-08-01", default: true }
     ],
-    description: "Check restrictions on listings",
     rateLimit: {
+      requestsPerSecond: 5,
       restoreRatePerSecond: 0.5,
-      burstCapacity: 5,
-      maximumRequestQuota: 200
+      maxBucketSize: 200
     }
   },
   {
-    name: "productTypeDefinitions",
-    displayName: "Product Type Definitions API",
+    moduleId: "productTypeDefinitions",
+    name: "Product Type Definitions",
+    description: "Retrieve definitions for Amazon product types",
     versions: [
       { version: "2020-09-01", default: true }
     ],
-    description: "Retrieve product type definitions and requirements",
     rateLimit: {
+      requestsPerSecond: 5,
       restoreRatePerSecond: 0.5,
-      burstCapacity: 5,
-      maximumRequestQuota: 200
+      maxBucketSize: 200
     }
   },
   {
-    name: "aplus",
-    displayName: "A+ Content API",
+    moduleId: "aplus",
+    name: "A+ Content",
+    description: "Create and manage A+ content for products",
     versions: [
       { version: "2020-11-01", default: true }
     ],
-    description: "Create and manage A+ content",
     rateLimit: {
-      restoreRatePerSecond: 0.1,
-      burstCapacity: 5,
-      maximumRequestQuota: 100
+      requestsPerSecond: 5,
+      restoreRatePerSecond: 0.5,
+      maxBucketSize: 100
     }
   },
   
-  // Inventory Management Modules
+  // Inventory & Fulfillment
   {
-    name: "fbaInventory",
-    displayName: "FBA Inventory API",
+    moduleId: "fbaInventory",
+    name: "FBA Inventory",
+    description: "Manage inventory in Amazon's fulfillment centers",
     versions: [
       { version: "2022-05-01", default: true }
     ],
-    description: "Manage FBA inventory",
     rateLimit: {
+      requestsPerSecond: 5,
       restoreRatePerSecond: 0.5,
-      burstCapacity: 5,
-      maximumRequestQuota: 200
+      maxBucketSize: 200
     }
   },
   {
-    name: "fulfillmentInbound",
-    displayName: "Fulfillment Inbound API",
-    versions: [
-      { version: "2024-03-20", default: true },
-      { version: "2020-09-01", deprecated: false }
-    ],
+    moduleId: "fulfillmentInbound",
+    name: "Fulfillment Inbound",
     description: "Create and manage inbound shipments to Amazon fulfillment centers",
-    rateLimit: {
-      restoreRatePerSecond: 0.5,
-      burstCapacity: 5,
-      maximumRequestQuota: 200
-    }
-  },
-  {
-    name: "warehouseAndDistribution",
-    displayName: "Warehousing And Distribution API",
     versions: [
-      { version: "2024-05-09", default: true }
+      { version: "2020-10-01", default: true }
     ],
-    description: "Manage warehousing and distribution operations",
     rateLimit: {
+      requestsPerSecond: 5,
       restoreRatePerSecond: 0.5,
-      burstCapacity: 5,
-      maximumRequestQuota: 200
+      maxBucketSize: 200
     }
   },
   {
-    name: "fbaInboundEligibility",
-    displayName: "FBA Inbound Eligibility API",
+    moduleId: "warehouseAndDistribution",
+    name: "Warehousing & Distribution",
+    description: "Manage warehousing and distribution programs",
+    versions: [
+      { version: "2024-01-15", default: true }
+    ],
+    rateLimit: {
+      requestsPerSecond: 5,
+      restoreRatePerSecond: 0.5,
+      maxBucketSize: 200
+    }
+  },
+  {
+    moduleId: "fbaInboundEligibility",
+    name: "FBA Inbound Eligibility",
+    description: "Check eligibility for inbound programs",
     versions: [
       { version: "2022-05-01", default: true }
     ],
-    description: "Check product eligibility for fulfillment by Amazon",
     rateLimit: {
+      requestsPerSecond: 5,
       restoreRatePerSecond: 0.5,
-      burstCapacity: 5,
-      maximumRequestQuota: 200
+      maxBucketSize: 200
     }
   },
   {
-    name: "fbaSmallAndLight",
-    displayName: "FBA Small And Light API",
+    moduleId: "fbaSmallAndLight",
+    name: "FBA Small & Light",
+    description: "Manage FBA Small and Light program enrollment",
     versions: [
       { version: "2021-08-01", default: true }
     ],
-    description: "Manage small and light inventory",
     rateLimit: {
+      requestsPerSecond: 5,
       restoreRatePerSecond: 0.5,
-      burstCapacity: 5,
-      maximumRequestQuota: 200
+      maxBucketSize: 200
     }
   },
   {
-    name: "replenishment",
-    displayName: "Replenishment API",
-    versions: [
-      { version: "2022-11-07", default: true }
-    ],
+    moduleId: "replenishment",
+    name: "Replenishment",
     description: "Plan and manage inventory replenishment",
-    rateLimit: {
-      restoreRatePerSecond: 0.5,
-      burstCapacity: 5,
-      maximumRequestQuota: 200
-    }
-  },
-  {
-    name: "supplySource",
-    displayName: "Supply Sources API",
     versions: [
       { version: "2022-11-07", default: true }
     ],
-    description: "Manage supply sources for inventory",
     rateLimit: {
+      requestsPerSecond: 5,
       restoreRatePerSecond: 0.5,
-      burstCapacity: 5,
-      maximumRequestQuota: 200
+      maxBucketSize: 200
+    }
+  },
+  {
+    moduleId: "supplySource",
+    name: "Supply Source",
+    description: "Manage supply chain sources for fulfillment",
+    versions: [
+      { version: "2022-01-03", default: true }
+    ],
+    rateLimit: {
+      requestsPerSecond: 5,
+      restoreRatePerSecond: 0.5,
+      maxBucketSize: 200
     }
   },
   
-  // Order Management Modules
+  // Orders & Fulfillment
   {
-    name: "orders",
-    displayName: "Orders API",
+    moduleId: "orders",
+    name: "Orders",
+    description: "Manage customer orders",
     versions: [
       { version: "v0", default: true }
     ],
-    description: "Manage orders",
     rateLimit: {
-      restoreRatePerSecond: 0.0167, // 1 request per minute
-      burstCapacity: 20,
-      maximumRequestQuota: 144 // Daily quota
+      requestsPerSecond: 20,
+      restoreRatePerSecond: 2,
+      maxBucketSize: 144
     }
   },
   {
-    name: "fulfillmentOutbound",
-    displayName: "Fulfillment Outbound API",
+    moduleId: "fulfillmentOutbound",
+    name: "Fulfillment Outbound",
+    description: "Create and manage outbound fulfillment orders",
     versions: [
       { version: "2020-07-01", default: true }
     ],
-    description: "Create and manage fulfillment orders",
     rateLimit: {
+      requestsPerSecond: 5,
       restoreRatePerSecond: 0.5,
-      burstCapacity: 5,
-      maximumRequestQuota: 200
+      maxBucketSize: 200
     }
   },
   {
-    name: "merchantFulfillment",
-    displayName: "Merchant Fulfillment API",
+    moduleId: "merchantFulfillment",
+    name: "Merchant Fulfillment",
+    description: "Create shipments using Amazon's contracted rates",
     versions: [
       { version: "v0", default: true }
     ],
-    description: "Create and manage merchant-fulfilled shipments",
     rateLimit: {
+      requestsPerSecond: 5,
       restoreRatePerSecond: 0.5,
-      burstCapacity: 5,
-      maximumRequestQuota: 200
+      maxBucketSize: 200
     }
   },
   {
-    name: "easyShip",
-    displayName: "Easy Ship API",
+    moduleId: "easyShip",
+    name: "Easy Ship",
+    description: "Create and manage Amazon Easy Ship orders",
     versions: [
       { version: "2022-03-23", default: true }
     ],
-    description: "Create and manage easy ship orders",
     rateLimit: {
+      requestsPerSecond: 5,
       restoreRatePerSecond: 0.5,
-      burstCapacity: 5,
-      maximumRequestQuota: 200
-    }
-  },
-  {
-    name: "shipping",
-    displayName: "Shipping API",
-    versions: [
-      { version: "v1", default: true }
-    ],
-    description: "Create and manage shipments",
-    rateLimit: {
-      restoreRatePerSecond: 0.5,
-      burstCapacity: 5,
-      maximumRequestQuota: 200
-    }
-  },
-  {
-    name: "services",
-    displayName: "Services API",
-    versions: [
-      { version: "2022-03-01", default: true }
-    ],
-    description: "Manage service-based offers",
-    rateLimit: {
-      restoreRatePerSecond: 0.5,
-      burstCapacity: 5,
-      maximumRequestQuota: 200
+      maxBucketSize: 200
     }
   },
   
-  // Pricing Modules
+  // Shipping & Services
   {
-    name: "productPricing",
-    displayName: "Product Pricing API",
+    moduleId: "shipping",
+    name: "Shipping",
+    description: "Create shipments using Amazon's contracted carriers",
+    versions: [
+      { version: "v1", default: true }
+    ],
+    rateLimit: {
+      requestsPerSecond: 5,
+      restoreRatePerSecond: 0.5,
+      maxBucketSize: 200
+    }
+  },
+  {
+    moduleId: "services",
+    name: "Services",
+    description: "Manage service orders for Amazon services",
+    versions: [
+      { version: "2022-03-23", default: true }
+    ],
+    rateLimit: {
+      requestsPerSecond: 5,
+      restoreRatePerSecond: 0.5,
+      maxBucketSize: 200
+    }
+  },
+  
+  // Pricing & Fees
+  {
+    moduleId: "productPricing",
+    name: "Product Pricing",
+    description: "Get pricing information and make pricing decisions",
     versions: [
       { version: "2022-05-01", default: true },
-      { version: "v0", deprecated: false }
+      { version: "v0", default: false }
     ],
-    description: "Get pricing information",
     rateLimit: {
-      restoreRatePerSecond: 0.5,
-      burstCapacity: 10,
-      maximumRequestQuota: 400
+      requestsPerSecond: 10,
+      restoreRatePerSecond: 1,
+      maxBucketSize: 400
     }
   },
   {
-    name: "productFees",
-    displayName: "Product Fees API",
+    moduleId: "productFees",
+    name: "Product Fees",
+    description: "Get fee estimates for products on Amazon",
     versions: [
       { version: "v0", default: true }
     ],
-    description: "Get fee estimates",
     rateLimit: {
+      requestsPerSecond: 5,
       restoreRatePerSecond: 0.5,
-      burstCapacity: 5,
-      maximumRequestQuota: 200
+      maxBucketSize: 200
     }
   },
   
-  // Financial Modules
+  // Finance & Accounting
   {
-    name: "finances",
-    displayName: "Finances API",
+    moduleId: "finances",
+    name: "Finances",
+    description: "Get financial transaction information",
     versions: [
-      { version: "2024-06-19", default: true },
-      { version: "v0", deprecated: false }
+      { version: "2024-02-15", default: true },
+      { version: "v0", default: false }
     ],
-    description: "Get financial information",
     rateLimit: {
-      restoreRatePerSecond: 0.25,
-      burstCapacity: 5,
-      maximumRequestQuota: 100
-    }
-  },
-  {
-    name: "invoices",
-    displayName: "Invoices API",
-    versions: [
-      { version: "2024-06-19", default: true }
-    ],
-    description: "Manage invoices",
-    rateLimit: {
+      requestsPerSecond: 5,
       restoreRatePerSecond: 0.5,
-      burstCapacity: 5,
-      maximumRequestQuota: 200
+      maxBucketSize: 100
     }
   },
   {
-    name: "shipmentInvoicing",
-    displayName: "Shipment Invoicing API",
+    moduleId: "invoices",
+    name: "Invoices",
+    description: "Manage invoices for Amazon transactions",
+    versions: [
+      { version: "2024-02-15", default: true }
+    ],
+    rateLimit: {
+      requestsPerSecond: 5,
+      restoreRatePerSecond: 0.5,
+      maxBucketSize: 200
+    }
+  },
+  {
+    moduleId: "shipmentInvoicing",
+    name: "Shipment Invoicing",
+    description: "Manage shipment invoices for cross-border sellers",
     versions: [
       { version: "v0", default: true }
     ],
-    description: "Manage shipment invoices",
     rateLimit: {
+      requestsPerSecond: 5,
       restoreRatePerSecond: 0.5,
-      burstCapacity: 5,
-      maximumRequestQuota: 200
+      maxBucketSize: 200
     }
   },
   
-  // Data & Reporting Modules
+  // Reports & Feeds
   {
-    name: "reports",
-    displayName: "Reports API",
+    moduleId: "reports",
+    name: "Reports",
+    description: "Create and download reports on seller performance and operations",
     versions: [
       { version: "2021-06-30", default: true }
     ],
-    description: "Create and manage reports",
     rateLimit: {
-      restoreRatePerSecond: 0.0083, // 1 req every 2 minutes
-      burstCapacity: 2,
-      maximumRequestQuota: 60 // Daily quota
+      requestsPerSecond: 2,
+      restoreRatePerSecond: 0.2,
+      maxBucketSize: 60
     }
   },
   {
-    name: "feeds",
-    displayName: "Feeds API",
+    moduleId: "feeds",
+    name: "Feeds",
+    description: "Submit feed data to Amazon",
     versions: [
       { version: "2021-06-30", default: true }
     ],
-    description: "Submit and manage data feeds",
     rateLimit: {
-      restoreRatePerSecond: 0.0083, // 1 req every 2 minutes
-      burstCapacity: 2,
-      maximumRequestQuota: 60 // Daily quota
+      requestsPerSecond: 2,
+      restoreRatePerSecond: 0.2,
+      maxBucketSize: 60
     }
   },
   {
-    name: "dataKiosk",
-    displayName: "Data Kiosk API",
+    moduleId: "dataKiosk",
+    name: "Data Kiosk",
+    description: "Access to analytical data about your business on Amazon",
     versions: [
-      { version: "2023-11-15", default: true }
+      { version: "2023-11-01", default: true }
     ],
-    description: "Access and analyze business data",
     rateLimit: {
-      restoreRatePerSecond: 0.0333, // 1 req every 30 seconds
-      burstCapacity: 5,
-      maximumRequestQuota: 100
+      requestsPerSecond: 5,
+      restoreRatePerSecond: 0.5,
+      maxBucketSize: 100
     }
   },
   {
-    name: "sales",
-    displayName: "Sales API",
+    moduleId: "sales",
+    name: "Sales",
+    description: "Get sales performance data",
     versions: [
       { version: "v1", default: true }
     ],
-    description: "Get sales insights and metrics",
     rateLimit: {
+      requestsPerSecond: 5,
       restoreRatePerSecond: 0.5,
-      burstCapacity: 5,
-      maximumRequestQuota: 200
+      maxBucketSize: 200
     }
   },
   
-  // Communication & Marketing Modules
+  // Communication & Notifications
   {
-    name: "messaging",
-    displayName: "Messaging API",
+    moduleId: "messaging",
+    name: "Messaging",
+    description: "Send messages to buyers through Amazon's messaging system",
     versions: [
       { version: "v1", default: true }
     ],
-    description: "Send messages to buyers",
     rateLimit: {
-      restoreRatePerSecond: 0.1,
-      burstCapacity: 5,
-      maximumRequestQuota: 100
-    }
-  },
-  {
-    name: "solicitations",
-    displayName: "Solicitations API",
-    versions: [
-      { version: "v1", default: true }
-    ],
-    description: "Request reviews and feedback",
-    rateLimit: {
-      restoreRatePerSecond: 0.05,
-      burstCapacity: 5,
-      maximumRequestQuota: 75
-    }
-  },
-  {
-    name: "notifications",
-    displayName: "Notifications API",
-    versions: [
-      { version: "v1", default: true }
-    ],
-    description: "Subscribe to notifications",
-    rateLimit: {
+      requestsPerSecond: 5,
       restoreRatePerSecond: 0.5,
-      burstCapacity: 5,
-      maximumRequestQuota: 200
+      maxBucketSize: 100
+    }
+  },
+  {
+    moduleId: "solicitations",
+    name: "Solicitations",
+    description: "Request product reviews from buyers",
+    versions: [
+      { version: "v1", default: true }
+    ],
+    rateLimit: {
+      requestsPerSecond: 5,
+      restoreRatePerSecond: 0.5,
+      maxBucketSize: 75
+    }
+  },
+  {
+    moduleId: "notifications",
+    name: "Notifications",
+    description: "Subscribe to notifications for various Amazon events",
+    versions: [
+      { version: "v1", default: true }
+    ],
+    rateLimit: {
+      requestsPerSecond: 5,
+      restoreRatePerSecond: 0.5,
+      maxBucketSize: 200
     }
   },
   
-  // Account & Authorization Modules
+  // Account Management
   {
-    name: "sellers",
-    displayName: "Sellers API",
+    moduleId: "sellers",
+    name: "Sellers",
+    description: "Get information about the seller's account",
     versions: [
       { version: "v1", default: true }
     ],
-    description: "Get information about the seller account",
     rateLimit: {
+      requestsPerSecond: 5,
       restoreRatePerSecond: 0.5,
-      burstCapacity: 5,
-      maximumRequestQuota: 200
+      maxBucketSize: 200
     }
   },
   {
-    name: "applicationIntegrations",
-    displayName: "Application Integrations API",
+    moduleId: "applicationIntegrations",
+    name: "Application Integrations",
+    description: "Manage application integration settings",
     versions: [
-      { version: "2024-04-01", default: true }
+      { version: "2024-02-15", default: true }
     ],
-    description: "Manage application integrations",
     rateLimit: {
+      requestsPerSecond: 5,
       restoreRatePerSecond: 0.5,
-      burstCapacity: 5,
-      maximumRequestQuota: 200
+      maxBucketSize: 200
     }
   },
   {
-    name: "applicationManagement",
-    displayName: "Application Management API",
+    moduleId: "applicationManagement",
+    name: "Application Management",
+    description: "Manage application settings and permissions",
     versions: [
-      { version: "2023-11-30", default: true }
+      { version: "2023-05-14", default: true }
     ],
-    description: "Manage application configuration",
     rateLimit: {
+      requestsPerSecond: 5,
       restoreRatePerSecond: 0.5,
-      burstCapacity: 5,
-      maximumRequestQuota: 200
+      maxBucketSize: 200
     }
   },
+  
+  // Auth & Infrastructure
   {
-    name: "tokens",
-    displayName: "Tokens API",
+    moduleId: "tokens",
+    name: "Tokens",
+    description: "Manage tokens for authentication",
     versions: [
       { version: "2021-03-01", default: true }
     ],
-    description: "Manage restricted data tokens",
     rateLimit: {
-      restoreRatePerSecond: 0.1,
-      burstCapacity: 5,
-      maximumRequestQuota: 100
+      requestsPerSecond: 5,
+      restoreRatePerSecond: 0.5,
+      maxBucketSize: 100
     }
   },
   {
-    name: "authorization",
-    displayName: "Authorization API",
+    moduleId: "authorization",
+    name: "Authorization",
+    description: "Manage authorization for Amazon services",
     versions: [
       { version: "v1", default: true }
     ],
-    description: "Manage authorization",
     rateLimit: {
+      requestsPerSecond: 5,
       restoreRatePerSecond: 0.5,
-      burstCapacity: 5,
-      maximumRequestQuota: 200
+      maxBucketSize: 200
     }
   },
   {
-    name: "uploads",
-    displayName: "Uploads API",
+    moduleId: "uploads",
+    name: "Uploads",
+    description: "Upload documents and images to Amazon",
     versions: [
       { version: "2020-11-01", default: true }
     ],
-    description: "Upload files",
     rateLimit: {
+      requestsPerSecond: 5,
       restoreRatePerSecond: 0.5,
-      burstCapacity: 5,
-      maximumRequestQuota: 200
+      maxBucketSize: 200
     }
   }
 ];
 
 /**
  * Get a module definition by name
- * @param name Module name
- * @returns Module definition
+ * 
+ * @param name - The name of the module to get
+ * @returns The module definition, or undefined if not found
  */
-export function getModuleDefinition(name: string): ModuleDefinition | undefined {
-  return SP_API_MODULES.find((module: any) => module.name === name);
+export function getModuleDefinitionByName(name: string): ModuleDefinition | undefined {
+  return SP_API_MODULES.find(module => module.name === name);
+}
+
+/**
+ * Get a module definition by ID
+ * 
+ * @param moduleId - The ID of the module to get
+ * @returns The module definition, or undefined if not found
+ */
+export function getModuleDefinitionById(moduleId: string): ModuleDefinition | undefined {
+  return SP_API_MODULES.find(module => module.moduleId === moduleId);
 }
 
 /**
  * Get the default version for a module
- * @param name Module name
- * @returns Default version or undefined if not found
+ * 
+ * @param moduleId - The ID of the module
+ * @returns The default version, or undefined if not found
  */
-export function getDefaultModuleVersion(name: string): string | undefined {
-  const module = getModuleDefinition(name);
+export function getModuleDefaultVersion(moduleId: string): string | undefined {
+  const module = getModuleDefinitionById(moduleId);
   if (!module) return undefined;
   
-  const defaultVersion = module.versions.find((v: any) => v.default === true);
-  return defaultVersion?.version;
+  const defaultVersion = module.versions.find(v => v.default === true);
+  return defaultVersion ? defaultVersion.version : undefined;
 }
 
 /**
- * Get all available module names
- * @returns Array of module names
+ * Check if a version is valid for a module
+ * 
+ * @param moduleId - The ID of the module
+ * @param version - The version to check
+ * @returns True if the version is valid, false otherwise
  */
-export function getAllModuleNames(): string[] {
-  return SP_API_MODULES.map((module: any) => module.name);
+export function isValidModuleVersion(moduleId: string, version: string): boolean {
+  const module = getModuleDefinitionById(moduleId);
+  if (!module) return false;
+  
+  return module.versions.some(v => v.version === version);
 }

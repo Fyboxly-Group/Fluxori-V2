@@ -39,12 +39,12 @@ export type ItemSupplierRelationship = AmazonSPApi.SupplySources.ItemSupplierRel
  */
 export interface GetSupplySourcesOptions {
   /**
-   * Supply source IDs to filter by (optional)
+   * Supply source IDs to filter by
    */
   supplySourceIds?: string[];
   
   /**
-   * Next token for pagination (optional)
+   * Next token for pagination
    */
   nextToken?: string;
 }
@@ -64,22 +64,22 @@ export type GetSupplySourcesResponse = AmazonSPApi.SupplySources.GetSupplySource
  */
 export interface GetItemSupplierRelationshipsOptions {
   /**
-   * List of ASINs to filter by (optional)
+   * List of ASINs to filter by
    */
   asins?: string[];
   
   /**
-   * List of seller SKUs to filter by (optional)
+   * List of seller SKUs to filter by
    */
   sellerSkus?: string[];
   
   /**
-   * List of supply source IDs to filter by (optional)
+   * List of supply source IDs to filter by
    */
   supplySourceIds?: string[];
   
   /**
-   * Next token for pagination (optional)
+   * Next token for pagination
    */
   nextToken?: string;
 }
@@ -101,11 +101,7 @@ export class SupplySourceModule extends BaseApiModule {
    */
   constructor(
     apiVersion: string,
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
+    makeApiRequest: ApiRequestFunction,
     marketplaceId: string
   ) {
     super('supplySource', apiVersion, makeApiRequest, marketplaceId);
@@ -114,11 +110,11 @@ export class SupplySourceModule extends BaseApiModule {
   /**
    * Initialize the module
    * @param config Module-specific configuration
-   * @returns Promise<any> that resolves when initialization is complete
+   * @returns Promise that resolves when initialization is complete
    */
   protected async initializeModule(config?: any): Promise<void> {
     // No specific initialization required for this module
-    return Promise<any>.resolve();
+    return Promise.resolve();
   }
   
   /**
@@ -158,11 +154,10 @@ export class SupplySourceModule extends BaseApiModule {
         }
       });
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.createSupplySource`);
     }
   }
-
+  
   /**
    * Get supply sources
    * @param options Options for getting supply sources
@@ -186,11 +181,10 @@ export class SupplySourceModule extends BaseApiModule {
         params
       });
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getSupplySources`);
     }
   }
-
+  
   /**
    * Get a specific supply source by ID
    * @param supplySourceId Supply source ID
@@ -207,11 +201,10 @@ export class SupplySourceModule extends BaseApiModule {
         path: `/supplySources/${supplySourceId}`
       });
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getSupplySource`);
     }
   }
-
+  
   /**
    * Update a supply source
    * @param supplySourceId Supply source ID
@@ -238,11 +231,10 @@ export class SupplySourceModule extends BaseApiModule {
         }
       });
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.updateSupplySource`);
     }
   }
-
+  
   /**
    * Delete a supply source
    * @param supplySourceId Supply source ID
@@ -259,11 +251,10 @@ export class SupplySourceModule extends BaseApiModule {
         path: `/supplySources/${supplySourceId}`
       });
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.deleteSupplySource`);
     }
   }
-
+  
   /**
    * Create an item supplier relationship
    * @param relationship Item supplier relationship
@@ -285,11 +276,10 @@ export class SupplySourceModule extends BaseApiModule {
         data: relationship
       });
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.createItemSupplierRelationship`);
     }
   }
-
+  
   /**
    * Get item supplier relationships
    * @param options Options for getting item supplier relationships
@@ -321,11 +311,10 @@ export class SupplySourceModule extends BaseApiModule {
         params
       });
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getItemSupplierRelationships`);
     }
   }
-
+  
   /**
    * Delete an item supplier relationship
    * @param relationshipId Item supplier relationship ID
@@ -342,11 +331,10 @@ export class SupplySourceModule extends BaseApiModule {
         path: `/itemSupplierRelationships/${relationshipId}`
       });
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.deleteItemSupplierRelationship`);
     }
   }
-
+  
   /**
    * Get all supply sources (handles pagination)
    * @param options Options for getting supply sources
@@ -440,11 +428,11 @@ export class SupplySourceModule extends BaseApiModule {
     
     // Extract unique supply source IDs
     const supplySourceIdsSet = new Set<string>();
-    relationships.forEach((rel: any) => supplySourceIdsSet.add(rel.supplySourceId));
+    relationships.forEach(rel => supplySourceIdsSet.add(rel.supplySourceId));
     const supplySourceIds = Array.from(supplySourceIdsSet);
     
     // Get detailed information for each supply source
-    const supplySources = await this.getAllSupplySources({
+    const supplySources = await this.getAllSupplySources({ 
       supplySourceIds
     });
     
@@ -472,11 +460,11 @@ export class SupplySourceModule extends BaseApiModule {
     
     // Extract unique supply source IDs
     const supplySourceIdsSet = new Set<string>();
-    relationships.forEach((rel: any) => supplySourceIdsSet.add(rel.supplySourceId));
+    relationships.forEach(rel => supplySourceIdsSet.add(rel.supplySourceId));
     const supplySourceIds = Array.from(supplySourceIdsSet);
     
     // Get detailed information for each supply source
-    const supplySources = await this.getAllSupplySources({
+    const supplySources = await this.getAllSupplySources({ 
       supplySourceIds
     });
     

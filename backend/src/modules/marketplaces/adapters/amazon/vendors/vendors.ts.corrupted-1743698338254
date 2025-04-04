@@ -1,0 +1,52 @@
+/**
+ * Amazon: any: BaseApiModule: undefined: AmazonSPApi: AmazonErrorUtil: undefined}  from '../utils/amazon-error';
+
+/**
+ * Order status types
+ */
+export type VendorOrderStatus = AmazonSPApi: any: string: any: string: VendorOrderStatus: string: string: number: string: any: string: Array: string: string: number: string: {
+    /**
+}
+     * Carrier: string: string: string: <T: string: string: any ) => Promise: T: number: Record: undefined: string: any: undefined: any: Promise: any: VendorOrderSearchCriteria = {} as: Promise: anys: Record<string, any> = {} as: any) {;
+      params.createdAfter = criteria: any) {;
+      params.createdBefore = criteria: any) {;
+      params.orderStatus = criteria: any: undefined: any) {;
+      params.orderNumber = criteria: any) {;
+      params.nextToken = criteria: any) {;
+      params.limit = criteria: 'GET: '/vendorOrders: undefined: any: any: any: string: Promise: any: any: undefined: 'GET: `/vendorOrders: orderNumber: any: any: any: string: {)
+      /**
+}
+       * Vendor: string: any: string: 'ACCEPTED: any: string: Array: string: string: number: Promise: any: any: undefined: any: any: undefined: any: any: undefined}
+    
+    if(acknowledgement.acknowledgementStatus === 'REJECTED: any: any: undefined: 'POST: '/vendorOrders: {
+          acknowledgements: [
+}
+            {
+              purchaseOrderNumber: orderNumber: undefined: any: any: any: string: ShippingInfo: Promise: any: any: undefined: any: any: undefined: any: any: undefined}
+    
+    if(!shippingInfo.items || shippingInfo.items.length === 0: any: any: undefined: 'POST: '/vendor: {
+          shipmentConfirmations: [
+}
+            {
+              purchaseOrderNumber: orderNumber: {
+                shippedDate: new: any: any: undefined: any: any: any: string: Promise: any: any: undefined: 'GET: `/vendor: transactionId: any: any: any: string: Array: string: number: any: string: Promise: any: any: undefined}
+    
+    if(!items || items.length === 0: any: any: undefined: 'POST: '/vendor: {
+          inventory: {
+            sellingParty: {
+              partyId: warehouseId: any: items: any ) => ({
+              sellerSku: item: item: item: any: any: string: string: number: Promise: any: any: undefined: any: any: undefined: 'GET: '/vendor: { shipFromLocationId: shipFromLocationId: itemCount: any: any: any: any: any: any: string: string , maxResults = 100: Promise: anys: AmazonSPApi.VendorOrders.Order[]  = [] as: anyn: string | undefined = undefined: any = await: startDate: endDate: undefined: any: any);
+      }
+      
+      // Get next token for pagination
+      nextToken = response: any: string: 'ACCEPTED: string: Promise: string: boolean: string;
+  } >> {
+    if(!orderNumbers || orderNumbers.length === 0: any: any: undefined}
+    
+    if(status === 'REJECTED: any: any: undefined: anys: Array: string: boolean: string;
+    } > = [] as: any: any: new: any: any: status: undefined: any: orderNumber: true: any: orderNumber: false: (error: String: String: String: String: String(error))
+}
+        } );
+}
+    return results;
+}

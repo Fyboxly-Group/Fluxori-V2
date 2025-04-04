@@ -1,0 +1,909 @@
+/**
+ * Membership Controller
+ * Handles HTTP requests for user-organization membership management
+ */
+import { Request, Response, NextFunction } from 'express';
+import { UserOrganizationService } from '../../../services/firestore/user-organization.service';
+import { InvitationService } from '../../../services/firestore/invitation.service';
+import { MembershipType, MembershipStatus } from '../../../models/firestore';
+
+// Authenticated request type
+type AuthenticatedRequest = Request & {
+  user?: {
+    id: string;
+    organizationId: string;
+    email?: string;
+    role?: string;
+  };
+};
+
+/**
+ * Controller for user-organization membership management
+ */
+export class MembershipController {
+  private userOrganizationService: UserOrganizationService;
+  private invitationService: InvitationService;
+  
+  constructor() {
+    this.userOrganizationService = new UserOrganizationService();
+    this.invitationService = new InvitationService();
+  }
+  
+
+  /**
+   * getOrganizationUsers
+   * Get all users in the current organization
+   */
+  async getOrganizationUsers(req: Request, res: Response): Promise<void> {
+    try {
+      // Method implementation will go here
+      res.status(501).json({
+        success: false,
+        message: 'Method not implemented yet'
+      });
+    } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error);
+      console.error(`Error in getOrganizationUsers:`, error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error))
+      });
+    }
+  }
+
+  /**
+   * getUserMemberships
+   * Get all memberships for the current user
+   */
+  async getUserMemberships(req: Request, res: Response): Promise<void> {
+    try {
+      // Method implementation will go here
+      res.status(501).json({
+        success: false,
+        message: 'Method not implemented yet'
+      });
+    } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error);
+      console.error(`Error in getUserMemberships:`, error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error))
+      });
+    }
+  }
+
+  /**
+   * getOrganizationInvitations
+   * Get all invitations for the current organization
+   */
+  async getOrganizationInvitations(req: Request, res: Response): Promise<void> {
+    try {
+      // Method implementation will go here
+      res.status(501).json({
+        success: false,
+        message: 'Method not implemented yet'
+      });
+    } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error);
+      console.error(`Error in getOrganizationInvitations:`, error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error))
+      });
+    }
+  }
+
+  /**
+   * cancelInvitation
+   * Cancel a pending invitation
+   */
+  async cancelInvitation(req: Request, res: Response): Promise<void> {
+    try {
+      // Method implementation will go here
+      res.status(501).json({
+        success: false,
+        message: 'Method not implemented yet'
+      });
+    } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error);
+      console.error(`Error in cancelInvitation:`, error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error))
+      });
+    }
+  }
+
+  /**
+   * resendInvitation
+   * Resend an invitation email
+   */
+  async resendInvitation(req: Request, res: Response): Promise<void> {
+    try {
+      // Method implementation will go here
+      res.status(501).json({
+        success: false,
+        message: 'Method not implemented yet'
+      });
+    } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error);
+      console.error(`Error in resendInvitation:`, error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error))
+      });
+    }
+  }
+
+  /**
+   * getUserMembershipDetails
+   * Get detailed membership information for a user
+   */
+  async getUserMembershipDetails(req: Request, res: Response): Promise<void> {
+    try {
+      // Method implementation will go here
+      res.status(501).json({
+        success: false,
+        message: 'Method not implemented yet'
+      });
+    } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error);
+      console.error(`Error in getUserMembershipDetails:`, error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error))
+      });
+    }
+  }
+
+  /**
+   * updateUserRoles
+   * Update a user's roles in the organization
+   */
+  async updateUserRoles(req: Request, res: Response): Promise<void> {
+    try {
+      // Method implementation will go here
+      res.status(501).json({
+        success: false,
+        message: 'Method not implemented yet'
+      });
+    } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error);
+      console.error(`Error in updateUserRoles:`, error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error))
+      });
+    }
+  }
+
+  /**
+   * updateUserCustomPermissions
+   * Update a user's custom permissions
+   */
+  async updateUserCustomPermissions(req: Request, res: Response): Promise<void> {
+    try {
+      // Method implementation will go here
+      res.status(501).json({
+        success: false,
+        message: 'Method not implemented yet'
+      });
+    } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error);
+      console.error(`Error in updateUserCustomPermissions:`, error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error))
+      });
+    }
+  }
+
+  /**
+   * updateMembershipType
+   * Change a user's membership type
+   */
+  async updateMembershipType(req: Request, res: Response): Promise<void> {
+    try {
+      // Method implementation will go here
+      res.status(501).json({
+        success: false,
+        message: 'Method not implemented yet'
+      });
+    } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error);
+      console.error(`Error in updateMembershipType:`, error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error))
+      });
+    }
+  }
+
+  /**
+   * removeUserFromOrganization
+   * Remove a user from the organization
+   */
+  async removeUserFromOrganization(req: Request, res: Response): Promise<void> {
+    try {
+      // Method implementation will go here
+      res.status(501).json({
+        success: false,
+        message: 'Method not implemented yet'
+      });
+    } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error);
+      console.error(`Error in removeUserFromOrganization:`, error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error))
+      });
+    }
+  }
+
+  /**
+   * leaveOrganization
+   * Leave the current organization
+   */
+  async leaveOrganization(req: Request, res: Response): Promise<void> {
+    try {
+      // Method implementation will go here
+      res.status(501).json({
+        success: false,
+        message: 'Method not implemented yet'
+      });
+    } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error);
+      console.error(`Error in leaveOrganization:`, error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error))
+      });
+    }
+  }
+  /**
+   * Invite a user to join an organization
+   * @route POST /api/memberships/invite
+   */
+  async inviteUser(req: Request, res: Response, next: NextFunction) : Promise<void> {
+    try {
+      const { email, roles, type, message, expiresIn } = req.body;
+      const organizationId = req.user!.currentOrganizationId;
+      
+      // Validate required fields
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email is required'
+        });
+      }
+      
+      // Validate membership type
+      if (type && !Object.values(MembershipType).includes(type as MembershipType)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid membership type'
+        });
+      }
+      
+      // Check if user has permission to invite (owner, admin, or has explicit permission)
+      if (
+        !req.user!.isSystemAdmin && 
+        req.user!.membershipType !== MembershipType.OWNER && 
+        !req.user!.permissions.has('user:invite')
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: 'Unauthorized: You do not have permission to invite users'
+        });
+      }
+      
+      // Create invitation
+      const invitation = await this.invitationService.createInvitation(
+        email,
+        organizationId,
+        roles,
+        type || MembershipType.MEMBER,
+        message,
+        expiresIn,
+        req.user!.id,
+        req.user!.email
+      );
+      
+      return res.status(201).json({
+        success: true,
+        message: 'Invitation sent successfully',
+        invitation
+      });
+    } catch (error: any) {
+      console.error('Error inviting user:', error);
+      
+      if ((error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)).includes('already pending')) {
+        return res.status(400).json({
+          success: false,
+          message: (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error))
+        });
+      }
+      
+      if ((error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)).includes('already a member')) {
+        return res.status(400).json({
+          success: false,
+          message: (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error))
+        });
+      }
+      
+      next(error);
+    }
+  }
+  
+  /**
+   * Invite a client to create a new organization (agency feature)
+   * @route POST /api/memberships/invite-client
+   */
+  async inviteClient(req: Request, res: Response, next: NextFunction) : Promise<void> {
+    try {
+      const { email, organizationName, message, expiresIn } = req.body;
+      const organizationId = req.user!.currentOrganizationId;
+      
+      // Validate required fields
+      if (!email || !organizationName) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email and organization name are required'
+        });
+      }
+      
+      // Check if user has permission to invite clients (owner, admin)
+      if (
+        !req.user!.isSystemAdmin && 
+        req.user!.membershipType !== MembershipType.OWNER && 
+        !req.user!.permissions.has('organization:create')
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: 'Unauthorized: You do not have permission to invite clients'
+        });
+      }
+      
+      // Create agency invitation
+      const invitation = await this.invitationService.createAgencyInvitation(
+        email,
+        organizationId,
+        organizationName,
+        message,
+        expiresIn,
+        req.user!.id,
+        req.user!.email
+      );
+      
+      return res.status(201).json({
+        success: true,
+        message: 'Client invitation sent successfully',
+        invitation
+      });
+    } catch (error: any) {
+      console.error('Error inviting client:', error);
+      
+      if ((error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)).includes('not an agency')) {
+        return res.status(400).json({
+          success: false,
+          message: (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error))
+        });
+      }
+      
+      if ((error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)).includes('already pending')) {
+        return res.status(400).json({
+          success: false,
+          message: (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error))
+        });
+      }
+      
+      next(error);
+    }
+  }
+  
+  /**
+   * Get pending invitations for the current organization
+   * @route GET /api/memberships/invitations
+   */
+  async getPendingInvitations(req: Request, res: Response, next: NextFunction) : Promise<void> {
+    try {
+      const organizationId = req.user!.currentOrganizationId;
+      
+      const invitations = await this.invitationService.getPendingOrganizationInvitations(
+        organizationId
+      );
+      
+      return res.status(200).json({
+        success: true,
+        invitations
+      });
+    } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error);
+      next(error);
+    }
+  }
+  
+  /**
+   * Get agency invitations
+   * @route GET /api/memberships/agency-invitations
+   */
+  async getAgencyInvitations(req: Request, res: Response, next: NextFunction) : Promise<void> {
+    try {
+      const organizationId = req.user!.currentOrganizationId;
+      
+      const invitations = await this.invitationService.getPendingAgencyInvitations(
+        organizationId
+      );
+      
+      return res.status(200).json({
+        success: true,
+        invitations
+      });
+    } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error);
+      next(error);
+    }
+  }
+  
+  /**
+   * Revoke an invitation
+   * @route DELETE /api/memberships/invitations/:id
+   */
+  async revokeInvitation(req: Request, res: Response, next: NextFunction) : Promise<void> {
+    try {
+      const { id } = req.params;
+      
+      await this.invitationService.revokeInvitation(
+        id,
+        req.user!.id,
+        req.user!.email
+      );
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Invitation revoked successfully'
+      });
+    } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error);
+      next(error);
+    }
+  }
+  
+  /**
+   * Get pending invitations for the current user
+   * @route GET /api/memberships/my-invitations
+   */
+  async getUserInvitations(req: Request, res: Response, next: NextFunction) : Promise<void> {
+    try {
+      const invitations = await this.invitationService.getPendingInvitationsForEmail(
+        req.user!.email
+      );
+      
+      return res.status(200).json({
+        success: true,
+        invitations
+      });
+    } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error);
+      next(error);
+    }
+  }
+  
+  /**
+   * Accept an invitation
+   * @route POST /api/memberships/accept-invitation
+   */
+  async acceptInvitation(req: Request, res: Response, next: NextFunction) : Promise<void> {
+    try {
+      const { token } = req.body;
+      
+      if (!token) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invitation token is required'
+        });
+      }
+      
+      await this.invitationService.acceptInvitation(
+        token,
+        req.user!.id,
+        req.user!.email
+      );
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Invitation accepted successfully'
+      });
+    } catch (error: any) {
+      console.error('Error accepting invitation:', error);
+      
+      if (
+        (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)).includes('expired') || 
+        (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)).includes('already been') ||
+        (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)).includes('does not match')
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error))
+        });
+      }
+      
+      next(error);
+    }
+  }
+  
+  /**
+   * Decline an invitation
+   * @route POST /api/memberships/decline-invitation
+   */
+  async declineInvitation(req: Request, res: Response, next: NextFunction) : Promise<void> {
+    try {
+      const { token } = req.body;
+      
+      if (!token) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invitation token is required'
+        });
+      }
+      
+      await this.invitationService.declineInvitation(
+        token,
+        req.user!.id,
+        req.user!.email
+      );
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Invitation declined successfully'
+      });
+    } catch (error: any) {
+      console.error('Error declining invitation:', error);
+      
+      if (
+        (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)).includes('expired') || 
+        (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)).includes('already been')
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error))
+        });
+      }
+      
+      next(error);
+    }
+  }
+  
+  /**
+   * Remove a user from the current organization
+   * @route DELETE /api/memberships/users/:userId
+   */
+  async removeUser(req: Request, res: Response, next: NextFunction) : Promise<void> {
+    try {
+      const { userId } = req.params;
+      const organizationId = req.user!.currentOrganizationId;
+      
+      // Check if user has permission to remove members (owner, admin)
+      if (
+        !req.user!.isSystemAdmin && 
+        req.user!.membershipType !== MembershipType.OWNER && 
+        !req.user!.permissions.has('user:remove')
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: 'Unauthorized: You do not have permission to remove users'
+        });
+      }
+      
+      // Cannot remove yourself
+      if (userId === req.user!.id) {
+        return res.status(400).json({
+          success: false,
+          message: 'You cannot remove yourself from the organization'
+        });
+      }
+      
+      await this.userOrganizationService.removeUserFromOrganization(
+        userId,
+        organizationId,
+        req.user!.id,
+        req.user!.email
+      );
+      
+      return res.status(200).json({
+        success: true,
+        message: 'User removed from organization successfully'
+      });
+    } catch (error: any) {
+      console.error('Error removing user:', error);
+      
+      if ((error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)).includes('organization owner')) {
+        return res.status(403).json({
+          success: false,
+          message: (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error))
+        });
+      }
+      
+      next(error);
+    }
+  }
+  
+  /**
+   * Change user's membership type
+   * @route PATCH /api/memberships/users/:userId/type
+   */
+  async changeMembershipType(req: Request, res: Response, next: NextFunction) : Promise<void> {
+    try {
+      const { userId } = req.params;
+      const { type } = req.body;
+      const organizationId = req.user!.currentOrganizationId;
+      
+      // Validate required fields
+      if (!type) {
+        return res.status(400).json({
+          success: false,
+          message: 'Membership type is required'
+        });
+      }
+      
+      // Validate membership type
+      if (!Object.values(MembershipType).includes(type as MembershipType)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid membership type'
+        });
+      }
+      
+      // Check if user has permission to change member types (owner or admin)
+      if (
+        !req.user!.isSystemAdmin && 
+        req.user!.membershipType !== MembershipType.OWNER && 
+        !req.user!.permissions.has('user:manage')
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: 'Unauthorized: You do not have permission to change membership types'
+        });
+      }
+      
+      const userOrg = await this.userOrganizationService.changeUserMembershipType(
+        userId,
+        organizationId,
+        type as MembershipType,
+        req.user!.id,
+        req.user!.email
+      );
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Membership type changed successfully',
+        userOrganization: userOrg
+      });
+    } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error);
+      next(error);
+    }
+  }
+  
+  /**
+   * Add a custom permission to a user
+   * @route POST /api/memberships/users/:userId/permissions
+   */
+  async addCustomPermission(req: Request, res: Response, next: NextFunction) : Promise<void> {
+    try {
+      const { userId } = req.params;
+      const { permission } = req.body;
+      const organizationId = req.user!.currentOrganizationId;
+      
+      // Validate required fields
+      if (!permission) {
+        return res.status(400).json({
+          success: false,
+          message: 'Permission is required'
+        });
+      }
+      
+      // Check if user has permission to manage permissions (owner or admin)
+      if (
+        !req.user!.isSystemAdmin && 
+        req.user!.membershipType !== MembershipType.OWNER && 
+        !req.user!.permissions.has('role:manage')
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: 'Unauthorized: You do not have permission to manage user permissions'
+        });
+      }
+      
+      const userOrg = await this.userOrganizationService.addCustomPermission(
+        userId,
+        organizationId,
+        permission,
+        req.user!.id,
+        req.user!.email
+      );
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Custom permission added successfully',
+        userOrganization: userOrg
+      });
+    } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error);
+      next(error);
+    }
+  }
+  
+  /**
+   * Remove a custom permission from a user
+   * @route DELETE /api/memberships/users/:userId/permissions/:permission
+   */
+  async removeCustomPermission(req: Request, res: Response, next: NextFunction) : Promise<void> {
+    try {
+      const { userId, permission } = req.params;
+      const organizationId = req.user!.currentOrganizationId;
+      
+      // Check if user has permission to manage permissions (owner or admin)
+      if (
+        !req.user!.isSystemAdmin && 
+        req.user!.membershipType !== MembershipType.OWNER && 
+        !req.user!.permissions.has('role:manage')
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: 'Unauthorized: You do not have permission to manage user permissions'
+        });
+      }
+      
+      const userOrg = await this.userOrganizationService.removeCustomPermission(
+        userId,
+        organizationId,
+        permission,
+        req.user!.id,
+        req.user!.email
+      );
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Custom permission removed successfully',
+        userOrganization: userOrg
+      });
+    } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error);
+      next(error);
+    }
+  }
+  
+  /**
+   * Add a permission restriction to a user
+   * @route POST /api/memberships/users/:userId/restrictions
+   */
+  async addPermissionRestriction(req: Request, res: Response, next: NextFunction) : Promise<void> {
+    try {
+      const { userId } = req.params;
+      const { permission } = req.body;
+      const organizationId = req.user!.currentOrganizationId;
+      
+      // Validate required fields
+      if (!permission) {
+        return res.status(400).json({
+          success: false,
+          message: 'Permission is required'
+        });
+      }
+      
+      // Check if user has permission to manage permissions (owner or admin)
+      if (
+        !req.user!.isSystemAdmin && 
+        req.user!.membershipType !== MembershipType.OWNER && 
+        !req.user!.permissions.has('role:manage')
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: 'Unauthorized: You do not have permission to manage user permissions'
+        });
+      }
+      
+      const userOrg = await this.userOrganizationService.addRestrictedPermission(
+        userId,
+        organizationId,
+        permission,
+        req.user!.id,
+        req.user!.email
+      );
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Permission restriction added successfully',
+        userOrganization: userOrg
+      });
+    } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error);
+      next(error);
+    }
+  }
+  
+  /**
+   * Remove a permission restriction from a user
+   * @route DELETE /api/memberships/users/:userId/restrictions/:permission
+   */
+  async removePermissionRestriction(req: Request, res: Response, next: NextFunction) : Promise<void> {
+    try {
+      const { userId, permission } = req.params;
+      const organizationId = req.user!.currentOrganizationId;
+      
+      // Check if user has permission to manage permissions (owner or admin)
+      if (
+        !req.user!.isSystemAdmin && 
+        req.user!.membershipType !== MembershipType.OWNER && 
+        !req.user!.permissions.has('role:manage')
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: 'Unauthorized: You do not have permission to manage user permissions'
+        });
+      }
+      
+      const userOrg = await this.userOrganizationService.removeRestrictedPermission(
+        userId,
+        organizationId,
+        permission,
+        req.user!.id,
+        req.user!.email
+      );
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Permission restriction removed successfully',
+        userOrganization: userOrg
+      });
+    } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error);
+      next(error);
+    }
+  }
+  
+  /**
+   * Get user membership details
+   * @route GET /api/memberships/users/:userId
+   */
+  async getUserMembership(req: Request, res: Response, next: NextFunction) : Promise<void> {
+    try {
+      const { userId } = req.params;
+      const organizationId = req.user!.currentOrganizationId;
+      
+      // Get user-organization relationship
+      const userOrgsSnapshot = await this.userOrganizationService.getUserOrganizationMemberships(
+        userId
+      );
+      
+      const userOrg = userOrgsSnapshot.find(org => org.organizationId === organizationId);
+      
+      if (!userOrg) {
+        return res.status(404).json({
+          success: false,
+          message: 'User membership not found'
+        });
+      }
+      
+      return res.status(200).json({
+        success: true,
+        membership: userOrg
+      });
+    } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error);
+      next(error);
+    }
+  }
+}

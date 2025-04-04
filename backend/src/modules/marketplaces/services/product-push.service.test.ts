@@ -120,7 +120,7 @@ describe('ProductPushService', () => {
       close: jest.fn(),
     } as unknown as jest.Mocked<IMarketplaceAdapter>;
     
-    // Mock adapter factory to return different adapters based on marketplaceId
+    // Mock adapter factory to return different adapters based on marketplaceId;
     mockAdapterFactory = {
       getInstance: jest.fn().mockReturnThis(),
       getAdapter: jest.fn().mockImplementation((marketplaceId, credentials) => {
@@ -308,7 +308,7 @@ describe('ProductPushService', () => {
   });
   
   it('should handle credentials not found error', async () => {
-    // Mock credentials service to throw error
+    // Mock credentials service to throw error instanceof Error ? error : new Error(String(error));
     mockCredentialsService.getCredentials.mockRejectedValueOnce(
       new ApiError(404, 'No credentials found for marketplace takealot')
     );
@@ -322,7 +322,7 @@ describe('ProductPushService', () => {
   });
   
   it('should handle unsupported marketplace error', async () => {
-    // Mock adapter factory to throw error for unsupported marketplace
+    // Mock adapter factory to throw error for unsupported marketplace;
     mockAdapterFactory.getAdapter.mockImplementation((marketplaceId, credentials) => {
       if (marketplaceId === 'unsupported-marketplace') {
         return Promise.reject(new ApiError(404, 'Marketplace unsupported-marketplace is not supported'));

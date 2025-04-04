@@ -5,46 +5,8 @@
  * This module handles retrieving and calculating fee estimates for products.
  */
 
-// Define necessary types for TypeScript validation
-class BaseApiModule {
-  protected moduleName: string;
-  protected marketplaceId: string;
-
-  constructor(moduleName: string, apiVersion: string, makeApiRequest: any, marketplaceId: string) {
-    this.moduleName = moduleName;
-    this.marketplaceId = marketplaceId;
-  }
-
-  protected makeRequest<T>(options: any): Promise<ApiResponse<T>> {
-    return Promise<any>.resolve({ data: {} as T, status: 200, headers: {} } as ApiResponse<T>);
-  }
-}
-
-interface ApiRequestOptions {
-  method: string;
-  path: string;
-  data?: any;
-  params?: Record<string, any>;
-}
-
-interface ApiResponse<T> {
-  data: T;
-  status: number;
-  headers: Record<string, string>;
-}
-
-// Mock AmazonSPApi namespace
-namespace AmazonSPApi {
-  export namespace Common {
-    export interface Error {
-      code: string;
-      message: string;
-      details?: string;
-    }
-  }
-}
-
-import { AmazonErrorUtil, AmazonErrorCode } from '../utils/amazon-error';
+import { ApiRequestFunction, ApiResponse, BaseModule } from '../../../core/base-module.interface';
+import AmazonErrorHandler, { AmazonErrorCode } from '../../../utils/amazon-error';
 
 /**
  * Fee type enumeration
@@ -109,6 +71,11 @@ export interface FeeRequestPrice {
 }
 
 /**
+ * Optional fulfillment program type
+ */
+export type FulfillmentProgramType = 'FBA_CORE' | 'FBA_SNL' | 'FBA_EFN';
+
+/**
  * Product fee request
  */
 export interface FeeRequest {
@@ -135,7 +102,7 @@ export interface FeeRequest {
   /**
    * Optional fee types to include
    */
-  optionalFulfillmentProgram?: 'FBA_CORE' | 'FBA_SNL' | 'FBA_EFN';
+  optionalFulfillmentProgram?: FulfillmentProgramType;
 }
 
 /**
@@ -151,6 +118,21 @@ export interface MoneyAmount {
    * Currency code
    */
   currencyCode: string;
+}
+
+/**
+ * Included fee detail
+ */
+export interface IncludedFeeDetail {
+  /**
+   * Fee type
+   */
+  feeType: string;
+  
+  /**
+   * Fee amount
+   */
+  feeAmount: MoneyAmount;
 }
 
 /**
@@ -180,17 +162,7 @@ export interface FeeDetail {
   /**
    * Additional details
    */
-  includedFeeDetailList?: Array<{
-    /**
-     * Fee type
-     */
-    feeType: string;
-    
-    /**
-     * Fee amount
-     */
-    feeAmount: MoneyAmount;
-  }>;
+  includedFeeDetailList?: IncludedFeeDetail[];
 }
 
 /**
@@ -200,7 +172,7 @@ export interface FeeEstimate {
   /**
    * Time of the estimate
    */
-  timeOfFeesEstimation: Date;
+  timeOfFeesEstimation: string;
   
   /**
    * Total fee estimate
@@ -214,6 +186,31 @@ export interface FeeEstimate {
 }
 
 /**
+ * Error in the API response
+ */
+export interface AmazonError {
+  /**
+   * Error code
+   */
+  code: string;
+  
+  /**
+   * Error message
+   */
+  message: string;
+  
+  /**
+   * Error details
+   */
+  details?: string;
+}
+
+/**
+ * Fee estimate response status
+ */
+export type FeeEstimateStatus = 'Success' | 'ClientError' | 'ServiceError';
+
+/**
  * Fee estimate response
  */
 export interface FeeEstimateResponse {
@@ -225,57 +222,144 @@ export interface FeeEstimateResponse {
   /**
    * Status
    */
-  status?: 'Success' | 'ClientError' | 'ServiceError';
+  status?: FeeEstimateStatus;
   
   /**
    * Error
    */
-  error?: AmazonSPApi.Common.Error;
+  error?: AmazonError;
+}
+
+/**
+ * Fee estimate batch response
+ */
+export interface FeeEstimateBatchResponse {
+  /**
+   * Response payload
+   */
+  payload: FeeEstimateResponse[];
 }
 
 /**
  * Profit estimate result
  */
 export interface ProfitEstimate {
+  /**
+   * Selling price
+   */
   price: number;
+  
+  /**
+   * Product cost
+   */
   cost: number;
+  
+  /**
+   * Total fees
+   */
   totalFees: number;
+  
+  /**
+   * Profit amount
+   */
   profit: number;
+  
+  /**
+   * Profit margin percentage
+   */
   profitMargin: number;
+  
+  /**
+   * Return on investment percentage
+   */
   roi: number;
+  
+  /**
+   * Breakdown of individual fees
+   */
   feeBreakdown: Record<string, number>;
+}
+
+/**
+ * Product fees module options
+ */
+export interface ProductFeesModuleOptions {
+  /**
+   * Default currency code to use if not specified
+   */
+  defaultCurrencyCode?: string;
+  
+  /**
+   * Maximum batch size for fee requests
+   */
+  maxBatchSize?: number;
 }
 
 /**
  * Implementation of the Amazon Product Fees API
  */
-export class ProductFeesModule extends BaseApiModule {
+export class ProductFeesModule implements BaseModule<ProductFeesModuleOptions> {
+  /**
+   * The unique identifier for this module
+   */
+  public readonly moduleId: string = 'productFees';
+  
+  /**
+   * The human-readable name of this module
+   */
+  public readonly moduleName: string = 'Product Fees';
+  
+  /**
+   * The base URL path for API requests
+   */
+  public readonly basePath: string = '/products/fees/v0';
+  
+  /**
+   * API version
+   */
+  public readonly apiVersion: string;
+  
+  /**
+   * Marketplace ID
+   */
+  public readonly marketplaceId: string;
+  
+  /**
+   * Additional configuration options for this module
+   */
+  public readonly options: ProductFeesModuleOptions = {
+    defaultCurrencyCode: 'USD',
+    maxBatchSize: 20
+  };
+  
+  /**
+   * The API request function used by this module
+   */
+  public readonly apiRequest: ApiRequestFunction;
+  
   /**
    * Constructor
    * @param apiVersion API version
-   * @param makeApiRequest Function to make API requests
+   * @param apiRequest Function to make API requests
    * @param marketplaceId Marketplace ID
+   * @param options Optional module-specific configuration
    */
   constructor(
     apiVersion: string,
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string
+    apiRequest: ApiRequestFunction,
+    marketplaceId: string,
+    options?: ProductFeesModuleOptions
   ) {
-    super('productFees', apiVersion, makeApiRequest, marketplaceId);
-  }
-  
-  /**
-   * Initialize the module
-   * @param config Module-specific configuration
-   * @returns Promise<any> that resolves when initialization is complete
-   */
-  protected async initializeModule(config?: any): Promise<void> {
-    // No specific initialization required for this module
-    return Promise<any>.resolve();
+    this.apiVersion = apiVersion;
+    this.apiRequest = apiRequest;
+    this.marketplaceId = marketplaceId;
+    
+    if (options) {
+      this.options = {
+        ...this.options,
+        ...options
+      };
+    }
   }
   
   /**
@@ -283,35 +367,53 @@ export class ProductFeesModule extends BaseApiModule {
    * @param feeRequests List of fee requests
    * @returns Fee estimates
    */
-  public async getFeeEstimates(feeRequests: FeeRequest[]): Promise<ApiResponse<{
-    payload: FeeEstimateResponse[];
-  }>> {
+  public async getFeeEstimates(
+    feeRequests: FeeRequest[]
+  ): Promise<FeeEstimateResponse[]> {
     if (!feeRequests || feeRequests.length === 0) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'At least one fee request is required',
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     // Ensure each fee request has a marketplace ID
-    const requestsWithMarketplace = feeRequests.map((request: any) => ({
+    const requestsWithMarketplace = feeRequests.map(request => ({
       ...request,
       marketplaceId: request.marketplaceId || this.marketplaceId
     }));
     
+    // Split requests into batches of maxBatchSize
+    const maxBatchSize = this.options.maxBatchSize || 20;
+    const batches: FeeRequest[][] = [];
+    
+    for (let i = 0; i < requestsWithMarketplace.length; i += maxBatchSize) {
+      batches.push(requestsWithMarketplace.slice(i, i + maxBatchSize));
+    }
+    
     try {
-      return await this.makeRequest<{
-        payload: FeeEstimateResponse[];
-      }>({
-        method: 'POST',
-        path: '/feesEstimate',
-        data: {
-          FeesEstimateRequest: requestsWithMarketplace
+      // Process each batch and collect results
+      const results: FeeEstimateResponse[] = [];
+      
+      for (const batch of batches) {
+        const response = await this.apiRequest<FeeEstimateBatchResponse>(
+          `${this.basePath}/feesEstimate`,
+          'POST',
+          {
+            FeesEstimateRequest: batch
+          }
+        );
+        
+        if (response.data?.payload) {
+          results.push(...response.data.payload);
         }
-      });
+      }
+      
+      return results;
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getFeeEstimates`);
+      throw error instanceof Error 
+        ? AmazonErrorHandler.createError(error.message, AmazonErrorCode.OPERATION_FAILED) 
+        : AmazonErrorHandler.createError('Unknown error', AmazonErrorCode.UNKNOWN_ERROR);
     }
   }
   
@@ -320,24 +422,24 @@ export class ProductFeesModule extends BaseApiModule {
    * @param asin ASIN of the product
    * @param price Price to use for fee calculation
    * @param isAmazonFulfilled Whether the product is fulfilled by Amazon
-   * @param marketplaceId Marketplace ID (default: current marketplace)
+   * @param marketplaceId Marketplace ID (defaults to the current marketplace)
    * @returns Fee estimate
    */
   public async getFeeEstimateByAsin(
-    asin: string,
-    price: number,
-    isAmazonFulfilled: boolean = true,
+    asin: string, 
+    price: number, 
+    isAmazonFulfilled = true, 
     marketplaceId?: string
   ): Promise<FeeEstimateResponse> {
     if (!asin) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'ASIN is required',
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     if (price <= 0) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'Price must be greater than 0',
         AmazonErrorCode.INVALID_INPUT
       );
@@ -351,7 +453,7 @@ export class ProductFeesModule extends BaseApiModule {
       price: {
         listingPrice: {
           amount: price,
-          currencyCode: 'USD' // Default to USD, this will be adjusted based on marketplace
+          currencyCode: this.options.defaultCurrencyCode || 'USD'
         }
       }
     };
@@ -360,7 +462,13 @@ export class ProductFeesModule extends BaseApiModule {
     const response = await this.getFeeEstimates([feeRequest]);
     
     // Return the first (and only) fee estimate
-    return response.data.payload[0];
+    return response[0] || {
+      status: 'ClientError',
+      error: {
+        code: 'NOT_FOUND',
+        message: 'No fee estimate returned'
+      }
+    };
   }
   
   /**
@@ -368,24 +476,24 @@ export class ProductFeesModule extends BaseApiModule {
    * @param sku SKU of the product
    * @param price Price to use for fee calculation
    * @param isAmazonFulfilled Whether the product is fulfilled by Amazon
-   * @param marketplaceId Marketplace ID (default: current marketplace)
+   * @param marketplaceId Marketplace ID (defaults to the current marketplace)
    * @returns Fee estimate
    */
   public async getFeeEstimateBySku(
-    sku: string,
-    price: number,
-    isAmazonFulfilled: boolean = true,
+    sku: string, 
+    price: number, 
+    isAmazonFulfilled = true, 
     marketplaceId?: string
   ): Promise<FeeEstimateResponse> {
     if (!sku) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'SKU is required',
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     if (price <= 0) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'Price must be greater than 0',
         AmazonErrorCode.INVALID_INPUT
       );
@@ -399,7 +507,7 @@ export class ProductFeesModule extends BaseApiModule {
       price: {
         listingPrice: {
           amount: price,
-          currencyCode: 'USD' // Default to USD, this will be adjusted based on marketplace
+          currencyCode: this.options.defaultCurrencyCode || 'USD'
         }
       }
     };
@@ -408,39 +516,45 @@ export class ProductFeesModule extends BaseApiModule {
     const response = await this.getFeeEstimates([feeRequest]);
     
     // Return the first (and only) fee estimate
-    return response.data.payload[0];
+    return response[0] || {
+      status: 'ClientError',
+      error: {
+        code: 'NOT_FOUND',
+        message: 'No fee estimate returned'
+      }
+    };
   }
   
   /**
    * Get fee estimates for multiple products by ASIN
    * @param asinPriceMap Map of ASIN to price
    * @param isAmazonFulfilled Whether the products are fulfilled by Amazon
-   * @param marketplaceId Marketplace ID (default: current marketplace)
+   * @param marketplaceId Marketplace ID (defaults to the current marketplace)
    * @returns Map of ASIN to fee estimate
    */
   public async getFeeEstimatesForAsins(
-    asinPriceMap: Record<string, number>,
-    isAmazonFulfilled: boolean = true,
+    asinPriceMap: Record<string, number>, 
+    isAmazonFulfilled = true, 
     marketplaceId?: string
   ): Promise<Record<string, FeeEstimateResponse>> {
     const asins = Object.keys(asinPriceMap);
     
     if (asins.length === 0) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'At least one ASIN is required',
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     // Create fee requests for each ASIN
-    const feeRequests: FeeRequest[] = asins.map((asin: any) => ({
+    const feeRequests: FeeRequest[] = asins.map(asin => ({
       marketplaceId: marketplaceId || this.marketplaceId,
       identifier: { asin },
       isAmazonFulfilled,
       price: {
         listingPrice: {
           amount: asinPriceMap[asin],
-          currencyCode: 'USD' // Default to USD, this will be adjusted based on marketplace
+          currencyCode: this.options.defaultCurrencyCode || 'USD'
         }
       }
     }));
@@ -451,7 +565,7 @@ export class ProductFeesModule extends BaseApiModule {
     // Map the responses to ASINs
     const resultMap: Record<string, FeeEstimateResponse> = {};
     
-    response.data.payload.forEach((estimate, index) => {
+    response.forEach((estimate, index) => {
       const asin = asins[index];
       resultMap[asin] = estimate;
     });
@@ -463,32 +577,32 @@ export class ProductFeesModule extends BaseApiModule {
    * Get fee estimates for multiple products by SKU
    * @param skuPriceMap Map of SKU to price
    * @param isAmazonFulfilled Whether the products are fulfilled by Amazon
-   * @param marketplaceId Marketplace ID (default: current marketplace)
+   * @param marketplaceId Marketplace ID (defaults to the current marketplace)
    * @returns Map of SKU to fee estimate
    */
   public async getFeeEstimatesForSkus(
-    skuPriceMap: Record<string, number>,
-    isAmazonFulfilled: boolean = true,
+    skuPriceMap: Record<string, number>, 
+    isAmazonFulfilled = true, 
     marketplaceId?: string
   ): Promise<Record<string, FeeEstimateResponse>> {
     const skus = Object.keys(skuPriceMap);
     
     if (skus.length === 0) {
-      throw AmazonErrorUtil.createError(
+      throw AmazonErrorHandler.createError(
         'At least one SKU is required',
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     // Create fee requests for each SKU
-    const feeRequests: FeeRequest[] = skus.map((sku: any) => ({
+    const feeRequests: FeeRequest[] = skus.map(sku => ({
       marketplaceId: marketplaceId || this.marketplaceId,
       identifier: { sku },
       isAmazonFulfilled,
       price: {
         listingPrice: {
           amount: skuPriceMap[sku],
-          currencyCode: 'USD' // Default to USD, this will be adjusted based on marketplace
+          currencyCode: this.options.defaultCurrencyCode || 'USD'
         }
       }
     }));
@@ -499,7 +613,7 @@ export class ProductFeesModule extends BaseApiModule {
     // Map the responses to SKUs
     const resultMap: Record<string, FeeEstimateResponse> = {};
     
-    response.data.payload.forEach((estimate, index) => {
+    response.forEach((estimate, index) => {
       const sku = skus[index];
       resultMap[sku] = estimate;
     });
@@ -515,8 +629,8 @@ export class ProductFeesModule extends BaseApiModule {
    * @returns Profit estimate
    */
   public calculateEstimatedProfit(
-    price: number,
-    cost: number,
+    price: number, 
+    cost: number, 
     feeEstimate: FeeEstimateResponse
   ): ProfitEstimate {
     // If fee estimate is not available, return zeroes
@@ -562,5 +676,163 @@ export class ProductFeesModule extends BaseApiModule {
       roi,
       feeBreakdown
     };
+  }
+  
+  /**
+   * Find the optimal price point for maximum profit
+   * @param asin ASIN of the product
+   * @param minPrice Minimum price to consider
+   * @param maxPrice Maximum price to consider
+   * @param cost Product cost
+   * @param steps Number of price points to check
+   * @param isAmazonFulfilled Whether the product is fulfilled by Amazon
+   * @returns Optimal price and profit information
+   */
+  public async findOptimalPricePoint(
+    asin: string,
+    minPrice: number,
+    maxPrice: number,
+    cost: number,
+    steps = 10,
+    isAmazonFulfilled = true
+  ): Promise<{ price: number; profitEstimate: ProfitEstimate }> {
+    if (!asin) {
+      throw AmazonErrorHandler.createError(
+        'ASIN is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    if (minPrice <= 0 || maxPrice <= 0 || minPrice >= maxPrice) {
+      throw AmazonErrorHandler.createError(
+        'Price range is invalid',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    if (cost <= 0) {
+      throw AmazonErrorHandler.createError(
+        'Cost must be greater than 0',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    // Generate price points to check
+    const priceStepSize = (maxPrice - minPrice) / (steps - 1);
+    const pricePoints: number[] = [];
+    
+    for (let i = 0; i < steps; i++) {
+      pricePoints.push(minPrice + i * priceStepSize);
+    }
+    
+    // Create a map of price points to ASINs (same ASIN with different prices)
+    const testPriceMap: Record<string, number> = {};
+    
+    pricePoints.forEach((price, index) => {
+      testPriceMap[`${asin}_${index}`] = price;
+    });
+    
+    // Create fee requests for each price point
+    const feeRequests: FeeRequest[] = pricePoints.map((price, index) => ({
+      marketplaceId: this.marketplaceId,
+      identifier: { asin },
+      isAmazonFulfilled,
+      price: {
+        listingPrice: {
+          amount: price,
+          currencyCode: this.options.defaultCurrencyCode || 'USD'
+        }
+      }
+    }));
+    
+    // Get fee estimates for all price points
+    const responses = await this.getFeeEstimates(feeRequests);
+    
+    // Calculate profit for each price point
+    const profitResults: Array<{ price: number; profitEstimate: ProfitEstimate }> = [];
+    
+    responses.forEach((response, index) => {
+      const price = pricePoints[index];
+      const profitEstimate = this.calculateEstimatedProfit(price, cost, response);
+      profitResults.push({ price, profitEstimate });
+    });
+    
+    // Find the price point with maximum profit
+    let maxProfitResult = profitResults[0];
+    
+    for (let i = 1; i < profitResults.length; i++) {
+      if (profitResults[i].profitEstimate.profit > maxProfitResult.profitEstimate.profit) {
+        maxProfitResult = profitResults[i];
+      }
+    }
+    
+    return maxProfitResult;
+  }
+  
+  /**
+   * Calculate breakeven price
+   * @param asin ASIN of the product
+   * @param cost Product cost
+   * @param isAmazonFulfilled Whether the product is fulfilled by Amazon
+   * @param maxIterations Maximum iterations for binary search
+   * @returns Breakeven price
+   */
+  public async calculateBreakenPrice(
+    asin: string,
+    cost: number,
+    isAmazonFulfilled = true,
+    maxIterations = 10
+  ): Promise<number> {
+    if (!asin) {
+      throw AmazonErrorHandler.createError(
+        'ASIN is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    if (cost <= 0) {
+      throw AmazonErrorHandler.createError(
+        'Cost must be greater than 0',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    // Initial price range for binary search
+    let minPrice = cost;
+    let maxPrice = cost * 2;
+    
+    // Perform binary search to find the breakeven price
+    for (let i = 0; i < maxIterations; i++) {
+      const midPrice = (minPrice + maxPrice) / 2;
+      
+      // Get fee estimate for the current price
+      const feeEstimate = await this.getFeeEstimateByAsin(
+        asin,
+        midPrice,
+        isAmazonFulfilled
+      );
+      
+      // Calculate profit
+      const profit = this.calculateEstimatedProfit(
+        midPrice,
+        cost,
+        feeEstimate
+      );
+      
+      // Adjust search range based on profit
+      if (Math.abs(profit.profit) < 0.01) {
+        // Found breakeven price (profit very close to zero)
+        return midPrice;
+      } else if (profit.profit > 0) {
+        // Price is too high, search lower
+        maxPrice = midPrice;
+      } else {
+        // Price is too low, search higher
+        minPrice = midPrice;
+      }
+    }
+    
+    // Return the last midpoint as the approximate breakeven price
+    return (minPrice + maxPrice) / 2;
   }
 }

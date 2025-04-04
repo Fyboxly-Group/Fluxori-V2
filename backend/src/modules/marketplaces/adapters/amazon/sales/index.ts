@@ -1,6 +1,8 @@
 /**
  * Amazon Sales API Modules
- * Exports all sales-related modules and interfaces
+ * 
+ * This module provides access to Amazon Selling Partner API sales analytics and metrics.
+ * It includes functionality to retrieve sales performance, traffic, and order data.
  */
 
 export * from './sales';

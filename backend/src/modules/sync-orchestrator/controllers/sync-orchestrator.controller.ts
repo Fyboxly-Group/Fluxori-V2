@@ -23,7 +23,7 @@ class SyncOrchestratorController {
       return res.status(500).json({
         success: false,
         message: 'Failed to start sync service',
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)
       });
     }
   };
@@ -43,7 +43,7 @@ class SyncOrchestratorController {
       return res.status(500).json({
         success: false,
         message: 'Failed to stop sync service',
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)
       });
     }
   };
@@ -73,7 +73,7 @@ class SyncOrchestratorController {
       return res.status(500).json({
         success: false,
         message: 'Failed to update sync interval',
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)
       });
     }
   };
@@ -94,7 +94,7 @@ class SyncOrchestratorController {
       return res.status(500).json({
         success: false,
         message: 'Failed to get sync status',
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)
       });
     }
   };
@@ -134,7 +134,7 @@ class SyncOrchestratorController {
       return res.status(500).json({
         success: false,
         message: 'Failed to trigger sync',
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)
       });
     }
   };
@@ -163,7 +163,7 @@ class SyncOrchestratorController {
       return res.status(500).json({
         success: false,
         message: 'Failed to trigger full sync',
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)
       });
     }
   };
@@ -207,7 +207,7 @@ class SyncOrchestratorController {
       return res.status(500).json({
         success: false,
         message: 'Failed to handle scheduled sync',
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)
       });
     }
   };

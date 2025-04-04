@@ -8,7 +8,7 @@ export interface ShopifyConfig {
   maxRetries: number;
   initialRetryDelay: number;
   callsPerSecond: number;
-  bucketSize: number
+  bucketSize: number;
 }
 
 export const shopifyConfig: ShopifyConfig = {

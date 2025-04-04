@@ -1,18 +1,18 @@
 /**
  * Amazon Sales API Module
  * 
- * Implements the Amazon SP-API Sales API functionality.
- * This module enables sellers to get sales performance data, analytics, 
- * and metrics for their Amazon business.
+ * This module provides access to sales and traffic data from Amazon Selling Partner API.
+ * It allows sellers to retrieve sales, orders, traffic, and other business metrics.
  */
 
-import { BaseApiModule: BaseApiModule, ApiRequestOptions, ApiResponse : undefined} as any from '../core/api-module';
-import { AmazonErrorUtil: AmazonErrorUtil, AmazonErrorCode : undefined} as any from '../utils/amazon-error';
+import { ApiModule } from '../../../core/api-module';
+import { ApiRequestFunction, ApiResponse } from '../../../core/base-module.interface';
+import AmazonErrorHandler, { AmazonErrorCode } from '../../../utils/amazon-error';
 
 /**
  * Time period granularity
  */
-export type Granularity = 'DAY' | 'WEEK' | 'MONTH' | 'YEAR';
+export type Granularity = 'DAY' | 'WEEK' | 'MONTH' | 'YEAR' | 'TOTAL';
 
 /**
  * Sort direction
@@ -20,7 +20,7 @@ export type Granularity = 'DAY' | 'WEEK' | 'MONTH' | 'YEAR';
 export type SortDirection = 'ASC' | 'DESC';
 
 /**
- * Dimension type
+ * Dimension type for grouping
  */
 export type DimensionType = 'ASIN' | 'SKU' | 'PARENT_ASIN' | 'CATEGORY' | 'BRAND' | 'FULFILLMENT_CHANNEL';
 
@@ -56,118 +56,208 @@ export type ReviewsMetric =
   | 'REVIEW_COUNT';
 
 /**
- * Money value with currency
- */
-export interface Money {
-  /**
-   * The currency code
-   */
-  currencyCode: string;
-  
-  /**
-   * The monetary value
-   */
-  amount: number;
-} as any
-
-/**
- * Dimension filter
+ * Filter for dimension values
  */
 export interface DimensionFilter {
   /**
-   * Dimension to filter on
+   * The dimension name to filter on
    */
   dimensionName: DimensionType;
   
   /**
-   * Value to filter for
+   * The dimension value to filter on
    */
   dimensionValue: string;
-} as any
+}
 
 /**
- * Sorting configuration
+ * Configuration for sorting results
  */
 export interface SortConfig {
   /**
-   * Sort by this key
+   * The key to sort by
    */
   key: string;
   
   /**
-   * Sort direction
+   * The direction to sort in
    */
   direction: SortDirection;
-} as any
-
-/**
- * Pagination configuration
- */
-export interface PaginationConfig {
-  /**
-   * Size of each page
-   */
-  size?: number;
-  
-  /**
-   * Current token for pagination
-   */
-  token?: string;
-} as any
-
-/**
- * Get Order Metrics query for a time period
- */
-export interface GetOrderMetricsQuery {
-  /**
-   * Marketplace ID
-   */
-  marketplaceIds: string | string[] as any;
-  
-  /**
-   * Interval start time(ISO8601 as any, format as any: any)
-   */
-  intervalStart: string;
-  
-  /**
-   * Interval end time(ISO8601 as any, format as any: any)
-   */
-  intervalEnd: string;
-  
-  /**
-   * Granularity of the metrics
-   */
-  granularity: Granularity;
-  
-  /**
-   * Specific metric filters
-   */
-  dimensionFilters?: DimensionFilter[] as any;
-  
-  /**
-   * Whether to get metrics by ASIN
-   */
-  byAsin?: boolean;
-  
-  /**
-   * Whether to get metrics by SKU
-   */
-  bySku?: boolean;
 }
 
 /**
- * Get Order Metrics response
+ * Configuration for paginating results
+ */
+export interface PaginationConfig {
+  /**
+   * The page size to request
+   */
+  size: number;
+  
+  /**
+   * The token for the next page of results
+   */
+  token?: string;
+}
+
+/**
+ * Money value with currency
+ */
+export interface Money {
+  /**
+   * The amount
+   */
+  amount: number;
+  
+  /**
+   * The currency code (e.g., USD)
+   */
+  currencyCode: string;
+}
+
+/**
+ * Sales metric data
+ */
+export interface SalesMetricData {
+  /**
+   * Ordered revenue
+   */
+  orderedRevenue?: Money;
+  
+  /**
+   * Ordered units
+   */
+  orderedUnits?: number;
+  
+  /**
+   * Conversion rate
+   */
+  conversionRate?: number;
+  
+  /**
+   * Average selling price
+   */
+  avgSellingPrice?: Money;
+  
+  /**
+   * Average revenue per order
+   */
+  avgRevenuePerOrder?: Money;
+  
+  /**
+   * Ordered items per order
+   */
+  orderedItemsPerOrder?: number;
+}
+
+/**
+ * Traffic metric data
+ */
+export interface TrafficMetricData {
+  /**
+   * Browser page views
+   */
+  browserPageViews?: number;
+  
+  /**
+   * Browser sessions
+   */
+  browserSessions?: number;
+  
+  /**
+   * Mobile app page views
+   */
+  mobileAppPageViews?: number;
+  
+  /**
+   * Mobile app sessions
+   */
+  mobileAppSessions?: number;
+}
+
+/**
+ * Buyability metric data
+ */
+export interface BuyabilityMetricData {
+  /**
+   * Active listings
+   */
+  activeListings?: number;
+  
+  /**
+   * Active listings with buybox
+   */
+  activeListingsWithBuybox?: number;
+  
+  /**
+   * Active listings without buybox
+   */
+  activeListingsWithoutBuybox?: number;
+}
+
+/**
+ * Reviews metric data
+ */
+export interface ReviewsMetricData {
+  /**
+   * Average star rating
+   */
+  averageStarRating?: number;
+  
+  /**
+   * Review count
+   */
+  reviewCount?: number;
+}
+
+/**
+ * Product metrics data
+ */
+export interface ProductMetricsData {
+  /**
+   * ASIN or SKU
+   */
+  identifier: string;
+  
+  /**
+   * The dimension type (ASIN, SKU, etc.)
+   */
+  dimensionType: DimensionType;
+  
+  /**
+   * The report date
+   */
+  reportDate: string;
+  
+  /**
+   * Traffic metrics data
+   */
+  traffic?: TrafficMetricData;
+  
+  /**
+   * Sales metrics data
+   */
+  sales?: SalesMetricData;
+  
+  /**
+   * Buyability metrics data
+   */
+  buyability?: BuyabilityMetricData;
+  
+  /**
+   * Reviews metrics data
+   */
+  reviews?: ReviewsMetricData;
+}
+
+/**
+ * Order metric data
  */
 export interface OrderMetric {
   /**
-   * The interval start date time
+   * The interval
    */
-  intervalStart: string;
-  
-  /**
-   * The interval end date time
-   */
-  intervalEnd: string;
+  interval: string;
   
   /**
    * The unit count
@@ -175,94 +265,94 @@ export interface OrderMetric {
   unitCount: number;
   
   /**
-   * The ordered product sales amount
+   * The order item count
    */
-  orderedProductSales: Money;
+  orderItemCount: number;
   
   /**
-   * The ordered product sales tax amount
+   * The order count
    */
-  orderedProductSalesTax?: Money;
+  orderCount: number;
   
   /**
-   * The total ordered revenue amount(including as any, shipping as any: any)
+   * The average unit price
    */
-  totalOrderedRevenue?: Money;
+  averageUnitPrice: Money;
   
   /**
-   * The ASIN identifier if requested
+   * The total sales
    */
-  asin?: string;
-  
-  /**
-   * The SKU identifier if requested
-   */
-  sku?: string;
-  
-  /**
-   * The parent ASIN if applicable
-   */
-  parentAsin?: string;
-  
-  /**
-   * Additional custom metrics
-   */
-  [key: string] as any: any;
+  totalSales: Money;
 }
 
 /**
- * Get Sales and Traffic metrics query
+ * Query parameters for getting sales and traffic data
  */
 export interface GetSalesAndTrafficQuery {
   /**
-   * Marketplace ID
+   * Marketplace IDs to get data for
    */
-  marketplaceIds: string | string[] as any;
+  marketplaceIds: string[];
   
   /**
-   * Interval start time(ISO8601 as any, format as any: any)
+   * Start date (YYYY-MM-DD)
    */
   startDate: string;
   
   /**
-   * Interval end time(ISO8601 as any, format as any: any)
+   * End date (YYYY-MM-DD)
    */
   endDate: string;
   
   /**
-   * Granularity of the metrics
+   * Time granularity
    */
   granularity: Granularity;
   
   /**
-   * Optional list of ASINs to retrieve metrics for
+   * ASIN list to filter by
    */
-  asins?: string[] as any;
+  asins?: string[];
+  
+  /**
+   * SKU list to filter by
+   */
+  skus?: string[];
+  
+  /**
+   * Brand list to filter by
+   */
+  brands?: string[];
   
   /**
    * Traffic metrics to include
    */
-  trafficMetrics?: TrafficMetric[] as any;
+  trafficMetrics?: TrafficMetric[];
   
   /**
    * Sales metrics to include
    */
-  salesMetrics?: SalesMetric[] as any;
+  salesMetrics?: SalesMetric[];
   
   /**
    * Buyability metrics to include
    */
-  buyabilityMetrics?: BuyabilityMetric[] as any;
+  buyabilityMetrics?: BuyabilityMetric[];
   
   /**
-   * Review metrics to include
+   * Reviews metrics to include
    */
-  reviewsMetrics?: ReviewsMetric[] as any;
+  reviewsMetrics?: ReviewsMetric[];
   
   /**
    * Dimension to group by
    */
   groupBy?: DimensionType;
+  
+  /**
+   * Dimension filters to apply
+   */
+  filters?: DimensionFilter[];
   
   /**
    * Sorting configuration
@@ -276,526 +366,459 @@ export interface GetSalesAndTrafficQuery {
 }
 
 /**
- * Traffic metric data
+ * Query parameters for getting order metrics data
  */
-export interface TrafficMetricData {
+export interface GetOrderMetricsQuery {
   /**
-   * Date for the metrics(ISO8601 as any, format as any: any)
+   * Marketplace IDs to get data for
    */
-  date: string;
+  marketplaceIds: string[];
   
   /**
-   * Traffic metrics
-   */
-  metrics: {
-    [key in TrafficMetric] as any?: number;
-  } as any;
-}
-
-/**
- * Sales metric data
- */
-export interface SalesMetricData {
-  /**
-   * Date for the metrics(ISO8601 as any, format as any: any)
-   */
-  date: string;
-  
-  /**
-   * Sales metrics
-   */
-  metrics: {
-    /**
-     * Ordered revenue in monetary value
-     */
-    ORDERED_REVENUE?: Money;
-    
-    /**
-     * Number of ordered units
-     */
-    ORDERED_UNITS?: number;
-    
-    /**
-     * Conversion rate as a percentage
-     */
-    CONVERSION_RATE?: number;
-    
-    /**
-     * Average selling price in monetary value
-     */
-    AVG_SELLING_PRICE?: Money;
-    
-    /**
-     * Average revenue per order in monetary value
-     */
-    AVG_REVENUE_PER_ORDER?: Money;
-    
-    /**
-     * Average items per order
-     */
-    ORDERED_ITEMS_PER_ORDER?: number;
-  } as any;
-}
-
-/**
- * Buyability metric data
- */
-export interface BuyabilityMetricData {
-  /**
-   * Date for the metrics(ISO8601 as any, format as any: any)
-   */
-  date: string;
-  
-  /**
-   * Buyability metrics
-   */
-  metrics: {
-    [key in BuyabilityMetric] as any?: number;
-  } as any;
-}
-
-/**
- * Reviews metric data
- */
-export interface ReviewsMetricData {
-  /**
-   * Date for the metrics(ISO8601 as any, format as any: any)
-   */
-  date: string;
-  
-  /**
-   * Reviews metrics
-   */
-  metrics: {
-    /**
-     * Average star rating(1-5 as any: any)
-     */
-    AVERAGE_STAR_RATING?: number;
-    
-    /**
-     * Number of reviews
-     */
-    REVIEW_COUNT?: number;
-  };
-}
-
-/**
- * Product metrics data
- */
-export interface ProductMetricsData {
-  /**
-   * Product identifier(ASIN as any: any)
-   */
-  asin: string;
-  
-  /**
-   * Product SKU if available
-   */
-  sku?: string;
-  
-  /**
-   * Product title
-   */
-  title?: string;
-  
-  /**
-   * Product category
-   */
-  category?: string;
-  
-  /**
-   * Product brand
-   */
-  brand?: string;
-  
-  /**
-   * Fulfillment channel
-   */
-  fulfillmentChannel?: 'FBA' | 'FBM';
-  
-  /**
-   * Traffic metrics
-   */
-  trafficMetrics?: {
-    [key in TrafficMetric] as any?: number;
-  } as any;
-  
-  /**
-   * Sales metrics
-   */
-  salesMetrics?: {
-    /**
-     * Ordered revenue in monetary value
-     */
-    ORDERED_REVENUE?: Money;
-    
-    /**
-     * Number of ordered units
-     */
-    ORDERED_UNITS?: number;
-    
-    /**
-     * Conversion rate as a percentage
-     */
-    CONVERSION_RATE?: number;
-    
-    /**
-     * Average selling price in monetary value
-     */
-    AVG_SELLING_PRICE?: Money;
-    
-    /**
-     * Average revenue per order in monetary value
-     */
-    AVG_REVENUE_PER_ORDER?: Money;
-    
-    /**
-     * Average items per order
-     */
-    ORDERED_ITEMS_PER_ORDER?: number;
-  } as any;
-  
-  /**
-   * Buyability metrics
-   */
-  buyabilityMetrics?: {
-    [key in BuyabilityMetric] as any?: number;
-  } as any;
-  
-  /**
-   * Reviews metrics
-   */
-  reviewsMetrics?: {
-    /**
-     * Average star rating(1-5 as any: any)
-     */
-    AVERAGE_STAR_RATING?: number;
-    
-    /**
-     * Number of reviews
-     */
-    REVIEW_COUNT?: number;
-  };
-}
-
-/**
- * Get Sales and Traffic metrics response
- */
-export interface SalesAndTrafficResponse {
-  /**
-   * Marketplace ID
-   */
-  marketplaceId: string;
-  
-  /**
-   * Start date of the requested period
+   * Start date (ISO 8601)
    */
   startDate: string;
   
   /**
-   * End date of the requested period
+   * End date (ISO 8601)
    */
   endDate: string;
   
   /**
-   * Granularity of the metrics
+   * Time granularity
    */
   granularity: Granularity;
   
   /**
-   * Time-based metrics(by date/time period as any: any)
+   * Filter by ASIN
    */
-  timeBasedMetrics?: {
-    /**
-     * Traffic metrics by time period
-     */
-    trafficMetrics?: TrafficMetricData[] as any;
-    
-    /**
-     * Sales metrics by time period
-     */
-    salesMetrics?: SalesMetricData[] as any;
-    
-    /**
-     * Buyability metrics by time period
-     */
-    buyabilityMetrics?: BuyabilityMetricData[] as any;
-    
-    /**
-     * Reviews metrics by time period
-     */
-    reviewsMetrics?: ReviewsMetricData[] as any;
-  } as any;
+  byAsin?: string;
   
   /**
-   * Product-based metrics(by ASIN or other dimension as any: any)
+   * Filter by SKU
    */
-  productMetrics?: {
+  bySku?: string;
+  
+  /**
+   * Dimension filters to apply
+   */
+  filters?: DimensionFilter[];
+}
+
+/**
+ * Response for the getSalesAndTraffic API
+ */
+export interface GetSalesAndTrafficResponse {
+  /**
+   * The payload
+   */
+  payload: {
+    /**
+     * Report specification
+     */
+    reportSpecification: {
+      /**
+       * Marketplace IDs included in the report
+       */
+      marketplaceIds: string[];
+      
+      /**
+       * Start date of the report
+       */
+      startDate: string;
+      
+      /**
+       * End date of the report
+       */
+      endDate: string;
+      
+      /**
+       * Time granularity of the report
+       */
+      granularity: Granularity;
+    };
+    
     /**
      * List of product metrics
      */
-    products: ProductMetricsData[] as any;
+    productMetricsList?: ProductMetricsData[];
     
     /**
-     * Pagination token for next page if available
+     * The next token for pagination
      */
     nextToken?: string;
-  } as any;
+  };
+}
+
+/**
+ * Response for the getOrderMetrics API
+ */
+export interface GetOrderMetricsResponse {
+  /**
+   * The payload
+   */
+  payload: OrderMetric[];
+}
+
+/**
+ * Options for the sales module
+ */
+export interface SalesModuleOptions {
+  /**
+   * Maximum batch size for requests
+   */
+  maxBatchSize?: number;
   
   /**
-   * Calculation method for metrics
+   * Maximum page size for pagination
    */
-  calculationMethod?: string;
+  maxPageSize?: number;
 }
 
 /**
  * Implementation of the Amazon Sales API
  */
-export class SalesModule extends BaseApiModule {
+export class SalesModule extends ApiModule<SalesModuleOptions> {
+  /**
+   * The unique identifier for this module
+   */
+  readonly moduleId: string = 'sales';
+  
+  /**
+   * The human-readable name of this module
+   */
+  readonly moduleName: string = 'Sales';
+  
+  /**
+   * The API version this module uses
+   */
+  readonly apiVersion: string;
+  
+  /**
+   * The base URL path for API requests
+   */
+  readonly basePath: string;
+  
   /**
    * Constructor
    * @param apiVersion API version
-   * @param makeApiRequest Function to make API requests
+   * @param apiRequest Function to make API requests
    * @param marketplaceId Marketplace ID
+   * @param options Module-specific options
    */
-  constructor(apiVersion: string as any, makeApiRequest: <T>(
-      method: string as any, endpoint: string as any, options?: any as any) => Promise<{ data: T; status: number; headers: Record<string, string> : undefined} as any>,
-    marketplaceId: string
-  ) {;
-    super('sales' as any, apiVersion as any, makeApiRequest as any, marketplaceId as any: any);
-  : undefined}
-  
-  /**
-   * Initialize the module
-   * @param config Module-specific configuration
-   * @returns Promise<any> that resolves when initialization is complete
-   */
-  protected async initializeModule(config?: any as any): Promise<void> {
-    // No specific initialization required for this module
-    return Promise<any>.resolve(null as any: any);
+  constructor(
+    apiVersion: string,
+    apiRequest: ApiRequestFunction,
+    marketplaceId: string,
+    options: SalesModuleOptions = {}
+  ) {
+    super(apiRequest, marketplaceId, options);
+    this.apiVersion = apiVersion;
+    this.basePath = `/sales/${apiVersion}`;
   }
   
   /**
-   * Get order metrics for the specified time period and query parameters
-   * @param query Query parameters for order metrics
-   * @returns Order metrics
+   * Get order metrics
+   * @param query Query parameters
+   * @returns Order metrics data
    */
-  public async getOrderMetrics(query: GetOrderMetricsQuery as any): Promise<ApiResponse<OrderMetric[] as any>> {
-    if(!query.marketplaceIds as any: any) {;
-      throw AmazonErrorUtil.createError('Marketplace IDs are required to get order metrics' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
+  public async getOrderMetrics(
+    query: GetOrderMetricsQuery
+  ): Promise<OrderMetric[]> {
+    if (!query.marketplaceIds || query.marketplaceIds.length === 0) {
+      throw AmazonErrorHandler.createError(
+        'At least one marketplace ID is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
     
-    if(!query.intervalStart as any: any) {;
-      throw AmazonErrorUtil.createError('Interval start is required to get order metrics' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
-    
-    if(!query.intervalEnd as any: any) {;
-      throw AmazonErrorUtil.createError('Interval end is required to get order metrics' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
-    
-    if(!query.granularity as any: any) {;
-      throw AmazonErrorUtil.createError('Granularity is required to get order metrics' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
-    
-    const param: anys: Record<string, any> = {
-      marketplaceIds: Array.isArray(query.marketplaceIds as any: any) 
-        ? query.marketplaceIds.join(' as any, ' as any: any); 
-        : query.marketplaceIds,
-      intervalStart: query.intervalStart,
-      intervalEnd: query.intervalEnd,
-      granularity: query.granularity
-    };
-    
-    if(query.dimensionFilters && query.dimensionFilters.length > 0 as any: any) {;
-      // Convert dimension filters to the format expected by the API
-      for(let i: any = 0; i < query.dimensionFilters.length; i++ as any) {;
-        const filter: any = query.dimensionFilters[i] as any;
-        params[`dimensionFilters.${ i: i} as any.dimensionName`] = filter.dimensionName;
-        params[`dimensionFilters.${ i: i} as any.dimensionValue`] = filter.dimensionValue;
-}
-    if(query.byAsin as any: any) {;
-      params.byAsin = query.byAsin;
-    } as any
-    
-    if(query.bySku as any: any) {;
-      params.bySku = query.bySku;
-    } as any
+    if (!query.startDate || !query.endDate) {
+      throw AmazonErrorHandler.createError(
+        'Start date and end date are required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
     
     try {
-      return await this.makeRequest<OrderMetric[] as any>({
-        method: 'GET',
-        path: '/orders/metrics', params
-      : undefined} as any catch(error as any: any) {} as any);
-    } catch(error as any: any) {;
-      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getOrderMetrics` as any: any);
-}
-  /**
-   * Get sales and traffic metrics for the specified query parameters
-   * @param query Query parameters for sales and traffic metrics
-   * @returns Sales and traffic metrics
-   */
-  public async getSalesAndTrafficMetrics(query: GetSalesAndTrafficQuery as any): Promise<ApiResponse<SalesAndTrafficResponse>> {
-    if(!query.marketplaceIds as any: any) {;
-      throw AmazonErrorUtil.createError('Marketplace IDs are required to get sales and traffic metrics' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
-    
-    if(!query.startDate as any: any) {;
-      throw AmazonErrorUtil.createError('Start date is required to get sales and traffic metrics' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
-    
-    if(!query.endDate as any: any) {;
-      throw AmazonErrorUtil.createError('End date is required to get sales and traffic metrics' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
-    
-    if(!query.granularity as any: any) {;
-      throw AmazonErrorUtil.createError('Granularity is required to get sales and traffic metrics' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
-    
-    const param: anys: Record<string, any> = {
-      marketplaceIds: Array.isArray(query.marketplaceIds as any: any) 
-        ? query.marketplaceIds.join(' as any, ' as any: any); 
-        : query.marketplaceIds,
-      startDate: query.startDate,
-      endDate: query.endDate,
-      granularity: query.granularity
-    };
-    
-    if(query.asins && query.asins.length > 0 as any: any) {;
-      params.asins = query.asins.join(' as any, ' as any: any);
-    : undefined}
-    
-    if(query.trafficMetrics && query.trafficMetrics.length > 0 as any: any) {;
-      params.trafficMetrics = query.trafficMetrics.join(' as any, ' as any: any);
-    : undefined}
-    
-    if(query.salesMetrics && query.salesMetrics.length > 0 as any: any) {;
-      params.salesMetrics = query.salesMetrics.join(' as any, ' as any: any);
-    : undefined}
-    
-    if(query.buyabilityMetrics && query.buyabilityMetrics.length > 0 as any: any) {;
-      params.buyabilityMetrics = query.buyabilityMetrics.join(' as any, ' as any: any);
-    : undefined}
-    
-    if(query.reviewsMetrics && query.reviewsMetrics.length > 0 as any: any) {;
-      params.reviewsMetrics = query.reviewsMetrics.join(' as any, ' as any: any);
-    : undefined}
-    
-    if(query.groupBy as any: any) {;
-      params.groupBy = query.groupBy;
-    } as any
-    
-    if(query.sort as any: any) {;
-      params.sortKey = query.sort.key;
-      params.sortDirection = query.sort.direction;
-    } as any
-    
-    if(query.pagination as any: any) {;
-      if(query.pagination.size as any: any) {;
-        params.pageSize = query.pagination.size;
-      } as any
+      // Build query parameters
+      const params: Record<string, any> = {
+        marketplaceIds: query.marketplaceIds,
+        startDate: query.startDate,
+        endDate: query.endDate,
+        granularity: query.granularity || 'DAY'
+      };
       
-      if(query.pagination.token as any: any) {;
-        params.nextToken = query.pagination.token;
-} as any
-    try {
-      return await this.makeRequest<SalesAndTrafficResponse>({
-        method: 'GET',
-        path: '/sales-traffic', params
-      : undefined} as any catch(error as any: any) {} as any);
-    } catch(error as any: any) {;
-      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getSalesAndTrafficMetrics` as any: any);
-}
-  /**
-   * Get daily sales data for a specified date range
-   * @param startDate Start date(ISO8601 as any, format as any: any)
-   * @param endDate End date(ISO8601 as any, format as any: any)
-   * @param marketplaceIds Optional marketplace IDs(defaults to the module's marketplace ID as any: any)
-   * @returns Daily sales data
-   */
-  public async getDailySales(startDate: string as any, endDate: string as any, marketplaceIds?: string | string[] as any as any): Promise<ApiResponse<SalesAndTrafficResponse>> {
-    return this.getSalesAndTrafficMetrics({
-      marketplaceIds: marketplaceIds || this.marketplaceId as any, startDate as any, endDate as any, granularity: 'DAY' as any, salesMetrics: ['ORDERED_REVENUE' as any, 'ORDERED_UNITS' as any, 'AVG_SELLING_PRICE']
-    : undefined} as any);
-  }
-  
-  /**
-   * Get top selling products for a specified date range
-   * @param startDate Start date(ISO8601 as any, format as any: any)
-   * @param endDate End date(ISO8601 as any, format as any: any)
-   * @param limit Number of products to return(default: 10 as any)
-   * @param marketplaceIds Optional marketplace IDs(defaults to the module's marketplace ID as any: any)
-   * @returns Top selling products
-   */
-  public async getTopSellingProducts(startDate: string as any, endDate: string as any, limit: number = 10 as any, marketplaceIds?: string | string[] as any as any): Promise<ApiResponse<SalesAndTrafficResponse>> {
-    return this.getSalesAndTrafficMetrics({
-      marketplaceIds: marketplaceIds || this.marketplaceId as any, startDate as any, endDate as any, granularity: 'TOTAL' as any, groupBy: 'ASIN' as any, salesMetrics: ['ORDERED_REVENUE' as any, 'ORDERED_UNITS'] as any, sort: {
-        key: 'ORDERED_UNITS' as any, direction: 'DESC'
-      } as any, pagination: {
-        size: limit
-      } as any
-    } as any);
-  }
-  
-  /**
-   * Get sales performance by category
-   * @param startDate Start date(ISO8601 as any, format as any: any)
-   * @param endDate End date(ISO8601 as any, format as any: any)
-   * @param marketplaceIds Optional marketplace IDs(defaults to the module's marketplace ID as any: any)
-   * @returns Sales performance by category
-   */
-  public async getSalesByCategory(startDate: string as any, endDate: string as any, marketplaceIds?: string | string[] as any as any): Promise<ApiResponse<SalesAndTrafficResponse>> {
-    return this.getSalesAndTrafficMetrics({
-      marketplaceIds: marketplaceIds || this.marketplaceId as any, startDate as any, endDate as any, granularity: 'TOTAL' as any, groupBy: 'CATEGORY' as any, salesMetrics: ['ORDERED_REVENUE' as any, 'ORDERED_UNITS'] as any, sort: {
-        key: 'ORDERED_REVENUE' as any, direction: 'DESC'
+      // Add optional filters
+      if (query.byAsin) {
+        params.asin = query.byAsin;
       }
-    } as any);
+      
+      if (query.bySku) {
+        params.sku = query.bySku;
+      }
+      
+      // Add dimension filters
+      if (query.filters && query.filters.length > 0) {
+        for (let i = 0; i < query.filters.length; i++) {
+          const filter = query.filters[i];
+          params[`${filter.dimensionName}`] = filter.dimensionValue;
+        }
+      }
+      
+      // Make the API request
+      const response = await this.request<GetOrderMetricsResponse>(
+        '/orders/metrics',
+        'GET',
+        params
+      );
+      
+      return response.data.payload || [];
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getOrderMetrics`);
+    }
   }
   
   /**
-   * Get traffic and conversion metrics for a specified date range
-   * @param startDate Start date(ISO8601 as any, format as any: any)
-   * @param endDate End date(ISO8601 as any, format as any: any)
-   * @param granularity Granularity of the metrics(default: DAY as any)
-   * @param marketplaceIds Optional marketplace IDs(defaults to the module's marketplace ID as any: any)
-   * @returns Traffic and conversion metrics
+   * Get sales and traffic data
+   * @param query Query parameters
+   * @returns Sales and traffic data
    */
-  public async getTrafficAndConversion(startDate: string as any, endDate: string as any, granularity: Granularity = 'DAY' as any, marketplaceIds?: string | string[] as any as any): Promise<ApiResponse<SalesAndTrafficResponse>> {
-    return this.getSalesAndTrafficMetrics({
-      marketplaceIds: marketplaceIds || this.marketplaceId as any, startDate as any, endDate as any, granularity as any, trafficMetrics: ['BROWSER_PAGE_VIEWS' as any, 'BROWSER_SESSIONS'] as any, salesMetrics: ['CONVERSION_RATE'] as any
-    } as any);
-  }
-  
-  /**
-   * Get complete product performance data for specific ASINs
-   * @param asins List of ASINs to get data for
-   * @param startDate Start date(ISO8601 as any, format as any: any)
-   * @param endDate End date(ISO8601 as any, format as any: any)
-   * @param marketplaceIds Optional marketplace IDs(defaults to the module's marketplace ID as any: any)
-   * @returns Product performance data
-   */
-  public async getProductPerformance(asins: string[] as any as any, startDate: string as any, endDate: string as any, marketplaceIds?: string | string[] as any as any): Promise<ApiResponse<SalesAndTrafficResponse>> {
-    return this.getSalesAndTrafficMetrics({
-      marketplaceIds: marketplaceIds || this.marketplaceId as any, startDate as any, endDate as any, granularity: 'TOTAL' as any, asins as any, trafficMetrics: ['BROWSER_PAGE_VIEWS' as any, 'BROWSER_SESSIONS'] as any, salesMetrics: ['ORDERED_REVENUE' as any, 'ORDERED_UNITS' as any, 'CONVERSION_RATE' as any, 'AVG_SELLING_PRICE'] as any, reviewsMetrics: ['AVERAGE_STAR_RATING' as any, 'REVIEW_COUNT'] as any, buyabilityMetrics: ['ACTIVE_LISTINGS' as any, 'ACTIVE_LISTINGS_WITH_BUYBOX']
-    : undefined} as any);
-  }
-  
-  /**
-   * Compare sales performance across multiple marketplaces
-   * @param marketplaceIds List of marketplace IDs to compare
-   * @param startDate Start date(ISO8601 as any, format as any: any)
-   * @param endDate End date(ISO8601 as any, format as any: any)
-   * @returns Sales performance by marketplace
-   */
-  public async compareMarketplaceSales(marketplaceIds: string[] as any as any, startDate: string as any, endDate: string as any): Promise<Record<string, OrderMetric[] as any>> {
-    const result: anys: Record<string, OrderMetric[] as any> = {} as any;
+  public async getSalesAndTraffic(
+    query: GetSalesAndTrafficQuery
+  ): Promise<GetSalesAndTrafficResponse> {
+    if (!query.marketplaceIds || query.marketplaceIds.length === 0) {
+      throw AmazonErrorHandler.createError(
+        'At least one marketplace ID is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
     
-    // Get data for each marketplace
-    for(const marketplaceId: any of marketplaceIds as any) {;
-      const response: any = await this.getOrderMetrics({
-        marketplaceIds: marketplaceId as any, intervalStart: startDate as any, intervalEnd: endDate as any, granularity: 'DAY';
-      } as any);
-}results[marketplaceId] as any = response.data;
+    if (!query.startDate || !query.endDate) {
+      throw AmazonErrorHandler.createError(
+        'Start date and end date are required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    try {
+      // Build query parameters
+      const params: Record<string, any> = {
+        marketplaceIds: query.marketplaceIds,
+        startDate: query.startDate,
+        endDate: query.endDate,
+        granularity: query.granularity || 'DAY'
+      };
+      
+      // Add optional filters
+      if (query.asins && query.asins.length > 0) {
+        params.asins = query.asins;
+      }
+      
+      if (query.skus && query.skus.length > 0) {
+        params.skus = query.skus;
+      }
+      
+      if (query.trafficMetrics && query.trafficMetrics.length > 0) {
+        params.trafficMetrics = query.trafficMetrics;
+      }
+      
+      if (query.salesMetrics && query.salesMetrics.length > 0) {
+        params.salesMetrics = query.salesMetrics;
+      }
+      
+      if (query.buyabilityMetrics && query.buyabilityMetrics.length > 0) {
+        params.buyabilityMetrics = query.buyabilityMetrics;
+      }
+      
+      if (query.reviewsMetrics && query.reviewsMetrics.length > 0) {
+        params.reviewsMetrics = query.reviewsMetrics;
+      }
+      
+      if (query.groupBy) {
+        params.groupBy = query.groupBy;
+      }
+      
+      // Add sort configuration
+      if (query.sort) {
+        params.sortKey = query.sort.key;
+        params.sortDirection = query.sort.direction;
+      }
+      
+      // Add pagination
+      if (query.pagination) {
+        const maxPageSize = this.options.maxPageSize || 100;
+        params.pageSize = Math.min(query.pagination.size, maxPageSize);
+        
+        if (query.pagination.token) {
+          params.nextToken = query.pagination.token;
+        }
+      }
+      
+      // Make the API request
+      const response = await this.request<GetSalesAndTrafficResponse>(
+        '/salesAndTraffic',
+        'GET',
+        params
+      );
+      
+      return response.data;
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getSalesAndTraffic`);
+    }
+  }
+  
+  /**
+   * Get all sales for a date range, organized by marketplace
+   * @param marketplaceIds Marketplace IDs to get data for
+   * @param startDate Start date (YYYY-MM-DD)
+   * @param endDate End date (YYYY-MM-DD)
+   * @param granularity Time granularity
+   * @returns Map of marketplace ID to order metrics
+   */
+  public async getAllSalesByMarketplace(
+    marketplaceIds: string[],
+    startDate: string,
+    endDate: string,
+    granularity: Granularity = 'DAY'
+  ): Promise<Record<string, OrderMetric[]>> {
+    const results: Record<string, OrderMetric[]> = {};
+    
+    for (const marketplaceId of marketplaceIds) {
+      const response = await this.getOrderMetrics({
+        marketplaceIds: [marketplaceId],
+        startDate,
+        endDate,
+        granularity
+      });
+      
+      results[marketplaceId] = response;
     }
     
     return results;
+  }
+  
+  /**
+   * Get top selling products for a period
+   * @param marketplaceIds Marketplace IDs to get data for
+   * @param limit Maximum number of products to return
+   * @param startDate Start date (YYYY-MM-DD)
+   * @param endDate End date (YYYY-MM-DD)
+   * @returns Most popular products by sales
+   */
+  public async getTopSellingProducts(
+    marketplaceIds: string[],
+    limit: number = 10,
+    startDate?: string,
+    endDate?: string
+  ): Promise<ProductMetricsData[]> {
+    // If dates not provided, use past 30 days
+    const end = endDate || new Date().toISOString().split('T')[0];
+    const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    
+    // Get sales and traffic data
+    const response = await this.getSalesAndTraffic({
+      marketplaceIds,
+      startDate: start,
+      endDate: end,
+      granularity: 'TOTAL',
+      groupBy: 'ASIN',
+      salesMetrics: ['ORDERED_REVENUE', 'ORDERED_UNITS'],
+      sort: {
+        key: 'ORDERED_UNITS',
+        direction: 'DESC'
+      },
+      pagination: {
+        size: limit
+      }
+    });
+    
+    return response.payload.productMetricsList || [];
+  }
+  
+  /**
+   * Get top product categories by sales
+   * @param marketplaceIds Marketplace IDs to get data for
+   * @param startDate Start date (YYYY-MM-DD)
+   * @param endDate End date (YYYY-MM-DD)
+   * @returns Top categories by sales
+   */
+  public async getTopCategories(
+    marketplaceIds: string[],
+    startDate?: string,
+    endDate?: string
+  ): Promise<ProductMetricsData[]> {
+    // If dates not provided, use past 30 days
+    const end = endDate || new Date().toISOString().split('T')[0];
+    const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    
+    // Get sales and traffic data
+    const response = await this.getSalesAndTraffic({
+      marketplaceIds,
+      startDate: start,
+      endDate: end,
+      granularity: 'TOTAL',
+      groupBy: 'CATEGORY',
+      salesMetrics: ['ORDERED_REVENUE'],
+      sort: {
+        key: 'ORDERED_REVENUE',
+        direction: 'DESC'
+      }
+    });
+    
+    return response.payload.productMetricsList || [];
+  }
+  
+  /**
+   * Get traffic and conversion metrics for a time period
+   * @param marketplaceIds Marketplace IDs to get data for
+   * @param granularity Time granularity
+   * @param startDate Start date (YYYY-MM-DD)
+   * @param endDate End date (YYYY-MM-DD)
+   * @returns Traffic and conversion metrics
+   */
+  public async getTrafficAndConversion(
+    marketplaceIds: string[],
+    granularity: Granularity = 'DAY',
+    startDate?: string,
+    endDate?: string
+  ): Promise<GetSalesAndTrafficResponse> {
+    // If dates not provided, use past 30 days
+    const end = endDate || new Date().toISOString().split('T')[0];
+    const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    
+    // Get traffic and conversion data
+    return this.getSalesAndTraffic({
+      marketplaceIds,
+      startDate: start,
+      endDate: end,
+      granularity,
+      trafficMetrics: ['BROWSER_PAGE_VIEWS', 'BROWSER_SESSIONS'],
+      salesMetrics: ['CONVERSION_RATE']
+    });
+  }
+  
+  /**
+   * Get comprehensive dashboard metrics
+   * @param marketplaceIds Marketplace IDs to get data for
+   * @returns Comprehensive dashboard metrics
+   */
+  public async getDashboardMetrics(
+    marketplaceIds: string[]
+  ): Promise<GetSalesAndTrafficResponse> {
+    // Use past 30 days
+    const endDate = new Date().toISOString().split('T')[0];
+    const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    
+    // Get all metrics types for dashboard
+    return this.getSalesAndTraffic({
+      marketplaceIds,
+      startDate,
+      endDate,
+      granularity: 'TOTAL',
+      trafficMetrics: ['BROWSER_PAGE_VIEWS'],
+      salesMetrics: ['ORDERED_REVENUE'],
+      reviewsMetrics: ['AVERAGE_STAR_RATING'],
+      buyabilityMetrics: ['ACTIVE_LISTINGS']
+    });
+  }
 }

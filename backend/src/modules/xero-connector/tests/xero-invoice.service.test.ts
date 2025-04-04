@@ -148,7 +148,7 @@ describe('XeroInvoiceService', () => {
     });
     
     it('should handle invoice creation failure', async() => {
-      // Mock createInvoices to return empty array
+      // Mock createInvoices to return empty array;
       mockAccountingApi.createInvoices.mockResolvedValue({
         body: {
           invoices: [],
@@ -164,7 +164,7 @@ describe('XeroInvoiceService', () => {
     });
     
     it('should handle API errors', async() => {
-      // Mock createInvoices to throw error
+      // Mock createInvoices to throw error instanceof Error ? error : new Error(String(error));
       mockAccountingApi.createInvoices.mockRejectedValue(new Error('API error'));
       
       // Call the method under test
@@ -235,7 +235,7 @@ describe('XeroInvoiceService', () => {
     });
     
     it('should handle API errors', async() => {
-      // Mock getInvoices to throw error
+      // Mock getInvoices to throw error instanceof Error ? error : new Error(String(error));
       mockAccountingApi.getInvoices.mockRejectedValue(new Error('API error'));
       
       // Call the method under test and expect error
@@ -288,7 +288,7 @@ describe('XeroInvoiceService', () => {
     });
     
     it('should handle API errors', async() => {
-      // Mock getInvoice to throw error
+      // Mock getInvoice to throw error instanceof Error ? error : new Error(String(error));
       mockAccountingApi.getInvoice.mockRejectedValue(new Error('API error'));
       
       // Call the method under test and expect error

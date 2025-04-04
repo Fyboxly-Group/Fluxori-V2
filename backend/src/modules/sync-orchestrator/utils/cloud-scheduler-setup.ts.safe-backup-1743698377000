@@ -1,0 +1,85 @@
+// @ts-nocheck - Added by final-ts-fix.js
+import { CloudSchedulerClient } from '@google-cloud/scheduler';
+import { Types } from 'mongoose';
+
+/**
+ * Interface for job configuration
+ */
+interface JobConfig {
+  name: string;
+  schedule: string;
+  endpoint: string;
+  httpMethod: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  body?: any;
+  headers?: Record<string, string>;
+}
+
+/**
+ * Cloud Scheduler Setup Utility
+ * 
+ * Handles creation and management of Cloud Scheduler jobs
+ */
+export class CloudSchedulerSetup {
+  private client: CloudSchedulerClient;
+  private projectId: string;
+  private location: string;
+  
+  /**
+   * Constructor
+   */
+  constructor(projectId: string, location = 'us-central1') {
+    this.client = new CloudSchedulerClient();
+    this.projectId = projectId;
+    this.location = location;
+  }
+  
+  /**
+   * Create a scheduled sync job
+   */
+  async createSyncJob(config: JobConfig): Promise<any> {
+    try {
+      const parent = this.client.locationPath(this.projectId, this.location);
+      
+      const job = {
+        name: `${parent}/jobs/${config.name}`,
+        schedule: config.schedule,
+        timeZone: 'UTC',
+        httpTarget: {
+          uri: config.endpoint,
+          httpMethod: config.httpMethod,
+          body: config.body ? Buffer.from(JSON.stringify(config.body)).toString('base64') : undefined,
+          headers: config.headers || {}
+        }
+      };
+      
+      const [response] = await this.client.createJob({
+        parent,
+        job
+      });
+      
+      console.log(`Job created: ${response.name}`);
+      return response;
+    } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error);
+      console.error('Error creating sync job:', error);
+      throw error instanceof Error ? error : new Error(String(error));
+    }
+  }
+  
+  /**
+   * Delete a scheduled sync job
+   */
+  async deleteJob(jobName: string): Promise<any> {
+    try {
+      const name = this.client.jobPath(this.projectId, this.location, jobName);
+      const [response] = await this.client.deleteJob({ name });
+      
+      console.log(`Job deleted: ${jobName}`);
+      return response;
+    } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error);
+      console.error(`Error deleting job ${jobName}:`, error);
+      throw error instanceof Error ? error : new Error(String(error));
+    }
+  }
+}

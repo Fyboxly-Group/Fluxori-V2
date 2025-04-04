@@ -1,9 +1,10 @@
 /**
  * Xero Sync Status Model (Firestore)
  */
-import { Timestamp } from 'firebase-admin/firestore';
+import { Timestamp, DocumentData, QueryDocumentSnapshot } from 'firebase-admin/firestore';
 import { xeroSyncStatusCollection } from '../../../config/firestore';
-import { SyncOperationType, SyncStatus } from '../types';
+import { SyncOperationType, SyncStatusValue } from '../types';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Xero sync status interface
@@ -13,7 +14,7 @@ export interface IXeroSyncStatus {
   type: SyncOperationType;
   startedAt: Date | Timestamp;
   completedAt?: Date | Timestamp;
-  status: SyncStatus;
+  status: SyncStatusValue;
   progress: number;
   totalItems?: number;
   processedItems?: number;
@@ -35,7 +36,7 @@ export interface IXeroSyncStatusWithId extends IXeroSyncStatus {
  * Converter for Firestore
  */
 export const xeroSyncStatusConverter = {
-  toFirestore(syncStatus: IXeroSyncStatus): FirebaseFirestore.DocumentData {
+  toFirestore(syncStatus: IXeroSyncStatus): DocumentData {
     // Ensure timestamps are correct
     const now = Timestamp.now();
     
@@ -62,15 +63,15 @@ export const xeroSyncStatusConverter = {
     };
   },
   
-  fromFirestore(snapshot: FirebaseFirestore.QueryDocumentSnapshot): IXeroSyncStatusWithId {
+  fromFirestore(snapshot: QueryDocumentSnapshot): IXeroSyncStatusWithId {
     const data = snapshot.data();
     return {
       docId: snapshot.id, // Store the Firestore document ID separately
       id: data.id,
-      type: data.type,
+      type: data.type as SyncOperationType,
       startedAt: data.startedAt,
       completedAt: data.completedAt,
-      status: data.status,
+      status: data.status as SyncStatusValue,
       progress: data.progress,
       totalItems: data.totalItems,
       processedItems: data.processedItems,
@@ -79,7 +80,7 @@ export const xeroSyncStatusConverter = {
       organizationId: data.organizationId,
       createdAt: data.createdAt,
       updatedAt: data.updatedAt
-    } as IXeroSyncStatusWithId;
+    };
   }
 };
 
@@ -95,6 +96,11 @@ export const XeroSyncStatus = {
    * Create a new Xero sync status
    */
   async create(syncStatus: IXeroSyncStatus): Promise<IXeroSyncStatusWithId> {
+    // Ensure we have a valid ID
+    if (!syncStatus.id) {
+      syncStatus.id = uuidv4();
+    }
+    
     // Use the provided ID as the document ID if it's unique
     const docRef = XeroSyncStatusCollectionWithConverter.doc(syncStatus.id);
     
@@ -106,13 +112,21 @@ export const XeroSyncStatus = {
       syncStatus.id = newId;
       const newDocRef = await XeroSyncStatusCollectionWithConverter.add(syncStatus);
       const snapshot = await newDocRef.get();
-      return snapshot.data() as IXeroSyncStatusWithId;
+      const data = snapshot.data();
+      if (!data) {
+        throw new Error('Failed to create Xero sync status');
+      }
+      return data;
     }
     
     // Create new document with the provided ID
     await docRef.set(syncStatus);
     const snapshot = await docRef.get();
-    return snapshot.data() as IXeroSyncStatusWithId;
+    const data = snapshot.data();
+    if (!data) {
+      throw new Error('Failed to create Xero sync status');
+    }
+    return data;
   },
 
   /**
@@ -142,7 +156,7 @@ export const XeroSyncStatus = {
       .orderBy('startedAt', 'desc')
       .limit(limit)
       .get();
-    return snapshot.docs.map(doc => doc.data() as IXeroSyncStatusWithId);
+    return snapshot.docs.map((doc) => doc.data() as IXeroSyncStatusWithId);
   },
 
   /**
@@ -152,7 +166,19 @@ export const XeroSyncStatus = {
     const snapshot = await XeroSyncStatusCollectionWithConverter
       .where('status', '==', 'running')
       .get();
-    return snapshot.docs.map(doc => doc.data() as IXeroSyncStatusWithId);
+    return snapshot.docs.map((doc) => doc.data() as IXeroSyncStatusWithId);
+  },
+  
+  /**
+   * Find sync statuses by organization ID
+   */
+  async findByOrganizationId(organizationId: string, limit: number = 10): Promise<IXeroSyncStatusWithId[]> {
+    const snapshot = await XeroSyncStatusCollectionWithConverter
+      .where('organizationId', '==', organizationId)
+      .orderBy('startedAt', 'desc')
+      .limit(limit)
+      .get();
+    return snapshot.docs.map((doc) => doc.data() as IXeroSyncStatusWithId);
   },
 
   /**
@@ -199,6 +225,56 @@ export const XeroSyncStatus = {
     
     // If not found by custom ID, try document ID
     await XeroSyncStatusCollectionWithConverter.doc(id).delete();
+  },
+  
+  /**
+   * Mark a sync operation as completed
+   */
+  async markCompleted(id: string, errors?: string[]): Promise<void> {
+    const now = Timestamp.now();
+    
+    const data: Partial<IXeroSyncStatus> = {
+      status: 'completed',
+      progress: 100,
+      completedAt: now,
+      updatedAt: now
+    };
+    
+    if (errors && errors.length > 0) {
+      data.errorList = errors;
+    }
+    
+    await this.update(id, data);
+  },
+  
+  /**
+   * Mark a sync operation as failed
+   */
+  async markFailed(id: string, error: string): Promise<void> {
+    const now = Timestamp.now();
+    
+    await this.update(id, {
+      status: 'failed',
+      errorList: [error],
+      completedAt: now,
+      updatedAt: now
+    });
+  },
+  
+  /**
+   * Update sync progress
+   */
+  async updateProgress(id: string, progress: number, processedItems?: number): Promise<void> {
+    const data: Partial<IXeroSyncStatus> = {
+      progress,
+      updatedAt: Timestamp.now()
+    };
+    
+    if (processedItems !== undefined) {
+      data.processedItems = processedItems;
+    }
+    
+    await this.update(id, data);
   }
 };
 

@@ -19,12 +19,12 @@ import { NotificationType, NotificationCategory } from '../../notifications/mode
 
 // Temporary placeholder for notification service
 class NotificationService {
-  async sendNotification(params: any) {
+  async sendNotification(params: any) : Promise<void> {
     console.log('Notification service not yet implemented', params);
     return true;
   }
   
-  async createNotification(params: any) {
+  async createNotification(params: any) : Promise<void> {
     console.log('Create notification not yet implemented', params);
     return true;
   }
@@ -79,8 +79,9 @@ export class FeedbackService {
       
       return createdFeedback;
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error('Error creating feedback:', error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 
@@ -100,8 +101,9 @@ export class FeedbackService {
       
       return doc.data() as IFeedbackWithId;
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error(`Error getting feedback with ID ${id}:`, error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 
@@ -118,10 +120,11 @@ export class FeedbackService {
         .orderBy('createdAt', 'desc')
         .get();
       
-      return snapshot.docs.map(doc => doc.data());
+      return snapshot.docs.map((doc: any) => doc.data());
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error(`Error getting feedback for user ${userId}:`, error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 
@@ -138,10 +141,11 @@ export class FeedbackService {
         .orderBy('createdAt', 'desc')
         .get();
       
-      return snapshot.docs.map(doc => doc.data());
+      return snapshot.docs.map((doc: any) => doc.data());
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error(`Error getting feedback for organization ${organizationId}:`, error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 
@@ -179,10 +183,11 @@ export class FeedbackService {
       }
       
       const snapshot = await query.get();
-      return snapshot.docs.map(doc => doc.data());
+      return snapshot.docs.map((doc: any) => doc.data());
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error('Error getting all feedback:', error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 
@@ -282,8 +287,9 @@ export class FeedbackService {
       
       return updatedFeedback;
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error(`Error updating feedback with ID ${id}:`, error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 
@@ -298,8 +304,9 @@ export class FeedbackService {
       await docRef.delete();
       return true;
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error(`Error deleting feedback with ID ${id}:`, error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 
@@ -307,7 +314,7 @@ export class FeedbackService {
    * Get feedback analytics
    * Returns counts of feedback by type, category, and status
    */
-  async getFeedbackAnalytics(organizationId?: string) {
+  async getFeedbackAnalytics(organizationId?: string) : Promise<void> {
     try {
       // Build base query
       let query = feedbackCollection.withConverter(feedbackConverter);
@@ -318,7 +325,7 @@ export class FeedbackService {
       }
       
       const snapshot = await query.get();
-      const feedbackItems = snapshot.docs.map(doc => doc.data());
+      const feedbackItems = snapshot.docs.map((doc: any) => doc.data());
       
       // Count by type
       const typeCount = feedbackItems.reduce((acc, item) => {
@@ -352,8 +359,9 @@ export class FeedbackService {
         bySeverity: severityCount
       };
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error('Error getting feedback analytics:', error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 }

@@ -85,7 +85,7 @@ export class Logger {
   error(message: string, error?: any): void {
     // Extract stack trace if available
     const meta = error instanceof Error ? { 
-      message: error.message, 
+      errorMessage: error.message, 
       stack: error.stack,
       ...error
     } : error;

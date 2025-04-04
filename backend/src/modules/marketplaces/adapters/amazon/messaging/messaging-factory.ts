@@ -1,46 +1,44 @@
 /**
- * Factory for creating Messaging API module
+ * Amazon Messaging API Factory
+ * 
+ * Factory function for creating and registering an Amazon Messaging API module.
  */
 
-import { MessagingModule } from './messaging';
-import { ModuleRegistry } from '../core/module-registry';
-import { getDefaultModuleVersion } from '../core/module-definitions';
+import { MessagingModule, MessagingModuleOptions } from './messaging';
+import { ApiRequestFunction } from '../../../core/base-module.interface';
+import { ModuleRegistry } from '../../../core/module-registry';
+import { getModuleDefaultVersion } from '../../../core/module-definitions';
 
 /**
- * Factory for creating Messaging API module
+ * Creates and registers a Messaging module
+ * 
+ * @param apiRequest API request function
+ * @param marketplaceId Marketplace ID
+ * @param registry Module registry for registration
+ * @param apiVersion Optional API version to use
+ * @param options Optional module-specific configuration
+ * @returns The created Messaging module
  */
-export class MessagingModuleFactory {
-  /**
-   * Create a Messaging module and register it with the provided registry
-   * @param makeApiRequest Function to make API requests
-   * @param marketplaceId Marketplace ID
-   * @param registry Module registry to register with
-   * @param apiVersion Optional API version (uses default if not provided)
-   * @returns The created module
-   */
-  public static createMessagingModule(
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string,
-    registry: ModuleRegistry,
-    apiVersion?: string
-  ): MessagingModule {
-    // Use provided version or get the default
-    const version = apiVersion || getDefaultModuleVersion('messaging') || 'v1';
-    
-    // Create the module
-    const module = new MessagingModule(
-      version,
-      makeApiRequest,
-      marketplaceId
-    );
-    
-    // Register the module
-    registry.registerModule(module);
-    
-    return module;
-  }
+export function createMessagingModule(
+  apiRequest: ApiRequestFunction,
+  marketplaceId: string,
+  registry: ModuleRegistry,
+  apiVersion?: string,
+  options?: MessagingModuleOptions
+): MessagingModule {
+  // Use provided version or get the default
+  const version = apiVersion || getModuleDefaultVersion('messaging') || 'v1';
+  
+  // Create the module
+  const module = new MessagingModule(
+    version,
+    apiRequest,
+    marketplaceId,
+    options
+  );
+  
+  // Register the module
+  registry.registerModule('messaging', module);
+  
+  return module;
 }

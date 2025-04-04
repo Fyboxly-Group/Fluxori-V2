@@ -1,34 +1,74 @@
 import { Request, Response, NextFunction } from 'express';
-import { ConversationService, IProcessedResponse } from '../services/conversation.service';
-import { ConversationStatus } from '../models/conversation.model';
-import { ApiError } from '../../../middleware/error.middleware';
-import { InsufficientCreditsError } from '../../credits/services/credit.service';
+import { StatusCodes } from 'http-status-codes';
+import { Types } from 'mongoose';
+import { ConversationService } from '../services/conversation.service';
+import { ApiError } from '../../../utils/error.utils';
 
-// Controller for handling REST API requests
-export class ConversationController {
-  private static conversationService = new ConversationService();
+/**
+ * Extended request with authenticated user
+ */
+interface AuthenticatedRequest extends Request {
+  user?: {
+    id: string;
+    organizationId: string;
+    email?: string;
+    role?: string;
+  };
+}
+
+/**
+ * Conversation controller handles all conversation-related API endpoints
+ */
+class ConversationController {
+  private conversationService: ConversationService;
   
+  constructor() {
+    this.conversationService = new ConversationService();
+  }
+
   /**
-   * Process a new user message
-   * @route POST /api/ai-cs-agent/message
+   * Get conversation by ID
+   * @route GET /api/conversations/:id
    */
-  public static async processMessage(req: Request, res: Response, next: NextFunction) {
+  public async getConversation(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { message, conversationId, organizationId } = req.body;
+      const { id } = req.params;
+      const userId = req.user?.id;
+      const organizationId = req.user?.organizationId;
       
-      // Validate the request
+      if (!userId || !organizationId) {
+        throw new ApiError(StatusCodes.UNAUTHORIZED, 'Authentication required');
+      }
+      
+      const conversation = await this.conversationService.getConversationById(id, organizationId);
+      
+      res.status(StatusCodes.OK).json({
+        success: true,
+        data: conversation
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Process a new message in conversation
+   * @route POST /api/conversations/message
+   */
+  public async processMessage(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { message, conversationId } = req.body;
+      const userId = req.user?.id;
+      const organizationId = req.user?.organizationId;
+      
+      if (!userId || !organizationId) {
+        throw new ApiError(StatusCodes.UNAUTHORIZED, 'Authentication required');
+      }
+      
       if (!message) {
-        throw new ApiError(400, 'Message is required');
+        throw new ApiError(StatusCodes.BAD_REQUEST, 'Message is required');
       }
       
-      // Get user ID from authenticated request
-      if (!req.user || !req.user._id) {
-        throw new ApiError(401, 'Authentication required');
-      }
-      
-      const userId = req.user._id.toString();
-      
-      // Process the message
       const response = await this.conversationService.processMessage(
         userId,
         message,
@@ -36,116 +76,75 @@ export class ConversationController {
         organizationId
       );
       
-      // Return the response
-      return res.status(200).json({
+      res.status(StatusCodes.OK).json({
         success: true,
         data: response
       });
     } catch (error) {
-      if (error instanceof InsufficientCreditsError) {
-        return res.status(402).json({
-          success: false,
-          message: error.message,
-          error: 'INSUFFICIENT_CREDITS'
-        });
-      }
-      
       next(error);
     }
   }
-  
+
   /**
-   * Get a user's conversation history
-   * @route GET /api/ai-cs-agent/conversations
+   * Get all conversations for user
+   * @route GET /api/conversations
    */
-  public static async getUserConversations(req: Request, res: Response, next: NextFunction) {
+  public async getUserConversations(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      // Get query parameters
+      const userId = req.user?.id;
+      const organizationId = req.user?.organizationId;
+      
+      if (!userId || !organizationId) {
+        throw new ApiError(StatusCodes.UNAUTHORIZED, 'Authentication required');
+      }
+      
       const limit = parseInt(req.query.limit as string) || 10;
-      const offset = parseInt(req.query.offset as string) || 0;
-      const status = req.query.status as ConversationStatus;
+      const page = parseInt(req.query.page as string) || 1;
       
-      // Get user ID from authenticated request
-      if (!req.user || !req.user._id) {
-        throw new ApiError(401, 'Authentication required');
-      }
-      
-      const userId = req.user._id.toString();
-      
-      // Get conversations
-      const conversations = await this.conversationService.getUserConversations(
+      const { conversations, total } = await this.conversationService.getUserConversations(
         userId,
-        limit,
-        offset,
-        status
+        organizationId,
+        page,
+        limit
       );
       
-      // Return them
-      return res.status(200).json({
+      res.status(StatusCodes.OK).json({
         success: true,
-        data: conversations
+        data: conversations,
+        meta: {
+          total,
+          page,
+          limit
+        }
       });
     } catch (error) {
       next(error);
     }
   }
-  
-  /**
-   * Get a specific conversation by ID
-   * @route GET /api/ai-cs-agent/conversations/:id
-   */
-  public static async getConversation(req: Request, res: Response, next: NextFunction) {
-    try {
-      const conversationId = req.params.id;
-      
-      // Get user ID from authenticated request
-      if (!req.user || !req.user._id) {
-        throw new ApiError(401, 'Authentication required');
-      }
-      
-      const userId = req.user._id.toString();
-      
-      // Get the conversation
-      const conversation = await this.conversationService.getConversation(
-        conversationId,
-        userId
-      );
-      
-      // Return it
-      return res.status(200).json({
-        success: true,
-        data: conversation
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-  
+
   /**
    * Close a conversation
-   * @route POST /api/ai-cs-agent/conversations/:id/close
+   * @route PUT /api/conversations/:id/close
    */
-  public static async closeConversation(req: Request, res: Response, next: NextFunction) {
+  public async closeConversation(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const conversationId = req.params.id;
+      const { id } = req.params;
+      const userId = req.user?.id;
+      const organizationId = req.user?.organizationId;
       
-      // Get user ID from authenticated request
-      if (!req.user || !req.user._id) {
-        throw new ApiError(401, 'Authentication required');
+      if (!userId || !organizationId) {
+        throw new ApiError(StatusCodes.UNAUTHORIZED, 'Authentication required');
       }
       
-      const userId = req.user._id.toString();
-      
-      // Close the conversation
-      const conversation = await this.conversationService.closeConversation(
-        conversationId,
-        userId
+      const updatedConversation = await this.conversationService.closeConversation(
+        id,
+        userId,
+        organizationId
       );
       
-      // Return it
-      return res.status(200).json({
+      res.status(StatusCodes.OK).json({
         success: true,
-        data: conversation
+        data: updatedConversation
       });
     } catch (error) {
       next(error);
@@ -153,101 +152,5 @@ export class ConversationController {
   }
 }
 
-// WebSocket handler class (for real-time streaming)
-export class WebSocketHandler {
-  private static conversationService = new ConversationService();
-  
-  /**
-   * Handle WebSocket messages
-   * @param socket The WebSocket connection
-   * @param message The message received
-   */
-  public static async handleMessage(socket: any, data: any) {
-    try {
-      // Verify the message format
-      if (!data || !data.message || !data.userId) {
-        socket.send(JSON.stringify({
-          type: 'error',
-          error: 'Invalid message format'
-        }));
-        return;
-      }
-      
-      const { message, userId, conversationId, organizationId } = data;
-      
-      // TODO: In a production implementation, you would verify the user ID
-      // from a token passed with the WebSocket connection
-      
-      // Process the message
-      try {
-        // First, acknowledge receipt
-        socket.send(JSON.stringify({
-          type: 'ack',
-          conversationId
-        }));
-        
-        // Then process (this might take some time due to Vertex AI call)
-        const response = await this.conversationService.processMessage(
-          userId,
-          message,
-          conversationId,
-          organizationId
-        );
-        
-        // Send the final response
-        socket.send(JSON.stringify({
-          type: 'response',
-          data: response
-        }));
-      } catch (error) {
-        // Handle insufficient credits error
-        if (error instanceof InsufficientCreditsError) {
-          socket.send(JSON.stringify({
-            type: 'error',
-            error: 'INSUFFICIENT_CREDITS',
-            message: error.message
-          }));
-          return;
-        }
-        
-        // Handle other errors
-        socket.send(JSON.stringify({
-          type: 'error',
-          error: error.message
-        }));
-      }
-    } catch (error) {
-      console.error('Error in WebSocket handler:', error);
-      socket.send(JSON.stringify({
-        type: 'error',
-        error: 'Internal server error'
-      }));
-    }
-  }
-  
-  /**
-   * For streaming implementations, this would stream tokens as they come
-   * This is a placeholder for future implementation
-   */
-  private static streamResponse(socket: any, text: string) {
-    // Simplified implementation - in real world, you'd stream tokens from the Vertex AI API
-    const words = text.split(' ');
-    
-    // Send words with delays to simulate streaming
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i < words.length) {
-        socket.send(JSON.stringify({
-          type: 'token',
-          token: words[i] + ' '
-        }));
-        i++;
-      } else {
-        clearInterval(interval);
-        socket.send(JSON.stringify({
-          type: 'end_stream'
-        }));
-      }
-    }, 100); // 100ms between words
-  }
-}
+// Create and export controller instance
+export const conversationController = new ConversationController();

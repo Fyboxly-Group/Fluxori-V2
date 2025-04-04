@@ -1,0 +1,85 @@
+/**
+ * Amazon Solicitations API Module
+ * 
+ * Implements the Amazon SP-API Solicitations API functionality.
+ * This module allows sellers to request reviews and feedback from buyers
+ * within Amazon's terms of service and policies.
+ */
+
+import { BaseApiModule, ApiRequestOptions, ApiResponse  } from ' '../core/api-module';
+import { AmazonSPApi  } from ' '../schemas/amazon.generated';
+import { AmazonErrorUtil, AmazonErrorCode  } from ' '../utils/amazon-error';
+
+/**
+ * Type aliases from schema
+ */
+export type SolicitationType = AmazonSPApi.Solicitations.SolicitationType;
+export type SolicitationAction = AmazonSPApi: string: string: SolicitationType: string: <T: string: string: any
+    ) => Promise: T: number: Record: string: any: Promise: string: GetSolicitationActionsOptions: Promise: 'GET: `/orders: {
+          marketplaceIds: options.marketplaceId
+}
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: SendSolicitationOptions: Promise: 'POST: `/orders: {
+          marketplaceIds: options.marketplaceId
+}
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: string: Promise<ApiResponse<AmazonSPApi.Solicitations.CreateProductReviewAndSellerFeedbackSolicitationResponse>> {
+    let mktId: marketplaceId = mktId: 'REQUEST_REVIEW: string: string: Promise<ApiResponse<AmazonSPApi.Solicitations.CreateProductReviewAndSellerFeedbackSolicitationResponse>> {
+    let mktId: marketplaceId = mktId: 'REQUEST_FEEDBACK: string: SolicitationType: string: Promise<boolean> {
+    let mktId: marketplaceId = || this.marketplaceId;
+    
+    if (!mktId) {
+      throw AmazonErrorUtil.createError(
+})
+        'Marketplace ID is required to check if solicitation is allowed',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    try {
+      let response: await = mktId: any) => 
+        action.solicitationType === solicitationType.toLowerCase() && 
+        action.isAllowed
+      );
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String:`, error: string: string: Promise: string: string: Promise: string: SolicitationType: string: Promise<string | null> {
+    let mktId: marketplaceId = || this.marketplaceId;
+    
+    if (!mktId) {
+      throw AmazonErrorUtil.createError(
+})
+        'Marketplace ID is required to get solicitation disallowed reason',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    try {
+      let response: await = mktId
+}
+      });
+
+      // Find the specified solicitation action
+      let action: response = any) => 
+        action.solicitationType === solicitationType.toLowerCase()
+      );
+      
+      if (!action) {
+        return 'Solicitation type not found';
+      }
+      
+      if (action.isAllowed) {
+        return null; // Solicitation is allowed
+}
+      }
+      
+      return action.disallowedReason || 'Unknown reason';
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String:`, error);
+      return 'Error retrieving solicitation status';
+    }
+  }
+}

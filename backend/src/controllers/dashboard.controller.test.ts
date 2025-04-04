@@ -48,7 +48,7 @@ jest.mock('../services/activity.service', () => ({
     getRecentActivities: jest.fn().mockImplementation(async (limit, userId) => {
       const query: any = {};
       if (userId) {
-        query.userId = userId;
+        query.userId = new mongoose.Types.ObjectId(userId);
       }
       return Activity.find(query)
         .sort({ createdAt: -1 })

@@ -1,24 +1,31 @@
+import { injectable, inject } from 'inversify';
+import 'reflect-metadata';
 import { EmbeddingService } from './embedding.service';
 import { VectorSearchService } from './vector-search.service';
 import { DocumentService } from './document.service';
-import { DocumentChunk, SearchOptions } from '../interfaces/vector-search.interface';
+import { DocumentChunk, SearchOptions, IRagRetrievalService, IEmbeddingService, IVectorSearchService, IDocumentService } from '../interfaces/vector-search.interface';
 
 /**
  * Service that handles RAG (Retrieval Augmented Generation) operations
  * Combines embedding generation, vector search, and document retrieval
  */
-export class RagRetrievalService {
-  private embeddingService: EmbeddingService;
-  private vectorSearchService: VectorSearchService;
-  private documentService: DocumentService;
+@injectable()
+export class RagRetrievalService implements IRagRetrievalService {
+  private embeddingService: IEmbeddingService;
+  private vectorSearchService: IVectorSearchService;
+  private documentService: IDocumentService;
   
   /**
-   * Creates an instance of RagRetrievalService.
+   * Creates an instance of RagRetrievalService with dependency injection.
    */
-  constructor() {
-    this.embeddingService = new EmbeddingService();
-    this.vectorSearchService = new VectorSearchService();
-    this.documentService = new DocumentService();
+  constructor(
+    @inject(EmbeddingService) embeddingService: IEmbeddingService,
+    @inject(VectorSearchService) vectorSearchService: IVectorSearchService,
+    @inject(DocumentService) documentService: IDocumentService
+  ) {
+    this.embeddingService = embeddingService;
+    this.vectorSearchService = vectorSearchService;
+    this.documentService = documentService;
   }
   
   /**

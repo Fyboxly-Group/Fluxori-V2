@@ -14,8 +14,10 @@ export interface MarketplaceCredentials {
   clientSecret?: string;
   sellerId?: string;
   storeId?: string;
+  password?: string;
+  secret?: string;
   // Any other auth-related fields that might be needed
-  [key: string]: any;
+  [key: string]: string | number | boolean | undefined;
 }
 
 /**

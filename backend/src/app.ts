@@ -44,6 +44,8 @@ import taskRoutes from './routes/task.routes';
 import shipmentRoutes from './routes/shipment.routes';
 import webhookRoutes from './routes/webhook.routes';
 import uploadRoutes from './routes/upload.routes';
+import documentRoutes from './routes/document.routes';
+import { userRoutes } from './routes/user.routes';
 
 // Route registration
 app.use('/api/milestones', milestoneRoutes);
@@ -58,17 +60,21 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/shipments', shipmentRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/uploads', uploadRoutes);
+app.use('/api/documents', documentRoutes);
+app.use('/api/users', userRoutes);
 
 // Import and configure module routes
 import internationalTradeRoutes from './modules/international-trade/routes/international-trade.routes';
 import marketplaceProductRoutes from './modules/marketplaces/routes/marketplace-product.routes';
 import conversationRoutes from './modules/ai-cs-agent/routes/conversation.routes';
-import ragRetrievalRoutes from './modules/rag-retrieval/routes/rag-retrieval.routes';
-import notificationRoutes from './modules/notifications/routes/notification.routes';
+import { ragRetrievalRoutes } from './modules/rag-retrieval/routes/rag-retrieval.routes';
+import { notificationRoutes } from './modules/notifications/routes/notification.routes';
 import creditRoutes from './modules/credits/routes/credit.routes';
 import buyboxRoutes from './modules/buybox/routes/buybox.routes';
 import repricingRoutes from './modules/buybox/routes/repricing.routes';
-import { insightRoutes } from './modules/ai-insights/routes/insight.routes';
+import insightRoutes from './modules/ai-insights/routes/insight.routes';
+import productSyncRoutes from './modules/product-ingestion/routes/product-sync.routes';
+import orderRoutes from './modules/order-ingestion/routes/order.routes';
 
 // Module route registration
 app.use('/api/international-trade', internationalTradeRoutes);
@@ -80,6 +86,8 @@ app.use('/api/credits', creditRoutes);
 app.use('/api/buybox', buyboxRoutes);
 app.use('/api/repricing', repricingRoutes);
 app.use('/api/insights', insightRoutes);
+app.use('/api/product-sync', productSyncRoutes);
+app.use('/api/orders', orderRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

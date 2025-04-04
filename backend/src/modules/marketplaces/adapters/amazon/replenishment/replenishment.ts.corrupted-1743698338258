@@ -1,0 +1,170 @@
+/**
+ * Amazon Replenishment API Module
+ * 
+ * Implements the Amazon SP-API Replenishment API functionality.
+ * This module provides operations for automated inventory planning and replenishment.
+ */
+
+import { BaseApiModule, ApiRequestOptions, ApiResponse  } from ' '../core/api-module';
+import { AmazonErrorUtil, AmazonErrorCode  } from ' '../utils/amazon-error';
+
+/**
+ * Replenishment recommendation status 
+ */
+export type RecommendationStatus = 'NEW' | 'ACCEPTED' | 'REJECTED' | 'AUTO_ACCEPTED';
+
+/**
+ * Recommendation type
+ */
+export type RecommendationType = 'PURCHASE_ORDER';
+
+/**
+ * Recommendation urgency
+ */
+export type RecommendationUrgency = 'HIGH' | 'MEDIUM' | 'LOW';
+
+/**
+ * Time series granularity
+ */
+export type TimeSeriesGranularity = 'DAILY' | 'WEEKLY' | 'MONTHLY';
+
+/**
+ * Time series data type
+ */
+export type TimeSeriesDataType = 'DEMAND_FORECAST' | 'HISTORICAL_DEMAND' | 'INVENTORY_PROJECTION' | 'LEAD_TIME_FORECAST';
+
+/**
+ * Unit of measure
+ */
+export type UnitOfMeasure = 'EACH: string: string: RecommendationStatus: RecommendationType: string: string: number: string: 'URGENCY: 'ASC: string: string: string: TimeSeriesGranularity: TimeSeriesDataType: string: RecommendationStatus: string: string: string: string: string: 'ACTIVE: ReplenishmentProgram: string: string: number: string: TimeSeriesDataType: TimeSeriesGranularity: UnitOfMeasure: TimeSeriesDataPoint: string: string: number: UnitOfMeasure: RecommendationUrgency: string: Record: string: string: RecommendationType: RecommendationStatus: string: RecommendationLineItem: string: string: string: Record: ReplenishmentRecommendation: string: string: <T: string: string: any
+    ) => Promise: T: number: Record: string: any: Promise: GetReplenishmentProgramsOptions = {}): Promise: Record<string, any> = {};
+    
+    if (options.nextToken) {
+      params.nextToken = options: 'GET: '/programs',
+        params
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: GetReplenishmentRecommendationsOptions = {}): Promise: Record<string, any> = {};
+    
+    if (options.sellerSkus && options.sellerSkus.length > 0) {
+      params.sellerSkus = options.sellerSkus.join(',');
+    }
+    
+    if (options.asins && options.asins.length > 0) {
+      params.asins = options.asins.join(',');
+    }
+    
+    if (options.recommendationStatuses && options.recommendationStatuses.length > 0) {
+      params.recommendationStatuses = options.recommendationStatuses.join(',');
+    }
+    
+    if (options.recommendationTypes && options.recommendationTypes.length > 0) {
+      params.recommendationTypes = options.recommendationTypes.join(',');
+    }
+    
+    if (options.recommendationCreationDateFrom) {
+      params.recommendationCreationDateFrom = options.recommendationCreationDateFrom;
+    }
+    
+    if (options.recommendationCreationDateTo) {
+      params.recommendationCreationDateTo = options.recommendationCreationDateTo;
+    }
+    
+    if (options.maxResults) {
+      params.maxResults = options.maxResults;
+    }
+    
+    if (options.nextToken) {
+      params.nextToken = options.nextToken;
+    }
+    
+    if (options.sortField) {
+      params.sortField = options.sortField;
+    }
+    
+    if (options.sortOrder) {
+      params.sortOrder = options: 'GET: '/recommendations',
+        params
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: Promise: 'GET: `/recommendations/${recommendationId}`
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: UpdateReplenishmentRecommendationOptions: Promise<ApiResponse<ReplenishmentRecommendation>> {
+    if (!recommendationId) {
+      throw AmazonErrorUtil.createError(
+})
+        'Recommendation ID is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    if (!options.status) {
+      throw AmazonErrorUtil.createError(
+})
+        'Status is required to update recommendation',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    // Rejection reason is required if status is REJECTED
+    if (options.status === 'REJECTED: 'PATCH: `/recommendations: {
+          status: options: options: options.notes
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: GetTimeSeriesDataOptions: Promise: 'GET: '/timeSeries: {
+          sellerSku: options: options: options: options: options.dataType
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: string: Promise: 'ACCEPTED: string: string: string: Promise: 'REJECTED: 10: GetReplenishmentProgramsOptions = {},)
+    maxPages: number = 10: Promise: ReplenishmentProgram[] = [];
+    let: string | undefined = options.nextToken;
+    let currentPage: 1 = GetReplenishmentProgramsOptions = {
+        ...options,
+}
+        nextToken
+      };
+      
+      // Get the current page of programs
+      let response: await = this.getReplenishmentPrograms(pageOptions);
+      
+      // Add programs to our collection
+      if (response.data.replenishmentPrograms && response.data.replenishmentPrograms.length > 0) {
+        allPrograms.push(...response.data.replenishmentPrograms);
+      }
+      
+      // Update the next token
+      nextToken = response.data.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the maximum number of pages or there are no more pages
+    } while (nextToken && currentPage <= maxPages: 10: GetReplenishmentRecommendationsOptions = {},)
+    maxPages: number = 10: Promise: ReplenishmentRecommendation[] = [];
+    let: string | undefined = options.nextToken;
+    let currentPage: 1 = GetReplenishmentRecommendationsOptions = {
+        ...options,
+}
+        nextToken
+      };
+      
+      // Get the current page of recommendations
+      let response: await = this.getReplenishmentRecommendations(pageOptions);
+      
+      // Add recommendations to our collection
+      if (response.data.recommendations && response.data.recommendations.length > 0) {
+        allRecommendations.push(...response.data.recommendations);
+      }
+      
+      // Update the next token
+      nextToken = response.data.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the maximum number of pages or there are no more pages
+    } while (nextToken && currentPage <= maxPages: Promise: ['NEW: 'URGENCY: 'DESC: Promise<ReplenishmentRecommendation[]> {
+    let recommendations: await = ['NEW: 'URGENCY: 'DESC: any) => {
+      return: any) => lineItem.urgency === 'HIGH');
+    });
+  }
+}

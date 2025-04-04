@@ -1,91 +1,44 @@
-/**
- * Routes for AI insights
- */
-
-import express from 'express';
-import { container } from '../../../config/inversify';
+import { Router } from 'express';
 import { InsightController } from '../controllers/insight.controller';
-import { ScheduledJobController } from '../controllers/scheduled-job.controller';
+import { authMiddleware } from '../../../middleware/auth.middleware';
 
-// Create router
-const insightRoutes = express.Router();
+const router = Router();
+const controller = new InsightController();
 
-// Get controllers from container
-const insightController = container.get(InsightController);
-const scheduledJobController = container.get(ScheduledJobController);
+/**
+ * @swagger
+ * /api/ai-insights/insight:
+ *   get:
+ *     tags:
+ *       - ai-insights
+ *     summary: Get insight data
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Success
+ */
+router.get('/', authMiddleware, (req, res, next) => controller.getAll(req, res, next));
 
-// Insight routes
-insightRoutes.post(
-  '/insights',
-  InsightController.validateInsightRequest,
-  insightController.generateInsight
-);
+/**
+ * @swagger
+ * /api/ai-insights/insight/{id}:
+ *   get:
+ *     tags:
+ *       - ai-insights
+ *     summary: Get insight by ID
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Success
+ */
+router.get('/:id', authMiddleware, (req, res, next) => controller.getById(req, res, next));
 
-insightRoutes.get(
-  '/insights',
-  insightController.getInsights
-);
-
-insightRoutes.get(
-  '/insights/:id',
-  insightController.getInsightById
-);
-
-insightRoutes.delete(
-  '/insights/:id',
-  insightController.deleteInsight
-);
-
-insightRoutes.post(
-  '/insights/:id/feedback',
-  insightController.submitFeedback
-);
-
-insightRoutes.get(
-  '/insights/type/:type',
-  insightController.getInsightsByType
-);
-
-insightRoutes.get(
-  '/insights/entity/:entityType/:entityId',
-  insightController.getInsightsByEntity
-);
-
-// Scheduled job routes
-insightRoutes.post(
-  '/scheduled-jobs',
-  ScheduledJobController.validateScheduledJob,
-  scheduledJobController.createJob
-);
-
-insightRoutes.get(
-  '/scheduled-jobs',
-  scheduledJobController.getJobs
-);
-
-insightRoutes.get(
-  '/scheduled-jobs/:id',
-  scheduledJobController.getJobById
-);
-
-insightRoutes.put(
-  '/scheduled-jobs/:id',
-  scheduledJobController.updateJob
-);
-
-insightRoutes.delete(
-  '/scheduled-jobs/:id',
-  scheduledJobController.deleteJob
-);
-
-insightRoutes.post(
-  '/scheduled-jobs/:id/run',
-  scheduledJobController.runJobNow
-);
-
-insightRoutes.get(
-  '/scheduled-jobs/type/:type',
-  scheduledJobController.getJobsByType
-);
-
-export { insightRoutes };
+export default router;

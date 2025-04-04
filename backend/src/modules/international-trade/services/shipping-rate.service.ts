@@ -1,926 +1,746 @@
-// Import axios
-// Note: We have esModuleInterop enabled in tsconfig but still seeing TS1259 errors
-// Workaround: Use require for axios
-const axios = require('axios');
-import { v4 as uuidv4 } from 'uuid';
-import { IShippingRate } from '../models/international-trade.model';
+import mongoose, { Types } from 'mongoose';
+import { IInternationalShipment, IAddress } from '../models/international-trade.model';
+import { InternationalShipment, CustomsDeclaration } from '../models/international-trade.model';
+import { 
+  IShippingProvider, 
+  IRateRequest,
+  ITrackingRequest,
+  ITrackingInfo,
+  IShippingProviderAuth,
+  IShippingRate,
+  IShipmentRequest,
+  ICreatedShipment
+} from '../interfaces/shipping-provider.interface';
+import { DHL_CONFIG, FEDEX_CONFIG } from '../config/trade-providers.config';
+import { DHLAdapter } from '../adapters/dhl/dhl.adapter';
+import { FedExAdapter } from '../adapters/fedex/fedex.adapter';
 
 /**
- * Shipping Rate Service
- * 
- * Handles getting shipping rates from various carriers
+ * Error class for shipping rate issues
+ */
+export class ShippingRateError extends Error {
+  constructor(
+    public readonly message: string, 
+    public readonly code: string = 'SHIPPING_RATE_ERROR',
+    public readonly statusCode: number = 500
+  ) {
+    super(message);
+    this.name = 'ShippingRateError';
+    
+    // This is needed for proper instanceof checks with custom Error subclasses
+    Object.setPrototypeOf(this, ShippingRateError.prototype);
+  }
+}
+
+// Re-export the IShippingRate interface for use in other services
+export { IShippingRate };
+
+/**
+ * Interface for carrier configuration
+ */
+export interface ICarrierConfig {
+  name: string;
+  enabled: boolean;
+  credentials: IShippingProviderAuth;
+  options?: Record<string, unknown>;
+}
+
+/**
+ * Interface for rate request parameters
+ */
+export interface IRateRequestParams {
+  shipmentId?: string;
+  carrier?: string;
+  service?: string;
+  urgency?: 'economy' | 'standard' | 'express';
+  options?: {
+    insurance?: boolean;
+    signature?: boolean;
+    saturdayDelivery?: boolean;
+    dangerousGoods?: boolean;
+    [key: string]: boolean | number | string | undefined;
+  };
+}
+
+/**
+ * Shipping urgency levels for filtering services
+ */
+export type ShippingUrgency = 'economy' | 'standard' | 'express';
+
+/**
+ * Carrier service mapping for urgency levels
+ */
+export interface IServiceUrgencyMap {
+  [serviceCode: string]: ShippingUrgency;
+}
+
+/**
+ * Shipping Rate Service for international trade
+ * Fetches shipping rates from multiple carriers
  */
 export class ShippingRateService {
-  // Carriers we support
-  private carriers: Array<{
-    id: string;
-    name: string;
-    api: {
-      baseUrl: string;
-      auth: {
-        key?: string;
-        username?: string;
-        password?: string;
-      };
-    };
-  }> = [
+  private carriers: ICarrierConfig[] = [
     {
-      id: 'fedex',
+      name: 'DHL',
+      enabled: true,
+      credentials: {
+        apiKey: process.env.DHL_API_KEY || 'test_api_key',
+        accountNumber: process.env.DHL_ACCOUNT_NUMBER || 'test_account'
+      },
+      options: {
+        testMode: process.env.NODE_ENV !== 'production'
+      }
+    },
+    {
       name: 'FedEx',
-      api: {
-        baseUrl: 'https://api.fedex.com/rate/v1/rates/quotes', // Mock URL
-        auth: {
-          key: process.env.FEDEX_API_KEY || 'mock_fedex_key'
-        }
-      }
-    },
-    {
-      id: 'dhl',
-      name: 'DHL Express',
-      api: {
-        baseUrl: 'https://api.dhl.com/shipping/v4/rates', // Mock URL
-        auth: {
-          username: process.env.DHL_USERNAME || 'mock_dhl_username',
-          password: process.env.DHL_PASSWORD || 'mock_dhl_password'
-        }
-      }
-    },
-    {
-      id: 'ups',
-      name: 'UPS',
-      api: {
-        baseUrl: 'https://api.ups.com/api/rating', // Mock URL
-        auth: {
-          key: process.env.UPS_API_KEY || 'mock_ups_key'
-        }
+      enabled: true,
+      credentials: {
+        apiKey: process.env.FEDEX_API_KEY || 'test_api_key',
+        apiSecret: process.env.FEDEX_API_SECRET || 'test_secret',
+        accountNumber: process.env.FEDEX_ACCOUNT_NUMBER || 'test_account'
+      },
+      options: {
+        testMode: process.env.NODE_ENV !== 'production'
       }
     }
   ];
 
   /**
-   * Get shipping rates from all carriers
-   * @param originCountry Origin country code
-   * @param originPostalCode Origin postal code
-   * @param destinationCountry Destination country code
-   * @param destinationPostalCode Destination postal code
-   * @param packages Package dimensions and weights
-   * @returns Array of shipping rate quotes
+   * Service to urgency mapping for filtering rates by speed
    */
-  public async getRates(
-    originCountry: string,
-    originPostalCode: string,
-    destinationCountry: string,
-    destinationPostalCode: string,
-    packages: Array<{
-      weight: number;
-      weightUnit: string;
-      length: number;
-      width: number;
-      height: number;
-      dimensionUnit: string;
-    }>
-  ): Promise<Array<{
-    carrierId: string;
-    carrierName: string;
-    serviceCode: string;
-    serviceName: string;
-    baseRate: number;
-    taxes: number;
-    fees: number;
-    totalRate: number;
-    currency: string;
-    estimatedDelivery?: Date;
-    transitDays?: number;
-    guaranteedDelivery: boolean;
-  }>> {
-    // In a real implementation, this would call carrier APIs
-    // For this implementation, we'll generate mock rates
+  private serviceUrgencyMap: IServiceUrgencyMap = {
+    // DHL services
+    'EXPRESS_WORLDWIDE': 'express',
+    'EXPRESS_12': 'express',
+    'EXPRESS_9': 'express',
+    'EXPRESS_DOMESTIC': 'express',
+    'ECONOMY_SELECT': 'economy',
+    'EXPRESS_EASY': 'standard',
     
-    const quotes: Array<{
-      carrierId: string;
-      carrierName: string;
-      serviceCode: string;
-      serviceName: string;
-      baseRate: number;
-      taxes: number;
-      fees: number;
-      totalRate: number;
-      currency: string;
-      estimatedDelivery?: Date;
-      transitDays?: number;
-      guaranteedDelivery: boolean;
-    }> = [];
-    
-    // Calculate shipping rates based on weight and dimensions
-    const totalWeight = packages.reduce((sum, pkg) => {
-      // Convert to standard unit (kg)
-      const weight = pkg.weightUnit === 'lb' ? pkg.weight * 0.453592 : pkg.weight;
-      return sum + weight;
-    }, 0);
-    
-    // Calculate total volume in cubic meters
-    const totalVolume = packages.reduce((sum, pkg) => {
-      // Convert to standard unit (m³)
-      const multiplier = pkg.dimensionUnit === 'in' ? 0.000016387064 : 0.000001;
-      return sum + (pkg.length * pkg.width * pkg.height * multiplier);
-    }, 0);
-    
-    // Generate mock rates for each carrier
-    for (const carrier of this.carriers) {
-      // Domestic vs international rate adjustments
-      const isInternational = originCountry !== destinationCountry;
-      const internationalMultiplier = isInternational ? 2.5 : 1;
-      
-      // Distance-based calculation (simplified)
-      const distanceMultiplier = this.calculateDistanceMultiplier(
-        originCountry, 
-        destinationCountry
-      );
-      
-      // Generate different service levels
-      const serviceLevels = this.getServiceLevels(carrier.id, isInternational);
-      
-      for (const service of serviceLevels) {
-        // Calculate base rate using weight, volume, and distance
-        const baseRate = (
-          (totalWeight * 10) + 
-          (totalVolume * 1000) + 
-          20
-        ) * service.speedMultiplier * distanceMultiplier * internationalMultiplier;
-        
-        // Calculate taxes and fees
-        const taxes = baseRate * this.getTaxRate(destinationCountry);
-        const fees = this.calculateFees(carrier.id, destinationCountry, service.code);
-        
-        // Calculate total rate
-        const totalRate = baseRate + taxes + fees;
-        
-        // Set currency based on destination
-        const currency = this.getCurrencyForCountry(destinationCountry);
-        
-        // Calculate estimated delivery date
-        const today = new Date();
-        const deliveryDate = new Date(today);
-        deliveryDate.setDate(today.getDate() + service.transitDays);
-        
-        // Add quote to results
-        quotes.push({
-          carrierId: carrier.id,
-          carrierName: carrier.name,
-          serviceCode: service.code,
-          serviceName: service.name,
-          baseRate: Math.round(baseRate * 100) / 100,
-          taxes: Math.round(taxes * 100) / 100,
-          fees: Math.round(fees * 100) / 100,
-          totalRate: Math.round(totalRate * 100) / 100,
-          currency,
-          estimatedDelivery: deliveryDate,
-          transitDays: service.transitDays,
-          guaranteedDelivery: service.guaranteed
-        });
-      }
-    }
-    
-    // Sort quotes by total rate
-    return quotes.sort((a, b) => a.totalRate - b.totalRate);
-  }
+    // FedEx services
+    'PRIORITY_OVERNIGHT': 'express',
+    'STANDARD_OVERNIGHT': 'express',
+    'INTERNATIONAL_PRIORITY': 'express',
+    'INTERNATIONAL_ECONOMY': 'economy',
+    'FEDEX_GROUND': 'standard',
+    'FEDEX_EXPRESS_SAVER': 'standard',
+    'GROUND_HOME_DELIVERY': 'economy'
+  };
+
+  // Using the ShippingRateError class defined at the module level
 
   /**
-   * Calculate a distance multiplier based on country codes
-   * @param originCountry Origin country code
-   * @param destinationCountry Destination country code
-   * @returns Distance multiplier
+   * Fetches shipping rates for a shipment from all enabled carriers
+   * 
+   * @param shipmentId ID of the shipment
+   * @param params Additional parameters for rate request
+   * @returns Array of shipping rates from various carriers
+   * @throws {ShippingRateError} When shipment ID is invalid or shipment is not found
+   * @throws {Error} For unexpected errors
    */
-  private calculateDistanceMultiplier(
-    originCountry: string, 
-    destinationCountry: string
-  ): number {
-    // Define country regions for distance calculation
-    const regions: Record<string, string> = {
-      'US': 'NA', 'CA': 'NA', 'MX': 'NA',
-      'GB': 'EU', 'DE': 'EU', 'FR': 'EU', 'IT': 'EU', 'ES': 'EU',
-      'CN': 'AS', 'JP': 'AS', 'KR': 'AS', 'IN': 'AS',
-      'AU': 'OC', 'NZ': 'OC',
-      'BR': 'SA', 'AR': 'SA', 'CL': 'SA',
-      'ZA': 'AF', 'NG': 'AF', 'EG': 'AF'
-    };
-    
-    // If country not in list, use a default region
-    const originRegion = regions[originCountry] || 'OTHER';
-    const destRegion = regions[destinationCountry] || 'OTHER';
-    
-    // Same region
-    if (originRegion === destRegion) {
-      return 1.0;
-    }
-    
-    // Adjacent regions
-    const adjacentRegions: Record<string, string[]> = {
-      'NA': ['SA'],
-      'SA': ['NA'],
-      'EU': ['AF'],
-      'AF': ['EU', 'AS'],
-      'AS': ['AF', 'OC'],
-      'OC': ['AS']
-    };
-    
-    if (adjacentRegions[originRegion]?.includes(destRegion)) {
-      return 1.5;
-    }
-    
-    // Distant regions
-    return 2.0;
-  }
-
-  /**
-   * Get service levels for a carrier
-   * @param carrierId Carrier ID
-   * @param isInternational Whether the shipment is international
-   * @returns Array of service levels
-   */
-  private getServiceLevels(
-    carrierId: string, 
-    isInternational: boolean
-  ): Array<{
-    code: string;
-    name: string;
-    speedMultiplier: number;
-    transitDays: number;
-    guaranteed: boolean;
-  }> {
-    // FedEx service levels
-    if (carrierId === 'fedex') {
-      if (isInternational) {
-        return [
-          {
-            code: 'INTERNATIONAL_PRIORITY',
-            name: 'FedEx International Priority',
-            speedMultiplier: 2.0,
-            transitDays: 2,
-            guaranteed: true
-          },
-          {
-            code: 'INTERNATIONAL_ECONOMY',
-            name: 'FedEx International Economy',
-            speedMultiplier: 1.5,
-            transitDays: 5,
-            guaranteed: false
-          }
-        ];
-      } else {
-        return [
-          {
-            code: 'PRIORITY_OVERNIGHT',
-            name: 'FedEx Priority Overnight',
-            speedMultiplier: 2.5,
-            transitDays: 1,
-            guaranteed: true
-          },
-          {
-            code: 'STANDARD_OVERNIGHT',
-            name: 'FedEx Standard Overnight',
-            speedMultiplier: 2.0,
-            transitDays: 1,
-            guaranteed: true
-          },
-          {
-            code: 'FEDEX_2_DAY',
-            name: 'FedEx 2Day',
-            speedMultiplier: 1.5,
-            transitDays: 2,
-            guaranteed: true
-          },
-          {
-            code: 'FEDEX_GROUND',
-            name: 'FedEx Ground',
-            speedMultiplier: 1.0,
-            transitDays: 5,
-            guaranteed: false
-          }
-        ];
-      }
-    }
-    
-    // DHL service levels
-    if (carrierId === 'dhl') {
-      if (isInternational) {
-        return [
-          {
-            code: 'EXPRESS_WORLDWIDE',
-            name: 'DHL Express Worldwide',
-            speedMultiplier: 2.0,
-            transitDays: 3,
-            guaranteed: true
-          },
-          {
-            code: 'EXPRESS_ECONOMY',
-            name: 'DHL Express Economy',
-            speedMultiplier: 1.3,
-            transitDays: 6,
-            guaranteed: false
-          }
-        ];
-      } else {
-        return [
-          {
-            code: 'EXPRESS_DOMESTIC',
-            name: 'DHL Express Domestic',
-            speedMultiplier: 1.8,
-            transitDays: 1,
-            guaranteed: true
-          },
-          {
-            code: 'EXPRESS_EASY',
-            name: 'DHL Express Easy',
-            speedMultiplier: 1.2,
-            transitDays: 3,
-            guaranteed: false
-          }
-        ];
-      }
-    }
-    
-    // UPS service levels
-    if (carrierId === 'ups') {
-      if (isInternational) {
-        return [
-          {
-            code: 'UPS_WORLDWIDE_EXPRESS',
-            name: 'UPS Worldwide Express',
-            speedMultiplier: 2.0,
-            transitDays: 2,
-            guaranteed: true
-          },
-          {
-            code: 'UPS_WORLDWIDE_SAVER',
-            name: 'UPS Worldwide Saver',
-            speedMultiplier: 1.8,
-            transitDays: 3,
-            guaranteed: true
-          },
-          {
-            code: 'UPS_WORLDWIDE_EXPEDITED',
-            name: 'UPS Worldwide Expedited',
-            speedMultiplier: 1.5,
-            transitDays: 5,
-            guaranteed: false
-          }
-        ];
-      } else {
-        return [
-          {
-            code: 'UPS_NEXT_DAY_AIR',
-            name: 'UPS Next Day Air',
-            speedMultiplier: 2.2,
-            transitDays: 1,
-            guaranteed: true
-          },
-          {
-            code: 'UPS_2ND_DAY_AIR',
-            name: 'UPS 2nd Day Air',
-            speedMultiplier: 1.7,
-            transitDays: 2,
-            guaranteed: true
-          },
-          {
-            code: 'UPS_3_DAY_SELECT',
-            name: 'UPS 3 Day Select',
-            speedMultiplier: 1.4,
-            transitDays: 3,
-            guaranteed: true
-          },
-          {
-            code: 'UPS_GROUND',
-            name: 'UPS Ground',
-            speedMultiplier: 1.0,
-            transitDays: 5,
-            guaranteed: false
-          }
-        ];
-      }
-    }
-    
-    // Default service levels
-    return [
-      {
-        code: 'EXPRESS',
-        name: 'Express',
-        speedMultiplier: 2.0,
-        transitDays: 3,
-        guaranteed: true
-      },
-      {
-        code: 'STANDARD',
-        name: 'Standard',
-        speedMultiplier: 1.0,
-        transitDays: 7,
-        guaranteed: false
-      }
-    ];
-  }
-
-  /**
-   * Get tax rate for a country
-   * @param countryCode Country code
-   * @returns Tax rate as a decimal
-   */
-  private getTaxRate(countryCode: string): number {
-    // Sample tax rates for different countries
-    const taxRates: Record<string, number> = {
-      'US': 0.0,   // Varies by state, but international shipping often tax exempt
-      'CA': 0.05,  // GST
-      'GB': 0.20,  // VAT
-      'DE': 0.19,  // VAT
-      'FR': 0.20,  // VAT
-      'IT': 0.22,  // VAT
-      'ES': 0.21,  // VAT
-      'JP': 0.10,  // Consumption tax
-      'AU': 0.10,  // GST
-      'NZ': 0.15,  // GST
-      'CN': 0.09,  // Varies, using approximate
-      'BR': 0.17,  // ICMS, varies by state
-      'MX': 0.16,  // IVA
-      'IN': 0.18   // GST
-    };
-    
-    // Return tax rate for country or default to 0.10 (10%)
-    return taxRates[countryCode] || 0.10;
-  }
-
-  /**
-   * Calculate additional fees for a shipment
-   * @param carrierId Carrier ID
-   * @param countryCode Destination country code
-   * @param serviceCode Service code
-   * @returns Additional fees
-   */
-  private calculateFees(
-    carrierId: string, 
-    countryCode: string, 
-    serviceCode: string
-  ): number {
-    let fees = 0;
-    
-    // Base fee for every shipment
-    fees += 5;
-    
-    // Add carrier-specific fees
-    if (carrierId === 'fedex') {
-      fees += 3;
-    } else if (carrierId === 'dhl') {
-      fees += 4;
-    } else if (carrierId === 'ups') {
-      fees += 3.5;
-    }
-    
-    // Add fees for express services
-    if (serviceCode.includes('EXPRESS') || 
-        serviceCode.includes('PRIORITY') || 
-        serviceCode.includes('OVERNIGHT')) {
-      fees += 7;
-    }
-    
-    // Add customs clearance fee for international destinations
-    // that typically have complex customs processes
-    const complexCustomsCountries = ['BR', 'IN', 'RU', 'CN', 'AR'];
-    if (complexCustomsCountries.includes(countryCode)) {
-      fees += 15;
-    }
-    
-    // Add remote area surcharges for certain countries
-    const remoteAreaCountries = ['IS', 'GR', 'FI', 'NO'];
-    if (remoteAreaCountries.includes(countryCode)) {
-      fees += 10;
-    }
-    
-    return fees;
-  }
-
-  /**
-   * Get the currency for a country
-   * @param countryCode Country code
-   * @returns Currency code
-   */
-  private getCurrencyForCountry(countryCode: string): string {
-    // Sample currency mapping
-    const currencies: Record<string, string> = {
-      'US': 'USD',
-      'CA': 'CAD',
-      'GB': 'GBP',
-      'DE': 'EUR',
-      'FR': 'EUR',
-      'IT': 'EUR',
-      'ES': 'EUR',
-      'JP': 'JPY',
-      'AU': 'AUD',
-      'NZ': 'NZD',
-      'CN': 'CNY',
-      'BR': 'BRL',
-      'MX': 'MXN',
-      'IN': 'INR'
-    };
-    
-    // Return currency for country or default to USD
-    return currencies[countryCode] || 'USD';
-  }
-
-  /**
-   * Book a shipment with a carrier
-   * @param carrierId Carrier ID
-   * @param serviceCode Service code
-   * @param shipmentDetails Shipment details
-   * @returns Booking confirmation
-   */
-  public async bookShipment(
-    carrierId: string,
-    serviceCode: string,
-    shipmentDetails: {
-      origin: {
-        address: string;
-        city: string;
-        state: string;
-        postalCode: string;
-        country: string;
-        contactName: string;
-        contactPhone: string;
-        contactEmail: string;
-      };
-      destination: {
-        address: string;
-        city: string;
-        state: string;
-        postalCode: string;
-        country: string;
-        contactName: string;
-        contactPhone: string;
-        contactEmail: string;
-      };
-      packages: Array<{
-        weight: number;
-        weightUnit: string;
-        length: number;
-        width: number;
-        height: number;
-        dimensionUnit: string;
-        contents: string;
-      }>;
-      customsDeclaration?: {
-        items: Array<{
-          description: string;
-          hsCode: string;
-          quantity: number;
-          value: number;
-          origin: string;
-        }>;
-        purpose: string;
-      };
-    }
-  ): Promise<{
-    success: boolean;
-    trackingNumber?: string;
-    labelUrl?: string;
-    estimatedDelivery?: Date;
-    message?: string;
-  }> {
-    // In a real implementation, this would call carrier APIs to book the shipment
-    // For this implementation, we'll return a mock response
-    
+  public async getShippingRates(shipmentId: string, params?: IRateRequestParams): Promise<IShippingRate[]> {
     try {
-      // Generate a tracking number
-      const trackingNumber = this.generateTrackingNumber(carrierId);
+      // Validate shipment ID
+      if (!shipmentId || !mongoose.Types.ObjectId.isValid(shipmentId)) {
+        throw new ShippingRateError('Invalid shipment ID', 'INVALID_SHIPMENT_ID');
+      }
+
+      // Retrieve shipment data
+      const shipment = await InternationalShipment.findById(shipmentId);
+      if (!shipment) {
+        throw new ShippingRateError(`Shipment with ID ${shipmentId} not found`, 'SHIPMENT_NOT_FOUND');
+      }
+
+      // Create rate request from shipment data
+      const rateRequest = this.createRateRequest(shipment, params);
+
+      // Validate shipment has required data for rate request
+      if (!rateRequest.origin || !rateRequest.destination || !rateRequest.packageDetails) {
+        throw new ShippingRateError('Shipment is missing required information for rate request', 'MISSING_SHIPMENT_DATA');
+      }
+
+      // Get carriers to use
+      const enabledCarriers = this.carriers.filter(c => c.enabled);
       
-      // Calculate estimated delivery date based on service
-      const serviceLevels = this.getServiceLevels(
-        carrierId, 
-        shipmentDetails.origin.country !== shipmentDetails.destination.country
+      // Check if we have any enabled carriers
+      if (enabledCarriers.length === 0) {
+        throw new ShippingRateError('No shipping carriers are enabled', 'NO_CARRIERS_ENABLED');
+      }
+
+      // If a specific carrier is requested, check if it's enabled
+      if (params?.carrier) {
+        const carrierExists = enabledCarriers.some(c => 
+          c.name.toLowerCase() === params.carrier?.toLowerCase()
+        );
+
+        if (!carrierExists) {
+          throw new ShippingRateError(`Requested carrier "${params.carrier}" is not available or enabled`, 'CARRIER_NOT_AVAILABLE');
+        }
+      }
+
+      // Get rates from all enabled carriers (or the specific one requested)
+      const carrierPromises = enabledCarriers.map(carrier => 
+        this.getRatesFromCarrier(carrier, rateRequest, params?.carrier)
       );
+
+      // Wait for all carrier rate requests to complete
+      const carrierResults = await Promise.allSettled(carrierPromises);
       
-      const service = serviceLevels.find(s => s.code === serviceCode);
-      
-      if (!service) {
-        throw new Error(`Invalid service code: ${serviceCode}`);
+      // Aggregate results from successful carrier rate requests
+      const rates: IShippingRate[] = [];
+      carrierResults.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          rates.push(...result.value);
+        } else {
+          const errorMessage = result.reason instanceof Error ? result.reason.message : String(result.reason);
+          console.error(`Error getting rates from ${enabledCarriers[index].name}: ${errorMessage}`);
+        }
+      });
+
+      // Check if we got any rates
+      if (rates.length === 0) {
+        // If a specific service was requested and we have no rates, it might be unavailable
+        if (params?.service) {
+          throw new ShippingRateError(`No rates available for requested service "${params.service}"`, 'SERVICE_NOT_AVAILABLE');
+        }
+        
+        // If a specific urgency was requested and we have no rates, it might be unavailable
+        if (params?.urgency) {
+          throw new ShippingRateError(`No rates available with urgency level "${params.urgency}"`, 'URGENCY_NOT_AVAILABLE');
+        }
+        
+        // Otherwise, we just don't have any rates
+        throw new ShippingRateError('No shipping rates available for this shipment', 'NO_RATES_AVAILABLE');
       }
-      
-      const today = new Date();
-      const deliveryDate = new Date(today);
-      deliveryDate.setDate(today.getDate() + service.transitDays);
-      
-      // Generate label URL (mock)
-      const labelUrl = `https://shipping-api.example.com/labels/${trackingNumber}.pdf`;
-      
-      return {
-        success: true,
-        trackingNumber,
-        labelUrl,
-        estimatedDelivery: deliveryDate
-      };
+
+      // Filter by service if specified
+      if (params?.service) {
+        const filteredRates = rates.filter(rate => rate.serviceCode === params.service);
+        if (filteredRates.length === 0) {
+          throw new ShippingRateError(`No rates available for requested service "${params.service}"`, 'SERVICE_NOT_AVAILABLE');
+        }
+        return filteredRates;
+      }
+
+      // Filter by urgency if specified
+      if (params?.urgency) {
+        const filteredRates = this.filterRatesByUrgency(rates, params.urgency);
+        if (filteredRates.length === 0) {
+          throw new ShippingRateError(`No rates available with urgency level "${params.urgency}"`, 'URGENCY_NOT_AVAILABLE');
+        }
+        return filteredRates;
+      }
+
+      // Sort rates by price
+      return rates.sort((a, b) => a.price - b.price);
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      return {
-        success: false,
-        message: (error as Error).message
-      };
-    }
-  }
-
-  /**
-   * Generate a tracking number for a carrier
-   * @param carrierId Carrier ID
-   * @returns Tracking number
-   */
-  private generateTrackingNumber(carrierId: string): string {
-    // Generate a random tracking number based on carrier format
-    
-    if (carrierId === 'fedex') {
-      // FedEx format: 12 digits
-      return Math.floor(100000000000 + Math.random() * 900000000000).toString();
-    }
-    
-    if (carrierId === 'dhl') {
-      // DHL format: 10 digits
-      return Math.floor(1000000000 + Math.random() * 9000000000).toString();
-    }
-    
-    if (carrierId === 'ups') {
-      // UPS format: 1Z followed by 15 alphanumeric
-      const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-      let tracking = '1Z';
-      
-      for (let i = 0; i < 15; i++) {
-        tracking += chars.charAt(Math.floor(Math.random() * chars.length));
+      // Re-throw ShippingRateError instances directly
+      if (error instanceof ShippingRateError) {
+        throw error;
       }
       
-      return tracking;
+      // Log and wrap other errors
+      console.error('Error getting shipping rates:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new ShippingRateError(`Failed to get shipping rates: ${errorMessage}`, 'RATE_FETCH_ERROR');
     }
-    
-    // Generic format: UUID without dashes
-    return uuidv4().replace(/-/g, '').substring(0, 12).toUpperCase();
   }
 
   /**
-   * Track a shipment by tracking number
-   * @param trackingNumber Tracking number
-   * @param carrierId Carrier ID
-   * @returns Tracking information
+   * Get rates from a specific carrier
+   * 
+   * @param carrierConfig Carrier configuration
+   * @param rateRequest Rate request parameters
+   * @param specificCarrier Optional specific carrier to get rates from
+   * @returns Array of shipping rates from the carrier
    */
-  public async trackShipment(
-    trackingNumber: string,
-    carrierId: string
-  ): Promise<{
-    trackingNumber: string;
-    status: string;
-    statusDescription: string;
-    currentLocation?: string;
-    deliveryDate?: Date;
-    events: Array<{
-      timestamp: Date;
-      location: string;
-      description: string;
-    }>;
-  }> {
-    // In a real implementation, this would call carrier APIs to track the shipment
-    // For this implementation, we'll return a mock response
-    
-    // Generate random status
-    const statuses = [
-      'CREATED',
-      'PICKED_UP',
-      'IN_TRANSIT',
-      'CUSTOMS',
-      'OUT_FOR_DELIVERY',
-      'DELIVERED',
-      'EXCEPTION'
-    ];
-    
-    const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
-    
-    // Generate tracking events
-    const events: Array<{
-      timestamp: Date;
-      location: string;
-      description: string;
-    }> = [];
-    
-    const now = new Date();
-    const startDate = new Date(now);
-    startDate.setDate(now.getDate() - 3);
-    
-    // Shipment created
-    events.push({
-      timestamp: new Date(startDate),
-      location: 'Origin Facility',
-      description: 'Shipment information received'
-    });
-    
-    if (randomStatus !== 'CREATED') {
-      // Picked up
-      const pickupDate = new Date(startDate);
-      pickupDate.setHours(startDate.getHours() + 5);
+  private async getRatesFromCarrier(
+    carrierConfig: ICarrierConfig, 
+    rateRequest: IRateRequest,
+    specificCarrier?: string
+  ): Promise<IShippingRate[]> {
+    // If specificCarrier is provided, only get rates from that carrier
+    if (specificCarrier && carrierConfig.name.toLowerCase() !== specificCarrier.toLowerCase()) {
+      return [];
+    }
+
+    try {
+      // Get appropriate adapter for the carrier
+      const adapter = this.getCarrierAdapter(carrierConfig);
       
-      events.push({
-        timestamp: pickupDate,
-        location: 'Origin Facility',
-        description: 'Shipment picked up'
+      // Authenticate the adapter
+      const authenticated = await adapter.authenticate();
+      if (!authenticated) {
+        throw new Error(`Failed to authenticate with ${carrierConfig.name}`);
+      }
+      
+      // Get rates from the carrier
+      const rates = await adapter.getRates(rateRequest);
+      
+      // Validate rates
+      if (!Array.isArray(rates)) {
+        throw new Error(`Invalid response from ${carrierConfig.name}: Expected an array of rates`);
+      }
+      
+      // Ensure all rates have the required properties
+      return rates.filter(rate => {
+        if (!rate.serviceCode || !rate.serviceName || typeof rate.price !== 'number') {
+          console.warn(`Skipping invalid rate from ${carrierConfig.name}:`, rate);
+          return false;
+        }
+        return true;
       });
       
-      if (randomStatus !== 'PICKED_UP') {
-        // In transit
-        const transitDate = new Date(pickupDate);
-        transitDate.setHours(pickupDate.getHours() + 10);
-        
-        events.push({
-          timestamp: transitDate,
-          location: 'Origin Hub',
-          description: 'Shipment in transit'
-        });
-        
-        if (['CUSTOMS', 'OUT_FOR_DELIVERY', 'DELIVERED', 'EXCEPTION'].includes(randomStatus)) {
-          // Customs
-          const customsDate = new Date(transitDate);
-          customsDate.setHours(transitDate.getHours() + 24);
-          
-          events.push({
-            timestamp: customsDate,
-            location: 'Destination Country',
-            description: 'Shipment arrived at customs'
-          });
-          
-          if (['OUT_FOR_DELIVERY', 'DELIVERED', 'EXCEPTION'].includes(randomStatus)) {
-            // Cleared customs
-            const clearedDate = new Date(customsDate);
-            clearedDate.setHours(customsDate.getHours() + 12);
-            
-            events.push({
-              timestamp: clearedDate,
-              location: 'Destination Country',
-              description: 'Shipment cleared customs'
-            });
-            
-            if (['OUT_FOR_DELIVERY', 'DELIVERED'].includes(randomStatus)) {
-              // Out for delivery
-              const deliveryDate = new Date(clearedDate);
-              deliveryDate.setHours(clearedDate.getHours() + 12);
-              
-              events.push({
-                timestamp: deliveryDate,
-                location: 'Destination City',
-                description: 'Shipment out for delivery'
-              });
-              
-              if (randomStatus === 'DELIVERED') {
-                // Delivered
-                const completedDate = new Date(deliveryDate);
-                completedDate.setHours(deliveryDate.getHours() + 5);
-                
-                events.push({
-                  timestamp: completedDate,
-                  location: 'Destination Address',
-                  description: 'Shipment delivered'
-                });
-              }
-            } else if (randomStatus === 'EXCEPTION') {
-              // Exception
-              const exceptionDate = new Date(clearedDate);
-              exceptionDate.setHours(clearedDate.getHours() + 5);
-              
-              events.push({
-                timestamp: exceptionDate,
-                location: 'Destination City',
-                description: 'Shipment delivery exception: address not found'
-              });
-            }
-          }
-        }
-      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`Error getting rates from ${carrierConfig.name}: ${errorMessage}`);
+      return [];
     }
-    
-    // Sort events by timestamp
-    events.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-    
-    // Set current location and delivery date
-    let currentLocation = 'Origin Facility';
-    let deliveryDate: Date | undefined;
-    
-    if (events.length > 0) {
-      const lastEvent = events[events.length - 1];
-      currentLocation = lastEvent.location;
-      
-      if (randomStatus === 'DELIVERED') {
-        deliveryDate = lastEvent.timestamp;
-      } else {
-        // Estimate delivery date
-        const estimatedDelivery = new Date(now);
-        estimatedDelivery.setDate(now.getDate() + 2);
-        deliveryDate = estimatedDelivery;
-      }
-    }
-    
-    // Status descriptions
-    const statusDescriptions: Record<string, string> = {
-      'CREATED': 'Shipment information received',
-      'PICKED_UP': 'Shipment picked up',
-      'IN_TRANSIT': 'Shipment in transit',
-      'CUSTOMS': 'Shipment at customs',
-      'OUT_FOR_DELIVERY': 'Shipment out for delivery',
-      'DELIVERED': 'Shipment delivered',
-      'EXCEPTION': 'Shipment exception'
-    };
-    
+  }
+
+  /**
+   * Create a rate request object from shipment data
+   * 
+   * @param shipment Shipment data
+   * @param params Additional parameters for rate request
+   * @returns Rate request object
+   */
+  private createRateRequest(shipment: IInternationalShipment, params?: IRateRequestParams): IRateRequest {
     return {
-      trackingNumber,
-      status: randomStatus,
-      statusDescription: statusDescriptions[randomStatus] || '',
-      currentLocation,
-      deliveryDate,
-      events
+      origin: shipment.origin,
+      destination: shipment.destination,
+      packageDetails: {
+        weight: shipment.packageDetails.weight,
+        weightUnit: shipment.packageDetails.weightUnit,
+        dimensions: shipment.packageDetails.dimensions ? {
+          length: shipment.packageDetails.dimensions.length,
+          width: shipment.packageDetails.dimensions.width,
+          height: shipment.packageDetails.dimensions.height,
+          unit: shipment.packageDetails.dimensions.unit
+        } : undefined
+      },
+      items: shipment.items.map(item => ({
+        description: item.description,
+        quantity: item.quantity,
+        value: item.value,
+        hsCode: item.hsCode,
+        originCountry: item.originCountry
+      })),
+      options: {
+        insurance: params?.options?.insurance ? {
+          required: true,
+          value: shipment.items.reduce((sum, item) => sum + (item.value * item.quantity), 0)
+        } : undefined,
+        signature: params?.options?.signature,
+        saturdayDelivery: params?.options?.saturdayDelivery,
+        dangerousGoods: params?.options?.dangerousGoods
+      },
+      shipmentDate: new Date(),
+      currency: 'USD' // Default currency - could be configurable
     };
   }
 
   /**
-   * Run compliance checks for a shipment
-   * @param originCountry Origin country code
-   * @param destinationCountry Destination country code
-   * @param items Shipment items
-   * @returns Compliance check results
+   * Filter rates by urgency level
+   * 
+   * @param rates Array of shipping rates
+   * @param urgency Urgency level
+   * @returns Filtered array of shipping rates
    */
-  public async runChecks(
-    originCountry: string,
-    destinationCountry: string,
-    items: Array<{
-      description: string;
-      hsCode: string;
-      quantity: number;
-      unitValue: number;
-      totalValue: number;
-      currency: string;
-      countryOfOrigin: string;
-      weight: number;
-      weightUnit: string;
-    }>
-  ): Promise<{
-    status: string;
-    checks: Array<{
-      type: string;
-      status: string;
-      details: string;
-      timestamp: Date;
-    }>;
-    requiredDocuments: Array<{
-      type: string;
-      description: string;
-      required: boolean;
-    }>;
-    restrictedItems: Array<{
-      hsCode: string;
-      description: string;
-      restriction: string;
-      resolution: string;
-    }>;
-    exportApproval: boolean;
-    importApproval: boolean;
-    riskAssessment: {
-      score: number;
-      level: string;
-      factors: string[];
+  private filterRatesByUrgency(rates: IShippingRate[], urgency: ShippingUrgency): IShippingRate[] {
+    return rates.filter(rate => 
+      this.serviceUrgencyMap[rate.serviceCode] === urgency
+    );
+  }
+
+  /**
+   * Get the appropriate carrier adapter
+   * 
+   * @param carrierConfig Carrier configuration
+   * @returns Shipping provider adapter
+   */
+  private getCarrierAdapter(carrierConfig: ICarrierConfig): IShippingProvider {
+    const carrierName = carrierConfig.name.toLowerCase();
+    
+    if (carrierName === 'dhl') {
+      return new DHLAdapter(carrierConfig.credentials, carrierConfig.options);
+    } 
+    else if (carrierName === 'fedex') {
+      return new FedExAdapter(carrierConfig.credentials, carrierConfig.options);
+    }
+    
+    // Fallback to a mock adapter if the carrier is not supported
+    const mockAdapter: IShippingProvider = {
+      name: carrierConfig.name,
+      supportedCountries: [],
+      supportedServices: [],
+      
+      authenticate: async (): Promise<boolean> => true,
+      validateCredentials: async (): Promise<boolean> => true,
+      getRates: async (): Promise<IShippingRate[]> => [],
+      createShipment: async (request: IShipmentRequest): Promise<ICreatedShipment> => ({
+        success: false,
+        shipmentId: '',
+        trackingNumber: '',
+        carrier: carrierConfig.name,
+        service: '',
+        price: 0,
+        currency: 'USD'
+      }),
+      getTracking: async (request: ITrackingRequest): Promise<ITrackingInfo> => ({
+        trackingNumber: request.trackingNumber || '',
+        carrier: carrierConfig.name,
+        status: 'pending',
+        events: []
+      }),
+      cancelShipment: async (shipmentId: string): Promise<boolean> => false,
+      validateAddress: async (address: IAddress): Promise<{
+        valid: boolean;
+        suggested?: IAddress;
+        messages?: string[];
+      }> => ({ 
+        valid: false,
+        messages: ['Mock validation not supported']
+      }),
+      createReturnLabel: async (shipmentId: string): Promise<{
+        success: boolean;
+        label?: {
+          format: string;
+          size: string;
+          url: string;
+          data?: string;
+        };
+      }> => ({ 
+        success: false 
+      })
     };
-  }> {
-    // Mock response for compliance checks
-    return {
-      status: 'approved',
-      checks: [
-        {
-          type: 'prohibited_items',
-          status: 'passed',
-          details: 'No prohibited items found',
-          timestamp: new Date()
-        },
-        {
-          type: 'document_requirements',
-          status: 'passed',
-          details: 'All required documents provided',
-          timestamp: new Date()
-        }
-      ],
-      requiredDocuments: [
-        {
-          type: 'COMMERCIAL_INVOICE',
-          description: 'Commercial Invoice',
-          required: true
-        },
-        {
-          type: 'PACKING_LIST',
-          description: 'Packing List',
-          required: true
-        }
-      ],
-      restrictedItems: [],
-      exportApproval: true,
-      importApproval: true,
-      riskAssessment: {
-        score: 10,
-        level: 'low',
-        factors: []
+    
+    return mockAdapter;
+  }
+
+  /**
+   * Get a list of supported carriers
+   * 
+   * @returns Array of supported carriers with their enabled status
+   */
+  public getCarriers(): Array<{ name: string; enabled: boolean }> {
+    return this.carriers.map(carrier => ({
+      name: carrier.name,
+      enabled: carrier.enabled
+    }));
+  }
+
+  /**
+   * Enable a carrier
+   * 
+   * @param carrierName Name of the carrier to enable
+   * @returns True if successful, false if carrier not found
+   */
+  public enableCarrier(carrierName: string): boolean {
+    const carrier = this.carriers.find(c => 
+      c.name.toLowerCase() === carrierName.toLowerCase()
+    );
+    
+    if (carrier) {
+      carrier.enabled = true;
+      return true;
+    }
+    
+    return false;
+  }
+
+  /**
+   * Disable a carrier
+   * 
+   * @param carrierName Name of the carrier to disable
+   * @returns True if successful, false if carrier not found
+   */
+  public disableCarrier(carrierName: string): boolean {
+    const carrier = this.carriers.find(c => 
+      c.name.toLowerCase() === carrierName.toLowerCase()
+    );
+    
+    if (carrier) {
+      carrier.enabled = false;
+      return true;
+    }
+    
+    return false;
+  }
+
+  /**
+   * Get tracking information for a shipment
+   * 
+   * @param trackingNumber Tracking number of the shipment
+   * @param carrier Optional carrier name
+   * @returns Tracking information for the shipment
+   * @throws {ShippingRateError} When tracking number is invalid or not found
+   */
+  public async getTrackingInfo(trackingNumber: string, carrier?: string): Promise<ITrackingInfo> {
+    try {
+      // Validate tracking number
+      if (!trackingNumber || typeof trackingNumber !== 'string' || trackingNumber.trim() === '') {
+        throw new ShippingRateError('Valid tracking number is required', 'INVALID_TRACKING_NUMBER');
       }
-    };
+
+      const trackingRequest: ITrackingRequest = {
+        trackingNumber,
+        carrier
+      };
+
+      // If carrier is specified, only check that carrier
+      if (carrier) {
+        // Find the specified carrier
+        const carrierConfig = this.carriers.find(c => 
+          c.name.toLowerCase() === carrier.toLowerCase() && c.enabled
+        );
+
+        // Ensure carrier exists and is enabled
+        if (!carrierConfig) {
+          throw new ShippingRateError(
+            `Carrier "${carrier}" not found or disabled`, 
+            'CARRIER_NOT_AVAILABLE'
+          );
+        }
+
+        try {
+          // Get and authenticate the adapter
+          const adapter = this.getCarrierAdapter(carrierConfig);
+          const authenticated = await adapter.authenticate();
+          
+          if (!authenticated) {
+            throw new ShippingRateError(
+              `Failed to authenticate with ${carrierConfig.name}`, 
+              'AUTHENTICATION_FAILED'
+            );
+          }
+          
+          // Get tracking information
+          const trackingInfo = await adapter.getTracking(trackingRequest);
+          
+          // Validate the response has necessary fields
+          if (!trackingInfo.trackingNumber || !trackingInfo.status) {
+            throw new ShippingRateError(
+              `Invalid tracking response from ${carrierConfig.name}`, 
+              'INVALID_TRACKING_RESPONSE'
+            );
+          }
+          
+          return trackingInfo;
+        } catch (error) {
+          // If it's already a ShippingRateError, rethrow it
+          if (error instanceof ShippingRateError) {
+            throw error;
+          }
+          
+          // Otherwise, wrap the error
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          throw new ShippingRateError(
+            `Error getting tracking info from ${carrierConfig.name}: ${errorMessage}`,
+            'TRACKING_FETCH_ERROR'
+          );
+        }
+      }
+
+      // Check all enabled carriers
+      const enabledCarriers = this.carriers.filter(c => c.enabled);
+      
+      if (enabledCarriers.length === 0) {
+        throw new ShippingRateError('No shipping carriers are enabled', 'NO_CARRIERS_ENABLED');
+      }
+
+      // Track errors for better feedback if all carriers fail
+      const errors: string[] = [];
+      
+      // Try each carrier until we find tracking information
+      for (const carrierConfig of enabledCarriers) {
+        try {
+          // Get and authenticate the adapter
+          const adapter = this.getCarrierAdapter(carrierConfig);
+          const authenticated = await adapter.authenticate();
+          
+          if (!authenticated) {
+            errors.push(`Failed to authenticate with ${carrierConfig.name}`);
+            continue;
+          }
+          
+          // Get tracking information
+          const trackingInfo = await adapter.getTracking(trackingRequest);
+          
+          // Validate the response has necessary fields
+          if (!trackingInfo.trackingNumber || !trackingInfo.status) {
+            errors.push(`Invalid tracking response from ${carrierConfig.name}`);
+            continue;
+          }
+          
+          return trackingInfo;
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          errors.push(`${carrierConfig.name}: ${errorMessage}`);
+          console.log(`No tracking info found with ${carrierConfig.name}: ${errorMessage}`);
+          // Continue to next carrier
+        }
+      }
+
+      // If we get here, no carrier could find the tracking information
+      throw new ShippingRateError(
+        `No tracking information found for ${trackingNumber}. Errors: ${errors.join('; ')}`,
+        'TRACKING_NOT_FOUND'
+      );
+    } catch (error) {
+      // Re-throw ShippingRateError instances directly
+      if (error instanceof ShippingRateError) {
+        throw error;
+      }
+      
+      // Log and wrap other errors
+      console.error('Error getting tracking information:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new ShippingRateError(
+        `Failed to get tracking information: ${errorMessage}`,
+        'TRACKING_ERROR'
+      );
+    }
+  }
+
+  /**
+   * Validate an address with a carrier
+   * 
+   * @param address Address to validate
+   * @param carrier Optional carrier to use for validation
+   * @returns Validation result with valid status, optional suggested address, and messages
+   * @throws {ShippingRateError} When address is invalid or carrier is not available
+   */
+  public async validateAddress(address: IAddress, carrier?: string): Promise<{
+    valid: boolean;
+    suggested?: IAddress;
+    messages?: string[];
+  }> {
+    try {
+      // Validate address object
+      if (!address) {
+        throw new ShippingRateError('Address is required', 'ADDRESS_REQUIRED');
+      }
+      
+      // Check that address has required fields
+      if (!address.address || !address.city || !address.country || !address.postalCode) {
+        throw new ShippingRateError(
+          'Address must include street address, city, postal code, and country',
+          'INCOMPLETE_ADDRESS'
+        );
+      }
+
+      // If carrier is specified, only use that carrier
+      if (carrier) {
+        // Find the specified carrier
+        const carrierConfig = this.carriers.find(c => 
+          c.name.toLowerCase() === carrier.toLowerCase() && c.enabled
+        );
+
+        // Ensure carrier exists and is enabled
+        if (!carrierConfig) {
+          throw new ShippingRateError(
+            `Carrier "${carrier}" not found or disabled`, 
+            'CARRIER_NOT_AVAILABLE'
+          );
+        }
+
+        try {
+          // Get and authenticate the adapter
+          const adapter = this.getCarrierAdapter(carrierConfig);
+          const authenticated = await adapter.authenticate();
+          
+          if (!authenticated) {
+            throw new ShippingRateError(
+              `Failed to authenticate with ${carrierConfig.name}`, 
+              'AUTHENTICATION_FAILED'
+            );
+          }
+          
+          // Validate the address
+          const validationResult = await adapter.validateAddress(address);
+          
+          // Normalize the result to ensure consistent structure
+          return {
+            valid: !!validationResult.valid,
+            suggested: validationResult.suggested,
+            messages: Array.isArray(validationResult.messages) ? validationResult.messages : 
+              validationResult.messages ? [validationResult.messages] : []
+          };
+        } catch (error) {
+          // If it's already a ShippingRateError, rethrow it
+          if (error instanceof ShippingRateError) {
+            throw error;
+          }
+          
+          // Otherwise, wrap the error
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          throw new ShippingRateError(
+            `Error validating address with ${carrierConfig.name}: ${errorMessage}`,
+            'ADDRESS_VALIDATION_ERROR'
+          );
+        }
+      }
+
+      // Otherwise, use the first enabled carrier
+      const enabledCarriers = this.carriers.filter(c => c.enabled);
+      
+      if (enabledCarriers.length === 0) {
+        throw new ShippingRateError(
+          'No carriers enabled for address validation',
+          'NO_CARRIERS_ENABLED'
+        );
+      }
+
+      try {
+        // Get and authenticate the adapter
+        const carrierConfig = enabledCarriers[0];
+        const adapter = this.getCarrierAdapter(carrierConfig);
+        const authenticated = await adapter.authenticate();
+        
+        if (!authenticated) {
+          throw new ShippingRateError(
+            `Failed to authenticate with ${carrierConfig.name}`, 
+            'AUTHENTICATION_FAILED'
+          );
+        }
+        
+        // Validate the address
+        const validationResult = await adapter.validateAddress(address);
+        
+        // Normalize the result to ensure consistent structure
+        return {
+          valid: !!validationResult.valid,
+          suggested: validationResult.suggested,
+          messages: Array.isArray(validationResult.messages) ? validationResult.messages : 
+            validationResult.messages ? [validationResult.messages] : []
+        };
+      } catch (error) {
+        // If it's already a ShippingRateError, rethrow it
+        if (error instanceof ShippingRateError) {
+          throw error;
+        }
+        
+        // Otherwise, wrap the error
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        throw new ShippingRateError(
+          `Error validating address with default carrier: ${errorMessage}`,
+          'ADDRESS_VALIDATION_ERROR'
+        );
+      }
+    } catch (error) {
+      // Re-throw ShippingRateError instances directly
+      if (error instanceof ShippingRateError) {
+        throw error;
+      }
+      
+      // Log and wrap other errors
+      console.error('Error validating address:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new ShippingRateError(
+        `Failed to validate address: ${errorMessage}`,
+        'ADDRESS_VALIDATION_ERROR'
+      );
+    }
   }
 }

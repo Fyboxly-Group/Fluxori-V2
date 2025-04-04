@@ -1,10 +1,13 @@
 import { IndexServiceClient } from '@google-cloud/aiplatform';
-import { VectorMatch, SearchOptions } from '../interfaces/vector-search.interface';
+import { VectorMatch, SearchOptions, IVectorSearchService, DocumentMetadata } from '../interfaces/vector-search.interface';
+import { injectable } from 'inversify';
+import 'reflect-metadata';
 
 /**
  * Service for performing vector similarity search using Google Vertex AI Vector Search
  */
-export class VectorSearchService {
+@injectable()
+export class VectorSearchService implements IVectorSearchService {
   private client: IndexServiceClient;
   private projectId: string;
   private location: string;
@@ -63,7 +66,7 @@ export class VectorSearchService {
       
       // Set a timeout to handle potential API delays
       const timeoutMs = 30000; // 30 seconds
-      const requestWithTimeout = Promise.race([
+      const requestWithTimeout = Promise.race<[any, any]>([
         this.client.findNeighbors(request),
         new Promise<never>((_, reject) => 
           setTimeout(() => reject(new Error('Vector search API request timed out')), timeoutMs)
@@ -71,7 +74,7 @@ export class VectorSearchService {
       ]);
       
       // Wait for the response
-      const [response] = await requestWithTimeout as [any, any];
+      const [response] = await requestWithTimeout;
       
       // Process and format the results
       const results: VectorMatch[] = [];
@@ -104,7 +107,12 @@ export class VectorSearchService {
       return results;
     } catch (error) {
       console.error('Error searching similar vectors:', error);
-      throw new Error(`Failed to search similar vectors: ${error.message}`);
+      
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error(`Failed to search similar vectors: ${String(error)}`);
+      }
     }
   }
   
@@ -113,16 +121,17 @@ export class VectorSearchService {
    * @param datapoint The data point from the response
    * @returns Extracted metadata
    */
-  private extractMetadataFromResponse(datapoint: any): any {
+  private extractMetadataFromResponse(datapoint: any): DocumentMetadata {
     try {
       // The structure depends on how metadata was stored in the Vector Search index
       // This is an example and should be adapted to your actual structure
       const metadata = datapoint.restricts || {};
       
       // Parse nested JSON if needed
+      let parsedMetadata = {};
       if (metadata.json_metadata && typeof metadata.json_metadata === 'string') {
         try {
-          metadata.parsedMetadata = JSON.parse(metadata.json_metadata);
+          parsedMetadata = JSON.parse(metadata.json_metadata);
         } catch (e) {
           console.warn('Failed to parse metadata JSON:', e);
         }
@@ -138,7 +147,7 @@ export class VectorSearchService {
         author: metadata.author,
         tags: metadata.tags ? (Array.isArray(metadata.tags) ? metadata.tags : [metadata.tags]) : [],
         // Include any additional parsed metadata
-        ...(metadata.parsedMetadata || {})
+        ...(parsedMetadata || {})
       };
     } catch (error) {
       console.warn('Error extracting metadata:', error);

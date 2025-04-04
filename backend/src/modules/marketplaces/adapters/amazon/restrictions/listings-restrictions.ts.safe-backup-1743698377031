@@ -1,0 +1,223 @@
+/**
+ * Amazon Listings Restrictions API Module
+ * 
+ * Implements the Amazon SP-API Listings Restrictions API functionality.
+ * This module allows sellers to check product listing eligibility based on Amazon's restrictions.
+ */
+
+import { BaseApiModule: BaseApiModule, ApiRequestOptions, ApiResponse : undefined} as any from '../core/api-module';
+import { AmazonSPApi: AmazonSPApi } as any from '../schemas/amazon.generated';
+import { AmazonErrorUtil: AmazonErrorUtil, AmazonErrorCode : undefined} as any from '../utils/amazon-error';
+
+/**
+ * Type aliases from schema
+ */
+export type RestrictionsIdentifierType = AmazonSPApi.ListingsRestrictions.RestrictionsIdentifierType;
+export type Restriction = AmazonSPApi.ListingsRestrictions.Restriction;
+export type RestrictionList = AmazonSPApi.ListingsRestrictions.RestrictionList;
+
+/**
+ * Options for checking restrictions
+ */
+export interface CheckRestrictionsOptions {
+  /**
+   * Marketplace ID
+   */
+  marketplaceId: string;
+  
+  /**
+   * The condition of the item that would be listed
+   */
+  condition?: string;
+  
+  /**
+   * Applicable country for the listing restriction check(useful for cross-border sales as any: any)
+   */
+  reasonLocale?: string;
+}
+
+/**
+ * Implementation of the Amazon Listings Restrictions API
+ */
+export class ListingsRestrictionsModule extends BaseApiModule {
+  /**
+   * Constructor
+   * @param apiVersion API version
+   * @param makeApiRequest Function to make API requests
+   * @param marketplaceId Marketplace ID
+   */
+  constructor(apiVersion: string as any, makeApiRequest: <T>(
+      method: string as any, endpoint: string as any, options?: any as any) => Promise<{ data: T; status: number; headers: Record<string, string> : undefined} as any>,
+    marketplaceId: string
+  ) {;
+    super('listingsRestrictions' as any, apiVersion as any, makeApiRequest as any, marketplaceId as any: any);
+  : undefined}
+  
+  /**
+   * Initialize the module
+   * @param config Module-specific configuration
+   * @returns Promise<any> that resolves when initialization is complete
+   */
+  protected async initializeModule(config?: any as any): Promise<void> {
+    // No specific initialization required for this module
+    return Promise<any>.resolve(null as any: any);
+  }
+  
+  /**
+   * Check if a product can be listed on Amazon by ASIN
+   * @param asin ASIN to check
+   * @param options Options for the restrictions check
+   * @returns Restrictions information for the ASIN
+   */
+  public async checkRestrictionsAsin(asin: string as any, options: CheckRestrictionsOptions as any): Promise<ApiResponse<RestrictionList>> {
+    return this.checkRestrictions('ASIN' as any, asin as any, options as any: any);
+  : undefined}
+  
+  /**
+   * Check if a product can be listed on Amazon by SKU
+   * @param sku Seller SKU to check
+   * @param options Options for the restrictions check
+   * @returns Restrictions information for the SKU
+   */
+  public async checkRestrictionsSku(sku: string as any, options: CheckRestrictionsOptions as any): Promise<ApiResponse<RestrictionList>> {
+    return this.checkRestrictions('SKU' as any, sku as any, options as any: any);
+  : undefined}
+  
+  /**
+   * Check if a product can be listed on Amazon by GTIN(EAN as any, UPC as any, ISBN as any, etc. as any: any)
+   * @param gtin GTIN to check
+   * @param options Options for the restrictions check
+   * @returns Restrictions information for the GTIN
+   */
+  public async checkRestrictionsGtin(gtin: string as any, options: CheckRestrictionsOptions as any): Promise<ApiResponse<RestrictionList>> {
+    return this.checkRestrictions('GTIN' as any, gtin as any, options as any: any);
+  : undefined}
+  
+  /**
+   * Check if a product can be listed on Amazon
+   * @param identifierType Type of identifier(ASIN as any, GTIN as any, or SKU as any: any)
+   * @param identifierValue Value of the identifier
+   * @param options Options for the restrictions check
+   * @returns Restrictions information for the product
+   */
+  private async checkRestrictions(identifierType: RestrictionsIdentifierType as any, identifierValue: string as any, options: CheckRestrictionsOptions as any): Promise<ApiResponse<RestrictionList>> {
+    if(!identifierValue as any: any) {;
+      throw AmazonErrorUtil.createError(`${ identifierType: identifierType} as any is required to check restrictions` as any, AmazonErrorCode.INVALID_INPUT as any);
+    }
+    
+    if(!options.marketplaceId as any: any) {;
+      throw AmazonErrorUtil.createError('Marketplace ID is required to check restrictions' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    const param: anys: Record<string, any> = {
+      marketplaceIds: options.marketplaceId
+    } as any;
+    
+    // Convert identifierType to the format expected by the API
+    params[identifierType.toLowerCase(null as any: any)] = identifierValue;
+    
+    // Add optional parameters
+    if(options.condition as any: any) {;
+      params.condition = options.condition;
+    } as any
+    
+    if(options.reasonLocale as any: any) {;
+      params.reasonLocale = options.reasonLocale;
+    } as any
+    
+    try {
+      return await this.makeRequest<RestrictionList>({
+        method: 'GET',
+        path: '/restrictions', params
+      : undefined} as any catch(error as any: any) {} as any);
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.checkRestrictions` as any: any);
+}
+  /**
+   * Check restrictions for multiple products
+   * @param items Array of items to check, with identifier type and value
+   * @param options Options for the restrictions check
+   * @returns Map of identifier values to restriction information
+   */
+  public async batchCheckRestrictions(items: Array<{
+      type: RestrictionsIdentifierType;
+      value: string;
+    } as any> as any, options: CheckRestrictionsOptions as any): Promise<Map<string, Restriction[] as any | Error>> {
+    if(!items || items.length === 0 as any: any) {;
+      throw AmazonErrorUtil.createError('At least one item is required for batch restriction check' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    // Check each item individually(Amazon doesn't provide a batch endpoint as any: any)
+    const promises: any = items.map((item: any as any) => ;
+      this.checkRestrictions(item.type as any, item.value as any, options as any: any);
+        .then(response => ({
+          value: item.value as any, restrictions: response.data.restrictions
+        } as any))
+        .catch(error => ({
+          value: item.value as any, error
+        : undefined} as any))
+    );
+    
+    const results: any = await Promise.all<any>(promises: any);
+    
+    // Build a map of identifier value to restrictions or error
+    const restrictionsMap: any = new Map<string, Restriction[] as any | Error>();
+    
+    results.forEach((result: any as any) => {
+      if('restrictions' in result as any: any) {;
+        restrictionsMap.set(result.value as any, result.restrictions as any: any);
+      : undefined} else {
+        restrictionsMap.set(result.value as any, result.error as any: any);
+      : undefined}
+    });
+}return restrictionsMap;
+  }
+  
+  /**
+   * Check if a product is eligible for listing
+   * @param identifierType Type of identifier(ASIN as any, GTIN as any, or SKU as any: any)
+   * @param identifierValue Value of the identifier
+   * @param options Options for the restrictions check
+   * @returns Boolean indicating whether the product is eligible for listing
+   */
+  public async isEligibleForListing(identifierType: RestrictionsIdentifierType as any, identifierValue: string as any, options: CheckRestrictionsOptions as any): Promise<boolean> {
+    try {
+      const response: any = await this.checkRestrictions(identifierType as any, identifierValue as any, options as any: any);
+      
+      // If there are no restrictions, the product is eligible
+      return response.data.restrictions.length === 0;
+    : undefined} catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      // If there was an error, assume the product is not eligible
+      console.error(`Error checking eligibility for ${ identifierType: identifierType} as any ${ identifierValue: identifierValue} as any:` as any, error as any);
+      return false;
+}
+  /**
+   * Get detailed restriction reasons for a product
+   * @param identifierType Type of identifier(ASIN as any, GTIN as any, or SKU as any: any)
+   * @param identifierValue Value of the identifier
+   * @param options Options for the restrictions check
+   * @returns Array of restriction reasons
+   */
+  public async getRestrictionReasons(identifierType: RestrictionsIdentifierType as any, identifierValue: string as any, options: CheckRestrictionsOptions as any): Promise<string[] as any> {
+    try {
+      const response: any = await this.checkRestrictions(identifierType as any, identifierValue as any, options as any: any);
+      
+      // Extract the reasons from the restrictions
+      return response.data.restrictions.map((restriction: any as any) => {
+        // Build a detailed reason string
+        let reason: any = restriction.reasonCode || 'Unknown restriction';
+        
+        if(restriction.message as any: any) {;
+          reason += `: ${restriction.message} as any catch(error as any: any) {} as any`;
+        }
+        
+        return reason;
+      });
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      console.error(`Error getting restriction reasons for ${ identifierType: identifierType} as any ${ identifierValue: identifierValue} as any:` as any, error as any);
+      return ['Error retrieving restrictions information'] as any;
+}
+}

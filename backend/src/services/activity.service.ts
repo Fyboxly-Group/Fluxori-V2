@@ -8,12 +8,13 @@ export class ActivityService {
   /**
    * Log a new activity
    */
-  static async logActivity(activityData: Omit<IActivity, 'createdAt'>) {
+  static async logActivity(activityData: Omit<IActivity, 'createdAt'>) : Promise<void> {
     try {
       const activity = new Activity(activityData);
       await activity.save();
       return activity;
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error('Error logging activity:', error);
       // Don't throw error to prevent disrupting the main workflow
       return null;
@@ -23,7 +24,7 @@ export class ActivityService {
   /**
    * Log user login activity
    */
-  static async logUserLogin(userId: mongoose.Types.ObjectId) {
+  static async logUserLogin(userId: mongoose.Types.ObjectId) : Promise<void> {
     return this.logActivity({
       description: 'User logged in',
       entityType: 'user',
@@ -37,7 +38,7 @@ export class ActivityService {
   /**
    * Log user logout activity
    */
-  static async logUserLogout(userId: mongoose.Types.ObjectId) {
+  static async logUserLogout(userId: mongoose.Types.ObjectId) : Promise<void> {
     return this.logActivity({
       description: 'User logged out',
       entityType: 'user',
@@ -55,7 +56,7 @@ export class ActivityService {
     taskId: mongoose.Types.ObjectId,
     userId: mongoose.Types.ObjectId,
     taskTitle: string
-  ) {
+  ) : Promise<void> {
     return this.logActivity({
       description: `Task "${taskTitle}" created`,
       entityType: 'task',
@@ -74,7 +75,7 @@ export class ActivityService {
     userId: mongoose.Types.ObjectId,
     taskTitle: string,
     changes: Record<string, any>
-  ) {
+  ) : Promise<void> {
     return this.logActivity({
       description: `Task "${taskTitle}" updated`,
       entityType: 'task',
@@ -95,7 +96,7 @@ export class ActivityService {
     taskTitle: string,
     oldStatus: string,
     newStatus: string
-  ) {
+  ) : Promise<void> {
     return this.logActivity({
       description: `Task "${taskTitle}" status changed from ${oldStatus} to ${newStatus}`,
       entityType: 'task',
@@ -110,7 +111,7 @@ export class ActivityService {
   /**
    * Get recent activities
    */
-  static async getRecentActivities(limit: number = 10, userId?: mongoose.Types.ObjectId) {
+  static async getRecentActivities(limit: number = 10, userId?: mongoose.Types.ObjectId) : Promise<void> {
     const query = userId ? { userId } : {};
     
     const activities = await Activity.find(query)

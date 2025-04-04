@@ -3,6 +3,16 @@ import { NotificationService } from '../services/notification.service';
 import { ApiError } from '../../../middleware/error.middleware';
 import { NotificationType, NotificationCategory } from '../models/notification.model';
 
+// Authenticated request type
+type AuthenticatedRequest = Request & {
+  user?: {
+    id: string;
+    organizationId: string;
+    email?: string;
+    role?: string;
+  };
+};
+
 /**
  * Controller for handling notification-related requests
  */
@@ -13,7 +23,7 @@ export class NotificationController {
    * Get notifications for authenticated user
    * @route GET /api/notifications
    */
-  public static async getUserNotifications(req: Request, res: Response, next: NextFunction) {
+  public static async getUserNotifications(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       // Get query parameters
       const limit = parseInt(req.query.limit as string) || 20;
@@ -21,11 +31,11 @@ export class NotificationController {
       const includeRead = req.query.includeRead !== 'false';
       
       // Get user ID from authenticated request
-      if (!req.user || !req.user._id) {
+      if (!req.user || !(req.user as any)._id) {
         throw new ApiError(401, 'Authentication required');
       }
       
-      const userId = req.user._id.toString();
+      const userId = (req.user as any)._id.toString();
       
       // Get notifications
       const notifications = await this.notificationService.getUserNotifications(
@@ -54,14 +64,14 @@ export class NotificationController {
    * Get unread notification count
    * @route GET /api/notifications/unread-count
    */
-  public static async getUnreadCount(req: Request, res: Response, next: NextFunction) {
+  public static async getUnreadCount(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       // Get user ID from authenticated request
-      if (!req.user || !req.user._id) {
+      if (!req.user || !(req.user as any)._id) {
         throw new ApiError(401, 'Authentication required');
       }
       
-      const userId = req.user._id.toString();
+      const userId = (req.user as any)._id.toString();
       
       // Get unread count
       const count = await this.notificationService.getUnreadCount(userId);
@@ -80,16 +90,16 @@ export class NotificationController {
    * Mark a notification as read
    * @route PATCH /api/notifications/:id/read
    */
-  public static async markAsRead(req: Request, res: Response, next: NextFunction) {
+  public static async markAsRead(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
-      const notificationId = req.params.id;
+      const notificationId = req.params.id as any;
       
       // Get user ID from authenticated request
-      if (!req.user || !req.user._id) {
+      if (!req.user || !(req.user as any)._id) {
         throw new ApiError(401, 'Authentication required');
       }
       
-      const userId = req.user._id.toString();
+      const userId = (req.user as any)._id.toString();
       
       // Mark notification as read
       const updatedNotification = await this.notificationService.markAsRead(notificationId, userId);
@@ -112,14 +122,14 @@ export class NotificationController {
    * Mark all notifications as read
    * @route PATCH /api/notifications/mark-all-read
    */
-  public static async markAllAsRead(req: Request, res: Response, next: NextFunction) {
+  public static async markAllAsRead(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       // Get user ID from authenticated request
-      if (!req.user || !req.user._id) {
+      if (!req.user || !(req.user as any)._id) {
         throw new ApiError(401, 'Authentication required');
       }
       
-      const userId = req.user._id.toString();
+      const userId = (req.user as any)._id.toString();
       
       // Mark all notifications as read
       const count = await this.notificationService.markAllAsRead(userId);
@@ -138,16 +148,16 @@ export class NotificationController {
    * Delete a notification
    * @route DELETE /api/notifications/:id
    */
-  public static async deleteNotification(req: Request, res: Response, next: NextFunction) {
+  public static async deleteNotification(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
-      const notificationId = req.params.id;
+      const notificationId = req.params.id as any;
       
       // Get user ID from authenticated request
-      if (!req.user || !req.user._id) {
+      if (!req.user || !(req.user as any)._id) {
         throw new ApiError(401, 'Authentication required');
       }
       
-      const userId = req.user._id.toString();
+      const userId = (req.user as any)._id.toString();
       
       // Delete notification
       const success = await this.notificationService.deleteNotification(notificationId, userId);
@@ -170,14 +180,14 @@ export class NotificationController {
    * Clear all notifications
    * @route DELETE /api/notifications/clear-all
    */
-  public static async clearAllNotifications(req: Request, res: Response, next: NextFunction) {
+  public static async clearAllNotifications(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       // Get user ID from authenticated request
-      if (!req.user || !req.user._id) {
+      if (!req.user || !(req.user as any)._id) {
         throw new ApiError(401, 'Authentication required');
       }
       
-      const userId = req.user._id.toString();
+      const userId = (req.user as any)._id.toString();
       
       // Clear all notifications
       const count = await this.notificationService.clearAllNotifications(userId);
@@ -196,7 +206,7 @@ export class NotificationController {
    * Send test notification to self (for testing)
    * @route POST /api/notifications/test
    */
-  public static async sendTestNotification(req: Request, res: Response, next: NextFunction) {
+  public static async sendTestNotification(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       // Only available in development
       if (process.env.NODE_ENV !== 'development') {
@@ -204,11 +214,11 @@ export class NotificationController {
       }
       
       // Get user ID from authenticated request
-      if (!req.user || !req.user._id) {
+      if (!req.user || !(req.user as any)._id) {
         throw new ApiError(401, 'Authentication required');
       }
       
-      const userId = req.user._id.toString();
+      const userId = (req.user as any)._id.toString();
       const organizationId = req.user.organizationId?.toString();
       
       // Get parameters from body

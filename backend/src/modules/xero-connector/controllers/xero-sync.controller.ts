@@ -1,4 +1,3 @@
-// @ts-nocheck - Added by final-ts-fix.js
 // Controllers for Xero sync operations
 import { Request, Response } from 'express';
 import { XeroBulkSyncService } from "../services/xero-bulk-sync.service";
@@ -64,7 +63,7 @@ class XeroSyncController {
       console.error('Error starting sync:', error);
       res.status(500).json({
         success: false,
-        message: `Error starting sync: ${error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)}`,
+        message: `Error starting sync: ${error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)) : String(error)}`,
       });
     }
   }
@@ -98,7 +97,7 @@ class XeroSyncController {
       console.error('Error getting sync status:', error);
       res.status(500).json({
         success: false,
-        message: `Error getting sync status: ${error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)}`,
+        message: `Error getting sync status: ${error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)) : String(error)}`,
       });
     }
   }
@@ -125,7 +124,7 @@ class XeroSyncController {
       console.error('Error getting recent syncs:', error);
       res.status(500).json({
         success: false,
-        message: `Error getting recent syncs: ${error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)}`,
+        message: `Error getting recent syncs: ${error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)) : String(error)}`,
       });
     }
   }
@@ -166,7 +165,7 @@ class XeroSyncController {
       console.error('Error getting reconciliation status:', error);
       res.status(500).json({
         success: false,
-        message: `Error getting reconciliation status: ${error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)}`,
+        message: `Error getting reconciliation status: ${error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)) : String(error)}`,
       });
     }
   }

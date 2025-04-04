@@ -1,6 +1,6 @@
 import { PredictionServiceClient } from '@google-cloud/aiplatform';
 import { google } from '@google-cloud/aiplatform/build/protos/protos';
-import { MessageRole } from '../models/conversation.model';
+import { MessageRole } from '../interfaces/conversation.interface';
 
 // Interface for structured message input
 export interface IVertexMessage {
@@ -42,7 +42,7 @@ const MODEL_PUBLISHERS: Record<string, string> = {
 };
 
 // Context window sizes per model
-const MODEL_CONTEXT_WINDOWS: Record<string, number> = {
+const MODEL_CONTEXT_WINDOW: Record<string, number> = {
   [LlmModel.GEMINI_1_5_FLASH]: 128000,
   [LlmModel.GEMINI_1_5_PRO]: 1000000,
   [LlmModel.GEMINI_1_0_PRO]: 32000,
@@ -105,8 +105,8 @@ export class VertexAIService {
   constructor(defaultModel: LlmModel = LlmModel.GEMINI_1_5_FLASH) {
     // Initialize the client
     this.apiEndpoint = 'europe-west1-aiplatform.googleapis.com'; // European endpoint
-    this.client = new PredictionServiceClient({
-      apiEndpoint: this.apiEndpoint
+    this.client = new PredictionServiceClient({ 
+      apiEndpoint: this.apiEndpoint 
     });
     
     // Load configuration from environment variables
@@ -124,7 +124,7 @@ export class VertexAIService {
    * @returns System prompt string
    */
   private getSystemPrompt(): string {
-    return `You are an AI customer service assistant for Fluxori, a B2B SaaS company that offers inventory, supply chain, and project management software. 
+    return `You are an AI customer service assistant for Fluxori, a B2B SaaS company that offers inventory, supply chain, and project management software.
     Your role is to be helpful, accurate, and professional.
     
     Guidelines:
@@ -154,36 +154,33 @@ export class VertexAIService {
    * @param model The LLM model to use
    * @returns Formatted messages for the model
    */
-  private formatMessagesForModel(
-    messages: IVertexMessage[], 
-    model: LlmModel
-  ): any {
+  private formatMessagesForModel(messages: IVertexMessage[], model: LlmModel): any {
     const publisher = MODEL_PUBLISHERS[model];
     
     // Different formatting for different publishers
-    if (publisher === 'google') {
+    if(publisher === 'google') {
       // Gemini models format
-      return messages.map(msg => ({
-        role: msg.role,
+      return messages.map((msg) => ({ 
+        role: msg.role, 
         parts: [{ text: msg.content }]
       }));
-    } else if (publisher === 'anthropic') {
+    } else if(publisher === 'anthropic') {
       // Claude models format
       // Map our MessageRole enum to Claude's role format
-      return messages.map(msg => {
+      return messages.map((msg) => {
         let role = msg.role;
         // Claude uses "assistant" for responses and "user" for queries
         // But has a special "system" role for system messages
         return {
-          role: role,
+          role: role, 
           content: msg.content
         };
       });
     }
     
     // Default to Google format if unknown
-    return messages.map(msg => ({
-      role: msg.role,
+    return messages.map((msg) => ({ 
+      role: msg.role, 
       parts: [{ text: msg.content }]
     }));
   }
@@ -198,10 +195,10 @@ export class VertexAIService {
    * @returns The LLM response
    */
   public async generateResponse(
-    messages: IVertexMessage[],
-    temperature: number = 0.2,
-    maxOutputTokens: number = 2048,
-    ragContext?: string,
+    messages: IVertexMessage[], 
+    temperature: number = 0.2, 
+    maxOutputTokens: number = 2048, 
+    ragContext?: string, 
     model?: LlmModel
   ): Promise<ILlmResponse> {
     try {
@@ -216,26 +213,28 @@ export class VertexAIService {
         content: this.getSystemPrompt()
       };
       
+      let allMessages: IVertexMessage[];
+      
       // Add RAG context if provided
-      if (ragContext) {
+      if(ragContext) {
         const ragMessage: IVertexMessage = {
           role: MessageRole.SYSTEM,
           content: `Reference knowledge from our knowledge base: ${ragContext}`
         };
         
         // Add the RAG message after the system prompt but before user messages
-        messages = [systemMessage, ragMessage, ...messages];
+        allMessages = [systemMessage, ragMessage, ...messages];
       } else {
-        messages = [systemMessage, ...messages];
+        allMessages = [systemMessage, ...messages];
       }
       
       // Format messages according to the model type
-      const formattedMessages = this.formatMessagesForModel(messages, selectedModel);
+      const formattedMessages = this.formatMessagesForModel(allMessages, selectedModel);
       
       // Prepare the request based on model publisher
       let request: any;
       
-      if (modelPublisher === 'google') {
+      if(modelPublisher === 'google') {
         // Gemini model request format
         request = {
           endpoint: modelEndpoint,
@@ -251,14 +250,14 @@ export class VertexAIService {
             topP: 0.95,
           },
         };
-      } else if (modelPublisher === 'anthropic') {
+      } else if(modelPublisher === 'anthropic') {
         // Claude model request format
         request = {
           endpoint: modelEndpoint,
           instances: [
             {
               messages: formattedMessages,
-              system: systemMessage.content,  // Claude has a dedicated system parameter
+              system: systemMessage.content, // Claude has a dedicated system parameter
             }
           ],
           parameters: {
@@ -285,11 +284,11 @@ export class VertexAIService {
       
       // Extract the response text and metadata
       const predictions = response.predictions;
-      if (!predictions || predictions.length === 0) {
+      if(!predictions || predictions.length === 0) {
         throw new Error('No predictions returned from the model');
       }
       
-      const prediction = predictions[0] as any;
+      const prediction = predictions[0];
       
       // Extract text based on model format
       let candidateText = '';
@@ -297,18 +296,20 @@ export class VertexAIService {
       let promptTokens = 0;
       let completionTokens = 0;
       
-      if (modelPublisher === 'google') {
+      if(modelPublisher === 'google') {
         // Extract from Gemini response format
-        candidateText = prediction.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        finishReason = prediction.candidates?.[0]?.finishReason || 'unknown';
-        promptTokens = prediction.usageMetadata?.promptTokenCount || 0;
-        completionTokens = prediction.usageMetadata?.candidatesTokenCount || 0;
-      } else if (modelPublisher === 'anthropic') {
+        const candidate = prediction?.candidates?.[0];
+        candidateText = candidate?.content?.parts?.[0]?.text || '';
+        finishReason = candidate?.finishReason || 'unknown';
+        promptTokens = prediction?.usageMetadata?.promptTokenCount || 0;
+        completionTokens = prediction?.usageMetadata?.candidatesTokenCount || 0;
+      } else if(modelPublisher === 'anthropic') {
         // Extract from Claude response format
-        candidateText = prediction.content?.[0]?.text || '';
-        finishReason = prediction.stop_reason || 'unknown';
-        promptTokens = prediction.usage?.input_tokens || 0;
-        completionTokens = prediction.usage?.output_tokens || 0;
+        const claudeResponse = prediction;
+        candidateText = claudeResponse?.content?.[0]?.text || '';
+        finishReason = claudeResponse?.stop_reason || 'unknown';
+        promptTokens = claudeResponse?.usage?.input_tokens || 0;
+        completionTokens = claudeResponse?.usage?.output_tokens || 0;
       }
       
       // Return a structured response
@@ -324,12 +325,12 @@ export class VertexAIService {
           finish_reason: finishReason,
         }
       };
-    } catch (error) {
+    } catch(error) {
       console.error('Error calling Vertex AI:', error);
-      throw new Error(`Error generating AI response: ${error.message}`);
+      throw new Error(`Error generating AI response: ${(error instanceof Error ? error.message : String(error))}`);
     }
   }
-  
+
   /**
    * Method to calculate a confidence score from the model's output
    * This is a simplified approach - a more sophisticated implementation could use
@@ -352,13 +353,12 @@ export class VertexAIService {
     const lowerText = text.toLowerCase();
     
     // If any uncertainty phrases are found, reduce confidence
-    for (const phrase of uncertaintyPhrases) {
-      if (lowerText.includes(phrase)) {
+    for(const phrase of uncertaintyPhrases) {
+      if(lowerText.includes(phrase)) {
         // Return a lower confidence score if uncertainty phrases are detected
         return 0.3;
       }
     }
-    
     // Default confidence is fairly high if no uncertainty detected
     return 0.85;
   }
@@ -371,7 +371,7 @@ export class VertexAIService {
    */
   public shouldEscalate(text: string, confidence: number): { escalate: boolean; reason?: string } {
     // If confidence is very low, always escalate
-    if (confidence < 0.4) {
+    if(confidence < 0.4) {
       return { 
         escalate: true, 
         reason: 'Low confidence in response' 
@@ -382,8 +382,7 @@ export class VertexAIService {
     const lowerText = text.toLowerCase();
     
     // Explicit escalation requests
-    if (
-      lowerText.includes('escalate to a human') || 
+    if(lowerText.includes('escalate to a human') || 
       lowerText.includes('connect you with a human') ||
       lowerText.includes('transfer you to a human')
     ) {
@@ -394,8 +393,7 @@ export class VertexAIService {
     }
     
     // Complex issues that might require human intervention
-    if (
-      lowerText.includes('complex issue') || 
+    if(lowerText.includes('complex issue') || 
       lowerText.includes('complex problem') ||
       lowerText.includes('technical support needed')
     ) {
@@ -437,26 +435,24 @@ export class VertexAIService {
     
     // Check message history length to determine context size needs
     const historyLength = messages.length;
-    const totalContextSize = messages.reduce(
-      (total, msg) => total + msg.content.length, 0
-    );
+    const totalContextSize = messages.reduce((total, msg) => total + msg.content.length, 0);
     
     // Decision logic for model selection
-    if (historyLength > 15 || totalContextSize > 30000) {
+    if(historyLength > 15 || totalContextSize > 30000) {
       // Long conversations or large context needs models with big context windows
-      if (needsComplexReasoning || hasTechnicalTerms) {
+      if(needsComplexReasoning || hasTechnicalTerms) {
         return LlmModel.GEMINI_1_5_PRO; // Largest context window with complex reasoning
       } else {
         return LlmModel.CLAUDE_3_SONNET; // Good for nuanced customer service with large context
       }
-    } else if (needsComplexReasoning) {
+    } else if(needsComplexReasoning) {
       // Complex reasoning needs
-      if (hasTechnicalTerms) {
+      if(hasTechnicalTerms) {
         return LlmModel.GEMINI_1_5_PRO; // Best for technical complex reasoning
       } else {
         return LlmModel.CLAUDE_3_SONNET; // Good for nuanced explanations
       }
-    } else if (hasTechnicalTerms) {
+    } else if(hasTechnicalTerms) {
       // Technical but not complex
       return LlmModel.GEMINI_1_5_FLASH; // Quick for technical support
     }

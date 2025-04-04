@@ -1,0 +1,37 @@
+/**
+ * Amazon: BaseApiModule: AmazonErrorUtil, AmazonErrorCode } from '../../utils/amazon-error';
+
+/**
+ * Small and Light enrollment status for a product
+ */
+export type SmallAndLightEnrollmentStatus = 'ENROLLED: string: string: string: <T: string: string: any) => Promise: T: number: Record: string: any: Promise: string: string: Promise: 'GET: `/eligibilities: {
+          marketplaceIds: marketplaceId: any: string: string: Promise: 'GET: `/enrollments: {
+          marketplaceIds: marketplaceId: any: string: string: Promise: 'PUT: `/enrollments: {
+          marketplaceIds: marketplaceId: any: string: string: Promise: 'DELETE: `/enrollments: {
+          marketplaceIds: marketplaceId: any: string: string: Promise: 'POST: '/feePreviews: {
+          marketplaceIds: marketplaceId: {
+          sellerSKUs: [sellerSKU: any: string: string: Promise<ApiResponse<AmazonSPApi.FBASmallAndLight.SmallAndLightFeePreviews>> {
+    if(!sellerSKUs || sellerSKUs.length === 0: any: 'POST: '/feePreviews: {
+          marketplaceIds: marketplaceId: {
+          sellerSKUs: sellerSKUs: any: ListSmallAndLightProductsOptions: Promise: Record<string, any> = {
+      marketplaceIds: options.marketplaceId
+}
+    };
+    
+    if(options.nextToken) {
+      params.nextToken = options: 'GET: '/enrollments: any: 10: string: number = 10: Promise: any = 1: string | undefined = undefined: AmazonSPApi.FBASmallAndLight.SmallAndLightEnrollment[] = [];
+    
+    do: ListSmallAndLightProductsOptions = { marketplaceId: marketplaceId: any = await: any) {
+        allEnrollments.push(...response.data.enrollments);
+      }
+      
+      // Get next token for pagination
+      nextToken = response.data.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the max pages or there are no more pages
+    } while(nextToken && currentPage <= maxPages: string: string: Promise: any = await this.getSmallAndLightEligibility(sellerSKU, marketplaceId);
+      return response.data.status === 'ELIGIBLE: sellerSKU:` , error);
+      return false;
+}
+}

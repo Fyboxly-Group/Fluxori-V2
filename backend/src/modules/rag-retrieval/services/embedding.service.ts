@@ -1,10 +1,13 @@
 import { PredictionServiceClient } from '@google-cloud/aiplatform';
-import { EmbeddingOptions } from '../interfaces/vector-search.interface';
+import { EmbeddingOptions, IEmbeddingService } from '../interfaces/vector-search.interface';
+import { injectable } from 'inversify';
+import 'reflect-metadata';
 
 /**
  * Service for generating embeddings from text using Vertex AI
  */
-export class EmbeddingService {
+@injectable()
+export class EmbeddingService implements IEmbeddingService {
   private client: PredictionServiceClient;
   private projectId: string;
   private location: string;
@@ -63,7 +66,7 @@ export class EmbeddingService {
       
       // Set a timeout to handle potential API delays
       const timeoutMs = 30000; // 30 seconds
-      const requestWithTimeout = Promise.race([
+      const requestWithTimeout = Promise.race<[any, any]>([
         this.client.predict(request),
         new Promise<never>((_, reject) => 
           setTimeout(() => reject(new Error('Embedding API request timed out')), timeoutMs)
@@ -71,7 +74,7 @@ export class EmbeddingService {
       ]);
       
       // Wait for the response
-      const [response] = await requestWithTimeout as [any, any];
+      const [response] = await requestWithTimeout;
       
       // Extract the embedding vector
       if (!response.predictions || response.predictions.length === 0) {
@@ -83,7 +86,12 @@ export class EmbeddingService {
       return embedding;
     } catch (error) {
       console.error('Error generating embedding:', error);
-      throw new Error(`Failed to generate embedding: ${error.message}`);
+      
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error(`Failed to generate embedding: ${String(error)}`);
+      }
     }
   }
   
@@ -115,7 +123,7 @@ export class EmbeddingService {
       
       // Set a timeout to handle potential API delays
       const timeoutMs = 60000; // 60 seconds for batch
-      const requestWithTimeout = Promise.race([
+      const requestWithTimeout = Promise.race<[any, any]>([
         this.client.predict(request),
         new Promise<never>((_, reject) => 
           setTimeout(() => reject(new Error('Batch embedding API request timed out')), timeoutMs)
@@ -123,7 +131,7 @@ export class EmbeddingService {
       ]);
       
       // Wait for the response
-      const [response] = await requestWithTimeout as [any, any];
+      const [response] = await requestWithTimeout;
       
       // Extract the embedding vectors
       if (!response.predictions || response.predictions.length === 0) {
@@ -135,7 +143,12 @@ export class EmbeddingService {
       return embeddings;
     } catch (error) {
       console.error('Error generating batch embeddings:', error);
-      throw new Error(`Failed to generate batch embeddings: ${error.message}`);
+      
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error(`Failed to generate batch embeddings: ${String(error)}`);
+      }
     }
   }
   

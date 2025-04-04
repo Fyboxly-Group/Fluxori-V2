@@ -1,35 +1,40 @@
 /**
+ * Configuration for the international trade module providers
+ */
+
+/**
  * DHL Express API Configuration
  */
 export const DHL_CONFIG = {
-  apiBaseUrl: 'https://api-mock.dhl.com/mydhl/apiv1', // Use the actual API URL in production
-  serviceTypes: {
+  apiBaseUrl: 'https://api.dhl.com/express/v1',
+  authUrl: 'https://api.dhl.com/auth/v4/accesstoken',
+  services: {
     EXPRESS: {
       code: 'D',
       name: 'DHL Express'
     },
-    EXPRESS_WORLDWIDE: {
+    PARCEL: {
       code: 'P',
-      name: 'DHL Express Worldwide'
+      name: 'DHL Parcel'
     },
-    EXPRESS_9: {
+    FREIGHT: {
       code: 'T',
-      name: 'DHL Express 9:00'
+      name: 'DHL Freight'
     },
-    EXPRESS_1030: {
+    URGENT: {
       code: 'U',
-      name: 'DHL Express 10:30'
+      name: 'DHL Same Day'
     },
-    EXPRESS_12: {
+    ECONOMY: {
       code: 'Y',
-      name: 'DHL Express 12:00'
+      name: 'DHL Economy Select'
     },
-    EXPRESS_ECONOMY: {
+    EXPRESS_WORLDWIDE: {
       code: 'E',
-      name: 'DHL Express Economy'
+      name: 'DHL Express Worldwide'
     }
   },
-  packageTypes: {
+  packagingTypes: {
     BOX: 'BD',
     DOCUMENT: 'DC',
     PALLET: 'PL',
@@ -42,8 +47,9 @@ export const DHL_CONFIG = {
  * FedEx API Configuration
  */
 export const FEDEX_CONFIG = {
-  apiBaseUrl: 'https://api-gateway.fedex.com/api', // Use the actual API URL in production
-  serviceTypes: {
+  apiBaseUrl: 'https://apis.fedex.com/rate/v1',
+  authUrl: 'https://apis.fedex.com/oauth/token',
+  services: {
     INTERNATIONAL_PRIORITY: {
       code: 'INTERNATIONAL_PRIORITY',
       name: 'FedEx International Priority'
@@ -61,11 +67,11 @@ export const FEDEX_CONFIG = {
       name: 'FedEx International Priority Express'
     }
   },
-  packageTypes: {
+  packagingTypes: {
     BOX: 'YOUR_PACKAGING',
-    DOCUMENT: 'FEDEX_ENVELOPE',
-    PALLET: 'FEDEX_PAK',
-    ENVELOPE: 'FEDEX_BOX',
+    ENVELOPE: 'FEDEX_ENVELOPE',
+    PAK: 'FEDEX_PAK',
+    BOX_SMALL: 'FEDEX_BOX',
     TUBE: 'FEDEX_TUBE'
   }
 };
@@ -81,11 +87,11 @@ export const SHIPPING_PROVIDERS_CONFIG = {
     fedex: 'FedEx'
   },
   defaultCurrency: 'USD',
-  requireCustomsForInternational: true,
-  weightUnits: ['kg', 'lb'],
-  dimensionUnits: ['cm', 'in'],
-  packageTypes: ['box', 'pallet', 'envelope', 'tube', 'other'],
-  serviceTypes: ['express', 'standard', 'economy', 'priority'],
+  requiresAuthentication: true,
+  defaultWeightUnit: 'kg',
+  defaultDimensionUnit: 'cm',
+  defaultPackagingType: 'box',
+  defaultServiceType: 'express',
   incoterms: [
     {
       code: 'EXW',
@@ -95,7 +101,7 @@ export const SHIPPING_PROVIDERS_CONFIG = {
     {
       code: 'FCA',
       name: 'Free Carrier',
-      description: 'The seller delivers goods to the carrier specified by the buyer.'
+      description: 'The seller delivers the goods to a carrier appointed by the buyer.'
     },
     {
       code: 'CPT',
@@ -110,7 +116,7 @@ export const SHIPPING_PROVIDERS_CONFIG = {
     {
       code: 'DAP',
       name: 'Delivered at Place',
-      description: 'The seller delivers to a designated location, excluding import duties.'
+      description: 'The seller delivers when the goods are placed at the disposal of the buyer at the named place.'
     },
     {
       code: 'DPU',

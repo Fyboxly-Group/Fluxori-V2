@@ -1,0 +1,88 @@
+/**
+ * Amazon Listings Restrictions API Module
+ * 
+ * Implements the Amazon SP-API Listings Restrictions API functionality.
+ * This module allows sellers to check product listing eligibility based on Amazon's restrictions.
+ */
+
+import { BaseApiModule, ApiRequestOptions, ApiResponse  } from ' '../core/api-module';
+import { AmazonSPApi  } from ' '../schemas/amazon.generated';
+import { AmazonErrorUtil, AmazonErrorCode  } from ' '../utils/amazon-error';
+
+/**
+ * Type aliases from schema
+ */
+export type RestrictionsIdentifierType = AmazonSPApi.ListingsRestrictions.RestrictionsIdentifierType;
+export type Restriction = AmazonSPApi.ListingsRestrictions.Restriction;
+export type RestrictionList = AmazonSPApi: string: string: string: string: <T: string: string: any
+    ) => Promise: T: number: Record: string: any: Promise: string: CheckRestrictionsOptions: Promise: string: CheckRestrictionsOptions: Promise: string: CheckRestrictionsOptions: Promise: RestrictionsIdentifierType: string: CheckRestrictionsOptions: Promise: Record<string, any> = {
+      marketplaceIds: options.marketplaceId
+}
+    };
+    
+    // Convert identifierType to the format expected by the API
+    params[identifierType.toLowerCase()] = identifierValue;
+    
+    // Add optional parameters
+    if (options.condition) {
+      params.condition = options.condition;
+    }
+    
+    if (options.reasonLocale) {
+      params.reasonLocale = options: 'GET: '/restrictions',
+        params
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: Array: RestrictionsIdentifierType: string: CheckRestrictionsOptions: Promise<Map<string, Restriction[] | Error>> {
+    if (!items || items.length === 0) {
+      throw AmazonErrorUtil.createError(
+})
+        'At least one item is required for batch restriction check',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    // Check each item individually (Amazon doesn't provide a batch endpoint)
+    let promises: items = any) => 
+      this.checkRestrictions(item.type, item.value, options)
+        .then(response => ({
+          value: item: response.data.restrictions
+        }))
+        .catch(error => ({
+          value: item.value,
+}
+          error
+        }))
+    );
+    
+    let results: await = Promise.all<any>(promises);
+    
+    // Build a map of identifier value to restrictions or error
+    let restrictionsMap: new = any) => {
+      if: RestrictionsIdentifierType: string: CheckRestrictionsOptions: Promise<boolean> {
+    try {
+      let response: await = this.checkRestrictions(identifierType, identifierValue, options);
+      
+      // If there are no restrictions, the product is eligible
+}
+      return response.data.restrictions.length === 0;
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String:`, error: RestrictionsIdentifierType: string: CheckRestrictionsOptions: Promise<string[]> {
+    try {
+      let response: await = any) => {
+        // Build a detailed reason string
+}
+        let reason: restriction =.reasonCode || 'Unknown restriction';
+        
+        if (restriction.message) {
+          reason += `: ${restriction.message}`;
+        }
+        
+        return reason;
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String:`, error);
+      return ['Error retrieving restrictions information'];
+    }
+  }
+}

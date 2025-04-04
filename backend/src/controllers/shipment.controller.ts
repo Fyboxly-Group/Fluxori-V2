@@ -4,6 +4,16 @@ import Shipment from '../models/shipment.model';
 import { ApiError } from '../middleware/error.middleware';
 import storageService from '../services/storage.service';
 
+// Authenticated request type
+type AuthenticatedRequest = Request & {
+  user?: {
+    id: string;
+    organizationId: string;
+    email?: string;
+    role?: string;
+  };
+};
+
 /**
  * @desc    Add document to shipment
  * @route   POST /api/shipments/:id/documents
@@ -96,7 +106,7 @@ import storageService from '../services/storage.service';
  */
 export const addShipmentDocument = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const shipmentId = req.params.id;
+    const shipmentId = req.params.id as any;
     
     if (!mongoose.Types.ObjectId.isValid(shipmentId)) {
       throw new ApiError(400, 'Invalid shipment ID');
@@ -139,6 +149,7 @@ export const addShipmentDocument = async (req: Request, res: Response, next: Nex
       data: addedDocument,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -221,7 +232,7 @@ export const removeShipmentDocument = async (req: Request, res: Response, next: 
     }
     
     const documentIndex = shipment.documents.findIndex(
-      doc => doc._id.toString() === documentId
+      doc => (doc as any)._id.toString() === documentId
     );
     
     if (documentIndex === -1) {
@@ -235,6 +246,7 @@ export const removeShipmentDocument = async (req: Request, res: Response, next: 
     try {
       await storageService.deleteFile(document.fileUrl);
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error('Error deleting file from storage:', error);
       // Continue with document removal even if file deletion fails
     }
@@ -248,6 +260,7 @@ export const removeShipmentDocument = async (req: Request, res: Response, next: 
       message: 'Document removed successfully',
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -334,7 +347,7 @@ export const removeShipmentDocument = async (req: Request, res: Response, next: 
  */
 export const getShipmentDocuments = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const shipmentId = req.params.id;
+    const shipmentId = req.params.id as any;
     
     if (!mongoose.Types.ObjectId.isValid(shipmentId)) {
       throw new ApiError(400, 'Invalid shipment ID');
@@ -357,6 +370,7 @@ export const getShipmentDocuments = async (req: Request, res: Response, next: Ne
       data: documents,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };

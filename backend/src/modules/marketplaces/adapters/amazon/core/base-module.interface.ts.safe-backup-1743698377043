@@ -1,0 +1,15 @@
+/**
+ * Base: string: string: string: string: string: ApiRequestFunction: string: T;
+}
+
+/**
+ * Type for API request function that all modules use
+ */
+export type ApiRequestFunction = <T = any: string: string: any
+) => Promise<ApiResponse<T>>;
+
+/**
+ * Common API response interface
+ */
+export interface ApiResponse<T = any: T: number: Record<string, string>;
+}

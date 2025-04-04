@@ -68,9 +68,9 @@ export const getProjects = async (req: Request, res: Response, next: NextFunctio
     // Handle stakeholder filtering (if user wants to see projects they're involved in)
     if (req.query.involvedUser && req.user) {
       query.$or = [
-        { accountManager: req.user._id },
-        { createdBy: req.user._id },
-        { 'stakeholders.user': req.user._id },
+        { accountManager: (req.user as any)._id },
+        { createdBy: (req.user as any)._id },
+        { 'stakeholders.user': (req.user as any)._id },
       ];
     }
     
@@ -108,6 +108,7 @@ export const getProjects = async (req: Request, res: Response, next: NextFunctio
       data: projects,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -119,7 +120,7 @@ export const getProjects = async (req: Request, res: Response, next: NextFunctio
  */
 export const getProjectById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const projectId = req.params.id;
+    const projectId = req.params.id as any;
     
     if (!mongoose.Types.ObjectId.isValid(projectId)) {
       throw new ApiError(400, 'Invalid project ID');
@@ -141,6 +142,7 @@ export const getProjectById = async (req: Request, res: Response, next: NextFunc
       data: project,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -217,11 +219,11 @@ export const createProject = async (req: Request, res: Response, next: NextFunct
       await ActivityService.logActivity({
         description: `Project "${name}" created for customer "${customerExists.companyName}"`,
         entityType: 'user',
-        entityId: req.user._id,
+        entityId: (req.user as any)._id,
         action: 'create',
         status: 'completed',
-        userId: req.user._id,
-        metadata: { projectId: project._id, customerId: customer },
+        userId: (req.user as any)._id,
+        metadata: { projectId: (project as any)._id, customerId: customer },
       });
     }
     
@@ -230,6 +232,7 @@ export const createProject = async (req: Request, res: Response, next: NextFunct
       data: project,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -241,7 +244,7 @@ export const createProject = async (req: Request, res: Response, next: NextFunct
  */
 export const updateProject = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const projectId = req.params.id;
+    const projectId = req.params.id as any;
     
     if (!mongoose.Types.ObjectId.isValid(projectId)) {
       throw new ApiError(400, 'Invalid project ID');
@@ -258,9 +261,9 @@ export const updateProject = async (req: Request, res: Response, next: NextFunct
     // For example, only project owner or account manager can update
     if (
       req.user && 
-      !req.user.role.includes('admin') && 
-      project.accountManager.toString() !== req.user._id.toString() && 
-      project.createdBy.toString() !== req.user._id.toString()
+      !req.user?.role.includes('admin') && 
+      project.accountManager.toString() !== (req.user as any)._id.toString() && 
+      project.createdBy.toString() !== (req.user as any)._id.toString()
     ) {
       throw new ApiError(403, 'You do not have permission to update this project');
     }
@@ -307,11 +310,11 @@ export const updateProject = async (req: Request, res: Response, next: NextFunct
       await ActivityService.logActivity({
         description: `Project "${project.name}" updated`,
         entityType: 'user',
-        entityId: req.user._id,
+        entityId: (req.user as any)._id,
         action: 'update',
         status: 'completed',
-        userId: req.user._id,
-        metadata: { projectId: project._id, updates },
+        userId: (req.user as any)._id,
+        metadata: { projectId: (project as any)._id, updates },
       });
     }
     
@@ -320,6 +323,7 @@ export const updateProject = async (req: Request, res: Response, next: NextFunct
       data: project,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -331,7 +335,7 @@ export const updateProject = async (req: Request, res: Response, next: NextFunct
  */
 export const deleteProject = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const projectId = req.params.id;
+    const projectId = req.params.id as any;
     
     if (!mongoose.Types.ObjectId.isValid(projectId)) {
       throw new ApiError(400, 'Invalid project ID');
@@ -347,6 +351,16 @@ export const deleteProject = async (req: Request, res: Response, next: NextFunct
     // Check for dependent records
     // This would require importing related models
     // const dependentMilestones = await Milestone.countDocuments({ project: projectId });
+
+// Authenticated request type
+type AuthenticatedRequest = Request & {
+  user?: {
+    id: string;
+    organizationId: string;
+    email?: string;
+    role?: string;
+  };
+};
     // if (dependentMilestones > 0) {
     //   throw new ApiError(400, `Cannot delete project: ${dependentMilestones} milestone(s) are associated with this project`);
     // }
@@ -362,10 +376,10 @@ export const deleteProject = async (req: Request, res: Response, next: NextFunct
       await ActivityService.logActivity({
         description: `Project "${projectName}" deleted`,
         entityType: 'user',
-        entityId: req.user._id,
+        entityId: (req.user as any)._id,
         action: 'delete',
         status: 'completed',
-        userId: req.user._id,
+        userId: (req.user as any)._id,
         metadata: { projectId },
       });
     }
@@ -375,6 +389,7 @@ export const deleteProject = async (req: Request, res: Response, next: NextFunct
       message: 'Project deleted successfully',
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -386,7 +401,7 @@ export const deleteProject = async (req: Request, res: Response, next: NextFunct
  */
 export const addProjectDocument = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const projectId = req.params.id;
+    const projectId = req.params.id as any;
     
     if (!mongoose.Types.ObjectId.isValid(projectId)) {
       throw new ApiError(400, 'Invalid project ID');
@@ -421,10 +436,10 @@ export const addProjectDocument = async (req: Request, res: Response, next: Next
       await ActivityService.logActivity({
         description: `Document "${title}" added to project "${project.name}"`,
         entityType: 'user',
-        entityId: req.user._id,
+        entityId: (req.user as any)._id,
         action: 'create',
         status: 'completed',
-        userId: req.user._id,
+        userId: (req.user as any)._id,
         metadata: { projectId, documentTitle: title },
       });
     }
@@ -434,6 +449,7 @@ export const addProjectDocument = async (req: Request, res: Response, next: Next
       data: project.documents[project.documents.length - 1],
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -460,7 +476,7 @@ export const removeProjectDocument = async (req: Request, res: Response, next: N
     
     // Find document
     const documentIndex = project.documents.findIndex(
-      doc => doc._id.toString() === documentId
+      doc => (doc as any)._id.toString() === documentId
     );
     
     if (documentIndex === -1) {
@@ -479,10 +495,10 @@ export const removeProjectDocument = async (req: Request, res: Response, next: N
       await ActivityService.logActivity({
         description: `Document "${documentTitle}" removed from project "${project.name}"`,
         entityType: 'user',
-        entityId: req.user._id,
+        entityId: (req.user as any)._id,
         action: 'delete',
         status: 'completed',
-        userId: req.user._id,
+        userId: (req.user as any)._id,
         metadata: { projectId, documentId },
       });
     }
@@ -492,6 +508,7 @@ export const removeProjectDocument = async (req: Request, res: Response, next: N
       message: 'Document removed successfully',
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -540,11 +557,11 @@ export const getProjectStats = async (req: Request, res: Response, next: NextFun
     const stats = {
       totalProjects: await Project.countDocuments(),
       statusBreakdown: statusCounts.reduce((acc: any, curr) => {
-        acc[curr._id] = curr.count;
+        acc[(curr as any)._id] = curr.count;
         return acc;
       }, {}),
       phaseBreakdown: phaseCounts.reduce((acc: any, curr) => {
-        acc[curr._id] = curr.count;
+        acc[(curr as any)._id] = curr.count;
         return acc;
       }, {}),
       totalBudget: totalBudget.length > 0 ? totalBudget[0].total : 0,
@@ -557,6 +574,7 @@ export const getProjectStats = async (req: Request, res: Response, next: NextFun
       data: stats,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };

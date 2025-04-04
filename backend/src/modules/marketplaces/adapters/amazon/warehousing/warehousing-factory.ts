@@ -1,46 +1,41 @@
 /**
- * Factory for creating Warehousing & Distribution API module
+ * Amazon Warehousing and Distribution Factory
+ * 
+ * Factory function for creating and registering the Amazon Warehousing and Distribution API module.
  */
 
 import { WarehousingModule } from './warehousing';
+import { ApiRequestFunction, BaseModule } from '../core/base-module.interface';
 import { ModuleRegistry } from '../core/module-registry';
-import { getDefaultModuleVersion } from '../core/module-definitions';
+import { getModuleDefaultVersion } from '../core/module-definitions';
 
 /**
- * Factory for creating Warehousing & Distribution API module
+ * Creates and registers a Warehousing module
+ * 
+ * @param apiRequest API request function
+ * @param marketplaceId Marketplace ID
+ * @param registry Module registry for registration
+ * @param apiVersion Optional API version to use
+ * @returns The created Warehousing module
  */
-export class WarehousingModuleFactory {
-  /**
-   * Create a Warehousing module and register it with the provided registry
-   * @param makeApiRequest Function to make API requests
-   * @param marketplaceId Marketplace ID
-   * @param registry Module registry to register with
-   * @param apiVersion Optional API version (uses default if not provided)
-   * @returns The created module
-   */
-  public static createWarehousingModule(
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string,
-    registry: ModuleRegistry,
-    apiVersion?: string
-  ): WarehousingModule {
-    // Use provided version or get the default
-    const version = apiVersion || getDefaultModuleVersion('warehouseAndDistribution') || '2024-05-09';
-    
-    // Create the module
-    const module = new WarehousingModule(
-      version,
-      makeApiRequest,
-      marketplaceId
-    );
-    
-    // Register the module
-    registry.registerModule(module);
-    
-    return module;
-  }
+export function createWarehousingModule(
+  apiRequest: ApiRequestFunction,
+  marketplaceId: string,
+  registry: ModuleRegistry,
+  apiVersion?: string
+): WarehousingModule {
+  // Use provided version or get the default
+  const version = apiVersion || getModuleDefaultVersion('warehousing') || '2023-09-25';
+  
+  // Create the module
+  const module = new WarehousingModule(
+    version,
+    apiRequest,
+    marketplaceId
+  );
+  
+  // Register the module
+  registry.registerModule('warehousing', module);
+  
+  return module;
 }

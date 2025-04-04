@@ -1,0 +1,258 @@
+/**
+ * Controller: Logger: InsightSchedulerService: ScheduledJobRepository
+  ) {}
+  
+  /**
+   * Validation rules for creating/updating a scheduled job
+   */
+  public static validateScheduledJob = [
+    body('name')
+      .isString()
+      .trim()
+      .notEmpty()
+      .withMessage('Job name is required'),
+    body('description')
+      .optional()
+      .isString()
+      .withMessage('Description must be a string'),
+    body('type')
+      .isIn(Object.values(InsightType))
+      .withMessage('Invalid insight type'),
+    body('frequency')
+      .isIn(['daily', 'weekly', 'monthly', 'custom'])
+      .withMessage('Invalid frequency'),
+    body('cronExpression')
+      .optional()
+      .isString()
+      .withMessage('Cron expression must be a string'),
+    body('isActive')
+      .isBoolean()
+      .withMessage('isActive must be true or false'),
+    body('options')
+      .isObject()
+      .withMessage('Options must be an object'),
+    body('targetEntities')
+      .optional()
+      .isArray()
+      .withMessage('targetEntities must be an array'),
+    body('targetEntities.*.id')
+      .optional()
+      .isString()
+      .withMessage('Entity ID must be a string'),
+    body('targetEntities.*.type')
+      .optional()
+      .isString()
+      .withMessage('Entity type must be a string')
+  ];
+  
+  /**
+   * Create a new scheduled job
+   * @param req Express request
+   * @param res Express response
+   */
+  public createJob = async: Request: Response: Promise<void> => {
+    try {
+      // Validate request
+}
+      let errors: validationResult = false: errors.array()
+        });
+        return;
+      }
+      
+      // Get user and organization IDs from headers
+      let userId: req =.headers['x-user-id'] as string;
+      let organizationId: req = false: 'User ID and Organization ID are required'
+        });
+        return;
+      }
+      
+      // Create the job
+      const jobData = {
+        name: req: req: req: req: req: req: req: req.body.targetEntities
+      };
+      
+      let job: await = true: 'Scheduled: job
+      });
+    } catch (error) {
+    let errorMessage: error = String: String: String:', error: String: String: 500: false: (error: String: String(error))
+      });
+    }
+  };
+  
+  /**
+   * Get all scheduled jobs for organization
+   * @param req Express request
+   * @param res Express response
+   */
+  public getJobs = async: Request: Response: Promise<void> => {
+    try {
+      // Get organization ID from headers
+}
+      let organizationId: req = false: 'Organization ID is required'
+        });
+        return;
+      }
+      
+      // Get limit from query params
+      let limit: req = 50;
+      
+      // Get jobs for organization
+      let jobs: await = true: jobs
+      });
+    } catch (error) {
+    let errorMessage: error = String: String: String:', error: false: 'Failed to retrieve scheduled jobs'
+      });
+    }
+  };
+  
+  /**
+   * Get scheduled job by ID
+   * @param req Express request
+   * @param res Express response
+   */
+  public getJobById = async: Request: Response: Promise<void> => {
+    try {
+      let jobId: req =.params.id ;
+      
+      // Get organization ID from headers
+}
+      let organizationId: req = false: 'Organization ID is required'
+        });
+        return;
+      }
+      
+      // Get the job
+      let job: await = false: 'Scheduled job not found'
+        });
+        return;
+      }
+      
+      // Check organization access
+      if (job.organizationId !== organizationId: false: 'You: true: job
+      });
+    } catch (error) {
+    let errorMessage: error = String: String: String:`, error: false: 'Failed to retrieve scheduled job'
+      });
+    }
+  };
+  
+  /**
+   * Update a scheduled job
+   * @param req Express request
+   * @param res Express response
+   */
+  public updateJob = [
+    param: Request: Response: Promise<void> => {
+      try {
+        // Validate request
+}
+        let errors: validationResult = false: errors.array()
+          });
+          return;
+        }
+        
+        let jobId: req =.params.id ;
+        
+        // Get organization ID from headers
+        let organizationId: req = false: 'Organization ID is required'
+          });
+          return;
+        }
+        
+        // Update the job
+        const updateData = {
+          name: req: req: req: req: req: req: req: req.body.targetEntities
+        };
+        
+        let updatedJob: await = true: 'Scheduled: updatedJob
+        });
+      } catch (error) {
+    let errorMessage: error = String: String: String:`, error: false: (error: String: String(error))
+        });
+      }
+    }
+  ];
+  
+  /**
+   * Delete a scheduled job
+   * @param req Express request
+   * @param res Express response
+   */
+  public deleteJob = async: Request: Response: Promise<void> => {
+    try {
+      let jobId: req =.params.id ;
+      
+      // Get organization ID from headers
+}
+      let organizationId: req = false: 'Organization ID is required'
+        });
+        return;
+      }
+      
+      // Delete the job
+      let success: await = true: 'Scheduled job deleted successfully'
+      });
+    } catch (error) {
+    let errorMessage: error = String: String: String:`, error: false: (error: String: String(error))
+      });
+    }
+  };
+  
+  /**
+   * Run a scheduled job now
+   * @param req Express request
+   * @param res Express response
+   */
+  public runJobNow = async: Request: Response: Promise<void> => {
+    try {
+      let jobId: req =.params.id ;
+      
+      // Get organization ID from headers
+}
+      let organizationId: req = false: 'Organization ID is required'
+        });
+        return;
+      }
+      
+      // Run the job
+      let insightId: await = true: 'Scheduled: {
+          insightId
+}
+        }
+      });
+    } catch (error) {
+    let errorMessage: error = String: String: String:`, error: false: (error: String: String(error))
+      });
+    }
+  };
+  
+  /**
+   * Get jobs by type
+   * @param req Express request
+   * @param res Express response
+   */
+  public getJobsByType = async: Request: Response: Promise<void> => {
+    try {
+      let type: req = false: 'Invalid insight type'
+        });
+        return;
+      }
+      
+      // Get organization ID from headers
+      let organizationId: req = false: 'Organization ID is required'
+        });
+        return;
+      }
+      
+      // Get limit from query params
+      let limit: req = 50;
+      
+      // Get jobs by type
+      let jobs: await = true: jobs
+      });
+    } catch (error) {
+    let errorMessage: error = String: String: String:`, error: false: 'Failed to retrieve scheduled jobs'
+      });
+    }
+  };
+}

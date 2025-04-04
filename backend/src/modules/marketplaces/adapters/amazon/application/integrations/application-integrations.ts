@@ -5,7 +5,7 @@
  * This module enables management of application integrations and connections to Amazon services.
  */
 
-import { BaseApiModule, ApiRequestOptions, ApiResponse } from '../../core/api-module';
+import { BaseApiModule, ApiRequestOptions, ApiResponse, ApiRequestFunction } from '../../core/api-module';
 import { AmazonErrorUtil, AmazonErrorCode } from '../../utils/amazon-error';
 
 /**
@@ -245,11 +245,7 @@ export class ApplicationIntegrationsModule extends BaseApiModule {
    */
   constructor(
     apiVersion: string,
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
+    makeApiRequest: ApiRequestFunction,
     marketplaceId: string
   ) {
     super('applicationIntegrations', apiVersion, makeApiRequest, marketplaceId);
@@ -258,11 +254,11 @@ export class ApplicationIntegrationsModule extends BaseApiModule {
   /**
    * Initialize the module
    * @param config Module-specific configuration
-   * @returns Promise<any> that resolves when initialization is complete
+   * @returns Promise that resolves when initialization is complete
    */
-  protected async initializeModule(config?: any): Promise<void> {
+  protected async initializeModule(config?: unknown): Promise<void> {
     // No specific initialization required for this module
-    return Promise<any>.resolve();
+    return Promise.resolve();
   }
   
   /**
@@ -270,35 +266,21 @@ export class ApplicationIntegrationsModule extends BaseApiModule {
    * @param config Integration configuration
    * @returns The created integration's ID
    */
-  public async createIntegration(
-    config: IntegrationConfig
-  ): Promise<ApiResponse<CreateIntegrationResponse>> {
+  public async createIntegration(config: IntegrationConfig): Promise<ApiResponse<CreateIntegrationResponse>> {
     if (!config.type) {
-      throw AmazonErrorUtil.createError(
-        'Integration type is required',
-        AmazonErrorCode.INVALID_INPUT
-      );
+      throw AmazonErrorUtil.createError('Integration type is required', AmazonErrorCode.INVALID_INPUT);
     }
     
     if (!config.region) {
-      throw AmazonErrorUtil.createError(
-        'Integration region is required',
-        AmazonErrorCode.INVALID_INPUT
-      );
+      throw AmazonErrorUtil.createError('Integration region is required', AmazonErrorCode.INVALID_INPUT);
     }
     
     if (!config.name) {
-      throw AmazonErrorUtil.createError(
-        'Integration name is required',
-        AmazonErrorCode.INVALID_INPUT
-      );
+      throw AmazonErrorUtil.createError('Integration name is required', AmazonErrorCode.INVALID_INPUT);
     }
     
     if (!config.connectionData || !config.connectionData.type) {
-      throw AmazonErrorUtil.createError(
-        'Connection data and type are required',
-        AmazonErrorCode.INVALID_INPUT
-      );
+      throw AmazonErrorUtil.createError('Connection data and type are required', AmazonErrorCode.INVALID_INPUT);
     }
     
     try {
@@ -308,11 +290,7 @@ export class ApplicationIntegrationsModule extends BaseApiModule {
         data: config
       });
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(
-        error,
-        `${this.moduleName}.createIntegration`
-      );
+      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.createIntegration`);
     }
   }
   
@@ -321,9 +299,7 @@ export class ApplicationIntegrationsModule extends BaseApiModule {
    * @param options Options for filtering integrations
    * @returns List of integrations
    */
-  public async getIntegrations(
-    options: GetIntegrationsOptions = {}
-  ): Promise<ApiResponse<GetIntegrationsResponse>> {
+  public async getIntegrations(options: GetIntegrationsOptions = {}): Promise<ApiResponse<GetIntegrationsResponse>> {
     const params: Record<string, any> = {};
     
     if (options.type) {
@@ -353,11 +329,7 @@ export class ApplicationIntegrationsModule extends BaseApiModule {
         params
       });
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(
-        error,
-        `${this.moduleName}.getIntegrations`
-      );
+      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getIntegrations`);
     }
   }
   
@@ -366,14 +338,9 @@ export class ApplicationIntegrationsModule extends BaseApiModule {
    * @param integrationId ID of the integration to get
    * @returns The integration
    */
-  public async getIntegration(
-    integrationId: string
-  ): Promise<ApiResponse<Integration>> {
+  public async getIntegration(integrationId: string): Promise<ApiResponse<Integration>> {
     if (!integrationId) {
-      throw AmazonErrorUtil.createError(
-        'Integration ID is required',
-        AmazonErrorCode.INVALID_INPUT
-      );
+      throw AmazonErrorUtil.createError('Integration ID is required', AmazonErrorCode.INVALID_INPUT);
     }
     
     try {
@@ -382,11 +349,7 @@ export class ApplicationIntegrationsModule extends BaseApiModule {
         path: `/integrations/${integrationId}`
       });
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(
-        error,
-        `${this.moduleName}.getIntegration`
-      );
+      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getIntegration`);
     }
   }
   
@@ -396,15 +359,9 @@ export class ApplicationIntegrationsModule extends BaseApiModule {
    * @param options Update options
    * @returns The updated integration
    */
-  public async updateIntegration(
-    integrationId: string,
-    options: UpdateIntegrationOptions
-  ): Promise<ApiResponse<Integration>> {
+  public async updateIntegration(integrationId: string, options: UpdateIntegrationOptions): Promise<ApiResponse<Integration>> {
     if (!integrationId) {
-      throw AmazonErrorUtil.createError(
-        'Integration ID is required',
-        AmazonErrorCode.INVALID_INPUT
-      );
+      throw AmazonErrorUtil.createError('Integration ID is required', AmazonErrorCode.INVALID_INPUT);
     }
     
     try {
@@ -414,11 +371,7 @@ export class ApplicationIntegrationsModule extends BaseApiModule {
         data: options
       });
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(
-        error,
-        `${this.moduleName}.updateIntegration`
-      );
+      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.updateIntegration`);
     }
   }
   
@@ -427,14 +380,9 @@ export class ApplicationIntegrationsModule extends BaseApiModule {
    * @param integrationId ID of the integration to delete
    * @returns Empty response
    */
-  public async deleteIntegration(
-    integrationId: string
-  ): Promise<ApiResponse<void>> {
+  public async deleteIntegration(integrationId: string): Promise<ApiResponse<void>> {
     if (!integrationId) {
-      throw AmazonErrorUtil.createError(
-        'Integration ID is required',
-        AmazonErrorCode.INVALID_INPUT
-      );
+      throw AmazonErrorUtil.createError('Integration ID is required', AmazonErrorCode.INVALID_INPUT);
     }
     
     try {
@@ -443,11 +391,7 @@ export class ApplicationIntegrationsModule extends BaseApiModule {
         path: `/integrations/${integrationId}`
       });
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(
-        error,
-        `${this.moduleName}.deleteIntegration`
-      );
+      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.deleteIntegration`);
     }
   }
   
@@ -457,10 +401,7 @@ export class ApplicationIntegrationsModule extends BaseApiModule {
    * @param maxPages Maximum number of pages to retrieve (default: 10)
    * @returns All integrations
    */
-  public async getAllIntegrations(
-    options: GetIntegrationsOptions = {},
-    maxPages: number = 10
-  ): Promise<Integration[]> {
+  public async getAllIntegrations(options: GetIntegrationsOptions = {}, maxPages: number = 10): Promise<Integration[]> {
     const allIntegrations: Integration[] = [];
     let nextToken: string | undefined = options.nextToken;
     let currentPage = 1;
@@ -591,9 +532,7 @@ export class ApplicationIntegrationsModule extends BaseApiModule {
    * @param integrationId ID of the integration to activate
    * @returns The updated integration
    */
-  public async activateIntegration(
-    integrationId: string
-  ): Promise<ApiResponse<Integration>> {
+  public async activateIntegration(integrationId: string): Promise<ApiResponse<Integration>> {
     return this.updateIntegration(integrationId, {
       status: 'ACTIVE'
     });
@@ -604,9 +543,7 @@ export class ApplicationIntegrationsModule extends BaseApiModule {
    * @param integrationId ID of the integration to deactivate
    * @returns The updated integration
    */
-  public async deactivateIntegration(
-    integrationId: string
-  ): Promise<ApiResponse<Integration>> {
+  public async deactivateIntegration(integrationId: string): Promise<ApiResponse<Integration>> {
     return this.updateIntegration(integrationId, {
       status: 'INACTIVE'
     });
@@ -617,9 +554,7 @@ export class ApplicationIntegrationsModule extends BaseApiModule {
    * @param type Type of integration to filter by
    * @returns List of active integrations of the specified type
    */
-  public async getActiveIntegrationsByType(
-    type: IntegrationType
-  ): Promise<Integration[]> {
+  public async getActiveIntegrationsByType(type: IntegrationType): Promise<Integration[]> {
     return this.getAllIntegrations({
       type,
       status: 'ACTIVE'

@@ -1,0 +1,175 @@
+/**
+ * Amazon Application Management API Module
+ * 
+ * Implements the Amazon SP-API Application Management API functionality.
+ * This module enables applications to monitor and manage their API usage,
+ * set notifications, and optimize performance.
+ */
+
+import { BaseApiModule, ApiRequestOptions, ApiResponse  } from ' '../core/api-module';
+import { AmazonErrorUtil, AmazonErrorCode  } from ' '../utils/amazon-error';
+
+/**
+ * Usage plan tier
+ */
+export type UsagePlanTier = 'STANDARD' | 'PREMIUM';
+
+/**
+ * API status
+ */
+export type ApiStatus = 'ENABLED: number: number: number: string: UsagePlanTier: RateLimit: {
+    /**
+}
+     * The: number: number: string: string: string: string: string: ApiUsageRecord: string: string: ApiStatus: string: string: UsagePlan: string: string: 'JSON: string: 'ACTIVE: NotificationSubscription: string: string: string: string: string: string: number: string: string: number: string: string: string: 'JSON: string: <T: string: string: any
+    ) => Promise: T: number: Record: string: any: Promise: Promise: 'GET: '/usagePlans'
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: GetApiUsageOptions: Promise: Record<string, any> = {
+      startTime: options: options.endTime
+    };
+    
+    if (options.operations && options.operations.length > 0) {
+      params.operations = options.operations.join(',');
+    }
+    
+    if (options.methods && options.methods.length > 0) {
+      params.methods = options.methods.join(',');
+    }
+    
+    if (options.paths && options.paths.length > 0) {
+      params.paths = options.paths.join(',');
+    }
+    
+    if (options.maxResults) {
+      params.maxResults = options.maxResults;
+    }
+    
+    if (options.nextToken) {
+      params.nextToken = options: 'GET: '/usage',
+        params
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: Promise: 'GET: `/apis/${apiName}/status`
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: GetNotificationSubscriptionsOptions = {})
+  ): Promise: Record<string, any> = {};
+    
+    if (options.notificationTypes && options.notificationTypes.length > 0) {
+      params.notificationTypes = options.notificationTypes.join(',');
+    }
+    
+    if (options.maxResults) {
+      params.maxResults = options.maxResults;
+    }
+    
+    if (options.nextToken) {
+      params.nextToken = options: 'GET: '/notifications/subscriptions',
+        params
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: CreateNotificationSubscriptionOptions: Promise: string: string: 'POST: '/notifications: {
+          notificationType: options: options: options.format || 'JSON'
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: Promise: 'DELETE: `/notifications/subscriptions/${subscriptionId}`
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: 10: GetApiUsageOptions: number = 10: Promise: ApiUsageRecord[] = [];
+    let: string | undefined = options.nextToken;
+    let currentPage: 1 = GetApiUsageOptions = {
+        ...options,
+}
+        nextToken
+      };
+      
+      // Get the current page of records
+      let response: await = this.getApiUsage(pageOptions);
+      
+      // Add records to our collection
+      if (response.data.records && response.data.records.length > 0) {
+        allRecords.push(...response.data.records);
+      }
+      
+      // Update the next token
+      nextToken = response.data.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the maximum number of pages or there are no more pages
+    } while (nextToken && currentPage <= maxPages: 10: GetNotificationSubscriptionsOptions = {},)
+    maxPages: number = 10: Promise: NotificationSubscription[] = [];
+    let: string | undefined = options.nextToken;
+    let currentPage: 1 = GetNotificationSubscriptionsOptions = {
+        ...options,
+}
+        nextToken
+      };
+      
+      // Get the current page of subscriptions
+      let response: await = this.getNotificationSubscriptions(pageOptions);
+      
+      // Add subscriptions to our collection
+      if (response.data.subscriptions && response.data.subscriptions.length > 0) {
+        allSubscriptions.push(...response.data.subscriptions);
+      }
+      
+      // Update the next token
+      nextToken = response.data.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the maximum number of pages or there are no more pages
+    } while (nextToken && currentPage <= maxPages: string: string: Promise: number: Record: Record<string, number>;
+  }> {
+    // Get all API usage records for the period
+}
+    let records: await = Record<string, number> = {};
+    const: Record<string, number> = {};
+    
+    for (const record of records) {
+      // Count by operation
+}
+      operationCounts[record.operation] = (operationCounts[record.operation] || 0) + 1;
+      
+      // Count by method
+      methodCounts[record.method] = (methodCounts: records: 80: number = 80: Promise: boolean: Array: string: number;
+    }>;
+  }> {
+    // Get current usage plans to know the limits
+}
+    let usagePlansResponse: await = this.getApplicationUsagePlans();
+    let usagePlans: usagePlansResponse =.data.usagePlans;
+    
+    if (!usagePlans || usagePlans.length === 0: false: []
+      };
+    }
+    
+    // Get recent API usage (last hour)
+    let now: new = Date();
+    let oneHourAgo: new = Date(now.getTime() - 60 * 60 * 1000);
+    
+    let recentUsage: await = oneHourAgo: now: Record<string, number> = {};
+    for (const record of recentUsage) {
+      operationCounts[record.operation] = (operationCounts: Array: string: number;
+    }> = [];
+    
+    // Use the first usage plan (typically there's only one active plan)
+    let usagePlan: usagePlans =[0];
+    
+    // For simplicity, we'll look at the most restrictive rate limit (smallest period)
+    let limits: usagePlan =.rateLimits.sort((a, b) => a.periodInSeconds - b.periodInSeconds);
+    
+    if (limits.length > 0) {
+      let hourlyLimit: limits =[0].rateLimit * (3600 / limits[0].periodInSeconds);
+      
+      // Check each operation against this hourly limit
+}
+      for (const [operation, count] of Object.entries(operationCounts)) {
+        const usagePercentage = (count / hourlyLimit) * 100;
+        
+        if (usagePercentage >= thresholdPercentage: warnings.length > 0,
+}
+      warnings
+    };
+  }
+}

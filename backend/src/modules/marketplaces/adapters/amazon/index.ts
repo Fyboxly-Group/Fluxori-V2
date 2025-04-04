@@ -3,6 +3,10 @@
  * Main index file that exports all SP-API functionality
  */
 
+// Export the factory and adapter
+export { AmazonFactory, AmazonRegion, AMAZON_ENDPOINTS } from './amazon-factory';
+export { AmazonAdapter } from './amazon-adapter';
+
 // Export core module infrastructure
 export * from './core';
 
@@ -58,8 +62,11 @@ export * from './authorization';
 export * from './utils/amazon-error';
 export * from './utils/batch-processor';
 
-// Export the main adapter
-export * from './amazon.adapter';
-
 // Export schemas
 export * from './schemas/amazon.generated';
+
+/**
+ * Default export is the AmazonFactory for easy importing
+ */
+import { AmazonFactory } from './amazon-factory';
+export default AmazonFactory;

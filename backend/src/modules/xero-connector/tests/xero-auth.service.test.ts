@@ -121,7 +121,7 @@ describe('XeroAuthService', () => {
     });
     
     it('should handle non-existent connection', async() => {
-      // Mock XeroConnection model to return null (no connection found)
+      // Mock XeroConnection model to return null (no connection found);
       const mockXeroConnectionModel = mongoose.model('XeroConnection');
       (mockXeroConnectionModel.findOne as jest.Mock).mockResolvedValue(null);
       
@@ -142,7 +142,7 @@ describe('XeroAuthService', () => {
         refreshToken: 'invalid-refresh-token',
       });
       
-      // Mock XeroClient to throw error
+      // Mock XeroClient to throw error instanceof Error ? error : new Error(String(error));
       const XeroClient = require('xero-node').XeroClient;
       XeroClient.mockImplementation(() => ({
         initialize: jest.fn().mockResolvedValue({}),
@@ -203,7 +203,7 @@ describe('XeroAuthService', () => {
     });
     
     it('should handle non-existent connection', async() => {
-      // Mock XeroConnection model to return no modifications
+      // Mock XeroConnection model to return no modifications;
       const mockXeroConnectionModel = mongoose.model('XeroConnection');
       (mockXeroConnectionModel.updateOne as jest.Mock).mockResolvedValue({ nModified: 0 });
       

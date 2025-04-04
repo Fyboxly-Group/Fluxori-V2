@@ -1,9 +1,17 @@
-import { Router, Request, Response, NextFunction } from 'express';
-import { InternationalTradeController } from '../controllers/international-trade.controller';
+import { Router } from 'express';
+import { 
+  createShipment,
+  getShipmentDetails,
+  listShipments,
+  createCustomsDeclaration,
+  getComplianceInfo,
+  getShippingRates,
+  generateDocuments,
+  trackShipment
+} from '../controllers/international-trade.controller';
 import { authenticate } from '../../../middleware/auth.middleware';
 
 const router = Router();
-const controller = new InternationalTradeController();
 
 /**
  * @swagger
@@ -38,11 +46,11 @@ const controller = new InternationalTradeController();
  *       500:
  *         description: Server error
  */
-router.post('/shipments', authenticate, controller.createShipment);
+router.post('/shipments', authenticate, createShipment);
 
 /**
  * @swagger
- * /api/international-trade/shipments/{shipmentId}:
+ * /api/international-trade/shipments/{id}:
  *   get:
  *     summary: Get a shipment by ID
  *     tags: [International Trade]
@@ -50,7 +58,7 @@ router.post('/shipments', authenticate, controller.createShipment);
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: shipmentId
+ *         name: id
  *         required: true
  *         schema:
  *           type: string
@@ -62,7 +70,7 @@ router.post('/shipments', authenticate, controller.createShipment);
  *       500:
  *         description: Server error
  */
-router.get('/shipments/:shipmentId', authenticate, controller.getShipment);
+router.get('/shipments/:id', authenticate, getShipmentDetails);
 
 /**
  * @swagger
@@ -82,21 +90,9 @@ router.get('/shipments/:shipmentId', authenticate, controller.getShipment);
  *         name: limit
  *         schema:
  *           type: integer
- *           default: 20
+ *           default: 10
  *       - in: query
  *         name: status
- *         schema:
- *           type: string
- *       - in: query
- *         name: origin
- *         schema:
- *           type: string
- *       - in: query
- *         name: destination
- *         schema:
- *           type: string
- *       - in: query
- *         name: trackingNumber
  *         schema:
  *           type: string
  *     responses:
@@ -107,41 +103,7 @@ router.get('/shipments/:shipmentId', authenticate, controller.getShipment);
  *       500:
  *         description: Server error
  */
-router.get('/shipments', authenticate, controller.getShipments);
-
-/**
- * @swagger
- * /api/international-trade/shipments/{shipmentId}:
- *   put:
- *     summary: Update a shipment
- *     tags: [International Trade]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: shipmentId
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               updateData:
- *                 type: object
- *                 description: The fields to update
- *     responses:
- *       200:
- *         description: Shipment updated successfully
- *       404:
- *         description: Shipment not found
- *       500:
- *         description: Server error
- */
-router.put('/shipments/:shipmentId', authenticate, controller.updateShipment);
+router.get('/shipments', authenticate, listShipments);
 
 /**
  * @swagger
@@ -175,89 +137,59 @@ router.put('/shipments/:shipmentId', authenticate, controller.updateShipment);
  *       500:
  *         description: Server error
  */
-router.post('/shipments/:shipmentId/customs', authenticate, controller.createCustomsDeclaration);
+router.post('/shipments/:shipmentId/customs', authenticate, createCustomsDeclaration);
 
 /**
  * @swagger
- * /api/international-trade/customs/{declarationId}:
- *   put:
- *     summary: Update a customs declaration
+ * /api/international-trade/shipments/{id}/compliance:
+ *   get:
+ *     summary: Get compliance information for a shipment
  *     tags: [International Trade]
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: declarationId
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               updateData:
- *                 type: object
- *                 description: The fields to update
- *     responses:
- *       200:
- *         description: Customs declaration updated successfully
- *       404:
- *         description: Customs declaration not found
- *       500:
- *         description: Server error
- */
-router.put('/customs/:declarationId', authenticate, controller.updateCustomsDeclaration);
-
-/**
- * @swagger
- * /api/international-trade/shipments/{shipmentId}/compliance:
- *   post:
- *     summary: Run compliance checks for a shipment
- *     tags: [International Trade]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: shipmentId
+ *         name: id
  *         required: true
  *         schema:
  *           type: string
  *     responses:
  *       200:
- *         description: Compliance checks completed
+ *         description: Compliance information
  *       401:
  *         description: Unauthorized
  *       500:
  *         description: Server error
  */
-router.post('/shipments/:shipmentId/compliance', authenticate, controller.runComplianceChecks);
+router.get('/shipments/:id/compliance', authenticate, getComplianceInfo);
 
 /**
  * @swagger
- * /api/international-trade/shipments/{shipmentId}/rates:
- *   post:
+ * /api/international-trade/shipments/{id}/rates:
+ *   get:
  *     summary: Get shipping rates for a shipment
  *     tags: [International Trade]
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: shipmentId
+ *         name: id
  *         required: true
  *         schema:
  *           type: string
- *     requestBody:
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               carrier:
- *                 type: string
- *                 description: Optional carrier filter
+ *       - in: query
+ *         name: carrier
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: service
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: urgency
+ *         schema:
+ *           type: string
+ *           enum: [economy, standard, express]
  *     responses:
  *       200:
  *         description: Shipping rates retrieved
@@ -266,51 +198,48 @@ router.post('/shipments/:shipmentId/compliance', authenticate, controller.runCom
  *       500:
  *         description: Server error
  */
-router.post('/shipments/:shipmentId/rates', authenticate, controller.getShippingRates);
+router.get('/shipments/:id/rates', authenticate, getShippingRates);
 
 /**
  * @swagger
- * /api/international-trade/shipments/{shipmentId}/book:
- *   post:
- *     summary: Book a shipment with a carrier
+ * /api/international-trade/shipments/{id}/documents:
+ *   get:
+ *     summary: Generate documents for a shipment
  *     tags: [International Trade]
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: shipmentId
+ *         name: id
  *         required: true
  *         schema:
  *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - rateId
- *               - quoteIndex
- *               - carrier
- *             properties:
- *               rateId:
- *                 type: string
- *                 description: The rate ID
- *               quoteIndex:
- *                 type: integer
- *                 description: The quote index to use
- *               carrier:
- *                 type: string
- *                 description: The carrier ID
+ *       - in: query
+ *         name: format
+ *         schema:
+ *           type: string
+ *           enum: [pdf, docx, html]
+ *       - in: query
+ *         name: language
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: branding
+ *         schema:
+ *           type: boolean
+ *       - in: query
+ *         name: signature
+ *         schema:
+ *           type: boolean
  *     responses:
  *       200:
- *         description: Shipment booked successfully
- *       400:
- *         description: Invalid request
+ *         description: Documents generated successfully
+ *       401:
+ *         description: Unauthorized
  *       500:
  *         description: Server error
  */
-router.post('/shipments/:shipmentId/book', authenticate, controller.bookShipment);
+router.get('/shipments/:id/documents', authenticate, generateDocuments);
 
 /**
  * @swagger
@@ -326,7 +255,6 @@ router.post('/shipments/:shipmentId/book', authenticate, controller.bookShipment
  *           type: string
  *       - in: query
  *         name: carrier
- *         required: true
  *         schema:
  *           type: string
  *     responses:
@@ -337,177 +265,10 @@ router.post('/shipments/:shipmentId/book', authenticate, controller.bookShipment
  *       500:
  *         description: Server error
  */
-router.get('/track/:trackingNumber', controller.trackShipment);
+router.get('/track/:trackingNumber', trackShipment);
 
-/**
- * @swagger
- * /api/international-trade/shipments/{shipmentId}/cancel:
- *   post:
- *     summary: Cancel a shipment
- *     tags: [International Trade]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: shipmentId
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - carrier
- *             properties:
- *               carrier:
- *                 type: string
- *                 description: The carrier ID
- *     responses:
- *       200:
- *         description: Shipment cancelled successfully
- *       400:
- *         description: Invalid request
- *       500:
- *         description: Server error
- */
-router.post('/shipments/:shipmentId/cancel', authenticate, controller.cancelShipment);
+// Handle tracking by shipment ID
+router.get('/shipments/:id/track', authenticate, trackShipment);
 
-/**
- * @swagger
- * /api/international-trade/shipments/{shipmentId}/documents:
- *   post:
- *     summary: Generate customs documents for a shipment
- *     tags: [International Trade]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: shipmentId
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Documents generated successfully
- *       500:
- *         description: Server error
- */
-router.post('/shipments/:shipmentId/documents', authenticate, controller.generateCustomsDocuments);
-
-/**
- * @swagger
- * /api/international-trade/hs-codes:
- *   get:
- *     summary: Look up HS codes for a product description
- *     tags: [International Trade]
- *     parameters:
- *       - in: query
- *         name: description
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: HS codes found
- *       400:
- *         description: Invalid request
- *       500:
- *         description: Server error
- */
-router.get('/hs-codes', controller.lookupHsCodes);
-
-/**
- * @swagger
- * /api/international-trade/duties:
- *   post:
- *     summary: Calculate duties and taxes for items
- *     tags: [International Trade]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - items
- *               - originCountry
- *               - destinationCountry
- *             properties:
- *               items:
- *                 type: array
- *                 items:
- *                   type: object
- *                   required:
- *                     - hsCode
- *                     - description
- *                     - quantity
- *                     - unitValue
- *                     - totalValue
- *                     - currency
- *                   properties:
- *                     hsCode:
- *                       type: string
- *                     description:
- *                       type: string
- *                     quantity:
- *                       type: number
- *                     unitValue:
- *                       type: number
- *                     totalValue:
- *                       type: number
- *                     currency:
- *                       type: string
- *               originCountry:
- *                 type: string
- *               destinationCountry:
- *                 type: string
- *     responses:
- *       200:
- *         description: Duties and taxes calculated
- *       400:
- *         description: Invalid request
- *       500:
- *         description: Server error
- */
-router.post('/duties', controller.calculateDuties);
-
-/**
- * @swagger
- * /api/international-trade/prohibited-items/{countryCode}:
- *   get:
- *     summary: Get prohibited and restricted items for a country
- *     tags: [International Trade]
- *     parameters:
- *       - in: path
- *         name: countryCode
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Prohibited items list
- *       400:
- *         description: Invalid request
- *       500:
- *         description: Server error
- */
-router.get('/prohibited-items/:countryCode', controller.getProhibitedItems);
-
-/**
- * @swagger
- * /api/international-trade/shipping-options:
- *   get:
- *     summary: Get available shipping options
- *     tags: [International Trade]
- *     responses:
- *       200:
- *         description: Shipping options
- *       500:
- *         description: Server error
- */
-router.get('/shipping-options', controller.getShippingOptions);
-
+// Export the router as the default export
 export default router;

@@ -1,46 +1,40 @@
 /**
- * Factory for creating Uploads API module
+ * Factory for creating Uploads module
  */
-
-import { UploadsModule } from './uploads';
+import { ApiRequestFunction } from '../core/base-module.interface';
 import { ModuleRegistry } from '../core/module-registry';
-import { getDefaultModuleVersion } from '../core/module-definitions';
+import { getModuleDefaultVersion } from '../core/module-definitions';
+import { UploadsModule } from './uploads';
 
 /**
- * Factory for creating Uploads API module
+ * Create an Uploads module
+ * 
+ * @param apiRequest - Function to make Amazon API requests
+ * @param marketplaceId - Amazon marketplace ID
+ * @param registry - Module registry for Amazon modules
+ * @param apiVersion - Optional API version to use (defaults to latest)
+ * @returns UploadsModule instance
  */
-export class UploadsModuleFactory {
-  /**
-   * Create an Uploads module and register it with the provided registry
-   * @param makeApiRequest Function to make API requests
-   * @param marketplaceId Marketplace ID
-   * @param registry Module registry to register with
-   * @param apiVersion Optional API version (uses default if not provided)
-   * @returns The created module
-   */
-  public static createUploadsModule(
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string,
-    registry: ModuleRegistry,
-    apiVersion?: string
-  ): UploadsModule {
-    // Use provided version or get the default
-    const version = apiVersion || getDefaultModuleVersion('uploads') || '2020-11-01';
-    
-    // Create the module
-    const module = new UploadsModule(
-      version,
-      makeApiRequest,
-      marketplaceId
-    );
-    
-    // Register the module
-    registry.registerModule(module);
-    
-    return module;
-  }
+export function createUploadsModule(
+  apiRequest: ApiRequestFunction,
+  marketplaceId: string,
+  registry: ModuleRegistry,
+  apiVersion?: string
+): UploadsModule {
+  // Use provided version or get the default
+  const version = apiVersion || getModuleDefaultVersion('uploads') || '2020-11-01';
+  
+  // Create the module
+  const module = new UploadsModule(
+    version,
+    apiRequest,
+    marketplaceId
+  );
+  
+  // Register the module
+  registry.registerModule('uploads', module);
+  
+  return module;
 }
+
+export default createUploadsModule;

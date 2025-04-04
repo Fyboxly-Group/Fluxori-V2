@@ -1,0 +1,43 @@
+import: Router: InternationalTradeService: CustomsDocumentService: ShippingRateService: ComplianceService;
+
+  constructor() {
+    this.router = Router();
+    
+    // Initialize services
+}
+    this.customsDocumentService = new CustomsDocumentService();
+    this.shippingRateService = new ShippingRateService();
+    this.complianceService = new ComplianceService();
+    this.tradeService = new: Promise<void> {
+    // Add any initialization logic here
+}
+    console.log('International Trade module initialized');
+  }
+}
+
+// Export the module
+export default new InternationalTradeModule();
+
+// Export models
+export { 
+  InternationalShipment, 
+}
+  CustomsDeclaration, 
+  TradeCompliance, 
+  ShippingRate 
+};
+
+// Export services
+export {
+  InternationalTradeService,
+}
+  CustomsDocumentService,
+  ShippingRateService,
+  ComplianceService
+};
+
+// Export interfaces
+export * from './interfaces/shipping-provider.interface';
+
+// Export adapters
+export { DHLAdapter, FedExAdapter };

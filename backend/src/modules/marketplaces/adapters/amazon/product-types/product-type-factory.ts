@@ -1,46 +1,40 @@
 /**
- * Factory for creating product type-related API modules
+ * Factory for creating Product Type Definitions module
  */
-
-import { ProductTypeDefinitionsModule } from './product-type-definitions';
+import { ApiRequestFunction } from '../core/base-module.interface';
 import { ModuleRegistry } from '../core/module-registry';
-import { getDefaultModuleVersion } from '../core/module-definitions';
+import { getModuleDefaultVersion } from '../core/module-definitions';
+import { ProductTypeDefinitionsModule } from './product-type-definitions';
 
 /**
- * Factory for creating product type-related API modules
+ * Create a Product Type Definitions module
+ * 
+ * @param apiRequest - Function to make Amazon API requests
+ * @param marketplaceId - Amazon marketplace ID
+ * @param registry - Module registry for Amazon modules
+ * @param apiVersion - Optional API version to use (defaults to latest)
+ * @returns ProductTypeDefinitionsModule instance
  */
-export class ProductTypeModuleFactory {
-  /**
-   * Create a Product Type Definitions module and register it with the provided registry
-   * @param makeApiRequest Function to make API requests
-   * @param marketplaceId Marketplace ID
-   * @param registry Module registry to register with
-   * @param apiVersion Optional API version (uses default if not provided)
-   * @returns The created module
-   */
-  public static createProductTypeDefinitionsModule(
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string,
-    registry: ModuleRegistry,
-    apiVersion?: string
-  ): ProductTypeDefinitionsModule {
-    // Use provided version or get the default
-    const version = apiVersion || getDefaultModuleVersion('productTypeDefinitions') || '2020-09-01';
-    
-    // Create the module
-    const module = new ProductTypeDefinitionsModule(
-      version,
-      makeApiRequest,
-      marketplaceId
-    );
-    
-    // Register the module
-    registry.registerModule(module);
-    
-    return module;
-  }
+export function createProductTypeDefinitionsModule(
+  apiRequest: ApiRequestFunction,
+  marketplaceId: string,
+  registry: ModuleRegistry,
+  apiVersion?: string
+): ProductTypeDefinitionsModule {
+  // Use provided version or get the default
+  const version = apiVersion || getModuleDefaultVersion('productTypeDefinitions') || '2020-09-01';
+  
+  // Create the module
+  const module = new ProductTypeDefinitionsModule(
+    version,
+    apiRequest,
+    marketplaceId
+  );
+  
+  // Register the module
+  registry.registerModule('productTypeDefinitions', module);
+  
+  return module;
 }
+
+export default createProductTypeDefinitionsModule;

@@ -1,488 +1,431 @@
-import mongoose from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import { 
+  InternationalShipment, 
+  CustomsDeclaration, 
   IInternationalShipment, 
   ICustomsDeclaration,
-  ITradeCompliance,
-  IShippingRate,
-  InternationalShipment,
-  CustomsDeclaration,
-  TradeCompliance,
-  ShippingRate
+  IAddress,
+  IShipmentItem 
 } from '../models/international-trade.model';
-import { CustomsDocumentService } from './customs-document.service';
-import { ShippingRateService } from './shipping-rate.service';
-import { ComplianceService } from './compliance.service';
+import { ComplianceService, IComplianceCheckResult } from './compliance.service';
+import { ShippingRateService, IRateRequestParams, IShippingRate } from './shipping-rate.service';
+import { 
+  CustomsDocumentService, 
+  IDocumentGenerationOptions, 
+  IDocumentGenerationResult,
+  DocumentType 
+} from './customs-document.service';
 
 /**
- * Service for managing international shipments and related documentation
+ * Shipment status type
+ */
+export type ShipmentStatus = 'draft' | 'pending' | 'processed' | 'shipped' | 'delivered' | 'cancelled';
+
+/**
+ * Customs declaration status type
+ */
+export type DeclarationStatus = 'draft' | 'pending' | 'approved' | 'rejected';
+
+/**
+ * Type for shipment creation data
+ */
+export interface IShipmentCreateData {
+  origin: IAddress;
+  destination: IAddress;
+  packageDetails: {
+    weight: number;
+    weightUnit: string;
+    dimensions: {
+      length: number;
+      width: number;
+      height: number;
+      unit: string;
+    };
+  };
+  items: IShipmentItem[];
+  carrier?: string;
+  service?: string;
+  trackingNumber?: string;
+}
+
+/**
+ * Type for shipment query parameters
+ */
+export interface IShipmentQuery {
+  organizationId: Types.ObjectId;
+  userId?: Types.ObjectId;
+  status?: ShipmentStatus;
+}
+
+/**
+ * Type for shipment list response
+ */
+export interface IShipmentListResponse {
+  shipments: IInternationalShipment[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+/**
+ * Type for shipment details response
+ */
+export interface IShipmentDetailsResponse {
+  shipment: IInternationalShipment | null;
+  customsDeclaration?: ICustomsDeclaration | null;
+}
+
+/**
+ * Type for customs declaration creation data
+ */
+export interface IDeclarationCreateData {
+  declarationType: string;
+  exporterDetails: {
+    name: string;
+    taxId?: string;
+    address: string;
+  };
+  importerDetails: {
+    name: string;
+    taxId?: string;
+    address: string;
+  };
+  items: Array<{
+    description: string;
+    hsCode: string;
+    quantity: number;
+    unitValue: number;
+    totalValue: number;
+    netWeight: number;
+    originCountry: string;
+  }>;
+  totalValue: number;
+  currency: string;
+  incoterm: string;
+}
+
+/**
+ * Service for handling international trade operations
  */
 export class InternationalTradeService {
-  private customsDocumentService: CustomsDocumentService;
-  private shippingRateService: ShippingRateService;
   private complianceService: ComplianceService;
+  private shippingRateService: ShippingRateService;
+  private customsDocumentService: CustomsDocumentService;
 
+  /**
+   * Constructor
+   */
   constructor() {
-    this.customsDocumentService = new CustomsDocumentService();
-    this.shippingRateService = new ShippingRateService();
     this.complianceService = new ComplianceService();
+    this.shippingRateService = new ShippingRateService();
+    this.customsDocumentService = new CustomsDocumentService();
   }
 
   /**
    * Create a new international shipment
-   * @param shipmentData Shipment data
+   * 
+   * @param shipmentData Shipment creation data
    * @param userId User ID
    * @param organizationId Organization ID
    * @returns Created shipment
    */
   public async createShipment(
-    shipmentData: Partial<IInternationalShipment>,
+    shipmentData: IShipmentCreateData,
     userId: string,
     organizationId: string
   ): Promise<IInternationalShipment> {
     try {
-      // Generate a unique shipment ID
-      const shipmentId = `SHIP-${Math.floor(Math.random() * 1000000).toString().padStart(6, '0')}`;
+      // Validate userId and organizationId
+      if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(organizationId)) {
+        throw new Error('Invalid user ID or organization ID');
+      }
 
-      // Create the shipment
+      // Create new shipment
       const shipment = new InternationalShipment({
         ...shipmentData,
-        shipmentId,
-        userId: new mongoose.Types.ObjectId(userId),
-        organizationId: new mongoose.Types.ObjectId(organizationId),
-        status: 'created'
+        userId: new Types.ObjectId(userId),
+        organizationId: new Types.ObjectId(organizationId),
+        status: 'draft',
+        createdAt: new Date(),
+        updatedAt: new Date()
       });
 
+      // Save shipment
       await shipment.save();
       return shipment;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new Error(`Failed to create shipment: ${errorMessage}`);
+      console.error('Error creating shipment:', error);
+      throw error instanceof Error ? error : new Error('Unknown error creating shipment');
     }
   }
 
   /**
-   * Create customs declaration for a shipment
-   * @param declarationData Declaration data
+   * Get details for a shipment
+   * 
+   * @param shipmentId Shipment ID
+   * @returns Shipment details
+   */
+  public async getShipmentDetails(shipmentId: string): Promise<IShipmentDetailsResponse> {
+    try {
+      // Validate shipment ID
+      if (!mongoose.Types.ObjectId.isValid(shipmentId)) {
+        throw new Error('Invalid shipment ID');
+      }
+
+      // Find shipment
+      const shipment = await InternationalShipment.findById(shipmentId);
+      
+      // Find customs declaration for this shipment
+      const customsDeclaration = shipment 
+        ? await CustomsDeclaration.findOne({ shipmentId: shipment._id })
+        : null;
+
+      return { 
+        shipment,
+        customsDeclaration
+      };
+    } catch (error) {
+      console.error('Error getting shipment details:', error);
+      throw error instanceof Error ? error : new Error('Unknown error getting shipment details');
+    }
+  }
+
+  /**
+   * List shipments with filtering and pagination
+   * 
+   * @param userId User ID
+   * @param organizationId Organization ID
+   * @param status Optional status filter
+   * @param page Page number
+   * @param limit Results per page
+   * @returns Paginated list of shipments
+   */
+  public async listShipments(
+    userId: string,
+    organizationId: string,
+    status?: ShipmentStatus,
+    page = 1,
+    limit = 10
+  ): Promise<IShipmentListResponse> {
+    try {
+      // Validate organizationId
+      if (!mongoose.Types.ObjectId.isValid(organizationId)) {
+        throw new Error('Invalid organization ID');
+      }
+
+      // Build query
+      const query: IShipmentQuery = {
+        organizationId: new Types.ObjectId(organizationId)
+      };
+
+      // Add status filter if provided
+      if (status) {
+        query.status = status;
+      }
+
+      // Get total count and shipments
+      const total = await InternationalShipment.countDocuments(query);
+      const shipments = await InternationalShipment.find(query)
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .sort({ createdAt: -1 });
+
+      return {
+        shipments,
+        total,
+        page,
+        limit
+      };
+    } catch (error) {
+      console.error('Error listing shipments:', error);
+      throw error instanceof Error ? error : new Error('Unknown error listing shipments');
+    }
+  }
+
+  /**
+   * Create a customs declaration for a shipment
+   * 
+   * @param declarationData Customs declaration creation data
    * @param shipmentId Shipment ID
    * @param userId User ID
    * @param organizationId Organization ID
    * @returns Created customs declaration
    */
   public async createCustomsDeclaration(
-    declarationData: Partial<ICustomsDeclaration>,
+    declarationData: IDeclarationCreateData,
     shipmentId: string,
     userId: string,
     organizationId: string
   ): Promise<ICustomsDeclaration> {
     try {
-      // Find the shipment
-      const shipment = await InternationalShipment.findOne({ shipmentId });
+      // Validate IDs
+      if (
+        !mongoose.Types.ObjectId.isValid(shipmentId) ||
+        !mongoose.Types.ObjectId.isValid(userId) ||
+        !mongoose.Types.ObjectId.isValid(organizationId)
+      ) {
+        throw new Error('Invalid shipment ID, user ID, or organization ID');
+      }
+
+      // Verify shipment exists
+      const shipment = await InternationalShipment.findById(shipmentId);
       if (!shipment) {
         throw new Error(`Shipment with ID ${shipmentId} not found`);
       }
 
-      // Generate a unique declaration ID
-      const declarationId = `CUST-${Math.floor(Math.random() * 1000000).toString().padStart(6, '0')}`;
-
-      // Create the customs declaration
+      // Create new customs declaration
       const declaration = new CustomsDeclaration({
         ...declarationData,
-        declarationId,
-        shipmentId: new mongoose.Types.ObjectId(shipment._id),
-        userId: new mongoose.Types.ObjectId(userId),
-        organizationId: new mongoose.Types.ObjectId(organizationId),
-        status: 'draft'
+        shipmentId: new Types.ObjectId(shipmentId),
+        userId: new Types.ObjectId(userId),
+        organizationId: new Types.ObjectId(organizationId),
+        status: 'draft', // Default status for new declarations
+        createdAt: new Date(),
+        updatedAt: new Date()
       });
 
+      // Save declaration
       await declaration.save();
-
-      // Update the shipment with the customs declaration ID
-      shipment.customsDeclarationId = declaration._id as unknown as mongoose.Types.ObjectId;
-      shipment.status = 'documents_pending';
-      await shipment.save();
-
       return declaration;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new Error(`Failed to create customs declaration: ${errorMessage}`);
+      console.error('Error creating customs declaration:', error);
+      throw error instanceof Error ? error : new Error('Unknown error creating customs declaration');
     }
   }
 
   /**
-   * Generate all required documents for a shipment
+   * Run compliance checks for a shipment
+   * 
    * @param shipmentId Shipment ID
-   * @returns URLs to generated documents
+   * @returns Compliance check results
    */
-  public async generateShipmentDocuments(
-    shipmentId: string
-  ): Promise<{
-    commercialInvoice?: string;
-    packingList?: string;
-    certificateOfOrigin?: string;
-  }> {
+  public async runComplianceChecks(shipmentId: string): Promise<IComplianceCheckResult> {
     try {
-      // Find the shipment
-      const shipment = await InternationalShipment.findOne({ shipmentId });
-      if (!shipment) {
-        throw new Error(`Shipment with ID ${shipmentId} not found`);
+      // Validate shipment ID
+      if (!mongoose.Types.ObjectId.isValid(shipmentId)) {
+        throw new Error('Invalid shipment ID');
       }
 
-      // Find the customs declaration
-      const declaration = await CustomsDeclaration.findById(shipment.customsDeclarationId);
-      if (!declaration) {
-        throw new Error(`Customs declaration not found for shipment ${shipmentId}`);
-      }
-
-      // Generate the documents
-      const documents = await this.customsDocumentService.generateDocuments(shipment, declaration);
-
-      // Update the shipment with document URLs
-      const documentEntries: Array<{
-        type: string;
-        url: string;
-        createdAt: Date;
-      }> = [];
-
-      if (documents.commercialInvoice) {
-        documentEntries.push({
-          type: 'commercial_invoice',
-          url: documents.commercialInvoice,
-          createdAt: new Date()
-        });
-      }
-
-      if (documents.packingList) {
-        documentEntries.push({
-          type: 'packing_list',
-          url: documents.packingList,
-          createdAt: new Date()
-        });
-      }
-
-      if (documents.certificateOfOrigin) {
-        documentEntries.push({
-          type: 'certificate_of_origin',
-          url: documents.certificateOfOrigin,
-          createdAt: new Date()
-        });
-      }
-
-      // Update the shipment with the document URLs
-      shipment.documents = documentEntries;
-      if (documentEntries.length > 0) {
-        shipment.status = 'documents_completed';
-      }
-      await shipment.save();
-
-      return documents;
+      // Use compliance service to run checks
+      return await this.complianceService.checkCompliance(shipmentId);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new Error(`Failed to generate shipment documents: ${errorMessage}`);
+      console.error('Error running compliance checks:', error);
+      throw error instanceof Error ? error : new Error('Unknown error running compliance checks');
     }
   }
 
   /**
    * Get shipping rates for a shipment
+   * 
    * @param shipmentId Shipment ID
-   * @returns Shipping rates
+   * @param params Optional rate request parameters
+   * @returns Shipping rates from various carriers
    */
-  public async getShippingRates(shipmentId: string): Promise<IShippingRate> {
+  public async getShippingRates(shipmentId: string, params?: IRateRequestParams): Promise<IShippingRate[]> {
     try {
-      // Find the shipment
-      const shipment = await InternationalShipment.findOne({ shipmentId });
-      if (!shipment) {
-        throw new Error(`Shipment with ID ${shipmentId} not found`);
+      // Validate shipment ID
+      if (!mongoose.Types.ObjectId.isValid(shipmentId)) {
+        throw new Error('Invalid shipment ID');
       }
 
-      // Generate a unique rate ID
-      const rateId = `RATE-${Math.floor(Math.random() * 1000000).toString().padStart(6, '0')}`;
-
-      // Get rates from the shipping rate service
-      const rates = await this.shippingRateService.getRates(
-        shipment.origin.country,
-        shipment.origin.postalCode,
-        shipment.destination.country,
-        shipment.destination.postalCode,
-        shipment.packages
-      );
-
-      // Create a new shipping rate record
-      const shippingRate = new ShippingRate({
-        rateId,
-        origin: {
-          country: shipment.origin.country,
-          postalCode: shipment.origin.postalCode
-        },
-        destination: {
-          country: shipment.destination.country,
-          postalCode: shipment.destination.postalCode
-        },
-        packages: shipment.packages,
-        options: {
-          insuranceRequired: shipment.insuranceAmount > 0,
-          insuranceAmount: shipment.insuranceAmount,
-          signatureRequired: true,
-          residentialDelivery: true,
-          saturdayDelivery: false
-        },
-        quotes: rates,
-        selectedQuoteIndex: -1,
-        userId: shipment.userId,
-        organizationId: shipment.organizationId
-      });
-
-      await shippingRate.save();
-      return shippingRate;
+      // Use shipping rate service to get rates
+      return await this.shippingRateService.getShippingRates(shipmentId, params);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new Error(`Failed to get shipping rates: ${errorMessage}`);
+      console.error('Error getting shipping rates:', error);
+      throw error instanceof Error ? error : new Error('Unknown error getting shipping rates');
     }
   }
 
   /**
-   * Select a shipping rate for a shipment
-   * @param rateId Rate ID
-   * @param quoteIndex Index of the selected quote
-   * @returns Updated shipping rate
-   */
-  public async selectShippingRate(
-    rateId: string,
-    quoteIndex: number
-  ): Promise<IShippingRate> {
-    try {
-      // Find the shipping rate
-      const shippingRate = await ShippingRate.findOne({ rateId });
-      if (!shippingRate) {
-        throw new Error(`Shipping rate with ID ${rateId} not found`);
-      }
-
-      // Verify the quote index is valid
-      if (quoteIndex < 0 || quoteIndex >= shippingRate.quotes.length) {
-        throw new Error(`Invalid quote index: ${quoteIndex}`);
-      }
-
-      // Update the selected quote
-      shippingRate.selectedQuoteIndex = quoteIndex;
-      await shippingRate.save();
-
-      return shippingRate;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new Error(`Failed to select shipping rate: ${errorMessage}`);
-    }
-  }
-
-  /**
-   * Run trade compliance checks for a shipment
+   * Generate shipment documents
+   * 
    * @param shipmentId Shipment ID
-   * @returns Compliance check results
+   * @param options Document generation options
+   * @returns Generated documents
    */
-  public async runComplianceChecks(shipmentId: string): Promise<ITradeCompliance> {
+  public async generateShipmentDocuments(
+    shipmentId: string, 
+    options?: IDocumentGenerationOptions
+  ): Promise<IDocumentGenerationResult> {
     try {
-      // Find the shipment
-      const shipment = await InternationalShipment.findOne({ shipmentId });
-      if (!shipment) {
-        throw new Error(`Shipment with ID ${shipmentId} not found`);
+      // Validate shipment ID
+      if (!mongoose.Types.ObjectId.isValid(shipmentId)) {
+        throw new Error('Invalid shipment ID');
       }
 
-      // Find the customs declaration
-      const declaration = await CustomsDeclaration.findById(shipment.customsDeclarationId);
-      if (!declaration) {
-        throw new Error(`Customs declaration not found for shipment ${shipmentId}`);
-      }
-
-      // Generate a unique compliance ID
-      const complianceId = `COMP-${Math.floor(Math.random() * 1000000).toString().padStart(6, '0')}`;
-
-      // Run compliance checks
-      const results = await this.complianceService.runComplianceChecks(
-        shipment,
-        declaration,
-        shipment.userId.toString(),
-        shipment.organizationId.toString()
-      );
-
-      // Create a new compliance record
-      const compliance = new TradeCompliance({
-        complianceId,
-        shipmentId: new mongoose.Types.ObjectId(shipment._id),
-        status: results.status,
-        checks: results.checks,
-        requiredDocuments: results.requiredDocuments,
-        restrictedItems: results.restrictedItems,
-        exportApproval: results.exportApproval,
-        importApproval: results.importApproval,
-        riskAssessment: results.riskAssessment,
-        userId: shipment.userId,
-        organizationId: shipment.organizationId
-      });
-
-      await compliance.save();
-
-      // Update the shipment with compliance ID and status
-      shipment.complianceCheckId = compliance._id as unknown as mongoose.Types.ObjectId;
-      
-      if (results.status === 'approved') {
-        shipment.status = 'customs_cleared';
-      } else if (results.status === 'rejected') {
-        shipment.status = 'exception';
-      } else {
-        shipment.status = 'customs_processing';
-      }
-      
-      await shipment.save();
-
-      return compliance;
+      // Use customs document service to generate documents
+      return await this.customsDocumentService.generateDocuments(shipmentId, options);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new Error(`Failed to run compliance checks: ${errorMessage}`);
-    }
-  }
-
-  /**
-   * Get shipment details by ID
-   * @param shipmentId Shipment ID
-   * @returns Shipment details with related documents and compliance
-   */
-  public async getShipmentDetails(shipmentId: string): Promise<{
-    shipment: IInternationalShipment;
-    customsDeclaration?: ICustomsDeclaration;
-    complianceCheck?: ITradeCompliance;
-  }> {
-    try {
-      // Find the shipment
-      const shipment = await InternationalShipment.findOne({ shipmentId });
-      if (!shipment) {
-        throw new Error(`Shipment with ID ${shipmentId} not found`);
-      }
-
-      // Find related records
-      const customsDeclaration = shipment.customsDeclarationId 
-        ? await CustomsDeclaration.findById(shipment.customsDeclarationId) 
-        : undefined;
-        
-      const complianceCheck = shipment.complianceCheckId 
-        ? await TradeCompliance.findById(shipment.complianceCheckId) 
-        : undefined;
-
-      return {
-        shipment,
-        customsDeclaration: customsDeclaration || undefined,
-        complianceCheck: complianceCheck || undefined
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new Error(`Failed to get shipment details: ${errorMessage}`);
+      console.error('Error generating shipment documents:', error);
+      throw error instanceof Error ? error : new Error('Unknown error generating shipment documents');
     }
   }
 
   /**
    * Update shipment status
+   * 
    * @param shipmentId Shipment ID
    * @param status New status
    * @returns Updated shipment
    */
   public async updateShipmentStatus(
     shipmentId: string,
-    status: string
-  ): Promise<IInternationalShipment> {
+    status: ShipmentStatus
+  ): Promise<IInternationalShipment | null> {
     try {
-      // Find the shipment
-      const shipment = await InternationalShipment.findOne({ shipmentId });
-      if (!shipment) {
-        throw new Error(`Shipment with ID ${shipmentId} not found`);
+      // Validate shipment ID
+      if (!mongoose.Types.ObjectId.isValid(shipmentId)) {
+        throw new Error('Invalid shipment ID');
       }
 
-      // Validate the status
-      const validStatuses = [
-        'created',
-        'documents_pending',
-        'documents_completed',
-        'customs_processing',
-        'customs_cleared',
-        'in_transit',
-        'delivered',
-        'exception',
-        'returned',
-        'cancelled'
-      ];
+      // Update shipment status
+      const updatedShipment = await InternationalShipment.findByIdAndUpdate(
+        shipmentId,
+        { 
+          status,
+          updatedAt: new Date()
+        },
+        { new: true }
+      );
 
-      if (!validStatuses.includes(status)) {
-        throw new Error(`Invalid status: ${status}`);
-      }
-
-      // Update the status
-      shipment.status = status;
-      await shipment.save();
-
-      return shipment;
+      return updatedShipment;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new Error(`Failed to update shipment status: ${errorMessage}`);
+      console.error('Error updating shipment status:', error);
+      throw error instanceof Error ? error : new Error('Unknown error updating shipment status');
     }
   }
 
   /**
-   * List shipments for a user or organization
-   * @param userId User ID (optional)
-   * @param organizationId Organization ID (optional)
-   * @param status Status filter (optional)
-   * @param page Page number
-   * @param limit Items per page
-   * @returns Paginated shipments
+   * Update customs declaration status
+   * 
+   * @param declarationId Declaration ID
+   * @param status New status
+   * @returns Updated customs declaration
    */
-  public async listShipments(
-    userId?: string,
-    organizationId?: string,
-    status?: string,
-    page: number = 1,
-    limit: number = 10
-  ): Promise<{
-    shipments: IInternationalShipment[];
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  }> {
+  public async updateDeclarationStatus(
+    declarationId: string,
+    status: DeclarationStatus
+  ): Promise<ICustomsDeclaration | null> {
     try {
-      // Build query filters
-      const filters: Record<string, any> = {};
-      
-      if (userId) {
-        filters.userId = new mongoose.Types.ObjectId(userId);
-      }
-      
-      if (organizationId) {
-        filters.organizationId = new mongoose.Types.ObjectId(organizationId);
-      }
-      
-      if (status) {
-        filters.status = status;
+      // Validate declaration ID
+      if (!mongoose.Types.ObjectId.isValid(declarationId)) {
+        throw new Error('Invalid declaration ID');
       }
 
-      // Get total count
-      const total = await InternationalShipment.countDocuments(filters);
-      
-      // Calculate pagination
-      const skip = (page - 1) * limit;
-      const totalPages = Math.ceil(total / limit);
-      
-      // Get shipments
-      const shipments = await InternationalShipment.find(filters)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit);
+      // Update declaration status
+      const updatedDeclaration = await CustomsDeclaration.findByIdAndUpdate(
+        declarationId,
+        { 
+          status,
+          updatedAt: new Date()
+        },
+        { new: true }
+      );
 
-      return {
-        shipments,
-        total,
-        page,
-        limit,
-        totalPages
-      };
+      return updatedDeclaration;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new Error(`Failed to list shipments: ${errorMessage}`);
+      console.error('Error updating declaration status:', error);
+      throw error instanceof Error ? error : new Error('Unknown error updating declaration status');
     }
   }
 }

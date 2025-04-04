@@ -1,0 +1,295 @@
+import { IMarketplaceAdapter } from '../interfaces/marketplace-adapter.interface';
+import {
+  MarketplaceCredentials,
+  ConnectionStatus,
+  MarketplaceProduct,
+  StockUpdatePayload,
+  PriceUpdatePayload,
+  StatusUpdatePayload,
+  MarketplaceOrder,
+  OrderAcknowledgment,
+  MarketplaceCategory,
+  PaginatedResponse,
+  OperationResult,
+  MarketplaceError
+} from '../../models/marketplace.models';
+
+/**
+ * Abstract base class for marketplace adapters.
+ * Implements common functionality and error handling that can be shared across all adapters.
+ */
+export abstract class BaseMarketplaceAdapter implements IMarketplaceAdapter {
+  /**
+   * The unique identifier for the marketplace
+   */
+  abstract readonly marketplaceId: string;
+  
+  /**
+   * Human-readable name of the marketplace
+   */
+  abstract readonly marketplaceName: string;
+
+  /**
+   * Storage for marketplace credentials
+   */
+  protected credentials: MarketplaceCredentials | null = null;
+
+  /**
+   * Last connection check timestamp
+   */
+  protected lastConnectionCheck: Date | null = null;
+  
+  /**
+   * Last connection status
+   */
+  protected lastConnectionStatus: boolean = false;
+
+  /**
+   * Rate limit information
+   */
+  protected rateLimitInfo: {
+    remaining: number;
+    reset: Date;
+    limit: number;
+  } = {
+    remaining: 0,
+    reset: new Date(),
+    limit: 0
+  };
+
+  /**
+   * Initialize the adapter with marketplace credentials
+   * @param credentials - Credentials required for authentication with the marketplace
+   */
+  async initialize(credentials: MarketplaceCredentials): Promise<void> {
+    this.credentials = credentials;
+    
+    // Check connection to validate credentials
+    const connectionStatus = await this.testConnection();
+    
+    if (!connectionStatus.connected) {
+      throw new Error(`Failed to connect to ${this.marketplaceName}: ${connectionStatus.message}`);
+    }
+  }
+
+  /**
+   * Test the connection to the marketplace API
+   * Must be implemented by concrete adapter classes
+   */
+  abstract testConnection(): Promise<ConnectionStatus>;
+
+  /**
+   * Get the current API rate limit status
+   * Default implementation returns the stored rate limit info
+   * Should be overridden by concrete adapters to fetch real-time data
+   */
+  async getRateLimitStatus(): Promise<{ remaining: number; reset: Date; limit: number; }> {
+    return this.rateLimitInfo;
+  }
+
+  /**
+   * Create a standardized error response
+   * @param message - Error message
+   * @param code - Error code
+   * @param details - Optional error details
+   */
+  protected createError(message: string, code: string = 'UNKNOWN_ERROR', details?: any): MarketplaceError {
+    return {
+      code,
+      message,
+      details,
+      timestamp: new Date(),
+    };
+  }
+
+  /**
+   * Create a successful operation result
+   * @param data - Operation result data
+   */
+  protected createSuccessResult<T>(data: T): OperationResult<T> {
+    return {
+      success: true,
+      data
+    };
+  }
+
+  /**
+   * Create a failed operation result
+   * @param error - Error information
+   */
+  protected createErrorResult<T>(error: MarketplaceError): OperationResult<T> {
+    return {
+      success: false,
+      error
+    };
+  }
+
+  /**
+   * Common error handler for API calls
+   * @param error - The caught error
+   * @param operation - Name of the operation that failed
+   */
+  protected handleApiError(error: any, operation: string): MarketplaceError {
+    console.error(`${this.marketplaceName} API error during ${operation}:`, error);
+    
+    // Default error code
+    let code = 'API_ERROR';
+    
+    // Extract error message
+    let message = (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) || `Error during ${operation}`;
+    
+    // Try to extract more specific error information if available
+    if (error.response) {
+      code = `${error.response.status}_ERROR`;
+      const responseData = error.response.data;
+      
+      if (responseData) {
+        if (responseData.message) {
+          message = responseData.message;
+        } else if (responseData.error) {
+          message = typeof responseData.error === 'string' 
+            ? responseData.error 
+            : JSON.stringify(responseData.error);
+        }
+      }
+    }
+    
+    // Check for common rate limiting errors
+    if (
+      (error.response && error.response.status === 429) ||
+      message.toLowerCase().includes('rate limit') ||
+      message.toLowerCase().includes('throttl')
+    ) {
+      code = 'RATE_LIMIT_EXCEEDED';
+    }
+    
+    return this.createError(message, code, error.response?.data || error);
+  }
+
+  /**
+   * Verify that the adapter is properly initialized
+   * @throws Error if adapter is not initialized
+   */
+  protected ensureInitialized(): void {
+    if (!this.credentials) {
+      throw new Error(`${this.marketplaceName} adapter not initialized. Call initialize() first.`);
+    }
+  }
+
+  // ================ Abstract methods that must be implemented by concrete adapters ================
+
+  /**
+   * Fetch a product by its SKU
+   */
+  abstract getProductBySku(sku: string): Promise<OperationResult<MarketplaceProduct>>;
+
+  /**
+   * Fetch a product by marketplace-specific ID
+   */
+  abstract getProductById(id: string): Promise<OperationResult<MarketplaceProduct>>;
+
+  /**
+   * Fetch multiple products by their SKUs
+   */
+  abstract getProductsBySkus(skus: string[]): Promise<OperationResult<MarketplaceProduct[]>>;
+
+  /**
+   * Fetch products with pagination
+   */
+  abstract getProducts(
+    page: number,
+    pageSize: number,
+    filters?: Record<string, any>
+  ): Promise<PaginatedResponse<MarketplaceProduct>>;
+
+  /**
+   * Update stock levels for one or more products
+   */
+  abstract updateStock(updates: StockUpdatePayload[]): Promise<OperationResult<{
+    successful: string[];
+    failed: Array<{ sku: string, reason: string }>;
+  }>>;
+
+  /**
+   * Update prices for one or more products
+   */
+  abstract updatePrices(updates: PriceUpdatePayload[]): Promise<OperationResult<{
+    successful: string[];
+    failed: Array<{ sku: string, reason: string }>;
+  }>>;
+
+  /**
+   * Update status (active/inactive) for one or more products
+   */
+  abstract updateStatus(updates: StatusUpdatePayload[]): Promise<OperationResult<{
+    successful: string[];
+    failed: Array<{ sku: string, reason: string }>;
+  }>>;
+
+  /**
+   * Fetch recent orders
+   */
+  abstract getRecentOrders(
+    sinceDate: Date,
+    page: number,
+    pageSize: number
+  ): Promise<PaginatedResponse<MarketplaceOrder>>;
+
+  /**
+   * Fetch an order by its marketplace-specific ID
+   */
+  abstract getOrderById(id: string): Promise<OperationResult<MarketplaceOrder>>;
+
+  /**
+   * Acknowledge receipt of an order
+   */
+  abstract acknowledgeOrder(orderId: string): Promise<OperationResult<OrderAcknowledgment>>;
+
+  /**
+   * Update order status
+   */
+  abstract updateOrderStatus(
+    orderId: string,
+    status: string,
+    trackingInfo?: {
+      carrier: string;
+      trackingNumber: string;
+      shippedDate?: Date;
+    }
+  ): Promise<OperationResult<{ orderId: string }>>;
+
+  /**
+   * Get marketplace-specific categories
+   */
+  abstract getCategories(parentId?: string): Promise<OperationResult<MarketplaceCategory[]>>;
+
+  /**
+   * Get marketplace-specific attributes for a category
+   */
+  abstract getCategoryAttributes(categoryId: string): Promise<OperationResult<Array<{
+    id: string;
+    name: string;
+    required: boolean;
+    type: string;
+    values?: string[];
+  }>>>;
+
+  /**
+   * Get marketplace health status
+   * Default implementation simply calls testConnection
+   * Can be overridden for more detailed health checks
+   */
+  async getMarketplaceHealth(): Promise<ConnectionStatus> {
+    return this.testConnection();
+  }
+
+  /**
+   * Close the adapter and clean up any resources
+   * Default implementation that can be overridden if needed
+   */
+  async close(): Promise<void> {
+    // Default implementation is a no-op
+    // Override this method if specific cleanup is needed
+    this.credentials = null;
+  }
+}

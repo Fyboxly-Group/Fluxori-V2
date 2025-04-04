@@ -32,8 +32,9 @@ export class RepricingRuleRepository {
       
       return doc.data() as RepricingRule;
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error(`Error finding rule by ID ${id}`, { error });
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -48,10 +49,11 @@ export class RepricingRuleRepository {
         .where('orgId', '==', orgId)
         .get();
       
-      return snapshot.docs.map(doc => doc.data() as RepricingRule);
+      return snapshot.docs.map((doc: any) => doc.data() as RepricingRule);
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error(`Error finding rules for org ${orgId}`, { error });
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -67,10 +69,11 @@ export class RepricingRuleRepository {
         .where('isActive', '==', true)
         .get();
       
-      return snapshot.docs.map(doc => doc.data() as RepricingRule);
+      return snapshot.docs.map((doc: any) => doc.data() as RepricingRule);
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error(`Error finding active rules for org ${orgId}`, { error });
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -86,10 +89,11 @@ export class RepricingRuleRepository {
         .where('nextRun', '<=', now)
         .get();
       
-      return snapshot.docs.map(doc => doc.data() as RepricingRule);
+      return snapshot.docs.map((doc: any) => doc.data() as RepricingRule);
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error('Error finding rules due for execution', { error });
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -114,8 +118,9 @@ export class RepricingRuleRepository {
       
       return newRule;
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error('Error creating repricing rule', { error });
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -141,8 +146,9 @@ export class RepricingRuleRepository {
       
       return true;
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error(`Error updating rule ${id}`, { error });
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -166,8 +172,9 @@ export class RepricingRuleRepository {
       
       return true;
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error(`Error updating rule execution times for ${id}`, { error });
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -183,8 +190,9 @@ export class RepricingRuleRepository {
       
       return true;
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error(`Error deleting rule ${id}`, { error });
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 }

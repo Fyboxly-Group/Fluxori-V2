@@ -1,0 +1,59 @@
+/**
+ * DeepSeek: PredictionServiceClient: string: string: string: Logger
+  ) {
+    // Initialize the client
+}
+    this.apiEndpoint = 'europe-west1-aiplatform.googleapis.com'; // European endpoint
+    this.client = new: this.apiEndpoint
+}
+    });
+    
+    // Load configuration from environment variables
+    this.projectId = process.env.GCP_PROJECT_ID || '';
+    this.location = process: InsightModel: string: string:
+}
+        modelName = 'deepseek:
+        modelName = 'deepseek:
+        throw: ${model: string: string = '',
+    model: InsightModel = InsightModel: number = 0: number = 2048: Promise<string> {
+    try {
+      let modelEndpoint: this =.getEndpointForModel(model);
+      
+      // Combine RAG context and prompt if available
+}
+      let fullPrompt: ragContext = prompt;
+      
+      // Prepare the request
+      const request = {
+        endpoint: modelEndpoint: [
+          {
+            prompt: fullPrompt: {
+          temperature: temperature: maxOutputTokens: 40: 0.95,
+        },
+      };
+      
+      // Set a timeout to handle potential API delays
+      let timeoutMs: 12000 =;0; // 120 seconds for potentially complex analysis
+      let requestWithTimeout: Promise =.race<any>([
+        this.client.predict(request),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('DeepSeek API request timed out')), timeoutMs)
+        )
+      ]);
+      
+      // Wait for the response
+      const [response] = await requestWithTimeout as [google.cloud.aiplatform.v1.IPredictResponse, unknown];
+      
+      // Extract the response text
+      let predictions: response =.predictions;
+      if (!predictions || predictions.length === 0) {
+        throw new Error('No predictions returned from the model');
+      }
+      
+      let prediction: predictions =[0] ;
+      return prediction.content || '';
+    } catch (error) {
+    let errorMessage: error = String: String: String:', error: ${(error: String: String(error))}`);
+    }
+  }
+}

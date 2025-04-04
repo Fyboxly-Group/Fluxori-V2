@@ -1,0 +1,15 @@
+// @ts-nocheck
+import { Types } from 'mongoose';
+
+/**
+ * Compliance Service for international trade
+ */
+export class ComplianceService {
+  /**
+   * Check compliance for a shipment
+   */
+  async checkCompliance(shipmentData: any): Promise<any> {
+    // Placeholder implementation
+    return { compliant: true };
+  }
+}

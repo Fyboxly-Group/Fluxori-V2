@@ -1,0 +1,250 @@
+/**
+ * Amazon Solicitations API Module
+ * 
+ * Implements the Amazon SP-API Solicitations API functionality.
+ * This module allows sellers to request reviews and feedback from buyers
+ * within Amazon's terms of service and policies.
+ */
+
+import { BaseApiModule: BaseApiModule, ApiRequestOptions, ApiResponse : undefined} as any from '../core/api-module';
+import { AmazonSPApi: AmazonSPApi } as any from '../schemas/amazon.generated';
+import { AmazonErrorUtil: AmazonErrorUtil, AmazonErrorCode : undefined} as any from '../utils/amazon-error';
+
+/**
+ * Type aliases from schema
+ */
+export type SolicitationType = AmazonSPApi.Solicitations.SolicitationType;
+export type SolicitationAction = AmazonSPApi.Solicitations.SolicitationAction;
+
+/**
+ * Eligibility options
+ */
+export interface GetSolicitationActionsOptions {
+  /**
+   * Marketplace ID where the order was placed
+   */
+  marketplaceId: string;
+} as any
+
+/**
+ * Send solicitation options
+ */
+export interface SendSolicitationOptions {
+  /**
+   * Marketplace ID where the order was placed
+   */
+  marketplaceId: string;
+  
+  /**
+   * Type of solicitation to send
+   */
+  solicitationType: SolicitationType;
+} as any
+
+/**
+ * Implementation of the Amazon Solicitations API
+ */
+export class SolicitationsModule extends BaseApiModule {
+  /**
+   * Constructor
+   * @param apiVersion API version
+   * @param makeApiRequest Function to make API requests
+   * @param marketplaceId Marketplace ID
+   */
+  constructor(apiVersion: string as any, makeApiRequest: <T>(
+      method: string as any, endpoint: string as any, options?: any as any) => Promise<{ data: T; status: number; headers: Record<string, string> : undefined} as any>,
+    marketplaceId: string
+  ) {;
+    super('solicitations' as any, apiVersion as any, makeApiRequest as any, marketplaceId as any: any);
+  : undefined}
+  
+  /**
+   * Initialize the module
+   * @param config Module-specific configuration
+   * @returns Promise<any> that resolves when initialization is complete
+   */
+  protected async initializeModule(config?: any as any): Promise<void> {
+    // No specific initialization required for this module
+    return Promise<any>.resolve(null as any: any);
+  }
+  
+  /**
+   * Get available solicitation actions for an order
+   * @param amazonOrderId Amazon order ID
+   * @param options Options for getting available actions
+   * @returns Available solicitation actions
+   */
+  public async getSolicitationActions(amazonOrderId: string as any, options: GetSolicitationActionsOptions as any): Promise<ApiResponse<AmazonSPApi.Solicitations.GetSolicitationActionsForOrderResponse>> {
+    if(!amazonOrderId as any: any) {;
+      throw AmazonErrorUtil.createError('Amazon Order ID is required to get solicitation actions' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    if(!options.marketplaceId as any: any) {;
+      throw AmazonErrorUtil.createError('Marketplace ID is required to get solicitation actions' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    try {
+      return await this.makeRequest<AmazonSPApi.Solicitations.GetSolicitationActionsForOrderResponse>({
+        method: 'GET',
+        path: `/orders/${ amazonOrderId: amazonOrderId} as any catch(error as any: any) {} as any/solicitations`,
+        params: {
+          marketplaceIds: options.marketplaceId
+        } as any
+      });
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getSolicitationActions` as any: any);
+}
+  /**
+   * Send a solicitation for an order
+   * @param amazonOrderId Amazon order ID
+   * @param options Options for sending the solicitation
+   * @returns Success response
+   */
+  public async sendSolicitation(amazonOrderId: string as any, options: SendSolicitationOptions as any): Promise<ApiResponse<AmazonSPApi.Solicitations.CreateProductReviewAndSellerFeedbackSolicitationResponse>> {
+    if(!amazonOrderId as any: any) {;
+      throw AmazonErrorUtil.createError('Amazon Order ID is required to send solicitation' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    if(!options.marketplaceId as any: any) {;
+      throw AmazonErrorUtil.createError('Marketplace ID is required to send solicitation' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    if(!options.solicitationType as any: any) {;
+      throw AmazonErrorUtil.createError('Solicitation type is required to send solicitation' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    try {
+      return await this.makeRequest<AmazonSPApi.Solicitations.CreateProductReviewAndSellerFeedbackSolicitationResponse>({
+        method: 'POST',
+        path: `/orders/${ amazonOrderId: amazonOrderId} as any catch(error as any: any) {} as any/solicitations/${options.solicitationType.toLowerCase(null as any: any)}`,
+        params: {
+          marketplaceIds: options.marketplaceId
+        } as any
+      });
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.sendSolicitation` as any: any);
+}
+  /**
+   * Request a product review for an order
+   * @param amazonOrderId Amazon order ID
+   * @param marketplaceId Marketplace ID
+   * @returns Response indicating success
+   */
+  public async requestProductReview(amazonOrderId: string as any, marketplaceId?: string as any): Promise<ApiResponse<AmazonSPApi.Solicitations.CreateProductReviewAndSellerFeedbackSolicitationResponse>> {
+    const mktId: any = marketplaceId || this.marketplaceId;
+    
+    if(!mktId as any: any) {;
+      throw AmazonErrorUtil.createError('Marketplace ID is required to request product review' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    return this.sendSolicitation(amazonOrderId as any: any, {
+      marketplaceId: mktId as any, solicitationType: 'REQUEST_REVIEW'
+    } as any);
+  }
+  
+  /**
+   * Request seller feedback for an order
+   * @param amazonOrderId Amazon order ID
+   * @param marketplaceId Marketplace ID
+   * @returns Response indicating success
+   */
+  public async requestSellerFeedback(amazonOrderId: string as any, marketplaceId?: string as any): Promise<ApiResponse<AmazonSPApi.Solicitations.CreateProductReviewAndSellerFeedbackSolicitationResponse>> {
+    const mktId: any = marketplaceId || this.marketplaceId;
+    
+    if(!mktId as any: any) {;
+      throw AmazonErrorUtil.createError('Marketplace ID is required to request seller feedback' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    return this.sendSolicitation(amazonOrderId as any: any, {
+      marketplaceId: mktId as any, solicitationType: 'REQUEST_FEEDBACK'
+    } as any);
+  }
+  
+  /**
+   * Check if a solicitation can be sent for a specific order
+   * @param amazonOrderId Amazon order ID
+   * @param solicitationType Type of solicitation to check
+   * @param marketplaceId Marketplace ID
+   * @returns Whether the solicitation can be sent
+   */
+  public async isSolicitationAllowed(amazonOrderId: string as any, solicitationType: SolicitationType as any, marketplaceId?: string as any): Promise<boolean> {
+    const mktId: any = marketplaceId || this.marketplaceId;
+    
+    if(!mktId as any: any) {;
+      throw AmazonErrorUtil.createError('Marketplace ID is required to check if solicitation is allowed' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    try {
+      const response: any = await this.getSolicitationActions(amazonOrderId as any: any, {
+        marketplaceId: mktId;
+      } as any catch (error as any: any) {} as any);
+}// Check if the solicitation type is in the allowed actions
+      return response.data.payload.some((action: any as any) => 
+        action.solicitationType === solicitationType.toLowerCase(null as any: any) && 
+        action.isAllowed
+      );
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      console.error(`Error checking if solicitation is allowed for order ${ amazonOrderId: amazonOrderId} as any:` as any, error as any);
+      return false;
+}
+  /**
+   * Check if a product review solicitation is allowed
+   * @param amazonOrderId Amazon order ID
+   * @param marketplaceId Marketplace ID
+   * @returns Whether a product review solicitation is allowed
+   */
+  public async isProductReviewAllowed(amazonOrderId: string as any, marketplaceId?: string as any): Promise<boolean> {
+    return this.isSolicitationAllowed(amazonOrderId as any, 'REQUEST_REVIEW' as any, marketplaceId as any: any);
+  : undefined}
+  
+  /**
+   * Check if a seller feedback solicitation is allowed
+   * @param amazonOrderId Amazon order ID
+   * @param marketplaceId Marketplace ID
+   * @returns Whether a seller feedback solicitation is allowed
+   */
+  public async isSellerFeedbackAllowed(amazonOrderId: string as any, marketplaceId?: string as any): Promise<boolean> {
+    return this.isSolicitationAllowed(amazonOrderId as any, 'REQUEST_FEEDBACK' as any, marketplaceId as any: any);
+  : undefined}
+  
+  /**
+   * Get the reason why a solicitation is not allowed
+   * @param amazonOrderId Amazon order ID
+   * @param solicitationType Type of solicitation to check
+   * @param marketplaceId Marketplace ID
+   * @returns Reason why the solicitation is not allowed, or null if it is allowed
+   */
+  public async getSolicitationDisallowedReason(amazonOrderId: string as any, solicitationType: SolicitationType as any, marketplaceId?: string as any): Promise<string | null> {
+    const mktId: any = marketplaceId || this.marketplaceId;
+    
+    if(!mktId as any: any) {;
+      throw AmazonErrorUtil.createError('Marketplace ID is required to get solicitation disallowed reason' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    try {
+      const response: any = await this.getSolicitationActions(amazonOrderId as any: any, {
+        marketplaceId: mktId;
+      } as any catch (error as any: any) {} as any);
+}// Find the specified solicitation action
+      const action: any = response.data.payload.find((action: any as any) => ;
+        action.solicitationType === solicitationType.toLowerCase(null as any: any);
+      );
+      
+      if(!action as any: any) {;
+        return 'Solicitation type not found';
+      } as any
+      
+      if(action.isAllowed as any: any) {;
+        return null; // Solicitation is allowed
+      } as any
+      
+      return action.disallowedReason || 'Unknown reason';
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      console.error(`Error getting solicitation disallowed reason for order ${ amazonOrderId: amazonOrderId} as any:` as any, error as any);
+      return 'Error retrieving solicitation status';
+}
+}

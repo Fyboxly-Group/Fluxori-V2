@@ -42,6 +42,7 @@ export const getInventoryStockByItem = async (req: AuthenticatedRequest, res: Re
       data: item.warehouseStock || []
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     console.error('Error getting inventory stock:', error);
     next(error);
   }
@@ -144,6 +145,7 @@ export const updateInventoryStock = async (req: AuthenticatedRequest, res: Respo
       data: item.warehouseStock
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     console.error('Error updating inventory stock:', error);
     next(error);
   }
@@ -249,6 +251,7 @@ export const transferInventory = async (req: AuthenticatedRequest, res: Response
       data: item.warehouseStock
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     console.error('Error transferring inventory:', error);
     next(error);
   }
@@ -275,7 +278,7 @@ export const getLowStockItems = async (req: AuthenticatedRequest, res: Response,
       
       if (lowStockWarehouses && lowStockWarehouses.length > 0) {
         return {
-          _id: item._id,
+          _id: (item as any)._id,
           name: item.name,
           sku: item.sku,
           reorderThreshold: item.reorderThreshold || item.reorderPoint,
@@ -290,6 +293,7 @@ export const getLowStockItems = async (req: AuthenticatedRequest, res: Response,
       data: lowStockItems
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     console.error('Error getting low stock items:', error);
     next(error);
   }

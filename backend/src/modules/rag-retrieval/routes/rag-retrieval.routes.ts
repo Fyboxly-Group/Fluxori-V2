@@ -1,8 +1,25 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
+import { Container } from 'inversify';
 import { RagRetrievalController } from '../controllers/rag-retrieval.controller';
+import { RagRetrievalService } from '../services/rag-retrieval.service';
+import { EmbeddingService } from '../services/embedding.service';
+import { VectorSearchService } from '../services/vector-search.service';
+import { DocumentService } from '../services/document.service';
 import { authenticate } from '../../../middleware/auth.middleware';
+import { IRagRetrievalController, IRagRetrievalService, IEmbeddingService, IVectorSearchService, IDocumentService } from '../interfaces/vector-search.interface';
 
 const router = Router();
+
+// Setup dependency injection container
+const container = new Container();
+container.bind<IEmbeddingService>(EmbeddingService).to(EmbeddingService).inSingletonScope();
+container.bind<IVectorSearchService>(VectorSearchService).to(VectorSearchService).inSingletonScope();
+container.bind<IDocumentService>(DocumentService).to(DocumentService).inSingletonScope();
+container.bind<IRagRetrievalService>(RagRetrievalService).to(RagRetrievalService).inSingletonScope();
+container.bind<IRagRetrievalController>(RagRetrievalController).to(RagRetrievalController).inSingletonScope();
+
+// Create controller instance with DI
+const controller = container.get<IRagRetrievalController>(RagRetrievalController);
 
 /**
  * @swagger
@@ -43,7 +60,7 @@ const router = Router();
  *       500:
  *         description: Server error
  */
-router.post('/context', authenticate, RagRetrievalController.getContextSnippets);
+router.post('/context', authenticate, controller.getContextSnippets.bind(controller));
 
 /**
  * @swagger
@@ -84,7 +101,7 @@ router.post('/context', authenticate, RagRetrievalController.getContextSnippets)
  *       500:
  *         description: Server error
  */
-router.post('/documents', authenticate, RagRetrievalController.getContextDocuments);
+router.post('/documents', authenticate, controller.getContextDocuments.bind(controller));
 
 /**
  * @swagger
@@ -121,6 +138,6 @@ router.post('/documents', authenticate, RagRetrievalController.getContextDocumen
  *       500:
  *         description: Server error
  */
-router.post('/llm-context', authenticate, RagRetrievalController.getLlmContext);
+router.post('/llm-context', authenticate, controller.getLlmContext.bind(controller));
 
 export { router as ragRetrievalRoutes };

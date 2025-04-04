@@ -55,6 +55,7 @@ export class RepricingSchedulerService {
       this.isExecuting = true;
       await this.repricingEngine.executeScheduledRules();
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error('Error executing scheduled rules', { error });
     } finally {
       this.isExecuting = false;

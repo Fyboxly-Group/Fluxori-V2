@@ -1,4 +1,3 @@
-// @ts-nocheck - Added by final-ts-fix.js
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import connectionService from '../services/connection.service';
@@ -9,6 +8,16 @@ import MarketplaceConnection, {
   SyncStatus
 } from '../models/connection.model';
 import { MarketplaceCredentials } from '../../marketplaces/models/marketplace.models';
+
+// Authenticated request type
+type AuthenticatedRequest = Request & {
+  user?: {
+    id: string;
+    organizationId: string;
+    email?: string;
+    role?: string;
+  };
+};
 
 /**
  * Controller for marketplace connections endpoints
@@ -22,9 +31,9 @@ class ConnectionController {
   public async getConnections(req: Request, res: Response): Promise<void> {
     try {
       // @ts-ignore - Auth middleware adds user to request
-      const userId = req.user.id;
+      const userId = req.user?.id;
       // @ts-ignore - Auth middleware adds organization to request
-      const organizationId = req.user.organizationId;
+      const organizationId = req.user?.organizationId;
       
       const connections = await connectionService.getConnections(userId, organizationId);
       
@@ -53,7 +62,7 @@ class ConnectionController {
       console.error('Error getting connections:', error);
       res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
         success: false,
-        message: `Failed to retrieve connections: ${error instanceof Error ? error.message : String(error)}`,
+        message: `Failed to retrieve connections: ${error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)}`,
       });
     }
   }
@@ -66,9 +75,9 @@ class ConnectionController {
   public async createConnection(req: Request, res: Response): Promise<void> {
     try {
       // @ts-ignore - Auth middleware adds user to request
-      const userId = req.user.id;
+      const userId = req.user?.id;
       // @ts-ignore - Auth middleware adds organization to request
-      const organizationId = req.user.organizationId;
+      const organizationId = req.user?.organizationId;
       
       const { 
         marketplaceId,
@@ -144,7 +153,7 @@ class ConnectionController {
       console.error('Error creating connection:', error);
       res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
         success: false,
-        message: `Failed to create connection: ${error instanceof Error ? error.message : String(error)}`,
+        message: `Failed to create connection: ${error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)}`,
       });
     }
   }
@@ -158,9 +167,9 @@ class ConnectionController {
     try {
       const { connectionId } = req.params;
       // @ts-ignore - Auth middleware adds user to request
-      const userId = req.user.id;
+      const userId = req.user?.id;
       // @ts-ignore - Auth middleware adds organization to request
-      const organizationId = req.user.organizationId;
+      const organizationId = req.user?.organizationId;
       
       const connection = await connectionService.getConnectionById(
         connectionId,
@@ -200,7 +209,7 @@ class ConnectionController {
       console.error('Error getting connection:', error);
       res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
         success: false,
-        message: `Failed to retrieve connection: ${error instanceof Error ? error.message : String(error)}`,
+        message: `Failed to retrieve connection: ${error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)}`,
       });
     }
   }
@@ -214,9 +223,9 @@ class ConnectionController {
     try {
       const { connectionId } = req.params;
       // @ts-ignore - Auth middleware adds user to request
-      const userId = req.user.id;
+      const userId = req.user?.id;
       // @ts-ignore - Auth middleware adds organization to request
-      const organizationId = req.user.organizationId;
+      const organizationId = req.user?.organizationId;
       
       const success = await connectionService.deleteConnection(
         connectionId,
@@ -240,7 +249,7 @@ class ConnectionController {
       console.error('Error deleting connection:', error);
       res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
         success: false,
-        message: `Failed to delete connection: ${error instanceof Error ? error.message : String(error)}`,
+        message: `Failed to delete connection: ${error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)}`,
       });
     }
   }
@@ -254,9 +263,9 @@ class ConnectionController {
     try {
       const { connectionId } = req.params;
       // @ts-ignore - Auth middleware adds user to request
-      const userId = req.user.id;
+      const userId = req.user?.id;
       // @ts-ignore - Auth middleware adds organization to request
-      const organizationId = req.user.organizationId;
+      const organizationId = req.user?.organizationId;
       
       const result = await connectionService.testConnection(
         connectionId,
@@ -272,7 +281,7 @@ class ConnectionController {
       console.error('Error testing connection:', error);
       res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
         success: false,
-        message: `Failed to test connection: ${error instanceof Error ? error.message : String(error)}`,
+        message: `Failed to test connection: ${error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)}`,
       });
     }
   }
@@ -287,9 +296,9 @@ class ConnectionStatusController {
   public async getConnectionStatuses(req: Request, res: Response): Promise<void> {
     try {
       // @ts-ignore - Auth middleware adds user to request
-      const userId = req.user.id;
+      const userId = req.user?.id;
       // @ts-ignore - Auth middleware adds organization to request
-      const organizationId = req.user.organizationId;
+      const organizationId = req.user?.organizationId;
       
       const connections = await connectionService.getConnections(userId, organizationId);
       
@@ -348,7 +357,7 @@ class ConnectionStatusController {
       console.error('Error getting connection statuses:', error);
       res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
         success: false,
-        message: `Failed to retrieve connection statuses: ${error instanceof Error ? error.message : String(error)}`,
+        message: `Failed to retrieve connection statuses: ${error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)}`,
       });
     }
   }
@@ -372,6 +381,7 @@ export const getConnections = async (req, res) => {
     // TODO: Implement getConnections functionality
     return res.status(200).json({ message: 'getConnections functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     console.error('Error in getConnections:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -385,6 +395,7 @@ export const createConnection = async (req, res) => {
     // TODO: Implement createConnection functionality
     return res.status(200).json({ message: 'createConnection functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     console.error('Error in createConnection:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -398,6 +409,7 @@ export const getConnection = async (req, res) => {
     // TODO: Implement getConnection functionality
     return res.status(200).json({ message: 'getConnection functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     console.error('Error in getConnection:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -411,6 +423,7 @@ export const deleteConnection = async (req, res) => {
     // TODO: Implement deleteConnection functionality
     return res.status(200).json({ message: 'deleteConnection functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     console.error('Error in deleteConnection:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -424,6 +437,7 @@ export const testConnection = async (req, res) => {
     // TODO: Implement testConnection functionality
     return res.status(200).json({ message: 'testConnection functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     console.error('Error in testConnection:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -437,6 +451,7 @@ export const getConnections = async (req, res) => {
     // TODO: Implement getConnections functionality
     return res.status(200).json({ message: 'getConnections functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     console.error('Error in getConnections:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }

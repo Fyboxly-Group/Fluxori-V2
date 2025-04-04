@@ -1,4 +1,6 @@
-// @ts-nocheck - Added by final-ts-fix.js
+/**
+ * Type definitions for Express.js extensions used in the application
+ */
 import { Request, Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
 

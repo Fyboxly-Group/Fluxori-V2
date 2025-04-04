@@ -7,6 +7,16 @@ import { RoleService } from '../../../services/firestore/role.service';
 import { UserOrganizationService } from '../../../services/firestore/user-organization.service';
 import { RoleScope } from '../../../models/firestore';
 
+// Authenticated request type
+type AuthenticatedRequest = Request & {
+  user?: {
+    id: string;
+    organizationId: string;
+    email?: string;
+    role?: string;
+  };
+};
+
 /**
  * Controller for role management
  */
@@ -173,7 +183,7 @@ export class RoleController {
    * Create a custom role
    * @route POST /api/roles
    */
-  async createRole(req: Request, res: Response, next: NextFunction) {
+  async createRole(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       const { name, description, permissions } = req.body;
       const organizationId = req.user!.currentOrganizationId;
@@ -204,10 +214,10 @@ export class RoleController {
     } catch (error: any) {
       console.error('Error creating role:', error);
       
-      if (error.message.includes('already exists')) {
+      if ((error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)).includes('already exists')) {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error))
         });
       }
       
@@ -219,7 +229,7 @@ export class RoleController {
    * Get all roles for the current organization
    * @route GET /api/roles
    */
-  async getOrganizationRoles(req: Request, res: Response, next: NextFunction) {
+  async getOrganizationRoles(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       const organizationId = req.user!.currentOrganizationId;
       
@@ -238,7 +248,7 @@ export class RoleController {
    * Get role by ID
    * @route GET /api/roles/:id
    */
-  async getRoleById(req: Request, res: Response, next: NextFunction) {
+  async getRoleById(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       const { id } = req.params;
       
@@ -276,7 +286,7 @@ export class RoleController {
    * Update role
    * @route PATCH /api/roles/:id
    */
-  async updateRole(req: Request, res: Response, next: NextFunction) {
+  async updateRole(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       const { id } = req.params;
       const updateData = req.body;
@@ -332,7 +342,7 @@ export class RoleController {
    * Delete role
    * @route DELETE /api/roles/:id
    */
-  async deleteRole(req: Request, res: Response, next: NextFunction) {
+  async deleteRole(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       const { id } = req.params;
       
@@ -371,17 +381,17 @@ export class RoleController {
     } catch (error: any) {
       console.error('Error deleting role:', error);
       
-      if (error.message.includes('built-in role')) {
+      if ((error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)).includes('built-in role')) {
         return res.status(403).json({
           success: false,
-          message: error.message
+          message: (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error))
         });
       }
       
-      if (error.message.includes('is assigned to users')) {
+      if ((error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)).includes('is assigned to users')) {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error))
         });
       }
       
@@ -393,7 +403,7 @@ export class RoleController {
    * Assign role to user
    * @route POST /api/roles/:id/assign
    */
-  async assignRoleToUser(req: Request, res: Response, next: NextFunction) {
+  async assignRoleToUser(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       const { id } = req.params;
       const { userId } = req.body;
@@ -423,10 +433,10 @@ export class RoleController {
     } catch (error: any) {
       console.error('Error assigning role:', error);
       
-      if (error.message.includes('not a member')) {
+      if ((error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)).includes('not a member')) {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error))
         });
       }
       
@@ -438,7 +448,7 @@ export class RoleController {
    * Remove role from user
    * @route DELETE /api/roles/:id/assign/:userId
    */
-  async removeRoleFromUser(req: Request, res: Response, next: NextFunction) {
+  async removeRoleFromUser(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       const { id, userId } = req.params;
       const organizationId = req.user!.currentOrganizationId;
@@ -459,10 +469,10 @@ export class RoleController {
     } catch (error: any) {
       console.error('Error removing role:', error);
       
-      if (error.message.includes('owner role')) {
+      if ((error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)).includes('owner role')) {
         return res.status(403).json({
           success: false,
-          message: error.message
+          message: (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error))
         });
       }
       
@@ -474,7 +484,7 @@ export class RoleController {
    * Get users with a specific role
    * @route GET /api/roles/:id/users
    */
-  async getUsersByRole(req: Request, res: Response, next: NextFunction) {
+  async getUsersByRole(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       const { id } = req.params;
       const organizationId = req.user!.currentOrganizationId;
@@ -497,7 +507,7 @@ export class RoleController {
    * Get current user's effective permissions
    * @route GET /api/roles/me/permissions
    */
-  async getCurrentUserPermissions(req: Request, res: Response, next: NextFunction) {
+  async getCurrentUserPermissions(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       const permissions = await this.roleService.getUserEffectivePermissions(
         req.user!.id,
@@ -517,7 +527,7 @@ export class RoleController {
    * Check if current user has a specific permission
    * @route GET /api/roles/check-permission
    */
-  async checkPermission(req: Request, res: Response, next: NextFunction) {
+  async checkPermission(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       const { resource, action, resourceId } = req.query;
       
@@ -549,7 +559,7 @@ export class RoleController {
    * Get system roles (admin only)
    * @route GET /api/roles/system
    */
-  async getSystemRoles(req: Request, res: Response, next: NextFunction) {
+  async getSystemRoles(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       // Check if user is system admin
       if (!req.user!.isSystemAdmin) {
@@ -574,7 +584,7 @@ export class RoleController {
    * Initialize system roles (admin only)
    * @route POST /api/roles/system/initialize
    */
-  async initializeSystemRoles(req: Request, res: Response, next: NextFunction) {
+  async initializeSystemRoles(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       // Check if user is system admin
       if (!req.user!.isSystemAdmin) {

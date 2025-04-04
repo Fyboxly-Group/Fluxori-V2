@@ -1,46 +1,41 @@
 /**
- * Factory for creating Invoices API module
+ * Amazon SP-API Invoices Module Factory
+ * 
+ * Factory class for creating and registering Invoices API module instances.
  */
 
-import { InvoicesModule } from './invoices';
+import { ApiRequestFunction } from '../../core/api-module';
 import { ModuleRegistry } from '../../core/module-registry';
-import { getDefaultModuleVersion } from '../../core/module-definitions';
+import { getDefaultModuleVersion } from '../../core/registry-helper';
+import { InvoicesModule } from './invoices';
 
 /**
- * Factory for creating Invoices API module
+ * Creates and registers an Invoices module instance
+ * 
+ * @param registry Module registry to register the module with
+ * @param makeApiRequest Function to make API requests
+ * @param marketplaceId Marketplace ID
+ * @param apiVersion Optional API version (defaults to latest version if not specified)
+ * @returns The created Invoices module instance
  */
-export class InvoicesModuleFactory {
-  /**
-   * Create an Invoices module and register it with the provided registry
-   * @param makeApiRequest Function to make API requests
-   * @param marketplaceId Marketplace ID
-   * @param registry Module registry to register with
-   * @param apiVersion Optional API version (uses default if not provided)
-   * @returns The created module
-   */
-  public static createInvoicesModule(
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string,
-    registry: ModuleRegistry,
-    apiVersion?: string
-  ): InvoicesModule {
-    // Use provided version or get the default
-    const version = apiVersion || getDefaultModuleVersion('invoices') || '2024-06-19';
-    
-    // Create the module
-    const module = new InvoicesModule(
-      version,
-      makeApiRequest,
-      marketplaceId
-    );
-    
-    // Register the module
-    registry.registerModule(module);
-    
-    return module;
-  }
+export function createInvoicesModule(
+  registry: ModuleRegistry,
+  makeApiRequest: ApiRequestFunction,
+  marketplaceId: string,
+  apiVersion?: string
+): InvoicesModule {
+  // Use provided version or get the default
+  const version = apiVersion || getDefaultModuleVersion('invoices') || '2021-12-01';
+  
+  // Create the module
+  const module = new InvoicesModule(
+    version,
+    makeApiRequest,
+    marketplaceId
+  );
+  
+  // Register the module
+  registry.registerModule(module);
+  
+  return module;
 }

@@ -2,18 +2,18 @@
  * Multi-Warehouse Inventory Management System Test
  * 
  * This test suite verifies the functionality of the multi-warehouse
- * inventory management system by testing all major API endpoints.prop
+ * inventory management system by testing all major API endpoints.
  */
 
 import mongoose from 'mongoose';
 import request from 'supertest';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import app from '../app'//;
-import Warehouse from '../models/warehouse.model'//;
-import InventoryItem from '../models/inventory.model'//;
-import InventoryStock from '../models/inventory-stock.model'//;
-import Supplier from '../models/supplier.model'//;
-import { createJwtToken } from '../utils/auth'//;
+import app from '../app';
+import Warehouse from '../models/warehouse.model';
+import InventoryItem from '../models/inventory.model';
+import InventoryStock from '../models/inventory-stock.model';
+import Supplier from '../models/supplier.model';
+import { createJwtToken } from '../utils/auth';
 
 let mongoServer: MongoMemoryServer;
 
@@ -21,7 +21,7 @@ let mongoServer: MongoMemoryServer;
 const testUser = {
   _id: new mongoose.Types.ObjectId(),
   id: new mongoose.Types.ObjectId().toString(),
-  email: 'test@example.com';,
+  email: 'test@example.com',
   role: 'admin',
   organizationId: 'test-org',
 };
@@ -57,9 +57,9 @@ afterAll(async() => {
 async function seedTestData() {
   // Create test supplier
   const supplier = await Supplier.create({
-    name: 'Test Supplier';,
+    name: 'Test Supplier',
     contactPerson: 'Test Contact',
-    email: 'supplier@example.com';,
+    email: 'supplier@example.com',
     phone: '555-123-4567',
     address: {
       street: '123 Test St',
@@ -78,7 +78,7 @@ async function seedTestData() {
   const items = await InventoryItem.create([
     {
       sku: 'TEST-001',
-      name: 'Test Item 1';,
+      name: 'Test Item 1',
       description: 'Test Description 1',
       category: 'Test Category',
       price: 100,
@@ -92,7 +92,7 @@ async function seedTestData() {
     },
     {
       sku: 'TEST-002',
-      name: 'Test Item 2';,
+      name: 'Test Item 2',
       description: 'Test Description 2',
       category: 'Test Category',
       price: 200,
@@ -112,10 +112,11 @@ async function seedTestData() {
 // Warehouse Tests
 describe('Warehouse Management', () => {
   test('Should create a warehouse', async() => {
-    const response = (await request(app) as any).post('/api/warehouses'//)
+    const response = await request(app)
+      .post('/api/warehouses')
       .set('Authorization', `Bearer ${testToken}`)
       .send({
-        name: 'Test Warehouse';,
+        name: 'Test Warehouse',
         code: 'TEST',
         address: {
           street: '123 Test St',
@@ -138,10 +139,11 @@ describe('Warehouse Management', () => {
   });
   
   test('Should create a second warehouse', async() => {
-    const response = (await request(app) as any).post('/api/warehouses'//)
+    const response = await request(app)
+      .post('/api/warehouses')
       .set('Authorization', `Bearer ${testToken}`)
       .send({
-        name: 'Second Warehouse';,
+        name: 'Second Warehouse',
         code: 'SEC',
         address: {
           street: '456 Test Ave',
@@ -161,7 +163,8 @@ describe('Warehouse Management', () => {
   });
   
   test('Should get all warehouses', async() => {
-    const response = (await request(app) as any).get('/api/warehouses'//)
+    const response = await request(app)
+      .get('/api/warehouses')
       .set('Authorization', `Bearer ${testToken}`);
     
     expect(response.status).toBe(200);
@@ -171,7 +174,8 @@ describe('Warehouse Management', () => {
   });
   
   test('Should get a warehouse by ID', async() => {
-    const response = (await request(app) as any).get(`/api/warehouses/${warehouseIds[0]}`)
+    const response = await request(app)
+      .get(`/api/warehouses/${warehouseIds[0]}`)
       .set('Authorization', `Bearer ${testToken}`);
     
     expect(response.status).toBe(200);
@@ -180,10 +184,11 @@ describe('Warehouse Management', () => {
   });
   
   test('Should update a warehouse', async() => {
-    const response = (await request(app) as any).put(`/api/warehouses/${warehouseIds[0]}`)
+    const response = await request(app)
+      .put(`/api/warehouses/${warehouseIds[0]}`)
       .set('Authorization', `Bearer ${testToken}`)
       .send({
-        name: 'Updated Warehouse Name';,
+        name: 'Updated Warehouse Name',
         contactPerson: 'New Contact',
       });
     
@@ -197,7 +202,8 @@ describe('Warehouse Management', () => {
 // Inventory Stock Tests
 describe('Inventory Stock Management', () => {
   test('Should update inventory stock in a warehouse', async() => {
-    const response = (await request(app) as any).put(`/api/inventory/${inventoryItemIds[0]}/stock/${warehouseIds[0]}`)
+    const response = await request(app)
+      .put(`/api/inventory/${inventoryItemIds[0]}/stock/${warehouseIds[0]}`)
       .set('Authorization', `Bearer ${testToken}`)
       .send({
         quantityOnHand: 50,
@@ -215,7 +221,8 @@ describe('Inventory Stock Management', () => {
   });
   
   test('Should update inventory stock in another warehouse', async() => {
-    const response = (await request(app) as any).put(`/api/inventory/${inventoryItemIds[0]}/stock/${warehouseIds[1]}`)
+    const response = await request(app)
+      .put(`/api/inventory/${inventoryItemIds[0]}/stock/${warehouseIds[1]}`)
       .set('Authorization', `Bearer ${testToken}`)
       .send({
         quantityOnHand: 30,
@@ -231,7 +238,8 @@ describe('Inventory Stock Management', () => {
   });
   
   test('Should update second item stock', async() => {
-    const response = (await request(app) as any).put(`/api/inventory/${inventoryItemIds[1]}/stock/${warehouseIds[0]}`)
+    const response = await request(app)
+      .put(`/api/inventory/${inventoryItemIds[1]}/stock/${warehouseIds[0]}`)
       .set('Authorization', `Bearer ${testToken}`)
       .send({
         quantityOnHand: 5,
@@ -247,7 +255,8 @@ describe('Inventory Stock Management', () => {
   });
   
   test('Should get inventory stock by item ID', async() => {
-    const response = (await request(app) as any).get(`/api/inventory/${inventoryItemIds[0]}/stock`//)
+    const response = await request(app)
+      .get(`/api/inventory/${inventoryItemIds[0]}/stock`)
       .set('Authorization', `Bearer ${testToken}`);
     
     expect(response.status).toBe(200);
@@ -257,7 +266,8 @@ describe('Inventory Stock Management', () => {
   });
   
   test('Should transfer inventory between warehouses', async() => {
-    const response = (await request(app) as any).post(`/api/inventory/${inventoryItemIds[0]}/transfer`//)
+    const response = await request(app)
+      .post(`/api/inventory/${inventoryItemIds[0]}/transfer`)
       .set('Authorization', `Bearer ${testToken}`)
       .send({
         sourceWarehouseId: warehouseIds[0],
@@ -276,7 +286,8 @@ describe('Inventory Stock Management', () => {
 // Low Stock Detection Tests
 describe('Low Stock Detection', () => {
   test('Should get low stock items', async() => {
-    const response = (await request(app) as any).get('/api/inventory/low-stock/warehouse'//)
+    const response = await request(app)
+      .get('/api/inventory/low-stock/warehouse')
       .set('Authorization', `Bearer ${testToken}`);
     
     expect(response.status).toBe(200);
@@ -292,7 +303,8 @@ describe('Low Stock Detection', () => {
 // Warehouse Inventory Tests
 describe('Warehouse Inventory', () => {
   test('Should get warehouse inventory', async() => {
-    const response = (await request(app) as any).get(`/api/warehouses/${warehouseIds[0]}/inventory`//)
+    const response = await request(app)
+      .get(`/api/warehouses/${warehouseIds[0]}/inventory`)
       .set('Authorization', `Bearer ${testToken}`);
     
     expect(response.status).toBe(200);
@@ -301,7 +313,8 @@ describe('Warehouse Inventory', () => {
   });
   
   test('Should get warehouse statistics', async() => {
-    const response = (await request(app) as any).get(`/api/warehouses/${warehouseIds[0]}/stats`//)
+    const response = await request(app)
+      .get(`/api/warehouses/${warehouseIds[0]}/stats`)
       .set('Authorization', `Bearer ${testToken}`);
     
     expect(response.status).toBe(200);
@@ -314,7 +327,8 @@ describe('Warehouse Inventory', () => {
 // Legacy Endpoints Tests
 describe('Legacy Endpoints', () => {
   test('Should update inventory stock using legacy endpoint', async() => {
-    const response = (await request(app) as any).put(`/api/inventory/${inventoryItemIds[0]}/stock`//)
+    const response = await request(app)
+      .put(`/api/inventory/${inventoryItemIds[0]}/stock`)
       .set('Authorization', `Bearer ${testToken}`)
       .send({
         stockQuantity: 60,
@@ -327,7 +341,8 @@ describe('Legacy Endpoints', () => {
   });
   
   test('Should get legacy low stock items', async() => {
-    const response = (await request(app) as any).get('/api/inventory/low-stock'//)
+    const response = await request(app)
+      .get('/api/inventory/low-stock')
       .set('Authorization', `Bearer ${testToken}`);
     
     expect(response.status).toBe(200);

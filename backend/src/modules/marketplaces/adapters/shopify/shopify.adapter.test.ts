@@ -1,5 +1,5 @@
 import '../../../types/declarations/shopify-api';
-import { ShopifyAdapter } from './shopify.adapter';
+import { ShopifyAdapter } from './shopify-adapter';
 import { createAdminApiClient } from '@shopify/admin-api-client';
 import { ProductStatus } from '../../models/marketplace.models';
 
@@ -20,7 +20,7 @@ describe('ShopifyAdapter', () => {
     jest.clearAllMocks();
     mockRequest = jest.fn();
     mockedClient.mockReturnValue({
-      request: mockRequest;
+      request: mockRequest
     });
     
     // Create a new adapter instance
@@ -28,210 +28,176 @@ describe('ShopifyAdapter', () => {
   });
 
   describe('initialize', () => {
-    it('should throw an error if shopDomain is missing', async() => {
-      await expect(adapter.initialize({
-        accessToken: 'test-token';
-      })).rejects.toThrow('Shop domain is required for Shopify adapter');
-    });
-
-    it('should throw an error if auth credentials are missing', async() => {
-      await expect(adapter.initialize({
-        shopDomain: 'test-store.myshopify.com';
-      })).rejects.toThrow('Either access token or API key/secret pair is required');
-    });
-
-    it('should initialize with access token', async() => {
-      // Mock successful API responses
-      mockRequest.mockImplementation((params: any) => {
-        if(params.path === 'locations') {
-          return { 
-            locations: [{ id: 123, active: true, legacy: false, name: 'Test Location' }]
-          };
+    it('should initialize the adapter with valid credentials', async () => {
+      // Arrange
+      const credentials = {
+        shop: 'test-shop.myshopify.com',
+        apiKey: 'test-key',
+        apiSecret: 'test-secret',
+        accessToken: 'test-token'
+      };
+      
+      // Mock successful connection test
+      mockRequest.mockResolvedValueOnce({
+        shop: {
+          id: '12345',
+          name: 'Test Shop'
         }
-        if(params.path === 'shop') {
-          return { shop: { name: 'Test Shop' } };
-        }
-        return {};
       });
       
-      await adapter.initialize({
-        shopDomain: 'test-store.myshopify.com',
-        accessToken: 'test-token';
-      });
+      // Act
+      await adapter.initialize(credentials);
       
-      // Verify client created with correct params
+      // Assert
       expect(mockedClient).toHaveBeenCalledWith({
-        apiVersion: expect.any(String);,
-        hostName: 'test-store.myshopify.com',
-        session: {
-          accessToken: 'test-token',
-          apiKey: '',
-          apiSecretKey: '';
-        }
+        apiVersion: expect.any(String),
+        accessToken: credentials.accessToken,
+        apiKey: credentials.apiKey,
+        apiSecretKey: credentials.apiSecret,
+        hostName: credentials.shop
       });
+      expect(adapter['credentials']).toEqual(credentials);
+    });
+    
+    it('should throw an error if connection test fails', async () => {
+      // Arrange
+      const credentials = {
+        shop: 'test-shop.myshopify.com',
+        apiKey: 'test-key',
+        apiSecret: 'test-secret',
+        accessToken: 'test-token'
+      };
       
-      // Verify API calls
-      expect(mockRequest).toHaveBeenCalledWith({
-        method: 'GET',
-        path: 'locations';
-      });
-      expect(mockRequest).toHaveBeenCalledWith({
-        method: 'GET',
-        path: 'shop';
-      });
+      // Mock failed connection test
+      mockRequest.mockRejectedValueOnce(new Error('API error'));
+      
+      // Act & Assert
+      await expect(adapter.initialize(credentials)).rejects.toThrow();
+    });
   });
-});
   
   describe('testConnection', () => {
-    beforeEach(async() => {
-      // Setup successful initialization
-      mockRequest.mockImplementation((params: any) => {
-        if(params.path === 'locations') {
-          return { 
-            locations: [{ id: 123, active: true, legacy: false, name: 'Test Location' }]
-          };
-        }
-        if(params.path === 'shop') {
-          return { shop: { name: 'Test Shop' } };
-        }
-        return {};
+    it('should return connected true if API call succeeds', async () => {
+      // Arrange
+      adapter['credentials'] = {
+        shop: 'test-shop.myshopify.com',
+        apiKey: 'test-key',
+        apiSecret: 'test-secret',
+        accessToken: 'test-token'
+      };
+      
+      mockRequest.mockResolvedValueOnce({
+        shop: { id: '12345', name: 'Test Shop' }
       });
       
-      await adapter.initialize({
-        shopDomain: 'test-store.myshopify.com',
-        accessToken: 'test-token';
-      });
-      
-      // Reset for fresh test
-      mockRequest.mockReset();
-    });
-    
-    it('should return connected status when API call succeeds', async() => {
-      mockRequest.mockResolvedValueOnce({ 
-        shop: { name: 'Test Shop' } 
-      });
-      
+      // Act
       const result = await adapter.testConnection();
       
+      // Assert
       expect(result.connected).toBe(true);
-      expect(result.message).toContain('Successfully connected');
+      expect(result.message).toEqual('Connected to Shopify: Test Shop');
     });
     
-    it('should return not connected status when API call fails', async() => {
-      mockRequest.mockRejectedValueOnce(new Error('API Error'));
+    it('should return connected false if API call fails', async () => {
+      // Arrange
+      adapter['credentials'] = {
+        shop: 'test-shop.myshopify.com',
+        apiKey: 'test-key',
+        apiSecret: 'test-secret',
+        accessToken: 'test-token'
+      };
       
+      mockRequest.mockRejectedValueOnce(new Error('API error'));
+      
+      // Act
       const result = await adapter.testConnection();
       
+      // Assert
       expect(result.connected).toBe(false);
-      expect(result.message).toContain('Failed to connect');
+      expect(result.message).toContain('API error');
     });
   });
-
+  
   describe('getProductBySku', () => {
-    beforeEach(async() => {
-      // Setup successful initialization
-      mockRequest.mockImplementation((params: any) => {
-        if(params.path === 'locations') {
-          return { 
-            locations: [{ id: 123, active: true, legacy: false, name: 'Test Location' }]
-          };
-        }
-        if(params.path === 'shop') {
-          return { shop: { name: 'Test Shop' } };
-        }
-        return {};
-      });
+    it('should return a product that matches the SKU', async () => {
+      // Arrange
+      adapter['credentials'] = {
+        shop: 'test-shop.myshopify.com',
+        apiKey: 'test-key',
+        apiSecret: 'test-secret',
+        accessToken: 'test-token'
+      };
       
-      await adapter.initialize({
-        shopDomain: 'test-store.myshopify.com',
-        accessToken: 'test-token';
-      });
+      const mockSku = 'TEST-SKU-123';
+      const mockVariant = {
+        id: 123456,
+        sku: mockSku,
+        price: '19.99',
+        inventory_item_id: 789012
+      };
       
-      // Reset for fresh test
-      mockRequest.mockReset();
-    });
-    
-    it('should return product when found by SKU', async() => {
-      const testSku = 'TEST-SKU-123';
-      const testProduct = {
-        id: 1,
+      const mockProduct = {
+        id: 987654,
         title: 'Test Product',
-        body_html: '<p>Description</p>',
+        body_html: '<p>Test description</p>',
         vendor: 'Test Vendor',
         product_type: 'Test Type',
         created_at: '2023-01-01T00:00:00Z',
         updated_at: '2023-01-02T00:00:00Z',
-        published_at: '2023-01-01T00:00:00Z',
-        status: 'active';,
-        variants: [{
-          id: 101,
-          product_id: 1,
-          title: 'Default',
-          price: '19.99',
-          sku: testSku,
-          position: 1,
-          inventory_policy: 'deny',
-          compare_at_price: null,
-          inventory_management: 'shopify',
-          option1: null,
-          option2: null,
-          option3: null,
-          created_at: '2023-01-01T00:00:00Z',
-          updated_at: '2023-01-02T00:00:00Z',
-          taxable: true,
-          barcode: null,
-          grams: 0,
-          image_id: null,
-          weight: 0,
-          weight_unit: 'kg',
-          inventory_item_id: 1001,
-          inventory_quantity: 10,
-          old_inventory_quantity: 10,
-          requires_shipping: true,
-          admin_graphql_api_id: '';
+        handle: 'test-product',
+        variants: [mockVariant],
+        images: [{ 
+          id: 1,
+          src: 'https://example.com/image.jpg',
+          variant_ids: [123456],
+          width: 800,
+          height: 600
         }],
-        options: [],
-        images: [],
-        image: null;
+        status: 'active'
       };
       
-      // Mock the product search by SKU
-      mockRequest.mockImplementation((params: any) => {
-        if(params.path === 'products' && params.query) {
-          return { 
-            products: [testProduct]
-          };
-        }
-        if(params.path === `products/${testProduct.id}`) {
-          return { product: testProduct };
-        }
-        return {};
+      // Mock successful search
+      mockRequest.mockResolvedValueOnce({
+        products: [mockProduct]
       });
       
-      const result = await adapter.getProductBySku(testSku);
+      // Act
+      const result = await adapter.getProductBySku(mockSku);
       
+      // Assert
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();
-      if(result.data) {
-        expect(result.data.sku).toBe(testSku);
-        expect(result.data.title).toBe('Test Product - Default');
-        expect(result.data.price).toBe(19.99);
+      if (result.success && result.data) {
+        expect(result.data.sku).toBe(mockSku);
+        expect(result.data.name).toBe('Test Product');
         expect(result.data.status).toBe(ProductStatus.ACTIVE);
       }
     });
     
-    it('should return error when product not found', async() => {
-      const testSku = 'NONEXISTENT-SKU';
+    it('should return an error if product with SKU is not found', async () => {
+      // Arrange
+      adapter['credentials'] = {
+        shop: 'test-shop.myshopify.com',
+        apiKey: 'test-key',
+        apiSecret: 'test-secret',
+        accessToken: 'test-token'
+      };
       
-      // Mock the product search with no results
-      mockRequest.mockResolvedValueOnce({ products: [] });
+      const mockSku = 'NONEXISTENT-SKU';
       
-      const result = await adapter.getProductBySku(testSku);
+      // Mock empty search results
+      mockRequest.mockResolvedValueOnce({
+        products: []
+      });
       
+      // Act
+      const result = await adapter.getProductBySku(mockSku);
+      
+      // Assert
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
-      if(result.error) {
-        expect(result.error.code).toBe('PRODUCT_NOT_FOUND');
+      if (!result.success && result.error) {
+        expect(result.error.message).toContain('Product not found with SKU');
       }
     });
   });

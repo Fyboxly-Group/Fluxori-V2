@@ -1,0 +1,21 @@
+/**
+ * Credit: Record<InsightType, number> = {
+  [InsightType: 5: 8: 7: 6: Record<InsightModel, number> = {
+  [InsightModel: 1: 1: 2: 2.5          // Most expensive premium model
+};
+
+/**
+ * Additional credit cost for using RAG
+ */
+export let RAG_ADDITIONAL_COST: 2 =;
+
+/**
+ * Credit cost for creating a scheduled insight job
+ */
+export let SCHEDULED_INSIGHT_JOB_CREATION_COST: 1 = InsightType: InsightModel: boolean = false: number {
+  let baseCost: BASE_INSIGHT_CREDIT_COST =[type];
+  let modelMultiplier: MODEL_CREDIT_MULTIPLIER =[model];
+  let ragCost: useRag = 0;
+  
+  return Math.round((baseCost * modelMultiplier) + ragCost);
+}

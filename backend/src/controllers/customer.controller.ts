@@ -82,6 +82,7 @@ export const getCustomers = async (req: Request, res: Response, next: NextFuncti
       data: customers,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -93,7 +94,7 @@ export const getCustomers = async (req: Request, res: Response, next: NextFuncti
  */
 export const getCustomerById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const customerId = req.params.id;
+    const customerId = req.params.id as any;
     
     if (!mongoose.Types.ObjectId.isValid(customerId)) {
       throw new ApiError(400, 'Invalid customer ID');
@@ -112,6 +113,7 @@ export const getCustomerById = async (req: Request, res: Response, next: NextFun
       data: customer,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -189,11 +191,11 @@ export const createCustomer = async (req: Request, res: Response, next: NextFunc
       await ActivityService.logActivity({
         description: `Customer "${companyName}" created`,
         entityType: 'user',
-        entityId: req.user._id,
+        entityId: (req.user as any)._id,
         action: 'create',
         status: 'completed',
-        userId: req.user._id,
-        metadata: { customerId: customer._id },
+        userId: (req.user as any)._id,
+        metadata: { customerId: (customer as any)._id },
       });
     }
     
@@ -202,6 +204,7 @@ export const createCustomer = async (req: Request, res: Response, next: NextFunc
       data: customer,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -213,7 +216,7 @@ export const createCustomer = async (req: Request, res: Response, next: NextFunc
  */
 export const updateCustomer = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const customerId = req.params.id;
+    const customerId = req.params.id as any;
     
     if (!mongoose.Types.ObjectId.isValid(customerId)) {
       throw new ApiError(400, 'Invalid customer ID');
@@ -255,11 +258,11 @@ export const updateCustomer = async (req: Request, res: Response, next: NextFunc
       await ActivityService.logActivity({
         description: `Customer "${customer.companyName}" updated`,
         entityType: 'user',
-        entityId: req.user._id,
+        entityId: (req.user as any)._id,
         action: 'update',
         status: 'completed',
-        userId: req.user._id,
-        metadata: { customerId: customer._id, updates },
+        userId: (req.user as any)._id,
+        metadata: { customerId: (customer as any)._id, updates },
       });
     }
     
@@ -268,6 +271,7 @@ export const updateCustomer = async (req: Request, res: Response, next: NextFunc
       data: customer,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -279,7 +283,7 @@ export const updateCustomer = async (req: Request, res: Response, next: NextFunc
  */
 export const deleteCustomer = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const customerId = req.params.id;
+    const customerId = req.params.id as any;
     
     if (!mongoose.Types.ObjectId.isValid(customerId)) {
       throw new ApiError(400, 'Invalid customer ID');
@@ -295,6 +299,16 @@ export const deleteCustomer = async (req: Request, res: Response, next: NextFunc
     // Check for dependent projects first
     // This would require importing Project model
     // const dependentProjects = await Project.countDocuments({ customer: customerId });
+
+// Authenticated request type
+type AuthenticatedRequest = Request & {
+  user?: {
+    id: string;
+    organizationId: string;
+    email?: string;
+    role?: string;
+  };
+};
     // if (dependentProjects > 0) {
     //   throw new ApiError(400, `Cannot delete customer: ${dependentProjects} project(s) are associated with this customer`);
     // }
@@ -310,10 +324,10 @@ export const deleteCustomer = async (req: Request, res: Response, next: NextFunc
       await ActivityService.logActivity({
         description: `Customer "${companyName}" deleted`,
         entityType: 'user',
-        entityId: req.user._id,
+        entityId: (req.user as any)._id,
         action: 'delete',
         status: 'completed',
-        userId: req.user._id,
+        userId: (req.user as any)._id,
         metadata: { customerId },
       });
     }
@@ -323,6 +337,7 @@ export const deleteCustomer = async (req: Request, res: Response, next: NextFunc
       message: 'Customer deleted successfully',
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -376,15 +391,15 @@ export const getCustomerStats = async (req: Request, res: Response, next: NextFu
     const stats = {
       totalCustomers: await Customer.countDocuments(),
       statusBreakdown: statusCounts.reduce((acc: any, curr) => {
-        acc[curr._id] = curr.count;
+        acc[(curr as any)._id] = curr.count;
         return acc;
       }, {}),
       industryBreakdown: industryCounts.reduce((acc: any, curr) => {
-        acc[curr._id] = curr.count;
+        acc[(curr as any)._id] = curr.count;
         return acc;
       }, {}),
       sizeBreakdown: sizeCounts.reduce((acc: any, curr) => {
-        acc[curr._id] = curr.count;
+        acc[(curr as any)._id] = curr.count;
         return acc;
       }, {}),
       totalContractValue: totalContractValue.length > 0 ? totalContractValue[0].total : 0,
@@ -397,6 +412,7 @@ export const getCustomerStats = async (req: Request, res: Response, next: NextFu
       data: stats,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };

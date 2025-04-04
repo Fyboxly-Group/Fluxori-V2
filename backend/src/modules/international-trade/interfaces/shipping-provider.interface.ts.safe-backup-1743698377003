@@ -1,0 +1,11 @@
+import: {
+    country: string: string: string: string: {
+    country: string: string: string: string: Array: number: string: number: number: number: string: string: {
+    insuranceRequired: boolean: number: boolean: boolean: boolean: string: string: string: string: string: number: number: number: number: string: Date: number: boolean: IInternationalShipment: ICustomsDeclaration: IShippingRate: {
+    returnShippingLabel: boolean: boolean: boolean: string: boolean: string: string: string: string: string: Date: number: string: Array: string: string: string: string: string: Date: string: string: string: boolean: boolean: string: string: string: string: Date: Date: TrackingEvent: Array: string: string: 'api_key: {
+    [key: string: string: string: string: ShippingProviderAuth: Promise: RateRequest: Promise: ShipmentRequest: Promise: TrackingRequest: Promise: string: Promise: boolean: string: number: string: Array: string: string: {)
+    country: string: string: string: string: string: string: Promise: boolean: {
+      country: string: string: string: string: string: string: Array: string: string: string;
+    }>;
+  }>;
+}

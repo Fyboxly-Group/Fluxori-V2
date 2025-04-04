@@ -1,108 +1,196 @@
 /**
- * Controller for scheduled insight jobs
+ * Scheduled Job Controller
+ * 
+ * Handles API requests for AI Insights scheduled jobs
  */
-
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { injectable, inject } from 'inversify';
 import { Logger } from 'winston';
-import { body, param, validationResult } from 'express-validator';
-import { InsightSchedulerService } from '../services/insight-scheduler.service';
-import { ScheduledJobRepository } from '../repositories/scheduled-job.repository';
-import { InsightType } from '../interfaces/insight.interface';
+import { 
+  IScheduledJobRepository, 
+  InsightType, 
+  IInsightSchedulerService 
+} from '../interfaces/insight.interface';
+import { AuthenticatedRequest } from './insight.controller';
 
+/**
+ * Interface for Scheduled Job Controller
+ */
+export interface IScheduledJobController {
+  getAll(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void>;
+  getById(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void>;
+  createJob(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void>;
+  updateJob(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void>;
+  deleteJob(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void>;
+  runJob(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void>;
+}
+
+/**
+ * Controller for scheduled job operations
+ */
 @injectable()
-export class ScheduledJobController {
+export class ScheduledJobController implements IScheduledJobController {
+  /**
+   * Constructor
+   */
   constructor(
     @inject('Logger') private logger: Logger,
-    @inject(InsightSchedulerService) private schedulerService: InsightSchedulerService,
-    @inject(ScheduledJobRepository) private jobRepository: ScheduledJobRepository
+    @inject('ScheduledJobRepository') private jobRepository: IScheduledJobRepository,
+    @inject('InsightSchedulerService') private schedulerService: IInsightSchedulerService
   ) {}
-  
+
   /**
-   * Validation rules for creating/updating a scheduled job
+   * Get all scheduled jobs
    */
-  public static validateScheduledJob = [
-    body('name')
-      .isString()
-      .trim()
-      .notEmpty()
-      .withMessage('Job name is required'),
-    body('description')
-      .optional()
-      .isString()
-      .withMessage('Description must be a string'),
-    body('type')
-      .isIn(Object.values(InsightType))
-      .withMessage('Invalid insight type'),
-    body('frequency')
-      .isIn(['daily', 'weekly', 'monthly', 'custom'])
-      .withMessage('Invalid frequency'),
-    body('cronExpression')
-      .optional()
-      .isString()
-      .withMessage('Cron expression must be a string'),
-    body('isActive')
-      .isBoolean()
-      .withMessage('isActive must be true or false'),
-    body('options')
-      .isObject()
-      .withMessage('Options must be an object'),
-    body('targetEntities')
-      .optional()
-      .isArray()
-      .withMessage('targetEntities must be an array'),
-    body('targetEntities.*.id')
-      .optional()
-      .isString()
-      .withMessage('Entity ID must be a string'),
-    body('targetEntities.*.type')
-      .optional()
-      .isString()
-      .withMessage('Entity type must be a string')
-  ];
-  
-  /**
-   * Create a new scheduled job
-   * @param req Express request
-   * @param res Express response
-   */
-  public createJob = async (req: Request, res: Response): Promise<void> => {
+  public async getAll(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      // Validate request
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res.status(400).json({
-          success: false,
-          errors: errors.array()
+      // Get user ID from authenticated request
+      if (!req.user || !req.user.id) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+      
+      const organizationId = req.user.organizationId;
+      
+      // Get data from repository
+      const jobs = await this.jobRepository.getByOrganization(organizationId);
+      
+      res.status(200).json({
+        success: true,
+        data: jobs
+      });
+    } catch (error) {
+      this.logger.error('Error getting scheduled jobs', { error });
+      next(error);
+    }
+  }
+
+  /**
+   * Get scheduled job by ID
+   */
+  public async getById(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      // Get user ID from authenticated request
+      if (!req.user || !req.user.id) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+      
+      const organizationId = req.user.organizationId;
+      const jobId = req.params.id;
+      
+      // Get data from repository
+      const job = await this.jobRepository.getById(jobId);
+      
+      // Check if job exists
+      if (!job) {
+        res.status(404).json({ success: false, message: 'Scheduled job not found' });
+        return;
+      }
+      
+      // Check if job belongs to user's organization
+      if (job.organizationId !== organizationId) {
+        res.status(403).json({ 
+          success: false, 
+          message: 'You do not have permission to access this scheduled job' 
         });
         return;
       }
       
-      // Get user and organization IDs from headers
-      const userId = req.headers['x-user-id'] as string;
-      const organizationId = req.headers['x-organization-id'] as string;
+      res.status(200).json({
+        success: true,
+        data: job
+      });
+    } catch (error) {
+      this.logger.error(`Error getting scheduled job by ID ${req.params.id}`, { error });
+      next(error);
+    }
+  }
+
+  /**
+   * Create a new scheduled job
+   */
+  public async createJob(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      // Get user ID from authenticated request
+      if (!req.user || !req.user.id) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
       
-      if (!userId || !organizationId) {
-        res.status(400).json({
-          success: false,
-          message: 'User ID and Organization ID are required'
+      const userId = req.user.id;
+      const organizationId = req.user.organizationId;
+      
+      const { 
+        name, 
+        description, 
+        insightType, 
+        frequency, 
+        dayOfWeek, 
+        dayOfMonth, 
+        pipelineOptions 
+      } = req.body;
+      
+      // Validate required fields
+      if (!name || !insightType || !frequency || !pipelineOptions) {
+        res.status(400).json({ 
+          success: false, 
+          message: 'Missing required fields: name, insightType, frequency, pipelineOptions' 
+        });
+        return;
+      }
+      
+      // Validate insight type
+      if (!Object.values(InsightType).includes(insightType)) {
+        res.status(400).json({ 
+          success: false, 
+          message: 'Invalid insight type',
+          validTypes: Object.values(InsightType)
+        });
+        return;
+      }
+      
+      // Validate frequency
+      if (!['daily', 'weekly', 'monthly'].includes(frequency)) {
+        res.status(400).json({ 
+          success: false, 
+          message: 'Invalid frequency. Must be one of: daily, weekly, monthly' 
+        });
+        return;
+      }
+      
+      // Additional validation for weekly frequency
+      if (frequency === 'weekly' && (dayOfWeek === undefined || dayOfWeek < 0 || dayOfWeek > 6)) {
+        res.status(400).json({ 
+          success: false, 
+          message: 'For weekly frequency, dayOfWeek is required and must be between 0-6 (Sunday is 0)' 
+        });
+        return;
+      }
+      
+      // Additional validation for monthly frequency
+      if (frequency === 'monthly' && (dayOfMonth === undefined || dayOfMonth < 1 || dayOfMonth > 31)) {
+        res.status(400).json({ 
+          success: false, 
+          message: 'For monthly frequency, dayOfMonth is required and must be between 1-31' 
         });
         return;
       }
       
       // Create the job
-      const jobData = {
-        name: req.body.name,
-        description: req.body.description,
-        type: req.body.type,
-        frequency: req.body.frequency,
-        cronExpression: req.body.cronExpression,
-        isActive: req.body.isActive,
-        options: req.body.options,
-        targetEntities: req.body.targetEntities
-      };
-      
-      const job = await this.schedulerService.createJob(organizationId, userId, jobData);
+      const job = await this.schedulerService.createScheduledJob({
+        name,
+        description,
+        insightType,
+        frequency,
+        dayOfWeek,
+        dayOfMonth,
+        isActive: true,
+        pipelineOptions,
+        organizationId,
+        userId,
+        createdBy: userId,
+      });
       
       res.status(201).json({
         success: true,
@@ -110,293 +198,221 @@ export class ScheduledJobController {
         data: job
       });
     } catch (error) {
-      this.logger.error('Error creating scheduled job:', error);
-      
-      res.status(error.message.includes('credits') ? 403 : 500).json({
-        success: false,
-        message: error.message
-      });
+      this.logger.error('Error creating scheduled job', { error });
+      next(error);
     }
-  };
-  
-  /**
-   * Get all scheduled jobs for organization
-   * @param req Express request
-   * @param res Express response
-   */
-  public getJobs = async (req: Request, res: Response): Promise<void> => {
-    try {
-      // Get organization ID from headers
-      const organizationId = req.headers['x-organization-id'] as string;
-      
-      if (!organizationId) {
-        res.status(400).json({
-          success: false,
-          message: 'Organization ID is required'
-        });
-        return;
-      }
-      
-      // Get limit from query params
-      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
-      
-      // Get jobs for organization
-      const jobs = await this.jobRepository.findByOrganizationId(organizationId, limit);
-      
-      res.json({
-        success: true,
-        data: jobs
-      });
-    } catch (error) {
-      this.logger.error('Error getting scheduled jobs:', error);
-      
-      res.status(500).json({
-        success: false,
-        message: 'Failed to retrieve scheduled jobs'
-      });
-    }
-  };
-  
-  /**
-   * Get scheduled job by ID
-   * @param req Express request
-   * @param res Express response
-   */
-  public getJobById = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const jobId = req.params.id;
-      
-      // Get organization ID from headers
-      const organizationId = req.headers['x-organization-id'] as string;
-      
-      if (!organizationId) {
-        res.status(400).json({
-          success: false,
-          message: 'Organization ID is required'
-        });
-        return;
-      }
-      
-      // Get the job
-      const job = await this.jobRepository.findById(jobId);
-      
-      if (!job) {
-        res.status(404).json({
-          success: false,
-          message: 'Scheduled job not found'
-        });
-        return;
-      }
-      
-      // Check organization access
-      if (job.organizationId !== organizationId) {
-        res.status(403).json({
-          success: false,
-          message: 'You do not have permission to access this job'
-        });
-        return;
-      }
-      
-      res.json({
-        success: true,
-        data: job
-      });
-    } catch (error) {
-      this.logger.error(`Error getting scheduled job ${req.params.id}:`, error);
-      
-      res.status(500).json({
-        success: false,
-        message: 'Failed to retrieve scheduled job'
-      });
-    }
-  };
-  
+  }
+
   /**
    * Update a scheduled job
-   * @param req Express request
-   * @param res Express response
    */
-  public updateJob = [
-    param('id').isString().withMessage('Job ID is required'),
-    ...ScheduledJobController.validateScheduledJob,
-    async (req: Request, res: Response): Promise<void> => {
-      try {
-        // Validate request
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-          res.status(400).json({
-            success: false,
-            errors: errors.array()
-          });
-          return;
-        }
-        
-        const jobId = req.params.id;
-        
-        // Get organization ID from headers
-        const organizationId = req.headers['x-organization-id'] as string;
-        
-        if (!organizationId) {
-          res.status(400).json({
-            success: false,
-            message: 'Organization ID is required'
-          });
-          return;
-        }
-        
-        // Update the job
-        const updateData = {
-          name: req.body.name,
-          description: req.body.description,
-          type: req.body.type,
-          frequency: req.body.frequency,
-          cronExpression: req.body.cronExpression,
-          isActive: req.body.isActive,
-          options: req.body.options,
-          targetEntities: req.body.targetEntities
-        };
-        
-        const updatedJob = await this.schedulerService.updateJob(jobId, organizationId, updateData);
-        
-        res.json({
-          success: true,
-          message: 'Scheduled job updated successfully',
-          data: updatedJob
-        });
-      } catch (error) {
-        this.logger.error(`Error updating scheduled job ${req.params.id}:`, error);
-        
-        res.status(500).json({
-          success: false,
-          message: error.message
-        });
-      }
-    }
-  ];
-  
-  /**
-   * Delete a scheduled job
-   * @param req Express request
-   * @param res Express response
-   */
-  public deleteJob = async (req: Request, res: Response): Promise<void> => {
+  public async updateJob(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
+      // Get user ID from authenticated request
+      if (!req.user || !req.user.id) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+      
+      const userId = req.user.id;
+      const organizationId = req.user.organizationId;
       const jobId = req.params.id;
       
-      // Get organization ID from headers
-      const organizationId = req.headers['x-organization-id'] as string;
+      // Get job to verify ownership
+      const job = await this.jobRepository.getById(jobId);
       
-      if (!organizationId) {
-        res.status(400).json({
-          success: false,
-          message: 'Organization ID is required'
+      // Check if job exists
+      if (!job) {
+        res.status(404).json({ success: false, message: 'Scheduled job not found' });
+        return;
+      }
+      
+      // Check if job belongs to user's organization
+      if (job.organizationId !== organizationId) {
+        res.status(403).json({ 
+          success: false, 
+          message: 'You do not have permission to update this scheduled job' 
+        });
+        return;
+      }
+      
+      const updateData: any = {
+        ...req.body,
+        updatedBy: userId
+      };
+      
+      // Recalculate next run time if frequency or day settings change
+      if (updateData.frequency || updateData.dayOfWeek !== undefined || updateData.dayOfMonth !== undefined) {
+        const frequency = updateData.frequency || job.frequency;
+        const dayOfWeek = updateData.dayOfWeek !== undefined ? updateData.dayOfWeek : job.dayOfWeek;
+        const dayOfMonth = updateData.dayOfMonth !== undefined ? updateData.dayOfMonth : job.dayOfMonth;
+        
+        // Validate frequency
+        if (!['daily', 'weekly', 'monthly'].includes(frequency)) {
+          res.status(400).json({ 
+            success: false, 
+            message: 'Invalid frequency. Must be one of: daily, weekly, monthly' 
+          });
+          return;
+        }
+        
+        // Additional validation for weekly frequency
+        if (frequency === 'weekly' && (dayOfWeek === undefined || dayOfWeek < 0 || dayOfWeek > 6)) {
+          res.status(400).json({ 
+            success: false, 
+            message: 'For weekly frequency, dayOfWeek is required and must be between 0-6 (Sunday is 0)' 
+          });
+          return;
+        }
+        
+        // Additional validation for monthly frequency
+        if (frequency === 'monthly' && (dayOfMonth === undefined || dayOfMonth < 1 || dayOfMonth > 31)) {
+          res.status(400).json({ 
+            success: false, 
+            message: 'For monthly frequency, dayOfMonth is required and must be between 1-31' 
+          });
+          return;
+        }
+        
+        const nextRunTime = this.schedulerService.calculateNextRunTime(
+          frequency, 
+          dayOfWeek, 
+          dayOfMonth
+        );
+        
+        updateData.nextRunTime = nextRunTime;
+      }
+      
+      // Update the job
+      const updatedJob = await this.jobRepository.update(jobId, updateData);
+      
+      res.status(200).json({
+        success: true,
+        message: 'Scheduled job updated successfully',
+        data: updatedJob
+      });
+    } catch (error) {
+      this.logger.error(`Error updating scheduled job ${req.params.id}`, { error });
+      next(error);
+    }
+  }
+
+  /**
+   * Delete a scheduled job
+   */
+  public async deleteJob(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      // Get user ID from authenticated request
+      if (!req.user || !req.user.id) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+      
+      const organizationId = req.user.organizationId;
+      const jobId = req.params.id;
+      
+      // Get job to verify ownership
+      const job = await this.jobRepository.getById(jobId);
+      
+      // Check if job exists
+      if (!job) {
+        res.status(404).json({ success: false, message: 'Scheduled job not found' });
+        return;
+      }
+      
+      // Check if job belongs to user's organization
+      if (job.organizationId !== organizationId) {
+        res.status(403).json({ 
+          success: false, 
+          message: 'You do not have permission to delete this scheduled job' 
         });
         return;
       }
       
       // Delete the job
-      const success = await this.schedulerService.deleteJob(jobId, organizationId);
+      await this.jobRepository.delete(jobId);
       
-      res.json({
+      res.status(200).json({
         success: true,
         message: 'Scheduled job deleted successfully'
       });
     } catch (error) {
-      this.logger.error(`Error deleting scheduled job ${req.params.id}:`, error);
-      
-      res.status(500).json({
-        success: false,
-        message: error.message
-      });
+      this.logger.error(`Error deleting scheduled job ${req.params.id}`, { error });
+      next(error);
     }
-  };
-  
+  }
+
   /**
-   * Run a scheduled job now
-   * @param req Express request
-   * @param res Express response
+   * Run a scheduled job immediately
    */
-  public runJobNow = async (req: Request, res: Response): Promise<void> => {
+  public async runJob(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
+      // Get user ID from authenticated request
+      if (!req.user || !req.user.id) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+      
+      const organizationId = req.user.organizationId;
       const jobId = req.params.id;
       
-      // Get organization ID from headers
-      const organizationId = req.headers['x-organization-id'] as string;
+      // Get job to verify ownership
+      const job = await this.jobRepository.getById(jobId);
       
-      if (!organizationId) {
-        res.status(400).json({
-          success: false,
-          message: 'Organization ID is required'
+      // Check if job exists
+      if (!job) {
+        res.status(404).json({ success: false, message: 'Scheduled job not found' });
+        return;
+      }
+      
+      // Check if job belongs to user's organization
+      if (job.organizationId !== organizationId) {
+        res.status(403).json({ 
+          success: false, 
+          message: 'You do not have permission to run this scheduled job' 
         });
         return;
       }
       
-      // Run the job
-      const insightId = await this.schedulerService.runJobNow(jobId, organizationId);
+      // Run the job (this might take some time)
+      // Return a response immediately and run in background
       
-      res.json({
+      // First update status to processing
+      res.status(202).json({
         success: true,
-        message: 'Scheduled job executed successfully',
+        message: 'Scheduled job execution started',
         data: {
-          insightId
+          jobId: job.id
         }
       });
-    } catch (error) {
-      this.logger.error(`Error running scheduled job ${req.params.id}:`, error);
       
-      res.status(500).json({
-        success: false,
-        message: error.message
-      });
-    }
-  };
-  
-  /**
-   * Get jobs by type
-   * @param req Express request
-   * @param res Express response
-   */
-  public getJobsByType = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const type = req.params.type as InsightType;
-      
-      // Validate insight type
-      if (!Object.values(InsightType).includes(type)) {
-        res.status(400).json({
-          success: false,
-          message: 'Invalid insight type'
+      // Then execute the job asynchronously
+      this.schedulerService.runJob(jobId)
+        .then(insight => {
+          this.logger.info(`Job ${jobId} executed successfully. Insight ID: ${insight?.id}`);
+        })
+        .catch(error => {
+          this.logger.error(`Error executing job ${jobId}`, { error });
         });
-        return;
-      }
       
-      // Get organization ID from headers
-      const organizationId = req.headers['x-organization-id'] as string;
-      
-      if (!organizationId) {
-        res.status(400).json({
-          success: false,
-          message: 'Organization ID is required'
-        });
-        return;
-      }
-      
-      // Get limit from query params
-      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
-      
-      // Get jobs by type
-      const jobs = await this.jobRepository.findByType(organizationId, type, limit);
-      
-      res.json({
-        success: true,
-        data: jobs
-      });
     } catch (error) {
-      this.logger.error(`Error getting scheduled jobs by type ${req.params.type}:`, error);
-      
-      res.status(500).json({
-        success: false,
-        message: 'Failed to retrieve scheduled jobs'
-      });
+      this.logger.error(`Error running scheduled job ${req.params.id}`, { error });
+      next(error);
     }
-  };
+  }
 }
+
+/**
+ * Factory function to create the controller with dependencies
+ */
+export const createScheduledJobController = (
+  logger: Logger,
+  jobRepository: IScheduledJobRepository,
+  schedulerService: IInsightSchedulerService
+): IScheduledJobController => {
+  return new ScheduledJobController(
+    logger,
+    jobRepository,
+    schedulerService
+  );
+};

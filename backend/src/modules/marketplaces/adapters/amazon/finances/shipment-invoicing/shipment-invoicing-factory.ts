@@ -1,46 +1,41 @@
 /**
- * Factory for creating Shipment Invoicing API module
+ * Amazon SP-API Shipment Invoicing Module Factory
+ * 
+ * Factory class for creating and registering Shipment Invoicing API module instances.
  */
 
-import { ShipmentInvoicingModule } from './shipment-invoicing';
+import { ApiRequestFunction } from '../../core/api-module';
 import { ModuleRegistry } from '../../core/module-registry';
-import { getDefaultModuleVersion } from '../../core/module-definitions';
+import { getDefaultModuleVersion } from '../../core/registry-helper';
+import { ShipmentInvoicingModule } from './shipment-invoicing';
 
 /**
- * Factory for creating Shipment Invoicing API module
+ * Creates and registers a Shipment Invoicing module instance
+ * 
+ * @param registry Module registry to register the module with
+ * @param makeApiRequest Function to make API requests
+ * @param marketplaceId Marketplace ID
+ * @param apiVersion Optional API version (defaults to latest version if not specified)
+ * @returns The created Shipment Invoicing module instance
  */
-export class ShipmentInvoicingModuleFactory {
-  /**
-   * Create a Shipment Invoicing module and register it with the provided registry
-   * @param makeApiRequest Function to make API requests
-   * @param marketplaceId Marketplace ID
-   * @param registry Module registry to register with
-   * @param apiVersion Optional API version (uses default if not provided)
-   * @returns The created module
-   */
-  public static createShipmentInvoicingModule(
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string,
-    registry: ModuleRegistry,
-    apiVersion?: string
-  ): ShipmentInvoicingModule {
-    // Use provided version or get the default
-    const version = apiVersion || getDefaultModuleVersion('shipmentInvoicing') || 'v0';
-    
-    // Create the module
-    const module = new ShipmentInvoicingModule(
-      version,
-      makeApiRequest,
-      marketplaceId
-    );
-    
-    // Register the module
-    registry.registerModule(module);
-    
-    return module;
-  }
+export function createShipmentInvoicingModule(
+  registry: ModuleRegistry,
+  makeApiRequest: ApiRequestFunction,
+  marketplaceId: string,
+  apiVersion?: string
+): ShipmentInvoicingModule {
+  // Use provided version or get the default
+  const version = apiVersion || getDefaultModuleVersion('shipmentInvoicing') || '2020-09-04';
+  
+  // Create the module
+  const module = new ShipmentInvoicingModule(
+    version,
+    makeApiRequest,
+    marketplaceId
+  );
+  
+  // Register the module
+  registry.registerModule(module);
+  
+  return module;
 }

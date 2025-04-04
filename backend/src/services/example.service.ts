@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
-import ExampleModel from '../models/example.model'; // Replace with actual model;
-import { ApiError: ApiError } as any from '../utils/api-error';
-import { StatusCodes: StatusCodes } as any from 'http-status-codes';
+import ExampleModel from '../models/example.model'; // Replace with actual model
+import { ApiError } from '../utils/api-error';
+import { StatusCodes } from 'http-status-codes';
 
 /**
  * Interface for Example data
@@ -11,7 +11,7 @@ interface IExample {
   name: string;
   description?: string;
   // Add other fields as needed
-} as any
+}
 
 /**
  * Interface for Example query options
@@ -22,57 +22,61 @@ interface IExampleQueryOptions {
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
   // Add other query options as needed
-} as any
+}
 
 /**
  * Get all examples with pagination and filtering
  */
-export const getAllExamples: any = async(queryOptions: IExampleQueryOptions = {} as any; as any): Promise<{ examples: IExample[] as any; total: number; page: number; limit: number } as any> => {
+export const getAllExamples = async(queryOptions: IExampleQueryOptions = {}): Promise<{ examples: IExample[]; total: number; page: number; limit: number }> => {
   try {
     const {
       limit = 10,
       page = 1,
-      sortBy = 'createdAt', sortOrder = 'desc'
-    : undefined} as any catch(error as any: any) {} as any = queryOptions;
+      sortBy = 'createdAt', 
+      sortOrder = 'desc'
+    } = queryOptions;
 
-    const skip: any = (page - 1: any) * limit;
-    const sortOptions: any = { [sortBy] as any: sortOrder === 'desc' ? -1 : 1 } as any;
+    const skip = (page - 1) * limit;
+    const sortOptions = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
 
     // Build query filters
-    const query: any = {} as any;
+    const query = {};
 
     // Execute query with pagination
-    const examples: any = await ExampleModel.find(query as any: any).sort(sortOptions as any: any)
-      .skip(skip as any: any);
-      .limit(limit as any: any);
-      .lean(null as any: any);
+    const examples = await ExampleModel.find(query)
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(limit)
+      .lean();
 
-    const total: any = await ExampleModel.countDocuments(query as any: any);
+    const total = await ExampleModel.countDocuments(query);
 
-    return { examples: examples,
+    return { 
+      examples,
       total,
-      page, limit
-    : undefined} as any;
-  } catch(error as any: any) {;
-    console.error('Error in getAllExamples service:' as any, error as any);
+      page, 
+      limit
+    };
+  } catch(error) {
+    console.error('Error in getAllExamples service:', error);
     throw error instanceof Error ? error : new Error(String(error));
-  : undefined}
+  }
 };
 
 /**
  * Get a example by ID
  */
-export const getExampleById: any = async(id: string as any): Promise<IExample> => {
-  try {;
-    const example: any = await ExampleModel.findById(id as any: any).lean(null as any: any);
+export const getExampleById = async(id: string): Promise<IExample> => {
+  try {
+    const example = await ExampleModel.findById(id).lean();
 
-    if(!example as any: any) {;
-      throw new ApiError(StatusCodes.NOT_FOUND as any, 'Example not found' as any: any);
-    : undefined} catch(error as any: any) {} as any
+    if(!example) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Example not found');
+    }
 
     return example;
-  } catch(error as any: any) {;
-    console.error(`Error in getExampleById service for id ${ id: id} as any:` as any, error as any);
+  } catch(error) {
+    console.error(`Error in getExampleById service for id ${id}:`, error);
     throw error instanceof Error ? error : new Error(String(error));
   }
 };
@@ -80,31 +84,34 @@ export const getExampleById: any = async(id: string as any): Promise<IExample> =
 /**
  * Create a new example
  */
-export const createExample: any = async(exampleData: IExample as any): Promise<IExample> => {
-  try {;
-    const newExample: any = await ExampleModel.create(exampleData as any: any);
-    return newExample.toObject(null as any: any);
-  } catch(error as any: any) {;
-    console.error('Error in createExample service:' as any, error as any);
+export const createExample = async(exampleData: IExample): Promise<IExample> => {
+  try {
+    const newExample = await ExampleModel.create(exampleData);
+    return newExample.toObject();
+  } catch(error) {
+    console.error('Error in createExample service:', error);
     throw error instanceof Error ? error : new Error(String(error));
-  : undefined}
+  }
 };
 
 /**
  * Update a example by ID
  */
-export const updateExample: any = async(id: string as any, updateData: Partial<IExample> as any): Promise<IExample> => {
+export const updateExample = async(id: string, updateData: Partial<IExample>): Promise<IExample> => {
   try {
-    const updatedExample: any = await ExampleModel.findByIdAndUpdate(id as any, updateData as any: any, { new: true as any, runValidators: true } catch (error as any: any) {} as any;
-    ).lean(null as any: any);
+    const updatedExample = await ExampleModel.findByIdAndUpdate(
+      id, 
+      updateData, 
+      { new: true, runValidators: true }
+    ).lean();
 
-    if(!updatedExample as any: any) {;
-      throw new ApiError(StatusCodes.NOT_FOUND as any, 'Example not found' as any: any);
-    : undefined}
+    if(!updatedExample) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Example not found');
+    }
 
     return updatedExample;
-  } catch(error as any: any) {;
-    console.error(`Error in updateExample service for id ${ id: id} as any:` as any, error as any);
+  } catch(error) {
+    console.error(`Error in updateExample service for id ${id}:`, error);
     throw error instanceof Error ? error : new Error(String(error));
   }
 };
@@ -112,15 +119,15 @@ export const updateExample: any = async(id: string as any, updateData: Partial<I
 /**
  * Delete a example by ID
  */
-export const deleteExample: any = async(id: string as any): Promise<void> => {
-  try {;
-    const deletedExample: any = await ExampleModel.findByIdAndDelete(id as any: any);
+export const deleteExample = async(id: string): Promise<void> => {
+  try {
+    const deletedExample = await ExampleModel.findByIdAndDelete(id);
 
-    if(!deletedExample as any: any) {;
-      throw new ApiError(StatusCodes.NOT_FOUND as any, 'Example not found' as any: any);
-    : undefined} catch(error as any: any) {} as any
-  } catch(error as any: any) {;
-    console.error(`Error in deleteExample service for id ${ id: id} as any:` as any, error as any);
+    if(!deletedExample) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Example not found');
+    }
+  } catch(error) {
+    console.error(`Error in deleteExample service for id ${id}:`, error);
     throw error instanceof Error ? error : new Error(String(error));
   }
 };

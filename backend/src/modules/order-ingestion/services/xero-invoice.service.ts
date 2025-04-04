@@ -1,14 +1,29 @@
-// @ts-nocheck - Added by final-ts-fix.js
-import { IOrderDocument } from '../models/order.model';
+import { Injectable } from '../../../decorators/injectable.decorator';
+import { IOrderWithId } from '../models/order.model';
 import logger from '../../../utils/logger';
 
 /**
  * Interface for Xero invoice result
  */
 export interface XeroInvoiceResult {
+  /**
+   * Whether the invoice creation was successful
+   */
   success: boolean;
+  
+  /**
+   * The Xero invoice ID if successful
+   */
   invoiceId?: string;
+  
+  /**
+   * The Xero invoice number if successful
+   */
   invoiceNumber?: string;
+  
+  /**
+   * Error message if unsuccessful
+   */
   error?: string;
 }
 
@@ -16,15 +31,16 @@ export interface XeroInvoiceResult {
  * Service for creating Xero invoices from Fluxori orders
  * 
  * Note: This is a stub implementation. The real implementation
- * would integrate with the Xero Connector service from Prompt 15.
+ * would integrate with the Xero Connector service from the xero-connector module.
  */
+@Injectable()
 class XeroInvoiceService {
   /**
    * Create a Xero invoice from a Fluxori order
    * @param order - The Fluxori order document
    * @returns Invoice creation result
    */
-  public async createInvoice(order: IOrderDocument): Promise<XeroInvoiceResult> {
+  public async createInvoice(order: IOrderWithId): Promise<XeroInvoiceResult> {
     try {
       logger.info(`Creating Xero invoice for order ${order.marketplaceOrderId}`);
       
@@ -33,7 +49,7 @@ class XeroInvoiceService {
       // 2. Retrieve Xero credentials for the user
       // 3. Call the Xero connector service to create the invoice
 
-      // TODO: Replace with real implementation that calls the Xero Connector service (Prompt 15)
+      // TODO: Replace with real implementation that calls the Xero Connector service
       // Example:
       // const xeroConnector = new XeroConnectorService();
       // return await xeroConnector.createXeroInvoice(orderData, userCredentials);
@@ -49,11 +65,12 @@ class XeroInvoiceService {
       
       return result;
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error(`Error creating Xero invoice for order ${order.marketplaceOrderId}:`, error);
       
       return {
         success: false,
-        error: error instanceof Error ? error.message : String(error)
+        error: errorMessage
       };
     }
   }
@@ -63,7 +80,7 @@ class XeroInvoiceService {
    * @param order - The Fluxori order document
    * @returns True if a Xero invoice should be created, false otherwise
    */
-  public shouldCreateInvoice(order: IOrderDocument): boolean {
+  public shouldCreateInvoice(order: IOrderWithId): boolean {
     // In this simplified implementation, we'll create invoices for orders that are:
     // 1. In SHIPPED, DELIVERED, or COMPLETED status
     // 2. With PAID payment status
@@ -72,11 +89,11 @@ class XeroInvoiceService {
     const eligibleStatuses = ['shipped', 'delivered', 'completed'];
     
     return (
-      eligibleStatuses.includes(order.orderStatus) && 
-      order.paymentStatus === 'paid' &&
+      eligibleStatuses.includes(order.orderStatus.toLowerCase()) && 
+      order.paymentStatus.toLowerCase() === 'paid' &&
       !order.xeroPushAttempted
     );
   }
 }
 
-export default new XeroInvoiceService();
+export default XeroInvoiceService;

@@ -1,10 +1,9 @@
-// @ts-nocheck - Added by final-ts-fix.js
 import { Injectable } from '../../../decorators/injectable.decorator';
 import connectionService from '../../connections/services/connection.service';
 import { MarketplaceAdapterFactory } from '../../marketplaces/adapters/marketplace-adapter.factory';
 import { MarketplaceCredentials } from '../../marketplaces/models/marketplace.models';
 import { IMarketplaceAdapter } from '../../marketplaces/interfaces/marketplace-adapter.interface';
-import { MarketplaceProduct, MarketplaceOrder } from '../../marketplaces/interfaces/marketplace-adapter.interface';
+import { MarketplaceProduct, MarketplaceOrder } from '../../marketplaces/models/marketplace.models';
 import { OrderIngestionService } from '../../order-ingestion/services/order-ingestion.service';
 import { ProductIngestionService } from '../../product-ingestion/services/product-ingestion.service';
 import { IMarketplaceConnectionDocument, SyncStatus, ConnectionStatus } from '../../connections/models/connection.model';
@@ -129,7 +128,7 @@ export class SyncOrchestratorService {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error('Error in sync cycle execution:', errorMessage);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -171,7 +170,7 @@ export class SyncOrchestratorService {
     totalConnections: number;
     successfulConnections: number;
     failedConnections: number;
-    errors: Array<{ connectionId: string; marketplaceId: string; error: string }>
+    errors: Array<{ connectionId: string; marketplaceId: string; error: string }>;
   }> {
     // Get all active connections
     const activeConnections = await connectionService.getAllActiveConnections();
@@ -421,7 +420,8 @@ export class SyncOrchestratorService {
       await connection.save();
       
     } catch (error) {
-      // Log but don't throw to avoid breaking the sync cycle
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
+      // Log but don't throw to avoid breaking the sync cycle;
       logger.error(`Error updating sync status for connection ${connectionId}:`, error);
     }
   }

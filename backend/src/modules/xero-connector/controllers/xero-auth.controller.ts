@@ -1,4 +1,3 @@
-// @ts-nocheck - Added by final-ts-fix.js
 import { Request, Response } from 'express';
 import { XeroAuthService } from "../services/xero-auth.service";
 const xeroAuthService = new XeroAuthService();
@@ -39,7 +38,7 @@ class XeroAuthController {
       console.error('Error initiating Xero auth:', error);
       res.status(500).json({
         success: false,
-        message: `Error initiating Xero authentication: ${error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)}`,
+        message: `Error initiating Xero authentication: ${error instanceof Error ? error.message : String(error)}`,
       });
     }
   }
@@ -81,7 +80,7 @@ class XeroAuthController {
       console.error('Error handling Xero callback:', error);
       res.status(500).json({
         success: false,
-        message: `Error handling Xero callback: ${error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)}`,
+        message: `Error handling Xero callback: ${error instanceof Error ? error.message : String(error)}`,
       });
     }
   }
@@ -140,7 +139,7 @@ class XeroAuthController {
       console.error('Error disconnecting Xero:', error);
       res.status(500).json({
         success: false,
-        message: `Error disconnecting Xero: ${error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)}`,
+        message: `Error disconnecting Xero: ${error instanceof Error ? error.message : String(error)}`,
       });
     }
   }
@@ -156,6 +155,7 @@ export const initiateAuth = async (req, res) => {
     // TODO: Implement initiateAuth functionality
     return res.status(200).json({ message: 'initiateAuth functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error in initiateAuth:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -169,6 +169,7 @@ export const handleCallback = async (req, res) => {
     // TODO: Implement handleCallback functionality
     return res.status(200).json({ message: 'handleCallback functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error in handleCallback:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -182,6 +183,7 @@ export const authSuccess = async (req, res) => {
     // TODO: Implement authSuccess functionality
     return res.status(200).json({ message: 'authSuccess functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error in authSuccess:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -195,6 +197,7 @@ export const disconnect = async (req, res) => {
     // TODO: Implement disconnect functionality
     return res.status(200).json({ message: 'disconnect functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error in disconnect:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -208,6 +211,7 @@ export const createInvoice = async (req, res) => {
     // TODO: Implement createInvoice functionality
     return res.status(200).json({ message: 'createInvoice functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error in createInvoice:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -221,6 +225,7 @@ export const syncOrderToXero = async (req, res) => {
     // TODO: Implement syncOrderToXero functionality
     return res.status(200).json({ message: 'syncOrderToXero functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error in syncOrderToXero:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -234,6 +239,7 @@ export const getContacts = async (req, res) => {
     // TODO: Implement getContacts functionality
     return res.status(200).json({ message: 'getContacts functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error in getContacts:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -247,6 +253,7 @@ export const getContactById = async (req, res) => {
     // TODO: Implement getContactById functionality
     return res.status(200).json({ message: 'getContactById functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error in getContactById:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -260,6 +267,7 @@ export const createContact = async (req, res) => {
     // TODO: Implement createContact functionality
     return res.status(200).json({ message: 'createContact functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error in createContact:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -273,6 +281,7 @@ export const updateContact = async (req, res) => {
     // TODO: Implement updateContact functionality
     return res.status(200).json({ message: 'updateContact functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error in updateContact:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -286,6 +295,7 @@ export const syncCustomerToXero = async (req, res) => {
     // TODO: Implement syncCustomerToXero functionality
     return res.status(200).json({ message: 'syncCustomerToXero functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error in syncCustomerToXero:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -299,6 +309,7 @@ export const getAccounts = async (req, res) => {
     // TODO: Implement getAccounts functionality
     return res.status(200).json({ message: 'getAccounts functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error in getAccounts:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -312,6 +323,7 @@ export const getTaxRates = async (req, res) => {
     // TODO: Implement getTaxRates functionality
     return res.status(200).json({ message: 'getTaxRates functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error in getTaxRates:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -325,6 +337,7 @@ export const createAccountMapping = async (req, res) => {
     // TODO: Implement createAccountMapping functionality
     return res.status(200).json({ message: 'createAccountMapping functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error in createAccountMapping:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -338,6 +351,7 @@ export const getAccountMappings = async (req, res) => {
     // TODO: Implement getAccountMappings functionality
     return res.status(200).json({ message: 'getAccountMappings functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error in getAccountMappings:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -351,6 +365,7 @@ export const deleteAccountMapping = async (req, res) => {
     // TODO: Implement deleteAccountMapping functionality
     return res.status(200).json({ message: 'deleteAccountMapping functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error in deleteAccountMapping:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -364,6 +379,7 @@ export const getConfig = async (req, res) => {
     // TODO: Implement getConfig functionality
     return res.status(200).json({ message: 'getConfig functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error in getConfig:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -377,6 +393,7 @@ export const updateConfig = async (req, res) => {
     // TODO: Implement updateConfig functionality
     return res.status(200).json({ message: 'updateConfig functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error in updateConfig:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -390,6 +407,7 @@ export const testConnection = async (req, res) => {
     // TODO: Implement testConnection functionality
     return res.status(200).json({ message: 'testConnection functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error in testConnection:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -403,6 +421,7 @@ export const startSync = async (req, res) => {
     // TODO: Implement startSync functionality
     return res.status(200).json({ message: 'startSync functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error in startSync:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -416,6 +435,7 @@ export const getSyncStatus = async (req, res) => {
     // TODO: Implement getSyncStatus functionality
     return res.status(200).json({ message: 'getSyncStatus functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error in getSyncStatus:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -429,6 +449,7 @@ export const getRecentSyncs = async (req, res) => {
     // TODO: Implement getRecentSyncs functionality
     return res.status(200).json({ message: 'getRecentSyncs functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error in getRecentSyncs:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -442,6 +463,7 @@ export const getReconciliationStatus = async (req, res) => {
     // TODO: Implement getReconciliationStatus functionality
     return res.status(200).json({ message: 'getReconciliationStatus functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error in getReconciliationStatus:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -455,6 +477,7 @@ export const handleWebhook = async (req, res) => {
     // TODO: Implement handleWebhook functionality
     return res.status(200).json({ message: 'handleWebhook functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error in handleWebhook:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -468,6 +491,7 @@ export const getConnectionStatus = async (req, res) => {
     // TODO: Implement getConnectionStatus functionality
     return res.status(200).json({ message: 'getConnectionStatus functionality not implemented yet' });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error in getConnectionStatus:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }

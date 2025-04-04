@@ -1,46 +1,35 @@
 /**
- * Factory for creating Application Integrations API module
+ * Factory function for creating an ApplicationIntegrationsModule instance
+ * 
+ * @param apiRequest Function to make API requests
+ * @param marketplaceId Marketplace ID
+ * @param registry Module registry
+ * @param apiVersion Optional API version
+ * @returns ApplicationIntegrationsModule instance
  */
-
-import { ApplicationIntegrationsModule } from './application-integrations';
 import { ModuleRegistry } from '../../core/module-registry';
-import { getDefaultModuleVersion } from '../../core/module-definitions';
+import { ApplicationIntegrationsModule } from './application-integrations';
+import { getModuleDefaultVersion } from '../../core/registry-helper';
+import { ApiRequestFunction } from '../../core/api-module';
 
-/**
- * Factory for creating Application Integrations API module
- */
-export class ApplicationIntegrationsModuleFactory {
-  /**
-   * Create an Application Integrations module and register it with the provided registry
-   * @param makeApiRequest Function to make API requests
-   * @param marketplaceId Marketplace ID
-   * @param registry Module registry to register with
-   * @param apiVersion Optional API version (uses default if not provided)
-   * @returns The created module
-   */
-  public static createApplicationIntegrationsModule(
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string,
-    registry: ModuleRegistry,
-    apiVersion?: string
-  ): ApplicationIntegrationsModule {
-    // Use provided version or get the default
-    const version = apiVersion || getDefaultModuleVersion('applicationIntegrations') || '2024-04-01';
-    
-    // Create the module
-    const module = new ApplicationIntegrationsModule(
-      version,
-      makeApiRequest,
-      marketplaceId
-    );
-    
-    // Register the module
-    registry.registerModule(module);
-    
-    return module;
-  }
+export function createApplicationIntegrationsModule(
+  apiRequest: ApiRequestFunction,
+  marketplaceId: string,
+  registry: ModuleRegistry,
+  apiVersion?: string
+): ApplicationIntegrationsModule {
+  // Use provided version or get the default
+  const version = apiVersion || getModuleDefaultVersion('applicationIntegrations') || '2024-04-01';
+  
+  // Create the module
+  const module = new ApplicationIntegrationsModule(
+    version,
+    apiRequest,
+    marketplaceId
+  );
+  
+  // Register the module
+  registry.registerModule('applicationIntegrations', module);
+  
+  return module;
 }

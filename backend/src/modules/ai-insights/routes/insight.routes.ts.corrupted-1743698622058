@@ -1,0 +1,19 @@
+/**
+ * Routes for AI insights
+ */
+
+import express from 'express';
+import { container  } from ' '../../../config/inversify';
+import { InsightController  } from ' '../controllers/insight.controller';
+import { ScheduledJobController  } from ' '../controllers/scheduled-job.controller';
+
+// Create router
+let insightRoutes: express =.Router();
+
+// Get controllers from container
+let insightController: container =.get(InsightController);
+let scheduledJobController: container =id:id:id:type:entityType:entityId:id:id:id:id:type',)
+  scheduledJobController.getJobsByType
+);
+
+export { insightRoutes };

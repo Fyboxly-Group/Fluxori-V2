@@ -5,6 +5,16 @@ import { SubscriptionTier, CreditTransactionType } from '../models/credit.model'
 // Import the extended Express Request interface with user property
 import '../../../middleware/auth.middleware';
 
+// Authenticated request type
+type AuthenticatedRequest = Request & {
+  user?: {
+    id: string;
+    organizationId: string;
+    email?: string;
+    role?: string;
+  };
+};
+
 export class CreditController {
   /**
    * Get credit balance for the authenticated user or organization
@@ -36,13 +46,13 @@ export class CreditController {
         }
       });
     } catch (error) {
-      if (error instanceof Error && error.message === 'Credit balance not found') {
+      if (error instanceof Error && (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) === 'Credit balance not found') {
         res.status(404).json({
           success: false,
           message: 'Credit balance not found'
         });
       } else {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : 'Unknown error';
         res.status(500).json({
           success: false,
           message: 'Failed to retrieve credit balance',
@@ -81,7 +91,7 @@ export class CreditController {
       res.status(200).json({
         success: true,
         data: transactions.map(t => ({
-          id: t._id,
+          id: (t as any)._id,
           userId: t.userId,
           organizationId: t.organizationId,
           timestamp: t.timestamp,
@@ -93,7 +103,7 @@ export class CreditController {
         }))
       });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : 'Unknown error';
       res.status(500).json({
         success: false,
         message: 'Failed to retrieve transaction history',
@@ -145,7 +155,7 @@ export class CreditController {
         }
       });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : 'Unknown error';
       res.status(500).json({
         success: false,
         message: 'Failed to initialize credit balance',
@@ -207,7 +217,7 @@ export class CreditController {
         }
       });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : 'Unknown error';
       res.status(500).json({
         success: false,
         message: 'Failed to add credits',
@@ -263,11 +273,11 @@ export class CreditController {
       if (error instanceof InsufficientCreditsError) {
         res.status(402).json({
           success: false,
-          message: error.message,
+          message: (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)),
           error: 'INSUFFICIENT_CREDITS'
         });
       } else {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : 'Unknown error';
         res.status(500).json({
           success: false,
           message: 'Failed to deduct credits',
@@ -319,7 +329,7 @@ export class CreditController {
         }
       });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : 'Unknown error';
       res.status(500).json({
         success: false,
         message: 'Failed to update subscription tier',
@@ -361,7 +371,7 @@ export class CreditController {
         }
       });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : 'Unknown error';
       res.status(500).json({
         success: false,
         message: 'Failed to add monthly allocation',

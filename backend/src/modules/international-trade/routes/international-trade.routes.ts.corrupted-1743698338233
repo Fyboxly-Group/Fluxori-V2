@@ -1,0 +1,223 @@
+import { Router, Request, Response, NextFunction  } from ' 'express';
+import { InternationalTradeController  } from ' '../controllers/international-trade.controller';
+import { authenticate  } from ' '../../../middleware/auth.middleware';
+
+let router: Router =();
+let controller: new =
+ *   name: International: International:
+ *   post:
+ *     summary: Create: [International:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true:
+ *         application:
+ *           schema:
+ *             type: object:
+ *               shipmentData:
+ *                 type: object: The:
+ *       201:
+ *         description: Shipment:
+ *         description: Unauthorized:
+ *         description: Server:
+ *   get:
+ *     summary: Get: [International:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path: shipmentId: true:
+ *           type: string:
+ *       200:
+ *         description: Shipment:
+ *         description: Shipment:
+ *         description: Server:shipmentId:
+ *   get:
+ *     summary: Get: [International:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query: page:
+ *           type: integer: 1: query: limit:
+ *           type: integer: 20: query: status:
+ *           type: string: query: origin:
+ *           type: string: query: destination:
+ *           type: string: query: trackingNumber:
+ *           type: string:
+ *       200:
+ *         description: Shipments:
+ *         description: Unauthorized:
+ *         description: Server:
+ *   put:
+ *     summary: Update: [International:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path: shipmentId: true:
+ *           type: string:
+ *       required: true:
+ *         application:
+ *           schema:
+ *             type: object:
+ *               updateData:
+ *                 type: object: The:
+ *       200:
+ *         description: Shipment:
+ *         description: Shipment:
+ *         description: Server:shipmentId:
+ *   post:
+ *     summary: Create: [International:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path: shipmentId: true:
+ *           type: string:
+ *       required: true:
+ *         application:
+ *           schema:
+ *             type: object:
+ *               declarationData:
+ *                 type: object: The:
+ *       201:
+ *         description: Customs:
+ *         description: Unauthorized:
+ *         description: Server:shipmentId:
+ *   put:
+ *     summary: Update: [International:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path: declarationId: true:
+ *           type: string:
+ *       required: true:
+ *         application:
+ *           schema:
+ *             type: object:
+ *               updateData:
+ *                 type: object: The:
+ *       200:
+ *         description: Customs:
+ *         description: Customs:
+ *         description: Server:declarationId:
+ *   post:
+ *     summary: Run: [International:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path: shipmentId: true:
+ *           type: string:
+ *       200:
+ *         description: Compliance:
+ *         description: Unauthorized:
+ *         description: Server:shipmentId:
+ *   post:
+ *     summary: Get: [International:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path: shipmentId: true:
+ *           type: string:
+ *       content:
+ *         application:
+ *           schema:
+ *             type: object:
+ *               carrier:
+ *                 type: string: Optional:
+ *       200:
+ *         description: Shipping:
+ *         description: Unauthorized:
+ *         description: Server:shipmentId:
+ *   post:
+ *     summary: Book: [International:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path: shipmentId: true:
+ *           type: string:
+ *       required: true:
+ *         application:
+ *           schema:
+ *             type: object:
+ *               - rateId:
+ *               rateId:
+ *                 type: string: The:
+ *                 type: integer: The:
+ *                 type: string: The:
+ *       200:
+ *         description: Shipment:
+ *         description: Invalid:
+ *         description: Server:shipmentId:
+ *   get:
+ *     summary: Track: [International:
+ *       - in: path: trackingNumber: true:
+ *           type: string: query: carrier: true:
+ *           type: string:
+ *       200:
+ *         description: Tracking:
+ *         description: Invalid:
+ *         description: Server:trackingNumber:
+ *   post:
+ *     summary: Cancel: [International:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path: shipmentId: true:
+ *           type: string:
+ *       required: true:
+ *         application:
+ *           schema:
+ *             type: object:
+ *               - carrier:
+ *               carrier:
+ *                 type: string: The:
+ *       200:
+ *         description: Shipment:
+ *         description: Invalid:
+ *         description: Server:shipmentId:
+ *   post:
+ *     summary: Generate: [International:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path: shipmentId: true:
+ *           type: string:
+ *       200:
+ *         description: Documents:
+ *         description: Server:shipmentId:
+ *   get:
+ *     summary: Look: [International:
+ *       - in: query: description: true:
+ *           type: string:
+ *       200:
+ *         description: HS:
+ *         description: Invalid:
+ *         description: Server:
+ *   post:
+ *     summary: Calculate: [International:
+ *       required: true:
+ *         application:
+ *           schema:
+ *             type: object:
+ *               - items:
+ *               items:
+ *                 type: array:
+ *                   type: object:
+ *                     - hsCode:
+ *                     hsCode:
+ *                       type: string:
+ *                       type: string:
+ *                       type: number:
+ *                       type: number:
+ *                       type: number:
+ *                       type: string:
+ *                 type: string:
+ *                 type: string:
+ *       200:
+ *         description: Duties:
+ *         description: Invalid:
+ *         description: Server:
+ *   get:
+ *     summary: Get: [International:
+ *       - in: path: countryCode: true:
+ *           type: string:
+ *       200:
+ *         description: Prohibited:
+ *         description: Invalid:
+ *         description: Server:countryCode:
+ *   get:
+ *     summary: Get: [International:
+ *       200:
+ *         description: Shipping:
+ *         description: Server error
+ */
+router.get('/shipping-options', controller.getShippingOptions);
+
+export default router;

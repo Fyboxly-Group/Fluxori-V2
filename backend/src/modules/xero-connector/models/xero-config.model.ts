@@ -1,7 +1,7 @@
 /**
  * Xero Config Model (Firestore)
  */
-import { Timestamp } from 'firebase-admin/firestore';
+import { Timestamp, DocumentData, QueryDocumentSnapshot } from 'firebase-admin/firestore';
 import { xeroConfigCollection } from '../../../config/firestore';
 import { XeroConfig as XeroConfigType } from '../types';
 
@@ -26,7 +26,7 @@ export interface IXeroConfigWithId extends IXeroConfig {
  * Converter for Firestore
  */
 export const xeroConfigConverter = {
-  toFirestore(config: IXeroConfig): FirebaseFirestore.DocumentData {
+  toFirestore(config: IXeroConfig): DocumentData {
     // Ensure timestamps are correct
     const now = Timestamp.now();
     
@@ -50,7 +50,7 @@ export const xeroConfigConverter = {
     };
   },
   
-  fromFirestore(snapshot: FirebaseFirestore.QueryDocumentSnapshot): IXeroConfigWithId {
+  fromFirestore(snapshot: QueryDocumentSnapshot): IXeroConfigWithId {
     const data = snapshot.data();
     return {
       id: snapshot.id,
@@ -68,7 +68,7 @@ export const xeroConfigConverter = {
       productAccountMappings: data.productAccountMappings,
       createdAt: data.createdAt,
       updatedAt: data.updatedAt
-    } as IXeroConfigWithId;
+    };
   }
 };
 
@@ -86,7 +86,11 @@ export const XeroConfig = {
   async create(config: IXeroConfig): Promise<IXeroConfigWithId> {
     const docRef = await XeroConfigCollectionWithConverter.add(config);
     const snapshot = await docRef.get();
-    return snapshot.data() as IXeroConfigWithId;
+    const data = snapshot.data();
+    if (!data) {
+      throw new Error('Failed to create Xero config');
+    }
+    return data;
   },
 
   /**

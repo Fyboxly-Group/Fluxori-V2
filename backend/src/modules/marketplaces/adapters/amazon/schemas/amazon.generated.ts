@@ -1,424 +1,866 @@
 /**
- * Amazon Selling Partner API - Generated Schema Types
- * Generated from official Amazon SP-API models
+ * Amazon Selling Partner API Type Definitions
+ * 
+ * This file contains TypeScript interface and type definitions for the Amazon SP-API.
+ * It provides type safety for API operations across different SP-API sections.
  */
 
-/**
- * Common namespace for all Amazon SP-API generated types
- */
 export namespace AmazonSPApi {
   /**
-   * Common types shared across multiple APIs
+   * Common types used across multiple API sections
    */
   export namespace Common {
+    /**
+     * Common error type returned by Amazon SP-API
+     */
     export interface Error {
+      /**
+       * Error code
+       */
       code: string;
+      
+      /**
+       * Error message
+       */
       message: string;
+      
+      /**
+       * Additional error details
+       */
       details?: string;
     }
     
+    /**
+     * Monetary amount with currency
+     */
     export interface Money {
-      amount?: number;
-      currencyCode?: string;
+      /**
+       * Monetary amount
+       */
+      amount: number;
+      
+      /**
+       * Currency code (ISO 4217)
+       */
+      currencyCode: string;
     }
-
+    
+    /**
+     * Address information
+     */
     export interface Address {
-      name?: string;
-      addressLine1?: string;
+      /**
+       * Name
+       */
+      name: string;
+      
+      /**
+       * Address line 1
+       */
+      addressLine1: string;
+      
+      /**
+       * Address line 2
+       */
       addressLine2?: string;
+      
+      /**
+       * Address line 3
+       */
       addressLine3?: string;
-      city?: string;
+      
+      /**
+       * City
+       */
+      city: string;
+      
+      /**
+       * County
+       */
       county?: string;
+      
+      /**
+       * District
+       */
       district?: string;
+      
+      /**
+       * State or region
+       */
       stateOrRegion?: string;
+      
+      /**
+       * Postal code
+       */
       postalCode?: string;
-      countryCode?: string;
+      
+      /**
+       * Country code (ISO 3166-1 alpha-2)
+       */
+      countryCode: string;
+      
+      /**
+       * Phone number
+       */
       phone?: string;
-      addressType?: string;
+    }
+    
+    /**
+     * Weight with unit
+     */
+    export interface Weight {
+      /**
+       * Weight value
+       */
+      value: number;
+      
+      /**
+       * Weight unit
+       */
+      unit: 'g' | 'kg' | 'oz' | 'lb';
+    }
+    
+    /**
+     * Dimensions with unit
+     */
+    export interface Dimensions {
+      /**
+       * Length
+       */
+      length: number;
+      
+      /**
+       * Width
+       */
+      width: number;
+      
+      /**
+       * Height
+       */
+      height: number;
+      
+      /**
+       * Unit of measurement
+       */
+      unit: 'cm' | 'in';
     }
   }
 
   /**
-   * Catalog Items API (2022-04-01) types
+   * Catalog API types
    */
-  export namespace CatalogItems {
+  export namespace Catalog {
+    /**
+     * Catalog item
+     */
     export interface Item {
+      /**
+       * Amazon Standard Identification Number
+       */
       asin: string;
+      
+      /**
+       * Product attributes
+       */
       attributes?: Record<string, any>;
+      
+      /**
+       * Item identifiers
+       */
       identifiers?: {
+        /**
+         * Marketplace ASIN
+         */
         marketplaceAsin?: {
+          /**
+           * Marketplace ID
+           */
           marketplaceId: string;
+          
+          /**
+           * ASIN
+           */
           asin: string;
-        }[];
-        skuIdentifier?: {
-          marketplaceId: string;
-          sellerId: string;
-          sellerSKU: string;
-        }[];
-      };
-      images?: {
-        [variant: string]: {
-          link: string;
-          height: number;
-          width: number;
-        }[];
-      };
-      productTypes?: Record<string, string>;
-      salesRanks?: {
-        classificationId: string;
-        title: string;
-        link?: string;
-        rank: number;
-      }[];
-      summaries?: {
-        marketplaceId: string;
-        adult?: boolean;
-        autographed?: boolean;
-        brand?: string;
-        browseClassification?: {
-          displayName: string;
-          classificationId: string;
         };
-        color?: string;
-        itemClassification?: string;
-        itemName?: string;
-        manufacturer?: string;
-        memorabilia?: boolean;
-        modelNumber?: string;
-        packageQuantity?: number;
-        partNumber?: string;
-        releaseDate?: string;
-        size?: string;
-        style?: string;
-        tradeInEligible?: boolean;
-        websiteDisplayGroup?: string;
-        websiteDisplayGroupName?: string;
-      }[];
-      variations?: {
-        marketplaceId?: string;
-        asins?: string[];
-        variationType?: string;
-        variationThemes?: string[];
-      }[];
-      vendorDetails?: {
+        
+        /**
+         * SKU identifiers
+         */
+        skuIdentifiers?: Array<{
+          /**
+           * Marketplace ID
+           */
+          marketplaceId: string;
+          
+          /**
+           * Seller ID
+           */
+          sellerId: string;
+          
+          /**
+           * Seller SKU
+           */
+          sellerSku: string;
+        }>;
+      };
+      
+      /**
+       * Product images
+       */
+      images?: Array<{
+        /**
+         * Marketplace ID
+         */
         marketplaceId: string;
-        brandCode?: string;
-        manufacturerCode?: string;
-        manufacturerCodeParent?: string;
-        productCategory?: string;
-        productGroup?: string;
-        productSubcategory?: string;
-        replenishmentCategory?: string;
-      }[];
+        
+        /**
+         * Image URLs
+         */
+        images: Array<{
+          /**
+           * Image URL
+           */
+          link: string;
+          
+          /**
+           * Image height
+           */
+          height: number;
+          
+          /**
+           * Image width
+           */
+          width: number;
+        }>;
+      }>;
+      
+      /**
+       * Product classifications
+       */
+      productTypes?: Array<{
+        /**
+         * Marketplace ID
+         */
+        marketplaceId: string;
+        
+        /**
+         * Product type
+         */
+        productType: string;
+      }>;
+      
+      /**
+       * Sales rank information
+       */
+      salesRanks?: Array<{
+        /**
+         * Marketplace ID
+         */
+        marketplaceId: string;
+        
+        /**
+         * Classification ID
+         */
+        classificationId: string;
+        
+        /**
+         * Title of the classification
+         */
+        title: string;
+        
+        /**
+         * Rank
+         */
+        ranks: Array<{
+          /**
+           * Title of the rank
+           */
+          title: string;
+          
+          /**
+           * Rank value
+           */
+          value: number;
+        }>;
+      }>;
+      
+      /**
+       * Product summary information
+       */
+      summaries?: Array<{
+        /**
+         * Marketplace ID
+         */
+        marketplaceId: string;
+        
+        /**
+         * Product title
+         */
+        title?: string;
+        
+        /**
+         * Brand name
+         */
+        brand?: string;
+        
+        /**
+         * Whether the product is browsable
+         */
+        browsable?: boolean;
+        
+        /**
+         * Product description
+         */
+        description?: string;
+        
+        /**
+         * Manufacturer
+         */
+        manufacturer?: string;
+        
+        /**
+         * Manufacturer part number
+         */
+        manufacturerPartNumber?: string;
+        
+        /**
+         * Model number
+         */
+        modelNumber?: string;
+        
+        /**
+         * Color
+         */
+        color?: string;
+        
+        /**
+         * Size
+         */
+        size?: string;
+        
+        /**
+         * Item dimensions
+         */
+        itemDimensions?: Common.Dimensions;
+        
+        /**
+         * Item weight
+         */
+        itemWeight?: Common.Weight;
+        
+        /**
+         * Package dimensions
+         */
+        packageDimensions?: Common.Dimensions;
+        
+        /**
+         * Package weight
+         */
+        packageWeight?: Common.Weight;
+      }>;
+      
+      /**
+       * Variation information
+       */
+      variations?: {
+        /**
+         * Parent ASIN
+         */
+        parentAsin?: string;
+        
+        /**
+         * Variation theme
+         */
+        variationTheme?: string;
+        
+        /**
+         * Variation dimensions
+         */
+        variationDimensions?: string[];
+        
+        /**
+         * Variant relationships
+         */
+        variants?: Record<string, {
+          /**
+           * ASIN
+           */
+          asin: string;
+          
+          /**
+           * Variation attributes
+           */
+          attributes?: Record<string, string>;
+        }>;
+      };
     }
     
-    export interface SearchCatalogResponse {
+    /**
+     * Search result
+     */
+    export interface SearchResult {
+      /**
+       * Number of results
+       */
       numberOfResults: number;
-      pagination?: {
-        nextToken?: string;
-      };
-      refinements?: {
-        brands?: {
-          numberOfResults: number;
-          name: string;
-        }[];
-        classifications?: {
-          numberOfResults: number;
-          displayName: string;
-          classificationId: string;
-        }[];
-      };
+      
+      /**
+       * Pagination token
+       */
+      nextToken?: string;
+      
+      /**
+       * Search items
+       */
       items: Item[];
     }
-    
-    export interface GetCatalogItemResponse {
-      item: Item;
-    }
   }
 
   /**
-   * Orders API (v0) types
-   */
-  export namespace Orders {
-    export interface Order {
-      amazonOrderId: string;
-      sellerOrderId?: string;
-      purchaseDate: string;
-      lastUpdateDate: string;
-      orderStatus: string;
-      fulfillmentChannel?: string;
-      salesChannel?: string;
-      orderTotal?: Common.Money;
-      numberOfItemsShipped?: number;
-      numberOfItemsUnshipped?: number;
-      paymentMethod?: string;
-      paymentMethodDetails?: string[];
-      marketplaceId: string;
-      shipmentServiceLevelCategory?: string;
-      orderType?: string;
-      earliestShipDate?: string;
-      latestShipDate?: string;
-      isBusinessOrder?: boolean;
-      isPrime?: boolean;
-      isPremiumOrder?: boolean;
-      isGlobalExpressEnabled?: boolean;
-      isReplacementOrder?: boolean;
-      isEstimatedShipDateSet?: boolean;
-      buyerInfo?: {
-        buyerEmail?: string;
-        buyerName?: string;
-        buyerCounty?: string;
-        buyerTaxInfo?: {
-          taxClassifications?: {
-            name: string;
-            value: string;
-          }[];
-        };
-        purchaseOrderNumber?: string;
-      };
-      shippingAddress?: Common.Address;
-      defaultShipFromLocationAddress?: Common.Address;
-      automatedShippingSettings?: {
-        hasAutomatedShippingSettings?: boolean;
-        automatedCarrier?: string;
-        automatedShipMethod?: string;
-      };
-      preferredDeliveryPreferences?: {
-        preferredDeliveryType?: string;
-        instructions?: string;
-      };
-    }
-    
-    export interface OrderItem {
-      asin: string;
-      sellerSKU?: string;
-      orderItemId: string;
-      title?: string;
-      quantityOrdered: number;
-      quantityShipped?: number;
-      productInfo?: {
-        numberOfItems?: number;
-      };
-      pointsGranted?: {
-        pointsNumber: number;
-        pointsMonetaryValue: Common.Money;
-      };
-      itemPrice?: Common.Money;
-      shippingPrice?: Common.Money;
-      itemTax?: Common.Money;
-      shippingTax?: Common.Money;
-      shippingDiscount?: Common.Money;
-      shippingDiscountTax?: Common.Money;
-      promotionDiscount?: Common.Money;
-      promotionDiscountTax?: Common.Money;
-      promotionIds?: string[];
-      codFee?: Common.Money;
-      codFeeDiscount?: Common.Money;
-      isGift?: boolean;
-      conditionNote?: string;
-      conditionId?: string;
-      condition?: string;
-      scheduledDeliveryStartDate?: string;
-      scheduledDeliveryEndDate?: string;
-      giftMessageText?: string;
-      giftWrapLevel?: string;
-      giftWrapPrice?: Common.Money;
-      giftWrapTax?: Common.Money;
-    }
-    
-    export interface GetOrdersResponse {
-      payload: {
-        Orders: Order[];
-        NextToken?: string;
-      };
-      errors?: Common.Error[];
-    }
-    
-    export interface GetOrderResponse {
-      payload: {
-        Orders: Order[];
-      };
-      errors?: Common.Error[];
-    }
-    
-    export interface GetOrderItemsResponse {
-      payload: {
-        OrderItems: OrderItem[];
-        NextToken?: string;
-      };
-      errors?: Common.Error[];
-    }
-  }
-
-  /**
-   * Listings API (2021-08-01) types
+   * Listings API types
    */
   export namespace Listings {
-    export type ListingStatus = 'ACTIVE' | 'INACTIVE' | 'INCOMPLETE' | 'DELETED' | 'SUPPRESSED';
+    /**
+     * Listing status
+     */
+    export type ListingStatus = 
+      | 'ACTIVE' 
+      | 'INACTIVE' 
+      | 'INCOMPLETE' 
+      | 'REMOVED' 
+      | 'SUPPRESSED' 
+      | 'ERROR';
     
-    export interface Listing {
-      sku: string;
-      status: ListingStatus;
-      issueList?: {
-        code: string;
-        message: string;
-        severity: 'ERROR' | 'WARNING' | 'INFO';
-      }[];
-      summaries?: {
-        marketplaceId: string;
-        asin: string;
-        productType: string;
-        conditionType?: string;
-        status: ListingStatus;
-        itemName?: string;
-        createdDate: string;
-        lastUpdatedDate: string;
-        mainImage?: {
-          link: string;
-          height: number;
-          width: number;
-        };
-      }[];
-      attributes?: Record<string, object>;
+    /**
+     * Listing issue
+     */
+    export interface ListingIssue {
+      /**
+       * Issue code
+       */
+      code: string;
+      
+      /**
+       * Issue message
+       */
+      message: string;
+      
+      /**
+       * Issue severity
+       */
+      severity: 'ERROR' | 'WARNING' | 'INFO';
     }
     
-    export interface GetListingsResponse {
-      pagination?: {
-        nextToken?: string;
+    /**
+     * Listing
+     */
+    export interface Listing {
+      /**
+       * Seller SKU
+       */
+      sku: string;
+      
+      /**
+       * Listing status
+       */
+      status: ListingStatus;
+      
+      /**
+       * Listing issues
+       */
+      issues?: ListingIssue[];
+      
+      /**
+       * Product identifiers
+       */
+      identifiers?: {
+        /**
+         * Marketplace ASIN
+         */
+        marketplaceASIN?: {
+          /**
+           * Marketplace ID
+           */
+          marketplaceId: string;
+          
+          /**
+           * ASIN
+           */
+          asin: string;
+        };
       };
+      
+      /**
+       * Full price details
+       */
+      pricing?: Record<string, {
+        /**
+         * Marketplace ID
+         */
+        marketplaceId: string;
+        
+        /**
+         * List price
+         */
+        listingPrice?: Common.Money;
+        
+        /**
+         * Shipping price
+         */
+        shippingPrice?: Common.Money;
+        
+        /**
+         * Business price
+         */
+        businessPrice?: Common.Money;
+        
+        /**
+         * Quantity price tiers
+         */
+        quantityPriceTiers?: Array<{
+          /**
+           * Quantity tier
+           */
+          quantityTier: number;
+          
+          /**
+           * Price at this tier
+           */
+          price: Common.Money;
+        }>;
+      }>;
+    }
+    
+    /**
+     * Get listings response
+     */
+    export interface GetListingsResponse {
+      /**
+       * Next token for pagination
+       */
+      nextToken?: string;
+      
+      /**
+       * Listings
+       */
       listings: Listing[];
     }
   }
-
+  
   /**
-   * Pricing API (2022-05-01) types
+   * Orders API types
    */
-  export namespace Pricing {
-    export interface PriceType {
-      listingPrice: Common.Money;
+  export namespace Orders {
+    /**
+     * Order status
+     */
+    export type OrderStatus = 
+      | 'PendingAvailability' 
+      | 'Pending' 
+      | 'Unshipped' 
+      | 'PartiallyShipped' 
+      | 'Shipped' 
+      | 'Canceled' 
+      | 'Unfulfillable';
+    
+    /**
+     * Order item
+     */
+    export interface OrderItem {
+      /**
+       * ASIN
+       */
+      asin: string;
+      
+      /**
+       * Seller SKU
+       */
+      sellerSku?: string;
+      
+      /**
+       * Order item ID
+       */
+      orderItemId: string;
+      
+      /**
+       * Title
+       */
+      title?: string;
+      
+      /**
+       * Quantity ordered
+       */
+      quantityOrdered: number;
+      
+      /**
+       * Quantity shipped
+       */
+      quantityShipped: number;
+      
+      /**
+       * Item price
+       */
+      itemPrice?: Common.Money;
+      
+      /**
+       * Shipping price
+       */
       shippingPrice?: Common.Money;
-      points?: {
-        pointsNumber: number;
-        pointsMonetaryValue: Common.Money;
+      
+      /**
+       * Tax collection model
+       */
+      taxCollection?: {
+        /**
+         * Responsible party for tax collection
+         */
+        model: 'MarketplaceFacilitator' | 'Standard';
+        
+        /**
+         * Responsible party for tax collection
+         */
+        responsibleParty: 'Amazon Services, Inc.' | 'Seller';
       };
     }
     
-    export interface CompetitivePrice {
-      competitivePriceId: string;
-      price: PriceType;
-      condition: string;
-      subcondition: string;
-      offerType?: string;
-      sellerId?: string;
-      belongsToRequester?: boolean;
-    }
-    
-    export interface GetPricingResponse {
-      payload: {
-        status: string;
-        sku: string;
-        asin?: string;
-        product?: {
-          identifiers: {
-            marketplaceASIN: {
-              marketplaceId: string;
-              asin: string;
-            };
-            skuIdentifier?: {
-              marketplaceId: string;
-              sellerId: string;
-              sellerSKU: string;
-            };
-          };
-          competitivePricing?: {
-            competitivePrices: CompetitivePrice[];
-            numberOfOfferListings: {
-              condition: string;
-              count: number;
-            }[];
-            tradeInValue?: Common.Money;
-          };
-          offers?: {
-            buyingPrice: {
-              listingPrice: Common.Money;
-              shipping?: Common.Money;
-              points?: {
-                pointsNumber?: number;
-                pointsMonetaryValue?: Common.Money;
-              };
-            };
-            regularPrice: Common.Money;
-            businessPrice?: Common.Money;
-            quantityDiscountPrices?: {
-              quantityTier: number;
-              listingPrice: Common.Money;
-            }[];
-            fulfillmentChannel?: string;
-            itemCondition?: string;
-            itemSubCondition?: string;
-            offerType?: string;
-            sellerId?: string;
-          }[];
-        }
-      }[];
-      errors?: Common.Error[];
-    }
-  }
-
-  /**
-   * FBA Inventory API (2022-05-01) types
-   */
-  export namespace FbaInventory {
-    export interface InventoryDetails {
-      fulfillableQuantity?: number;
-      inboundWorkingQuantity?: number;
-      inboundShippedQuantity?: number;
-      inboundReceivingQuantity?: number;
-      reservedQuantity?: {
-        total?: number;
-        customerOrders?: number;
-        fcProcessing?: number;
-        fcTransfer?: number;
-      };
-      researchingQuantity?: {
-        total?: number;
-        withinPeriod?: {
-          name?: string;
-          quantity?: number;
-        }[];
-      };
-      unfulfillableQuantity?: {
-        total?: number;
-        customerDamaged?: number;
-        warehouseDamaged?: number;
-        distributorDamaged?: number;
-        carrierDamaged?: number;
-        defectiveQuantity?: number;
-        expiredQuantity?: number;
-      };
-    }
-    
-    export interface GetInventorySummariesResponse {
-      payload: {
-        granularity: {
-          granularityType: string;
-          granularityId: string;
+    /**
+     * Order
+     */
+    export interface Order {
+      /**
+       * Amazon order ID
+       */
+      amazonOrderId: string;
+      
+      /**
+       * Purchase date
+       */
+      purchaseDate: string;
+      
+      /**
+       * Last update date
+       */
+      lastUpdateDate: string;
+      
+      /**
+       * Order status
+       */
+      orderStatus: OrderStatus;
+      
+      /**
+       * Fulfillment channel
+       */
+      fulfillmentChannel?: 'AFN' | 'MFN';
+      
+      /**
+       * Sales channel
+       */
+      salesChannel?: string;
+      
+      /**
+       * Order channel
+       */
+      orderChannel?: string;
+      
+      /**
+       * Ship service level
+       */
+      shipServiceLevel?: string;
+      
+      /**
+       * Order total
+       */
+      orderTotal?: Common.Money;
+      
+      /**
+       * Number of items shipped
+       */
+      numberOfItemsShipped?: number;
+      
+      /**
+       * Number of items unshipped
+       */
+      numberOfItemsUnshipped?: number;
+      
+      /**
+       * Payment method
+       */
+      paymentMethod?: string;
+      
+      /**
+       * Payment method details
+       */
+      paymentMethodDetails?: string[];
+      
+      /**
+       * Marketplace ID
+       */
+      marketplaceId: string;
+      
+      /**
+       * Shipping address
+       */
+      shippingAddress?: Common.Address;
+      
+      /**
+       * Buyer info
+       */
+      buyerInfo?: {
+        /**
+         * Buyer email
+         */
+        buyerEmail?: string;
+        
+        /**
+         * Buyer name
+         */
+        buyerName?: string;
+        
+        /**
+         * Buyer country
+         */
+        buyerCountry?: string;
+        
+        /**
+         * Tax information
+         */
+        taxInfo?: {
+          /**
+           * Tax classifications
+           */
+          taxClassifications?: Array<{
+            /**
+             * Classification name
+             */
+            name: string;
+            
+            /**
+             * Classification value
+             */
+            value: string;
+          }>;
         };
-        inventorySummaries: {
-          asin?: string;
-          fnSku?: string;
-          sellerSku?: string;
-          condition?: string;
-          inventoryDetails?: InventoryDetails;
-          lastUpdatedTime?: string;
-          productName?: string;
-          totalQuantity?: number;
-        }[];
-        pagination?: {
-          nextToken?: string;
+      };
+      
+      /**
+       * Automated shipping settings
+       */
+      automatedShippingSettings?: {
+        /**
+         * Has automated shipping settings
+         */
+        hasAutomatedShippingSettings: boolean;
+        
+        /**
+         * Automated carrier
+         */
+        automatedCarrier?: string;
+        
+        /**
+         * Automated ship method
+         */
+        automatedShipMethod?: string;
+      };
+      
+      /**
+       * Order type
+       */
+      orderType?: 'StandardOrder' | 'LongLeadTimeOrder' | 'Preorder' | 'BackOrder' | 'SourcingOnDemandOrder';
+      
+      /**
+       * Earliest ship date
+       */
+      earliestShipDate?: string;
+      
+      /**
+       * Latest ship date
+       */
+      latestShipDate?: string;
+      
+      /**
+       * Earliest delivery date
+       */
+      earliestDeliveryDate?: string;
+      
+      /**
+       * Latest delivery date
+       */
+      latestDeliveryDate?: string;
+      
+      /**
+       * Promise response deadline
+       */
+      promiseResponseDeadline?: string;
+      
+      /**
+       * Delivery preference
+       */
+      deliveryPreferences?: {
+        /**
+         * Preferred delivery type
+         */
+        preferredDeliveryType?: 'SCHEDULED';
+        
+        /**
+         * Delivery window
+         */
+        deliveryWindow?: {
+          /**
+           * Start date and time
+           */
+          startDate: string;
+          
+          /**
+           * End date and time
+           */
+          endDate: string;
         };
       };
-      errors?: Common.Error[];
+    }
+    
+    /**
+     * Get orders response
+     */
+    export interface GetOrdersResponse {
+      /**
+       * Pagination token
+       */
+      nextToken?: string;
+      
+      /**
+       * Last updated before
+       */
+      lastUpdatedBefore?: string;
+      
+      /**
+       * Created before
+       */
+      createdBefore?: string;
+      
+      /**
+       * Orders
+       */
+      orders: Order[];
+    }
+    
+    /**
+     * Get order items response
+     */
+    export interface GetOrderItemsResponse {
+      /**
+       * Pagination token
+       */
+      nextToken?: string;
+      
+      /**
+       * Amazon order ID
+       */
+      amazonOrderId: string;
+      
+      /**
+       * Order items
+       */
+      orderItems: OrderItem[];
     }
   }
   
@@ -426,715 +868,1761 @@ export namespace AmazonSPApi {
    * Data Kiosk API types
    */
   export namespace DataKiosk {
+    /**
+     * Query status
+     */
     export type QueryStatus = 
-      | 'PENDING'
-      | 'RUNNING'
-      | 'COMPLETED'
-      | 'CANCELLED'
+      | 'PENDING' 
+      | 'PROCESSING' 
+      | 'COMPLETED' 
+      | 'CANCELLED' 
       | 'FAILED';
     
+    /**
+     * Document type
+     */
+    export type DocumentType = 
+      | 'CSV' 
+      | 'JSON' 
+      | 'PDF' 
+      | 'XLSX';
+    
+    /**
+     * Query
+     */
+    export interface Query {
+      /**
+       * Query ID
+       */
+      queryId: string;
+      
+      /**
+       * Query status
+       */
+      status: QueryStatus;
+      
+      /**
+       * Result ID
+       */
+      resultId?: string;
+      
+      /**
+       * Document type
+       */
+      documentType?: DocumentType;
+    }
+    
+    /**
+     * Document
+     */
     export interface Document {
+      /**
+       * Document ID
+       */
       documentId: string;
-      name: string;
-      description?: string;
-      type: string;
-      datasetType: string;
-      availableMarketplaces: string[];
-      lastUpdatedDate: string;
+      
+      /**
+       * Document type
+       */
+      documentType: DocumentType;
+      
+      /**
+       * Download URL
+       */
+      downloadUrl?: string;
+      
+      /**
+       * Document metadata
+       */
+      metadata?: Record<string, any>;
     }
     
+    /**
+     * Create query response
+     */
     export interface CreateQueryResponse {
-      executionId: string;
+      /**
+       * Query ID
+       */
+      queryId: string;
+      
+      /**
+       * Status
+       */
       status: QueryStatus;
-      createdTime: string;
     }
     
+    /**
+     * Get query response
+     */
     export interface GetQueryResponse {
-      executionId: string;
-      queryId?: string;
-      query?: string;
+      /**
+       * Query ID
+       */
+      queryId: string;
+      
+      /**
+       * Status
+       */
       status: QueryStatus;
-      createdTime: string;
-      completedTime?: string;
-      error?: {
-        code: string;
-        message: string;
-      };
+      
+      /**
+       * Result ID
+       */
+      resultId?: string;
+      
+      /**
+       * Error code
+       */
+      errorCode?: string;
+      
+      /**
+       * Error message
+       */
+      errorMessage?: string;
     }
     
-    export interface GetResultsResponse {
-      columnNames: string[];
-      resultRows: any[][];
-      nextToken?: string;
-    }
-    
-    export interface ListDocumentsResponse {
-      documents: Document[];
-      nextToken?: string;
-    }
-    
+    /**
+     * Get document response
+     */
     export interface GetDocumentResponse {
-      documentId: string;
-      name: string;
-      description?: string;
-      type: string;
-      datasetType: string;
-      schema: {
-        columns: {
-          name: string;
-          type: string;
-          description?: string;
-        }[];
-      };
-      availableMarketplaces: string[];
-      lastUpdatedDate: string;
-    }
-    
-    export interface ListExecutionsResponse {
-      executions: {
-        executionId: string;
-        queryId?: string;
-        status: QueryStatus;
-        createdTime: string;
-        completedTime?: string;
-      }[];
-      nextToken?: string;
+      /**
+       * Document
+       */
+      document: Document;
     }
   }
   
   /**
-   * Sellers API types
-   */
-  export namespace Sellers {
-    export interface MarketplaceDetails {
-      id: string;
-      name: string;
-      countryCode: string;
-      defaultCurrencyCode: string;
-      defaultLanguageCode: string;
-      domainName: string;
-    }
-    
-    export interface MarketplaceParticipation {
-      marketplace: MarketplaceDetails;
-      participation: {
-        isParticipating: boolean;
-        hasSuspendedListings: boolean;
-      };
-    }
-    
-    export interface GetMarketplaceParticipationsResponse {
-      payload: MarketplaceParticipation[];
-    }
-    
-    export interface SellerAccountInfo {
-      accountType: string;
-      sellerId: string;
-    }
-    
-    export interface GetSellerAccountInfoResponse {
-      payload: SellerAccountInfo;
-    }
-  }
-  
-  /**
-   * Reports API (2021-06-30) types
+   * Reports API types
    */
   export namespace Reports {
-    export type ProcessingStatus = 'IN_QUEUE' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED' | 'FATAL';
+    /**
+     * Processing status
+     */
+    export type ProcessingStatus = 
+      | 'IN_QUEUE' 
+      | 'IN_PROGRESS' 
+      | 'DONE' 
+      | 'FATAL' 
+      | 'CANCELLED';
     
-    export interface CreateReportResponse {
-      reportId: string;
-      processingStatus: ProcessingStatus;
-      createdTime: string;
-    }
+    /**
+     * Compression algorithm
+     */
+    export type CompressionAlgorithm = 
+      | 'GZIP' 
+      | 'ZIP';
     
-    export interface GetReportResponse {
-      reportId: string;
-      processingStatus: ProcessingStatus;
-      createdTime: string;
-      completedTime?: string;
-      reportDocumentId?: string;
-      reportType: string;
-    }
-    
-    export interface GetReportDocumentResponse {
-      reportDocumentId: string;
-      url: string;
-      compressionAlgorithm?: 'GZIP';
-      contentType?: string;
-    }
-    
+    /**
+     * Report
+     */
     export interface Report {
+      /**
+       * Report ID
+       */
       reportId: string;
-      processingStatus: ProcessingStatus;
-      createdTime: string;
-      completedTime?: string;
-      reportDocumentId?: string;
+      
+      /**
+       * Report type
+       */
       reportType: string;
+      
+      /**
+       * Processing status
+       */
+      processingStatus: ProcessingStatus;
+      
+      /**
+       * Creation date
+       */
+      createdTime: string;
+      
+      /**
+       * Processing start date
+       */
+      processingStartTime?: string;
+      
+      /**
+       * Processing end date
+       */
+      processingEndTime?: string;
+      
+      /**
+       * Document ID
+       */
+      reportDocumentId?: string;
+      
+      /**
+       * Data start time
+       */
+      dataStartTime?: string;
+      
+      /**
+       * Data end time
+       */
+      dataEndTime?: string;
+      
+      /**
+       * Marketplace IDs
+       */
+      marketplaceIds?: string[];
     }
     
-    export interface ListReportsResponse {
-      reports: Report[];
+    /**
+     * Report document
+     */
+    export interface ReportDocument {
+      /**
+       * Report document ID
+       */
+      reportDocumentId: string;
+      
+      /**
+       * Compression algorithm
+       */
+      compressionAlgorithm?: CompressionAlgorithm;
+      
+      /**
+       * Download URL
+       */
+      url: string;
+    }
+  }
+  
+  /**
+   * FBA Inventory API types
+   */
+  export namespace FBAInventory {
+    /**
+     * Granularity type
+     */
+    export type GranularityType = 
+      | 'Marketplace' 
+      | 'InventoryClassificationShipToCountry';
+    
+    /**
+     * Details per inventory level
+     */
+    export interface InventoryDetails {
+      /**
+       * Fulfillable quantity
+       */
+      fulfillableQuantity?: number;
+      
+      /**
+       * Inbound working quantity
+       */
+      inboundWorkingQuantity?: number;
+      
+      /**
+       * Inbound shipped quantity
+       */
+      inboundShippedQuantity?: number;
+      
+      /**
+       * Inbound receiving quantity
+       */
+      inboundReceivingQuantity?: number;
+      
+      /**
+       * Reserved quantity
+       */
+      reservedQuantity?: number;
+      
+      /**
+       * Research quantity
+       */
+      researchingQuantity?: number;
+      
+      /**
+       * Unfulfillable quantity
+       */
+      unfulfillableQuantity?: number;
+    }
+    
+    /**
+     * Inventory summary
+     */
+    export interface InventorySummary {
+      /**
+       * ASIN
+       */
+      asin?: string;
+      
+      /**
+       * Seller SKU
+       */
+      sellerSku?: string;
+      
+      /**
+       * FNSKU
+       */
+      fnSku?: string;
+      
+      /**
+       * Product name
+       */
+      productName?: string;
+      
+      /**
+       * Condition
+       */
+      condition?: string;
+      
+      /**
+       * Inventory details
+       */
+      inventoryDetails?: InventoryDetails;
+      
+      /**
+       * Last updated date
+       */
+      lastUpdatedTime?: string;
+      
+      /**
+       * Product details
+       */
+      productDetail?: Record<string, string>;
+      
+      /**
+       * Total quantity
+       */
+      totalQuantity?: number;
+    }
+    
+    /**
+     * Get inventory summaries response
+     */
+    export interface GetInventorySummariesResponse {
+      /**
+       * Granularity type
+       */
+      granularity: {
+        /**
+         * Granularity type
+         */
+        granularityType: GranularityType;
+        
+        /**
+         * Granularity ID
+         */
+        granularityId?: string;
+      };
+      
+      /**
+       * Inventory summaries
+       */
+      inventorySummaries: InventorySummary[];
+      
+      /**
+       * Next token
+       */
       nextToken?: string;
     }
   }
-
+  
   /**
-   * Fulfillment Inbound API types
+   * Finances API types
    */
-  export namespace FulfillmentInbound {
-    export interface Address {
-      name: string;
-      addressLine1: string;
-      addressLine2?: string;
-      city: string;
-      stateOrProvinceCode: string;
-      countryCode: string;
-      postalCode: string;
+  export namespace Finances {
+    /**
+     * Financial event group status
+     */
+    export type FinancialEventGroupStatus = 'Open' | 'Closed';
+    
+    /**
+     * Financial transaction type
+     */
+    export type FinancialTransactionType = 
+      | 'Shipment' 
+      | 'Refund' 
+      | 'GuaranteeClaim' 
+      | 'Chargeback' 
+      | 'ServiceFee' 
+      | 'AdjustmentItem' 
+      | 'Commission';
+    
+    /**
+     * Money type
+     */
+    export interface Money {
+      /**
+       * Currency amount
+       */
+      amount?: string;
+      
+      /**
+       * Currency code
+       */
+      currencyCode?: string;
     }
     
-    export interface PrepDetails {
-      prepInstruction: string;
-      prepOwner: 'AMAZON' | 'SELLER';
+    /**
+     * Fee component
+     */
+    export interface Fee {
+      /**
+       * Fee type
+       */
+      feeType: string;
+      
+      /**
+       * Fee amount
+       */
+      feeAmount: Money;
     }
     
-    export interface InboundShipmentItem {
-      sellerSKU: string;
-      quantity: number;
-      quantityInCase?: number;
-      prepDetailsList?: PrepDetails[];
+    /**
+     * Financial event group
+     */
+    export interface FinancialEventGroup {
+      /**
+       * Financial event group ID
+       */
+      financialEventGroupId?: string;
+      
+      /**
+       * Processing status
+       */
+      processingStatus?: FinancialEventGroupStatus;
+      
+      /**
+       * Fund transfer status
+       */
+      fundTransferStatus?: string;
+      
+      /**
+       * Original total
+       */
+      originalTotal?: Money;
+      
+      /**
+       * Converted total
+       */
+      convertedTotal?: Money;
+      
+      /**
+       * Fund transfer date
+       */
+      fundTransferDate?: string;
+      
+      /**
+       * Trace ID
+       */
+      traceId?: string;
+      
+      /**
+       * Account tail
+       */
+      accountTail?: string;
+      
+      /**
+       * Beginning balance
+       */
+      beginningBalance?: Money;
+      
+      /**
+       * Financial event group start
+       */
+      financialEventGroupStart?: string;
+      
+      /**
+       * Financial event group end
+       */
+      financialEventGroupEnd?: string;
     }
     
-    export interface InboundShipmentPlanItem {
-      sellerSKU: string;
-      fulfillmentNetworkSKU: string;
-      quantity: number;
-      prepDetailsList?: PrepDetails[];
+    /**
+     * Fee list
+     */
+    export type FeeList = Fee[];
+    
+    /**
+     * Charge component
+     */
+    export interface ChargeComponent {
+      /**
+       * Charge type
+       */
+      chargeType?: string;
+      
+      /**
+       * Charge amount
+       */
+      chargeAmount?: Money;
     }
     
-    export interface InboundShipmentPlan {
-      shipmentId: string;
-      destinationFulfillmentCenterId: string;
-      shipToAddress: Address;
-      labelPrepType: 'NO_LABEL' | 'SELLER_LABEL' | 'AMAZON_LABEL';
-      items: InboundShipmentPlanItem[];
-      estimatedBoxCount?: number;
+    /**
+     * Charge list
+     */
+    export type ChargeList = ChargeComponent[];
+    
+    /**
+     * Shipment event
+     */
+    export interface ShipmentEvent {
+      /**
+       * Amazon order ID
+       */
+      amazonOrderId?: string;
+      
+      /**
+       * Seller order ID
+       */
+      sellerOrderId?: string;
+      
+      /**
+       * Marketplace name
+       */
+      marketplaceName?: string;
+      
+      /**
+       * Order charge list
+       */
+      orderChargeList?: ChargeList;
+      
+      /**
+       * Order charge adjustment list
+       */
+      orderChargeAdjustmentList?: ChargeList;
+      
+      /**
+       * Shipment fee list
+       */
+      shipmentFeeList?: FeeList;
+      
+      /**
+       * Shipment fee adjustment list
+       */
+      shipmentFeeAdjustmentList?: FeeList;
+      
+      /**
+       * Order fee list
+       */
+      orderFeeList?: FeeList;
+      
+      /**
+       * Order fee adjustment list
+       */
+      orderFeeAdjustmentList?: FeeList;
+      
+      /**
+       * Direct payment list
+       */
+      directPaymentList?: any[];
+      
+      /**
+       * Posted date
+       */
+      postedDate?: string;
+      
+      /**
+       * Shipment item list
+       */
+      shipmentItemList?: any[];
+      
+      /**
+       * Shipment item adjustment list
+       */
+      shipmentItemAdjustmentList?: any[];
     }
     
-    export interface CreateInboundShipmentPlanRequest {
-      shipFromAddress: Address;
-      labelPrepPreference: 'SELLER_LABEL' | 'AMAZON_LABEL_ONLY' | 'AMAZON_LABEL_PREFERRED';
-      inboundShipmentItems: InboundShipmentItem[];
-      shipToCountryCode?: string;
-      shipToCountrySubdivisionCode?: string;
+    /**
+     * Refund event
+     */
+    export interface RefundEvent {
+      /**
+       * Amazon order ID
+       */
+      amazonOrderId?: string;
+      
+      /**
+       * Seller order ID
+       */
+      sellerOrderId?: string;
+      
+      /**
+       * Marketplace name
+       */
+      marketplaceName?: string;
+      
+      /**
+       * Order charge list
+       */
+      orderChargeList?: ChargeList;
+      
+      /**
+       * Order charge adjustment list
+       */
+      orderChargeAdjustmentList?: ChargeList;
+      
+      /**
+       * Shipment fee list
+       */
+      shipmentFeeList?: FeeList;
+      
+      /**
+       * Shipment fee adjustment list
+       */
+      shipmentFeeAdjustmentList?: FeeList;
+      
+      /**
+       * Order fee list
+       */
+      orderFeeList?: FeeList;
+      
+      /**
+       * Order fee adjustment list
+       */
+      orderFeeAdjustmentList?: FeeList;
+      
+      /**
+       * Posted date
+       */
+      postedDate?: string;
+      
+      /**
+       * Shipment item list
+       */
+      shipmentItemList?: any[];
+      
+      /**
+       * Shipment item adjustment list
+       */
+      shipmentItemAdjustmentList?: any[];
     }
     
-    export interface CreateInboundShipmentRequest {
-      shipmentId: string;
-      shipmentName: string;
-      shipFromAddress: Address;
-      destinationFulfillmentCenterId: string;
-      labelPrepPreference: 'SELLER_LABEL' | 'AMAZON_LABEL_ONLY' | 'AMAZON_LABEL_PREFERRED';
-      inboundShipmentItems: InboundShipmentItem[];
-      shipmentStatus: 'WORKING' | 'SHIPPED' | 'CANCELLED';
-      intendedBoxContentsSource?: 'NONE' | 'FEED' | '2D_BARCODE';
-    }
-    
-    export interface UpdateInboundShipmentRequest {
-      shipmentName?: string;
-      shipFromAddress?: Address;
-      destinationFulfillmentCenterId?: string;
-      labelPrepPreference?: 'SELLER_LABEL' | 'AMAZON_LABEL_ONLY' | 'AMAZON_LABEL_PREFERRED';
-      inboundShipmentItems?: InboundShipmentItem[];
-      shipmentStatus?: 'WORKING' | 'SHIPPED' | 'CANCELLED';
-      intendedBoxContentsSource?: 'NONE' | 'FEED' | '2D_BARCODE';
-    }
-    
-    export interface InboundShipmentInfo {
-      shipmentId: string;
-      shipmentName: string;
-      shipFromAddress: Address;
-      destinationFulfillmentCenterId: string;
-      shipmentStatus: 'WORKING' | 'SHIPPED' | 'RECEIVING' | 'CANCELLED' | 'DELETED' | 'CLOSED' | 'ERROR' | 'IN_TRANSIT' | 'DELIVERED' | 'CHECKED_IN';
-      labelPrepType: 'NO_LABEL' | 'SELLER_LABEL' | 'AMAZON_LABEL';
-      areCasesRequired: boolean;
-      confirmedNeedByDate?: string;
-      boxContentsSource?: 'NONE' | 'FEED' | '2D_BARCODE' | 'INTERACTIVE';
-      estimatedBoxCount?: number;
-    }
-    
-    export interface ShipmentItem {
-      sellerSKU: string;
-      fulfillmentNetworkSKU: string;
-      quantityShipped: number;
-      quantityReceived: number;
-      quantityInCase?: number;
-      prepDetailsList?: PrepDetails[];
-    }
-    
-    export interface Shipment {
-      shipmentId: string;
-      shipmentName: string;
-      shipmentStatus: string;
-      destinationFulfillmentCenterId: string;
-      labelPrepType: string;
-      items: ShipmentItem[];
-    }
-    
-    export type ShipmentStatus = 'WORKING' | 'SHIPPED' | 'RECEIVING' | 'CANCELLED' | 'DELETED' | 'CLOSED' | 'ERROR' | 'IN_TRANSIT' | 'DELIVERED' | 'CHECKED_IN';
-    
-    export interface GetShipmentsFilter {
-      shipmentStatusList?: ShipmentStatus[];
-      shipmentIdList?: string[];
-      lastUpdatedAfter?: Date;
-      lastUpdatedBefore?: Date;
-    }
-    
-    export interface CreateInboundShipmentPlanResponse {
-      payload: {
-        inboundShipmentPlans: InboundShipmentPlan[];
-      };
-    }
-    
-    export interface CreateInboundShipmentResponse {
-      payload: {
-        shipmentId: string;
-      };
-    }
-    
-    export interface UpdateInboundShipmentResponse {
-      payload: {
-        shipmentId: string;
-      };
-    }
-    
-    export interface GetShipmentsResponse {
-      payload: {
-        shipmentData: Shipment[];
-        nextToken?: string;
-      };
-    }
-    
-    export interface GetShipmentItemsResponse {
-      payload: {
-        itemData: ShipmentItem[];
-        nextToken?: string;
-      };
+    /**
+     * Financial events
+     */
+    export interface FinancialEvents {
+      /**
+       * Shipment event list
+       */
+      shipmentEventList?: ShipmentEvent[];
+      
+      /**
+       * Refund event list
+       */
+      refundEventList?: RefundEvent[];
+      
+      /**
+       * Guarantee claim event list
+       */
+      guaranteeClaimEventList?: any[];
+      
+      /**
+       * Chargeback event list
+       */
+      chargebackEventList?: any[];
+      
+      /**
+       * Service fee event list
+       */
+      serviceFeeEventList?: any[];
+      
+      /**
+       * Adjustment event list
+       */
+      adjustmentEventList?: any[];
+      
+      /**
+       * Performance bond refund event list
+       */
+      performanceBondRefundEventList?: any[];
     }
   }
-
+  
   /**
-   * Vendor API types
+   * VendorOrders API types
    */
   export namespace VendorOrders {
-    export type OrderStatus = 'NEW' | 'SHIPPED' | 'ACCEPTED' | 'CANCELLED' | 'ACKNOWLEDGED';
+    /**
+     * Order status
+     */
+    export type OrderStatus = 
+      | 'NEW' 
+      | 'SHIPPED' 
+      | 'ACCEPTED' 
+      | 'CANCELLED';
     
-    export interface Order {
-      purchaseOrderNumber: string;
-      purchaseOrderState: OrderStatus;
-      purchaseOrderDate: string;
-      lastUpdatedDate: string;
-      sellingParty: {
-        partyId: string;
-        name?: string;
-        address?: Common.Address;
-      };
-      shipToParty: {
-        partyId: string;
-        name?: string;
-        address?: Common.Address;
-      };
-      items: OrderItem[];
+    /**
+     * Party identification
+     */
+    export interface PartyIdentification {
+      /**
+       * Party ID
+       */
+      partyId: string;
+      
+      /**
+       * Address
+       */
+      address?: Common.Address;
+      
+      /**
+       * Tax registration details
+       */
+      taxInfo?: any;
     }
     
+    /**
+     * Order item
+     */
     export interface OrderItem {
+      /**
+       * Item sequence number
+       */
       itemSequenceNumber: string;
+      
+      /**
+       * Amazon product identifier
+       */
       amazonProductIdentifier?: string;
+      
+      /**
+       * Vendor product identifier
+       */
       vendorProductIdentifier?: string;
-      title?: string;
+      
+      /**
+       * Ordered quantity
+       */
       orderedQuantity: {
+        /**
+         * Quantity
+         */
         amount: number;
+        
+        /**
+         * Unit of measure
+         */
         unitOfMeasure: string;
       };
-      isBackOrder?: boolean;
+      
+      /**
+       * Is backordered
+       */
+      isBackOrderAllowed?: boolean;
+      
+      /**
+       * Net cost
+       */
       netCost?: Common.Money;
+      
+      /**
+       * List price
+       */
       listPrice?: Common.Money;
     }
     
-    export interface GetPurchaseOrdersResponse {
-      payload: {
-        orders?: Order[];
-        nextToken?: string;
+    /**
+     * Order
+     */
+    export interface Order {
+      /**
+       * Purchase order number
+       */
+      purchaseOrderNumber: string;
+      
+      /**
+       * Order details
+       */
+      orderDetails?: {
+        /**
+         * Purchase order date
+         */
+        purchaseOrderDate: string;
+        
+        /**
+         * Purchase order state
+         */
+        purchaseOrderState: OrderStatus;
+        
+        /**
+         * Order items
+         */
+        orderItems: OrderItem[];
       };
+      
+      /**
+       * Selling party
+       */
+      sellingParty?: PartyIdentification;
+      
+      /**
+       * Ship to party
+       */
+      shipToParty?: PartyIdentification;
+      
+      /**
+       * Bill to party
+       */
+      billToParty?: PartyIdentification;
     }
     
-    export interface GetPurchaseOrderResponse {
-      payload: Order;
-    }
-    
-    export interface SubmitAcknowledgementResponse {
-      payload: {
-        transactionId: string;
-      };
+    /**
+     * Get orders response
+     */
+    export interface GetOrdersResponse {
+      /**
+       * Pagination token
+       */
+      nextToken?: string;
+      
+      /**
+       * Orders
+       */
+      orders: Order[];
     }
   }
   
-  export namespace VendorShipments {
-    export interface SubmitShipmentConfirmationsResponse {
-      payload: {
-        transactionId: string;
-      };
-    }
-    
-    export interface GetPackingSlipResponse {
-      payload: {
-        packingSlip: string;
-      };
-    }
-  }
-  
-  export namespace VendorInventory {
-    export interface SubmitInventoryUpdateResponse {
-      payload: {
-        transactionId: string;
-      };
-    }
-  }
-  
-  export namespace VendorTransactionStatus {
-    export interface Transaction {
-      transactionId: string;
-      status: 'PROCESSING' | 'PROCESSED' | 'FAILED';
-      errorDetails?: {
-        code: string;
-        message: string;
-        details?: string;
-      }[];
-    }
-    
-    export interface GetTransactionResponse {
-      payload: Transaction;
-    }
-  }
-  
-  export namespace VendorDirectFulfillmentShipping {
-    export interface DeliveryWindow {
-      startDate: string;
-      endDate: string;
-    }
-    
-    export interface GetPackingSlipResponse {
-      payload: {
-        deliveryWindows: DeliveryWindow[];
-      };
-    }
-  }
-
   /**
-   * Warehouse and Distribution API types
+   * FBA Inbound API types
+   */
+  export namespace FBAInbound {
+    /**
+     * Shipment status
+     */
+    export type ShipmentStatus = 
+      | 'WORKING' 
+      | 'SHIPPED' 
+      | 'RECEIVING' 
+      | 'CANCELLED' 
+      | 'CLOSED' 
+      | 'ERROR' 
+      | 'DELETED';
+    
+    /**
+     * Label prep preference
+     */
+    export type LabelPrepPreference = 
+      | 'SELLER_LABEL' 
+      | 'AMAZON_LABEL';
+    
+    /**
+     * Prep instruction
+     */
+    export type PrepInstruction = 
+      | 'POLYBAGGING' 
+      | 'BUBBLE_WRAPPING' 
+      | 'TAPING' 
+      | 'BLACKSHRINKWRAPPING' 
+      | 'LABELING' 
+      | 'HANGGARMENT';
+    
+    /**
+     * Prep type
+     */
+    export type PrepType = 
+      | 'NO_PREP' 
+      | 'LABELING' 
+      | 'POLYBAGGING' 
+      | 'BUBBLE_WRAPPING' 
+      | 'TAPING' 
+      | 'BLACKSHRINKWRAPPING' 
+      | 'HANGGARMENT' 
+      | 'REMOVE_SHARP_EDGES';
+    
+    /**
+     * Prep details
+     */
+    export interface PrepDetails {
+      /**
+       * Prep instruction
+       */
+      prepInstruction?: PrepInstruction;
+      
+      /**
+       * Prep owner
+       */
+      prepOwner?: 'AMAZON' | 'SELLER';
+    }
+    
+    /**
+     * Inbound shipment plan item
+     */
+    export interface InboundShipmentPlanItem {
+      /**
+       * Seller SKU
+       */
+      sellerSku: string;
+      
+      /**
+       * Fulfillment network SKU
+       */
+      fnSku?: string;
+      
+      /**
+       * ASIN
+       */
+      asin?: string;
+      
+      /**
+       * Quantity
+       */
+      quantity: number;
+      
+      /**
+       * Prep details list
+       */
+      prepDetailsList?: PrepDetails[];
+    }
+    
+    /**
+     * Inbound shipment plan
+     */
+    export interface InboundShipmentPlan {
+      /**
+       * Shipment ID
+       */
+      shipmentId?: string;
+      
+      /**
+       * Destination fulfillment center ID
+       */
+      destinationFulfillmentCenterId?: string;
+      
+      /**
+       * Ship to address
+       */
+      shipToAddress?: Common.Address;
+      
+      /**
+       * Label prep type
+       */
+      labelPrepType?: 'NO_LABEL' | 'SELLER_LABEL' | 'AMAZON_LABEL';
+      
+      /**
+       * Items
+       */
+      items?: InboundShipmentPlanItem[];
+      
+      /**
+       * Estimated fees
+       */
+      estimatedFees?: any[];
+    }
+    
+    /**
+     * Inbound shipment item
+     */
+    export interface InboundShipmentItem {
+      /**
+       * Shipment ID
+       */
+      shipmentId?: string;
+      
+      /**
+       * Seller SKU
+       */
+      sellerSku: string;
+      
+      /**
+       * Fulfillment network SKU
+       */
+      fulfillmentNetworkSku?: string;
+      
+      /**
+       * Quantity shipped
+       */
+      quantityShipped: number;
+      
+      /**
+       * Quantity received
+       */
+      quantityReceived?: number;
+      
+      /**
+       * Prep details list
+       */
+      prepDetailsList?: PrepDetails[];
+    }
+    
+    /**
+     * Shipment
+     */
+    export interface Shipment {
+      /**
+       * Shipment ID
+       */
+      shipmentId: string;
+      
+      /**
+       * Amazon reference ID
+       */
+      amazonReferenceId?: string;
+      
+      /**
+       * Shipment name
+       */
+      shipmentName?: string;
+      
+      /**
+       * Ship from address
+       */
+      shipFromAddress?: Common.Address;
+      
+      /**
+       * Destination fulfillment center ID
+       */
+      destinationFulfillmentCenterId?: string;
+      
+      /**
+       * Shipment status
+       */
+      shipmentStatus?: ShipmentStatus;
+      
+      /**
+       * Label prep preference
+       */
+      labelPrepPreference?: LabelPrepPreference;
+      
+      /**
+       * Are cases required
+       */
+      areCasesRequired?: boolean;
+      
+      /**
+       * Confirmed need by date
+       */
+      confirmedNeedByDate?: string;
+      
+      /**
+       * Box contents source
+       */
+      boxContentsSource?: 'NONE' | 'FEED' | '2D_BARCODE';
+      
+      /**
+       * Estimated box content fee
+       */
+      estimatedBoxContentsFee?: any;
+      
+      /**
+       * Items
+       */
+      inboundShipmentItems?: InboundShipmentItem[];
+    }
+    
+    /**
+     * Create inbound shipment plan response
+     */
+    export interface CreateInboundShipmentPlanResponse {
+      /**
+       * Inbound shipment plans
+       */
+      inboundShipmentPlans: InboundShipmentPlan[];
+    }
+    
+    /**
+     * Get shipments response
+     */
+    export interface GetShipmentsResponse {
+      /**
+       * Pagination token
+       */
+      nextToken?: string;
+      
+      /**
+       * Shipments
+       */
+      shipments: Shipment[];
+    }
+    
+    /**
+     * Get shipment items response
+     */
+    export interface GetShipmentItemsResponse {
+      /**
+       * Pagination token
+       */
+      nextToken?: string;
+      
+      /**
+       * Items
+       */
+      itemData: InboundShipmentItem[];
+    }
+  }
+  
+  /**
+   * WarehouseAndDistribution API types
    */
   export namespace WarehouseAndDistribution {
+    /**
+     * Location type
+     */
     export type LocationType = 'VENDOR_WAREHOUSE' | 'SELLER_WAREHOUSE';
+    
+    /**
+     * Period granularity
+     */
     export type PeriodGranularity = 'MONTH' | 'WEEK' | 'DAY';
+    
+    /**
+     * Shipment status
+     */
     export type ShipmentStatus = 'WORKING' | 'READY_TO_SHIP' | 'SHIPPED' | 'RECEIVING' | 'CHECKED_IN' | 'CANCELED';
+    
+    /**
+     * Sort field
+     */
     export type SortField = 'CREATED_DATE' | 'ESTIMATED_RECEIVING_DATE';
+    
+    /**
+     * Sort order
+     */
     export type SortOrder = 'ASC' | 'DESC';
-
-    export interface Facility {
-      id: string;
-      name: string;
-      code: string;
+    
+    /**
+     * Seller location
+     */
+    export interface SellerLocation {
+      /**
+       * Location ID
+       */
+      locationId: string;
+      
+      /**
+       * Location name
+       */
+      locationName: string;
+      
+      /**
+       * Location type
+       */
+      locationType: LocationType;
+      
+      /**
+       * Address
+       */
       address: Common.Address;
     }
-
-    export interface FacilityShipmentItem {
-      sellerSku: string;
-      quantity: number;
+    
+    /**
+     * Facility
+     */
+    export interface Facility {
+      /**
+       * Facility ID
+       */
+      facilityId: string;
+      
+      /**
+       * Facility name
+       */
+      facilityName: string;
+      
+      /**
+       * Address
+       */
+      address: Common.Address;
+      
+      /**
+       * Features
+       */
+      features: string[];
     }
-
-    export interface FacilityShipment {
+    
+    /**
+     * Program capacity period
+     */
+    export interface ProgramCapacityPeriod {
+      /**
+       * Start time
+       */
+      startTime: string;
+      
+      /**
+       * End time
+       */
+      endTime: string;
+      
+      /**
+       * Total capacity
+       */
+      totalCapacity: number;
+      
+      /**
+       * Available capacity
+       */
+      availableCapacity: number;
+      
+      /**
+       * Utilization
+       */
+      utilization: number;
+    }
+    
+    /**
+     * Facility shipment item
+     */
+    export interface FacilityShipmentItem {
+      /**
+       * Shipment ID
+       */
       shipmentId: string;
-      clientReferenceId: string;
-      shipFromLocationId: string;
-      warehouseId: string;
-      status: ShipmentStatus;
-      estimatedReceivingDate: string;
+      
+      /**
+       * Seller SKU
+       */
+      sellerSku: string;
+      
+      /**
+       * ASIN
+       */
+      asin: string;
+      
+      /**
+       * Quantity
+       */
+      quantity: number;
+      
+      /**
+       * Reconciled quantity
+       */
+      reconciledQuantity?: number;
+      
+      /**
+       * Status
+       */
+      status: string;
+    }
+    
+    /**
+     * Facility shipment
+     */
+    export interface FacilityShipment {
+      /**
+       * Shipment ID
+       */
+      shipmentId: string;
+      
+      /**
+       * Shipment name
+       */
+      shipmentName: string;
+      
+      /**
+       * Created date
+       */
       createdDate: string;
-      lastUpdatedDate: string;
+      
+      /**
+       * Status
+       */
+      status: ShipmentStatus;
+      
+      /**
+       * Status updated date
+       */
+      statusUpdatedDate: string;
+      
+      /**
+       * From facility ID
+       */
+      fromFacilityId: string;
+      
+      /**
+       * To facility ID
+       */
+      toFacilityId: string;
+      
+      /**
+       * Items
+       */
       items: FacilityShipmentItem[];
     }
-
-    export interface SellerLocation {
-      id: string;
-      name: string;
-      locationType: LocationType;
-      address: Common.Address;
-    }
-
-    export interface ProgramCapacityPeriod {
-      startDate: string;
-      endDate: string;
-      capacity: {
-        totalCapacity: number;
-        availableCapacity: number;
-        reservedCapacity: number;
-        unitOfMeasure: string;
-      };
-    }
-
-    export interface GetFacilitiesResponse {
-      facilities: Facility[];
-    }
-
-    export interface GetInventoryResponse {
-      inventory: {
-        inventoryId: string;
-        sellerSku: string;
-        condition: string;
-        quantity: number;
-        warehouseId: string;
-        lastUpdatedTime: string;
-      };
-    }
-
-    export interface GetFacilityShipmentsResponse {
-      shipments: FacilityShipment[];
-      nextToken?: string;
-    }
-
-    export interface GetFacilityShipmentResponse {
-      shipment: FacilityShipment;
-    }
-
-    export interface CreateFacilityShipmentResponse {
-      shipmentId: string;
-    }
-
-    export interface UpdateFacilityShipmentResponse {
-      shipmentId: string;
-    }
-
-    export interface CancelFacilityShipmentResponse {
-      shipmentId: string;
-    }
-
-    export interface GetProgramCapacityResponse {
-      periods: ProgramCapacityPeriod[];
-    }
-
-    export interface GetSellerLocationsResponse {
-      sellerLocations: SellerLocation[];
-    }
   }
-
+  
   /**
-   * Shipment Invoicing API types
+   * ShipmentInvoicing API types
    */
   export namespace ShipmentInvoicing {
-    export type ShipmentInvoiceStatus = 'WORKING' | 'SUBMITTED' | 'INVALID' | 'ACCEPTED' | 'CANCELLED' | 'CLOSED';
+    /**
+     * Shipment invoice status
+     */
+    export type ShipmentInvoiceStatus = 
+      | 'WORKING' 
+      | 'SUBMITTED' 
+      | 'ACCEPTED' 
+      | 'CLOSED' 
+      | 'REJECTED' 
+      | 'DELETED';
     
-    export interface Money {
-      currencyCode: string;
-      amount: number;
-    }
-    
+    /**
+     * Party identification
+     */
     export interface PartyIdentification {
+      /**
+       * Party ID
+       */
       partyId: string;
-      idType?: 'SHIPPER_TAX_REGISTRATION_NUMBER' | 'SHIPPER_VAT_NUMBER' | string;
+      
+      /**
+       * Party ID type
+       */
+      partyIdType?: 'SHIPPER_TAX_REGISTRATION_NUMBER';
     }
     
-    export interface Address {
-      name: string;
-      addressLine1: string;
-      addressLine2?: string;
-      addressLine3?: string;
-      city: string;
-      county?: string;
-      district?: string;
-      stateOrRegion?: string;
-      postalCode?: string;
-      countryCode: string;
-      phone?: string;
-    }
-    
-    export interface Dimensions {
-      length: number;
-      width: number;
-      height: number;
-      unit: string;
-    }
-    
-    export interface Weight {
-      value: number;
-      unit: string;
-    }
-    
-    export interface ItemQuantity {
-      amount: number;
-      unit: string;
-    }
-    
-    export interface TaxDetail {
-      taxType: 'EXPORT' | 'IMPORT' | 'FEES' | 'GST' | 'VAT' | 'PST' | 'SALES_TAX' | string;
-      taxRate?: number;
-      taxAmount: Money;
-      taxableAmount?: Money;
-    }
-    
+    /**
+     * Tax registration detail
+     */
     export interface TaxRegistrationDetail {
-      taxRegistrationNumber: string;
+      /**
+       * Tax registration type
+       */
       taxRegistrationType: string;
-      taxRegistrationAddress?: Address;
-      taxRegistrationMessage?: string;
+      
+      /**
+       * Tax registration number
+       */
+      taxRegistrationNumber: string;
     }
     
+    /**
+     * Party
+     */
     export interface Party {
-      accountId?: string;
-      partyIdentification?: PartyIdentification[];
-      address?: Address;
-      email?: string;
+      /**
+       * Party identification
+       */
+      partyId: PartyIdentification;
+      
+      /**
+       * Address
+       */
+      address: Common.Address;
+      
+      /**
+       * Tax registration details
+       */
       taxRegistrationDetails?: TaxRegistrationDetail[];
     }
     
+    /**
+     * Item quantity
+     */
+    export interface ItemQuantity {
+      /**
+       * Amount
+       */
+      amount: number;
+      
+      /**
+       * Unit of measure
+       */
+      unitOfMeasure: string;
+    }
+    
+    /**
+     * Tax detail
+     */
+    export interface TaxDetail {
+      /**
+       * Tax type
+       */
+      taxType: string;
+      
+      /**
+       * Tax rate
+       */
+      taxRate?: string;
+      
+      /**
+       * Tax amount
+       */
+      taxAmount: Common.Money;
+      
+      /**
+       * Taxable amount
+       */
+      taxableAmount?: Common.Money;
+    }
+    
+    /**
+     * Invoice item
+     */
     export interface InvoiceItem {
-      itemId?: string;
-      orderItemId?: string;
-      invoiceItemNumber?: number;
-      quantity: ItemQuantity;
-      productSku?: string;
-      title?: string;
-      serialNumbers?: string[];
-      hsCode?: string;
-      unitPrice?: Money;
-      itemPrice?: Money;
-      shippingPrice?: Money;
+      /**
+       * Item sequence number
+       */
+      itemSequenceNumber: string;
+      
+      /**
+       * Amazon product identifier
+       */
+      amazonProductIdentifier?: string;
+      
+      /**
+       * Vendor product identifier
+       */
+      vendorProductIdentifier?: string;
+      
+      /**
+       * Invoiced quantity
+       */
+      invoicedQuantity: ItemQuantity;
+      
+      /**
+       * Net cost
+       */
+      netCost: Common.Money;
+      
+      /**
+       * Purchase order number
+       */
+      purchaseOrderNumber?: string;
+      
+      /**
+       * HSN code
+       */
+      hsnCode?: string;
+      
+      /**
+       * Tax details
+       */
       taxDetails?: TaxDetail[];
-      taxAmount?: Money;
-      discountPrice?: Money;
-      discountTaxDetails?: TaxDetail[];
-      dimensions?: Dimensions;
-      weight?: Weight;
-      countryOfOrigin?: string;
+      
+      /**
+       * Charge details
+       */
+      chargeDetails?: any[];
     }
     
-    export interface ShipmentInvoice {
-      marketplaceId: string;
-      shipmentId: string;
-      invoiceStatus: ShipmentInvoiceStatus;
-      billToParty?: Party;
-      shipFromParty?: Party;
-      shipToParty?: Party;
-      remitToParty?: Party;
-      paymentMethodCode?: string;
-      invoiceClassification?: 'COMMERCIAL_INVOICE' | 'PROFORMA_INVOICE' | string;
-      paymentTermsCode?: string;
-      shipToCountry?: string;
-      vendorOrderId?: string;
-      shipDate?: string;
-      invoiceNumber?: string;
-      items: InvoiceItem[];
-    }
-    
+    /**
+     * Invoice requirements
+     */
     export interface InvoiceRequirements {
-      requiresInvoice: boolean;
-      additionalRequirements?: string[];
+      /**
+       * VAT invoice requirements
+       */
+      vatInvoiceRequirements?: any;
     }
     
+    /**
+     * Shipment details
+     */
     export interface ShipmentDetails {
-      amazonOrderId: string;
-      amazonShipmentId: string;
+      /**
+       * Shipment method of payment
+       */
+      shipmentMethodOfPayment: 'EXPORT';
+      
+      /**
+       * Shipment value
+       */
+      shipmentValue: Common.Money;
+      
+      /**
+       * Freight value
+       */
+      freightValue?: Common.Money;
+      
+      /**
+       * Insurance value
+       */
+      insuranceValue?: Common.Money;
+      
+      /**
+       * Shipment method
+       */
+      shipmentMethod?: string;
+      
+      /**
+       * Dimensions
+       */
+      dimensions?: Common.Dimensions;
+      
+      /**
+       * Weight
+       */
+      weight?: Common.Weight;
+    }
+    
+    /**
+     * Shipment invoice
+     */
+    export interface ShipmentInvoice {
+      /**
+       * Shipment invoice status
+       */
+      shipmentInvoiceStatus: ShipmentInvoiceStatus;
+      
+      /**
+       * Buyer
+       */
+      buyer?: Party;
+      
+      /**
+       * Seller
+       */
+      seller?: Party;
+      
+      /**
+       * Ship from
+       */
+      shipFrom?: Party;
+      
+      /**
+       * Ship to
+       */
+      shipTo?: Party;
+      
+      /**
+       * Invoice number
+       */
+      invoiceNumber: string;
+      
+      /**
+       * Invoice type
+       */
+      invoiceType: 'COMMERCIAL_INVOICE';
+      
+      /**
+       * Invoice date
+       */
+      invoiceDate: string;
+      
+      /**
+       * Remit to party
+       */
+      remitToParty?: Party;
+      
+      /**
+       * Ship to country code
+       */
+      shipToCountryCode: string;
+      
+      /**
+       * Payment terms code
+       */
+      paymentTermsCode?: string;
+      
+      /**
+       * Invoice total
+       */
+      invoiceTotal: Common.Money;
+      
+      /**
+       * Tax totals
+       */
+      taxTotals?: TaxDetail[];
+      
+      /**
+       * Additional information
+       */
+      additionalInformation?: string;
+      
+      /**
+       * Invoice items
+       */
+      items?: InvoiceItem[];
+    }
+    
+    /**
+     * Submit shipment invoice response
+     */
+    export interface SubmitShipmentInvoicesResponse {
+      /**
+       * Successful submissions
+       */
+      successful?: any[];
+      
+      /**
+       * Failed submissions
+       */
+      failed?: any[];
+    }
+    
+    /**
+     * Get shipment invoice response
+     */
+    export interface GetShipmentInvoiceResponse {
+      /**
+       * Shipment invoice
+       */
+      shipmentInvoice?: ShipmentInvoice;
+      
+      /**
+       * Invoice requirements
+       */
       invoiceRequirements?: InvoiceRequirements;
-    }
-    
-    export interface GetShipmentDetailsResponse {
-      shipmentDetails: ShipmentDetails;
-    }
-    
-    export interface SubmitInvoiceRequest {
-      invoiceContent: string;
-      marketplaceId: string;
-      contentType: 'text/xml' | 'application/json';
-    }
-    
-    export interface GetShipmentInvoiceStatusRequest {
-      marketplaceId: string;
-      shipmentId: string;
+      
+      /**
+       * Shipment details
+       */
+      shipmentDetails?: ShipmentDetails;
     }
   }
-
+  
   /**
-   * Supply Sources API types
+   * SupplySources API types
    */
   export namespace SupplySources {
-    export type SupplySourceType = 'WAREHOUSE' | 'FACTORY' | 'DISTRIBUTOR' | 'OTHER';
-
+    /**
+     * Supply source type
+     */
+    export type SupplySourceType = 
+      | 'WAREHOUSE' 
+      | 'STORE' 
+      | 'DROP_SHIPPER' 
+      | 'MANUFACTURER';
+    
+    /**
+     * Supply source address
+     */
     export interface SupplySourceAddress {
+      /**
+       * Name
+       */
       name: string;
+      
+      /**
+       * Address line 1
+       */
       addressLine1: string;
+      
+      /**
+       * Address line 2
+       */
       addressLine2?: string;
+      
+      /**
+       * Address line 3
+       */
       addressLine3?: string;
+      
+      /**
+       * City
+       */
       city: string;
+      
+      /**
+       * County
+       */
       county?: string;
-      district?: string;
-      stateOrRegion: string;
+      
+      /**
+       * State
+       */
+      state?: string;
+      
+      /**
+       * Postal code
+       */
       postalCode: string;
+      
+      /**
+       * Country code
+       */
       countryCode: string;
+      
+      /**
+       * Phone
+       */
       phone?: string;
     }
-
+    
+    /**
+     * Supply source contact
+     */
     export interface SupplySourceContact {
+      /**
+       * Name
+       */
       name: string;
+      
+      /**
+       * Phone
+       */
+      phone: string;
+      
+      /**
+       * Email
+       */
       email: string;
-      phone?: string;
     }
-
-    export interface SupplySourceOptions {
-      name: string;
-      type: SupplySourceType;
-      address: SupplySourceAddress;
-      primaryContact: SupplySourceContact;
-      secondaryContact?: SupplySourceContact;
-      isDefault?: boolean;
-      attributes?: Record<string, string>;
-    }
-
+    
+    /**
+     * Supply source
+     */
     export interface SupplySource {
+      /**
+       * Supply source ID
+       */
       supplySourceId: string;
+      
+      /**
+       * Supply source code
+       */
+      supplySourceCode: string;
+      
+      /**
+       * Supply source name
+       */
       name: string;
+      
+      /**
+       * Supply source type
+       */
       type: SupplySourceType;
+      
+      /**
+       * Address
+       */
       address: SupplySourceAddress;
+      
+      /**
+       * Primary contact
+       */
       primaryContact: SupplySourceContact;
+      
+      /**
+       * Secondary contact
+       */
       secondaryContact?: SupplySourceContact;
-      isDefault: boolean;
-      attributes?: Record<string, string>;
-      createdTime: string;
-      lastUpdatedTime: string;
+      
+      /**
+       * Is active
+       */
+      isActive: boolean;
+      
+      /**
+       * Custom fields
+       */
+      customFields?: Record<string, string>;
     }
-
-    export interface GetSupplySourcesResponse {
-      supplySources: SupplySource[];
-      nextToken?: string;
-    }
-
+    
+    /**
+     * Item supplier relationship
+     */
     export interface ItemSupplierRelationship {
-      asin?: string;
-      sellerSku?: string;
+      /**
+       * ASIN
+       */
+      asin: string;
+      
+      /**
+       * SKU
+       */
+      sku: string;
+      
+      /**
+       * Seller part number
+       */
+      sellerPartNumber?: string;
+      
+      /**
+       * Supply source ID
+       */
       supplySourceId: string;
-      attributes?: Record<string, string>;
-    }
-
-    export interface GetItemSupplierRelationshipsResponse {
-      itemSupplierRelationships: ItemSupplierRelationship[];
-      nextToken?: string;
-    }
-
-    export interface CreateSupplySourceResponse {
-      supplySourceId: string;
-    }
-
-    export interface CreateItemSupplierRelationshipResponse {
-      itemSupplierRelationshipId: string;
+      
+      /**
+       * Additional attributes
+       */
+      additionalAttributes?: Record<string, string>;
     }
   }
   
@@ -1142,50 +2630,42 @@ export namespace AmazonSPApi {
    * Tokens API types
    */
   export namespace Tokens {
-    export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
+    /**
+     * HTTP method
+     */
+    export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
     
+    /**
+     * Restricted resource
+     */
     export interface RestrictedResource {
       /**
-       * The path of the restricted operation
-       */
-      path: string;
-      
-      /**
-       * The HTTP method of the restricted operation
+       * Method
        */
       method: HttpMethod;
       
       /**
-       * The restricted resource data to be associated with the token
-       * For path-level resources, dataElements should not be set
+       * Path
+       */
+      path: string;
+      
+      /**
+       * Data elements
        */
       dataElements?: string[];
     }
     
-    export interface CreateRestrictedDataTokenRequest {
-      /**
-       * The restricted operations list (paths and methods) for which 
-       * the restricted data token is generated
-       */
-      restrictedResources: RestrictedResource[];
-      
-      /**
-       * The expiration duration in seconds for the restricted data token
-       * Default: 3600 seconds (1 hour)
-       * Max: 86400 seconds (24 hours)
-       * Min: 60 seconds (1 minute)
-       */
-      expiresIn?: number;
-    }
-    
+    /**
+     * Create restricted data token response
+     */
     export interface CreateRestrictedDataTokenResponse {
       /**
-       * A Restricted Data Token (RDT). This is a short-lived access token that authorizes calls to restricted operations.
+       * Restricted data token
        */
       restrictedDataToken: string;
       
       /**
-       * The lifetime of the restrictedDataToken in seconds
+       * Expires in
        */
       expiresIn: number;
     }
@@ -1195,433 +2675,60 @@ export namespace AmazonSPApi {
    * Messaging API types
    */
   export namespace Messaging {
+    /**
+     * Message type
+     */
     export type MessageType = 
-      | 'WARRANTY'
-      | 'PRODUCT_DETAIL'
-      | 'PRODUCT_CUSTOMIZATION'
-      | 'AMAZON_PAY'
-      | 'ORDER_FULFILLMENT'
-      | 'ORDER_DETAIL'
-      | 'ORDER_RETURN'
-      | 'UNEXPECTED_PROBLEM'
-      | 'OTHER';
+      | 'WARRANTY' 
+      | 'PRODUCT_DETAILS' 
+      | 'PRODUCT_ORDERED' 
+      | 'ORDER_STATUS' 
+      | 'SHIPPING_STATUS' 
+      | 'ORDER_RETURNS';
     
-    export interface Attachment {
-      /**
-       * Content type of the attachment
-       */
-      contentType: string;
-      
-      /**
-       * Name of the attachment
-       */
-      fileName: string;
-      
-      /**
-       * Content of the attachment in base64 format
-       */
-      attachmentData: string;
-    }
-    
+    /**
+     * Messaging action
+     */
     export interface MessagingAction {
-      name: MessageType;
+      /**
+       * Name
+       */
+      name: string;
+      
+      /**
+       * Message type
+       */
+      messageType: MessageType;
+      
+      /**
+       * Allowed for seller
+       */
+      allowedForSeller: boolean;
     }
     
-    export interface GetMessagingActionsForOrderResponse {
-      actions: MessagingAction[];
-    }
-    
-    export interface CreateConfirmCustomizationDetailsResponse {
+    /**
+     * Get messaging actions response
+     */
+    export interface GetMessagingActionsResponse {
       /**
-       * The ID of the message that was created
+       * Links
        */
-      messageId: string;
+      links?: any;
       
       /**
-       * Status of the message
+       * Payload
        */
-      status: string;
-    }
-    
-    export interface CreateConfirmDeliveryDetailsResponse {
-      /**
-       * The ID of the message that was created
-       */
-      messageId: string;
-      
-      /**
-       * Status of the message
-       */
-      status: string;
-    }
-    
-    export interface CreateLegalDisclosureResponse {
-      /**
-       * The ID of the message that was created
-       */
-      messageId: string;
-      
-      /**
-       * Status of the message
-       */
-      status: string;
-    }
-    
-    export interface CreateNegativeFeedbackRemovalResponse {
-      /**
-       * The ID of the message that was created
-       */
-      messageId: string;
-      
-      /**
-       * Status of the message
-       */
-      status: string;
-    }
-    
-    export interface CreateWarrantyResponse {
-      /**
-       * The ID of the message that was created
-       */
-      messageId: string;
-      
-      /**
-       * Status of the message
-       */
-      status: string;
-    }
-  }
-  
-  /**
-   * Finances API types
-   */
-  export namespace Finances {
-    export type FinancialEventGroupStatus = 'Open' | 'Closed';
-    
-    export type FinancialTransactionType = 
-      | 'Shipment'
-      | 'Refund'
-      | 'Guarantee Claim'
-      | 'Chargeback'
-      | 'Transfer'
-      | 'SAFE-T'
-      | 'Solution Provider Credit'
-      | 'Subscription Fee'
-      | 'Adjustment'
-      | 'Order';
-    
-    export interface Money {
-      /**
-       * The amount
-       */
-      amount: string;
-      
-      /**
-       * The currency code
-       */
-      currencyCode: string;
-    }
-    
-    export interface Fee {
-      /**
-       * The type of fee
-       */
-      feeType: string;
-      
-      /**
-       * The amount of the fee
-       */
-      feeAmount: Money;
-    }
-    
-    export interface FinancialEventGroup {
-      /**
-       * The unique identifier for the financial event group
-       */
-      financialEventGroupId: string;
-      
-      /**
-       * The processing status of the financial event group
-       */
-      financialEventGroupStatus: FinancialEventGroupStatus;
-      
-      /**
-       * The start date of the financial event group
-       */
-      startDate: string;
-      
-      /**
-       * The end date of the financial event group
-       */
-      endDate: string;
-      
-      /**
-       * The fund transfer date of the financial event group
-       */
-      fundTransferDate?: string;
-      
-      /**
-       * The original total amount
-       */
-      originalTotal?: Money;
-      
-      /**
-       * The converted total amount
-       */
-      convertedTotal?: Money;
-      
-      /**
-       * The fund transfer status of the financial event group
-       */
-      fundTransferStatus?: string;
-      
-      /**
-       * The type of the financial event group
-       */
-      financialEventGroupType?: string;
-      
-      /**
-       * The transaction count
-       */
-      transactionCount?: string;
-    }
-    
-    export interface ShipmentEvent {
-      /**
-       * The Amazon order ID
-       */
-      amazonOrderId: string;
-      
-      /**
-       * The seller order ID
-       */
-      sellerOrderId?: string;
-      
-      /**
-       * The marketplace name
-       */
-      marketplaceName: string;
-      
-      /**
-       * The order charge list
-       */
-      orderChargeList?: Array<{
-        chargeType: string;
-        chargeAmount: Money;
-      }>;
-      
-      /**
-       * The order charge adjustment list
-       */
-      orderChargeAdjustmentList?: Array<{
-        chargeType: string;
-        chargeAmount: Money;
-      }>;
-      
-      /**
-       * The shipment fee list
-       */
-      shipmentFeeList?: Array<Fee>;
-      
-      /**
-       * The shipment fee adjustment list
-       */
-      shipmentFeeAdjustmentList?: Array<Fee>;
-      
-      /**
-       * The order fee list
-       */
-      orderFeeList?: Array<Fee>;
-      
-      /**
-       * The order fee adjustment list
-       */
-      orderFeeAdjustmentList?: Array<Fee>;
-      
-      /**
-       * The direct payment list
-       */
-      directPaymentList?: Array<{
-        directPaymentType: string;
-        directPaymentAmount: Money;
-      }>;
-      
-      /**
-       * The posted date
-       */
-      postedDate: string;
-    }
-    
-    export interface RefundEvent {
-      /**
-       * The Amazon order ID
-       */
-      amazonOrderId: string;
-      
-      /**
-       * The seller order ID
-       */
-      sellerOrderId?: string;
-      
-      /**
-       * The marketplace name
-       */
-      marketplaceName: string;
-      
-      /**
-       * The refund type
-       */
-      refundType?: string;
-      
-      /**
-       * The refund amount
-       */
-      refundAmount?: Money;
-      
-      /**
-       * The fee list
-       */
-      feeList?: Array<Fee>;
-      
-      /**
-       * The posted date
-       */
-      postedDate: string;
-    }
-    
-    export interface FinancialEvents {
-      /**
-       * The shipment event list
-       */
-      shipmentEventList?: ShipmentEvent[];
-      
-      /**
-       * The refund event list
-       */
-      refundEventList?: RefundEvent[];
-      
-      /**
-       * The guarantee claim event list
-       */
-      guaranteeClaimEventList?: any[];
-      
-      /**
-       * The chargeback event list
-       */
-      chargebackEventList?: any[];
-      
-      /**
-       * The Pay with Amazon event list
-       */
-      payWithAmazonEventList?: any[];
-      
-      /**
-       * The service provider credit event list
-       */
-      serviceProviderCreditEventList?: any[];
-      
-      /**
-       * The retrocharge event list
-       */
-      retrochargeEventList?: any[];
-      
-      /**
-       * The rental transaction event list
-       */
-      rentalTransactionEventList?: any[];
-      
-      /**
-       * The product ads payment event list
-       */
-      productAdsPaymentEventList?: any[];
-      
-      /**
-       * The service fee event list
-       */
-      serviceFeeEventList?: Array<{
+      payload?: {
         /**
-         * The fee list
+         * Actions
          */
-        feeList?: Array<Fee>;
-        
-        /**
-         * The seller SKU
-         */
-        sellerSKU?: string;
-        
-        /**
-         * The FNSKU
-         */
-        fnSKU?: string;
-        
-        /**
-         * The ASIN
-         */
-        asin?: string;
-        
-        /**
-         * The posted date
-         */
-        postedDate: string;
-      }>;
+        actions: MessagingAction[];
+      };
       
       /**
-       * The debt recovery event list
+       * Errors
        */
-      debtRecoveryEventList?: any[];
-      
-      /**
-       * The loan servicing event list
-       */
-      loanServicingEventList?: any[];
-      
-      /**
-       * The adjustment event list
-       */
-      adjustmentEventList?: any[];
-      
-      /**
-       * The SAFE-T program event list
-       */
-      safeTProgramEventList?: any[];
-    }
-    
-    export interface ListFinancialEventGroupsResponse {
-      /**
-       * The list of financial event groups
-       */
-      financialEventGroupList: FinancialEventGroup[];
-      
-      /**
-       * The token to use to retrieve the next page of results
-       */
-      nextToken?: string;
-    }
-    
-    export interface GetFinancialEventGroupResponse {
-      /**
-       * The financial event group
-       */
-      financialEventGroup: FinancialEventGroup;
-    }
-    
-    export interface ListFinancialEventsResponse {
-      /**
-       * The financial events
-       */
-      financialEvents: FinancialEvents;
-      
-      /**
-       * The token to use to retrieve the next page of results
-       */
-      nextToken?: string;
-    }
-    
-    export interface GetFinancialEventsForOrderResponse {
-      /**
-       * The financial events
-       */
-      financialEvents: FinancialEvents;
+      errors?: Common.Error[];
     }
   }
   
@@ -1629,38 +2736,72 @@ export namespace AmazonSPApi {
    * Listings Restrictions API types
    */
   export namespace ListingsRestrictions {
-    export type RestrictionsIdentifierType = 'ASIN' | 'GTIN' | 'SKU';
+    /**
+     * Restrictions identifier type
+     */
+    export type RestrictionsIdentifierType = 'ASIN' | 'SKU';
     
-    export interface Restriction {
+    /**
+     * Reason code
+     */
+    export interface ReasonCode {
       /**
-       * A message describing the restriction or violation
+       * Message
        */
-      message?: string;
+      message: string;
       
       /**
-       * The reason code for the restriction
+       * Reason code details
        */
-      reasonCode?: string;
-      
-      /**
-       * The name of the program that restricts the listing
-       */
-      programName?: string;
-      
-      /**
-       * The condition that is restricted
-       */
-      condition?: string;
-      
-      /**
-       * The date when the restriction will expire, if applicable
-       */
-      expirationDate?: string;
+      reasonCodeDetails?: Record<string, string>;
     }
     
-    export interface RestrictionList {
+    /**
+     * Restriction
+     */
+    export interface Restriction {
       /**
-       * A list of restrictions for the specified product
+       * Marketplace ID
+       */
+      marketplaceId: string;
+      
+      /**
+       * Condition type
+       */
+      conditionType?: string;
+      
+      /**
+       * Reason codes
+       */
+      reasonCodes: ReasonCode[];
+      
+      /**
+       * Programs
+       */
+      programs?: string[];
+    }
+    
+    /**
+     * Get listings restrictions response
+     */
+    export interface GetListingsRestrictionsResponse {
+      /**
+       * ASIN
+       */
+      asin: string;
+      
+      /**
+       * Seller SKU
+       */
+      sellerSku?: string;
+      
+      /**
+       * Marketplace ID
+       */
+      marketplaceId: string;
+      
+      /**
+       * Restrictions
        */
       restrictions: Restriction[];
     }
@@ -1670,52 +2811,144 @@ export namespace AmazonSPApi {
    * Solicitations API types
    */
   export namespace Solicitations {
-    export type SolicitationType = 'REQUEST_FEEDBACK' | 'REQUEST_REVIEW';
+    /**
+     * Solicitation type
+     */
+    export type SolicitationType = 
+      | 'REQUEST_FEEDBACK' 
+      | 'REQUEST_PRODUCT_REVIEW';
     
+    /**
+     * Solicitation action
+     */
     export interface SolicitationAction {
       /**
-       * The type of solicitation
+       * Solicitation type
        */
-      solicitationType: string;
+      solicitationType: SolicitationType;
       
       /**
-       * Whether the solicitation action is allowed
+       * Is allowed
        */
       isAllowed: boolean;
       
       /**
-       * The reason why the solicitation action is not allowed, if applicable
+       * Disallowed reason
        */
       disallowedReason?: string;
     }
     
-    export interface GetSolicitationActionsForOrderResponse {
+    /**
+     * Get solicitation actions response
+     */
+    export interface GetSolicitationActionsResponse {
       /**
-       * A list of solicitation actions that are available for the order
+       * Actions
        */
-      payload: SolicitationAction[];
+      actions: SolicitationAction[];
+    }
+  }
+  
+  /**
+   * Sellers API types
+   */
+  export namespace Sellers {
+    /**
+     * Participation status
+     */
+    export type ParticipationStatus = 
+      | 'ACTIVE' 
+      | 'SUSPENDED' 
+      | 'INACTIVE';
+    
+    /**
+     * Marketplace details
+     */
+    export interface MarketplaceDetails {
+      /**
+       * Marketplace ID
+       */
+      marketplaceId: string;
+      
+      /**
+       * Default currency code
+       */
+      defaultCurrencyCode: string;
+      
+      /**
+       * Default language code
+       */
+      defaultLanguageCode: string;
+      
+      /**
+       * Domain name
+       */
+      domainName: string;
+      
+      /**
+       * Default country code
+       */
+      defaultCountryCode: string;
+      
+      /**
+       * Default time zone
+       */
+      defaultTimeZone: string;
+      
+      /**
+       * Display name
+       */
+      displayName: string;
     }
     
-    export interface CreateProductReviewAndSellerFeedbackSolicitationResponse {
+    /**
+     * Marketplace participation
+     */
+    export interface MarketplaceParticipation {
       /**
-       * The unique identifier for the solicitation
+       * Marketplace
        */
-      solicitations?: {
+      marketplace: MarketplaceDetails;
+      
+      /**
+       * Participation
+       */
+      participation: {
         /**
-         * The identifier for the order
+         * Is participating
          */
-        amazonOrderId: string;
+        isParticipating: boolean;
         
         /**
-         * Whether the solicitation was accepted
+         * Has suspended listings
          */
-        isSuccessful: boolean;
+        hasSuspendedListings: boolean;
         
         /**
-         * The reason why the solicitation was not successful, if applicable
+         * Participation status
          */
-        rejectionReason?: string;
-      }[];
+        participationStatus?: ParticipationStatus;
+      };
+    }
+    
+    /**
+     * Seller account info
+     */
+    export interface SellerAccountInfo {
+      /**
+       * Seller ID
+       */
+      sellerId: string;
+      
+      /**
+       * Store name
+       */
+      storeName?: string;
+      
+      /**
+       * Account type
+       */
+      accountType?: string;
     }
   }
 }

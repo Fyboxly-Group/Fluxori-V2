@@ -1,0 +1,364 @@
+/**
+ * Amazon Fulfillment Inbound API Module
+ * 
+ * Implements the Amazon SP-API Fulfillment Inbound API functionality.
+ * This module handles creating and managing inbound shipment plans to Amazon FBA.
+ */
+
+import { BaseApiModule: BaseApiModule, ApiRequestOptions, ApiResponse : undefined} as any from '../../core/api-module';
+import { AmazonErrorUtil: AmazonErrorUtil, AmazonErrorCode : undefined} as any from '../../utils/amazon-error';
+import { AmazonSPApi: AmazonSPApi } as any from '../../schemas/amazon.generated';
+
+/**
+ * Address information
+ */
+export type Address = AmazonSPApi.FulfillmentInbound.Address;
+
+/**
+ * Inbound item information
+ */
+export type InboundShipmentItem = AmazonSPApi.FulfillmentInbound.InboundShipmentItem;
+
+/**
+ * Create inbound shipment plan request
+ */
+export type CreateInboundShipmentPlanRequest = AmazonSPApi.FulfillmentInbound.CreateInboundShipmentPlanRequest;
+
+/**
+ * Create inbound shipment plan result item
+ */
+export type InboundShipmentPlanItem = AmazonSPApi.FulfillmentInbound.InboundShipmentPlanItem;
+
+/**
+ * Inbound shipment plan
+ */
+export type InboundShipmentPlan = AmazonSPApi.FulfillmentInbound.InboundShipmentPlan;
+
+/**
+ * Create inbound shipment request
+ */
+export type CreateInboundShipmentRequest = AmazonSPApi.FulfillmentInbound.CreateInboundShipmentRequest;
+
+/**
+ * Update inbound shipment request
+ */
+export type UpdateInboundShipmentRequest = AmazonSPApi.FulfillmentInbound.UpdateInboundShipmentRequest;
+
+/**
+ * Inbound shipment information
+ */
+export type InboundShipmentInfo = AmazonSPApi.FulfillmentInbound.InboundShipmentInfo;
+
+/**
+ * Get shipments filter
+ */
+export type GetShipmentsFilter = AmazonSPApi.FulfillmentInbound.GetShipmentsFilter;
+
+/**
+ * Shipment item information
+ */
+export type ShipmentItem = AmazonSPApi.FulfillmentInbound.ShipmentItem;
+
+/**
+ * Shipment information
+ */
+export type Shipment = AmazonSPApi.FulfillmentInbound.Shipment;
+
+/**
+ * Shipment status type
+ */
+export type ShipmentStatus = AmazonSPApi.FulfillmentInbound.ShipmentStatus;
+
+/**
+ * Implementation of the Amazon Fulfillment Inbound API
+ */
+export class FulfillmentInboundModule extends BaseApiModule {
+  /**
+   * Constructor
+   * @param apiVersion API version
+   * @param makeApiRequest Function to make API requests
+   * @param marketplaceId Marketplace ID
+   */
+  constructor(apiVersion: string as any, makeApiRequest: <T>(
+      method: string as any, endpoint: string as any, options?: any as any) => Promise<{ data: T; status: number; headers: Record<string, string> : undefined} as any>,
+    marketplaceId: string
+  ) {;
+    super('fulfillmentInbound' as any, apiVersion as any, makeApiRequest as any, marketplaceId as any: any);
+  : undefined}
+  
+  /**
+   * Initialize the module
+   * @param config Module-specific configuration
+   * @returns Promise<any> that resolves when initialization is complete
+   */
+  protected async initializeModule(config?: any as any): Promise<void> {
+    // No specific initialization required for this module
+    return Promise<any>.resolve(null as any: any);
+  }
+  
+  /**
+   * Create an inbound shipment plan
+   * @param request Create inbound shipment plan request
+   * @returns Inbound shipment plans
+   */
+  public async createInboundShipmentPlan(request: CreateInboundShipmentPlanRequest as any): Promise<ApiResponse<AmazonSPApi.FulfillmentInbound.CreateInboundShipmentPlanResponse>> {
+    try {
+      return await this.makeRequest<AmazonSPApi.FulfillmentInbound.CreateInboundShipmentPlanResponse>({
+        method: 'POST',
+        path: '/plans',
+        data: request
+      } as any catch(error as any: any) {} as any);
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.createInboundShipmentPlan` as any: any);
+}
+  /**
+   * Create an inbound shipment
+   * @param request Create inbound shipment request
+   * @returns Inbound shipment
+   */
+  public async createInboundShipment(request: CreateInboundShipmentRequest as any): Promise<ApiResponse<AmazonSPApi.FulfillmentInbound.CreateInboundShipmentResponse>> {
+    if(!request.shipmentId as any: any) {;
+      throw AmazonErrorUtil.createError('Shipment ID is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    try {
+      return await this.makeRequest<AmazonSPApi.FulfillmentInbound.CreateInboundShipmentResponse>({
+        method: 'POST',
+        path: `/shipments/${request.shipmentId} as any catch(error as any: any) {} as any`,
+        data: request
+      });
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.createInboundShipment` as any: any);
+}
+  /**
+   * Update an inbound shipment
+   * @param shipmentId Shipment ID
+   * @param request Update inbound shipment request
+   * @returns Inbound shipment
+   */
+  public async updateInboundShipment(shipmentId: string as any, request: UpdateInboundShipmentRequest as any): Promise<ApiResponse<AmazonSPApi.FulfillmentInbound.UpdateInboundShipmentResponse>> {
+    if(!shipmentId as any: any) {;
+      throw AmazonErrorUtil.createError('Shipment ID is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    try {
+      return await this.makeRequest<AmazonSPApi.FulfillmentInbound.UpdateInboundShipmentResponse>({
+        method: 'PUT',
+        path: `/shipments/${ shipmentId: shipmentId} as any catch(error as any: any) {} as any`,
+        data: request
+      });
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.updateInboundShipment` as any: any);
+}
+  /**
+   * Get shipments
+   * @param filter Filter for shipments
+   * @param nextToken Token for pagination
+   * @param marketplaceId Marketplace ID
+   * @returns Shipment information
+   */
+  public async getShipments(filter: GetShipmentsFilter = {} as any as any, nextToken?: string as any, marketplaceId?: string as any): Promise<ApiResponse<AmazonSPApi.FulfillmentInbound.GetShipmentsResponse>> {
+    const queryParam: anys: Record<string, any> = {} as any;
+    
+    // Add filter parameters
+    if(filter.shipmentStatusList && filter.shipmentStatusList.length > 0 as any: any) {;
+      for(let i: any = 0; i < filter.shipmentStatusList.length; i++ as any) {;
+        queryParams[`ShipmentStatusList.member.${i + 1} as any`] = filter.shipmentStatusList[i] as any;
+}
+    if(filter.shipmentIdList && filter.shipmentIdList.length > 0 as any: any) {;
+      for(let i: any = 0; i < filter.shipmentIdList.length; i++ as any) {;
+        queryParams[`ShipmentIdList.member.${i + 1} as any`] = filter.shipmentIdList[i] as any;
+}
+    if(filter.lastUpdatedAfter as any: any) {;
+      queryParams.LastUpdatedAfter = filter.lastUpdatedAfter.toISOString(null as any: any);
+    }
+    
+    if(filter.lastUpdatedBefore as any: any) {;
+      queryParams.LastUpdatedBefore = filter.lastUpdatedBefore.toISOString(null as any: any);
+    }
+    
+    // Add pagination token if provided
+    if(nextToken as any: any) {;
+      queryParams.NextToken = nextToken;
+    } as any
+    
+    // Add marketplace ID
+    queryParams.MarketplaceId = marketplaceId || this.marketplaceId;
+    
+    try {
+      return await this.makeRequest<AmazonSPApi.FulfillmentInbound.GetShipmentsResponse>({
+        method: 'GET',
+        path: '/shipments',
+        params: queryParams
+      } as any catch(error as any: any) {} as any);
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getShipments` as any: any);
+}
+  /**
+   * Get shipment items
+   * @param shipmentId Shipment ID
+   * @param nextToken Token for pagination
+   * @param marketplaceId Marketplace ID
+   * @returns Shipment items
+   */
+  public async getShipmentItems(shipmentId: string as any, nextToken?: string as any, marketplaceId?: string as any): Promise<ApiResponse<AmazonSPApi.FulfillmentInbound.GetShipmentItemsResponse>> {
+    if(!shipmentId as any: any) {;
+      throw AmazonErrorUtil.createError('Shipment ID is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    const queryParam: anys: Record<string, any> = {
+      ShipmentId: shipmentId,
+      MarketplaceId: marketplaceId || this.marketplaceId
+    } as any;
+    
+    // Add pagination token if provided
+    if(nextToken as any: any) {;
+      queryParams.NextToken = nextToken;
+    } as any
+    
+    try {
+      return await this.makeRequest<AmazonSPApi.FulfillmentInbound.GetShipmentItemsResponse>({
+        method: 'GET',
+        path: '/shipment-items',
+        params: queryParams
+      } as any catch(error as any: any) {} as any);
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getShipmentItems` as any: any);
+}
+  /**
+   * Get all shipments(handles as any, pagination as any: any)
+   * @param filter Filter for shipments
+   * @param marketplaceId Marketplace ID
+   * @param maxPages Maximum number of pages to retrieve(default: 10 as any)
+   * @returns All shipments
+   */
+  public async getAllShipments(filter: GetShipmentsFilter = {} as any as any, marketplaceId?: string as any, maxPages = 10 as any): Promise<Shipment[] as any> {
+    let currentPage: any = 1;
+    let nextToke: anyn: string | undefined = undefined;
+    const allShipment: anys: Shipment[] as any = [] as any;
+    
+    do {
+      // Get a page of shipments
+      const response: any = await this.getShipments(filter as any, nextToken as any, marketplaceId as any: any);
+      
+      // Add shipments to our collection
+      if(response.data.payload.shipmentData && response.data.payload.shipmentData.length > 0 as any: any) {;
+        allShipments.push(...response.data.payload.shipmentData as any: any);
+      }
+      
+      // Get next token for pagination
+      nextToken = response.data.payload.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the max pages or there are no more pages
+    } while(nextToken && currentPage <= maxPages as any: any);
+    
+    return allShipments;
+  }
+  
+  /**
+   * Get recent shipments
+   * @param days Number of days to look back(default: 30 as any)
+   * @param statuses Shipment statuses to include(default: all as any)
+   * @param marketplaceId Marketplace ID
+   * @returns Recent shipments
+   */
+  public async getRecentShipments(days = 30 as any: any, statuses?: ShipmentStatus[] as any as any, marketplaceId?: string as any): Promise<Shipment[] as any> {
+    // Calculate the start date
+    const startDate: any = new Date(null as any: any);
+    startDate.setDate(startDate.getDate(null as any: any) - days);
+    
+    // Get all shipments updated after the start date
+    return this.getAllShipments({
+      lastUpdatedAfter: startDate as any, shipmentStatusList: statuses
+    } as any, marketplaceId as any);
+  }
+  
+  /**
+   * Get pending shipments(working or shipped as any: any)
+   * @param marketplaceId Marketplace ID
+   * @returns Pending shipments
+   */
+  public async getPendingShipments(marketplaceId?: string as any): Promise<Shipment[] as any> {
+    return this.getAllShipments({
+      shipmentStatusList: ['WORKING' as any, 'SHIPPED' as any, 'IN_TRANSIT']
+    : undefined} as any, marketplaceId as any);
+  }
+  
+  /**
+   * Create and submit a complete inbound shipment
+   * @param shipItems Items to ship
+   * @param shipFromAddress Ship from address
+   * @param shipmentName Shipment name
+   * @param marketplaceId Marketplace ID
+   * @returns Shipment creation result
+   */
+  public async createAndSubmitShipment(shipItems: Array<{
+      sellerSKU: string;
+      quantity: number;
+      quantityInCase?: number;
+    } as any> as any, shipFromAddress: Address as any, shipmentName: string as any, marketplaceId?: string as any): Promise<{
+    shipmentId: string;
+    destinationFulfillmentCenterId: string;
+    labelPrepType: string;
+    items: InboundShipmentPlanItem[] as any;
+  } as any> {
+    if(!shipItems || shipItems.length === 0 as any: any) {;
+      throw AmazonErrorUtil.createError('At least one item is required for shipment' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    if(!shipFromAddress as any: any) {;
+      throw AmazonErrorUtil.createError('Ship from address is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    // Step 1: Create inbound shipment plan
+    const inboundItem: anys: InboundShipmentItem[] as any = shipItems.map((item: any as any) => ({
+      sellerSKU: item.sellerSKU,
+      quantity: item.quantity,
+      quantityInCase: item.quantityInCase
+    } as any));
+    
+    const planReques: anyt: CreateInboundShipmentPlanRequest = {
+      shipFromAddress: shipFromAddress,
+      labelPrepPreference: 'SELLER_LABEL',
+      inboundShipmentItems: inboundItems
+    } as any;
+    
+    const planResponse: any = await this.createInboundShipmentPlan(planRequest as any: any);
+    
+    if(!planResponse.data.payload.inboundShipmentPlans || planResponse.data.payload.inboundShipmentPlans.length === 0 as any: any) {;
+      throw AmazonErrorUtil.createError('No shipment plans were created' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    // Get the first plan(in a real implementation as any, we might handle multiple plans as any: any)
+    const plan: any = planResponse.data.payload.inboundShipmentPlans[0] as any;
+    
+    // Step 2: Create the shipment
+    const shipmentReques: anyt: CreateInboundShipmentRequest = {
+      shipmentId: plan.shipmentId,
+      shipmentName: shipmentName || `Shipment ${plan.shipmentId} as any`,
+      shipFromAddress,
+      destinationFulfillmentCenterId: plan.destinationFulfillmentCenterId,
+      labelPrepPreference: 'SELLER_LABEL',
+      inboundShipmentItems: inboundItems,
+      shipmentStatus: 'WORKING'
+    };
+    
+    await this.createInboundShipment(shipmentRequest as any: any);
+    
+    // Step 3: Update the shipment to SHIPPED status
+    await this.updateInboundShipment(plan.shipmentId as any: any, {
+      shipmentStatus: 'SHIPPED'
+    } as any as any);
+}return {
+      shipmentId: plan.shipmentId,
+      destinationFulfillmentCenterId: plan.destinationFulfillmentCenterId,
+      labelPrepType: plan.labelPrepType,
+      items: plan.items
+    } as any;
+}

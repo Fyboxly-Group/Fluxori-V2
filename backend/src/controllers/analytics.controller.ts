@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import mongoose from 'mongoose';
-import Project, { ProjectPhase } from '../models/project.model';
+import mongoose, { PipelineStage } from 'mongoose';
+import Project, { ProjectPhase, ProjectStatus, IProjectDocument } from '../models/project.model';
 import Inventory from '../models/inventory.model';
 import Shipment from '../models/shipment.model';
 import Customer from '../models/customer.model';
@@ -10,6 +10,243 @@ import Task from '../models/task.model';
 import Milestone from '../models/milestone.model';
 import Activity from '../models/activity.model';
 import { ApiError } from '../middleware/error.middleware';
+import { typedPromiseAll } from '../types/utility-types';
+import { 
+  createAggregationPipeline
+} from '../types/mongodb-types';
+
+// Analytics Interfaces
+
+/**
+ * Business Overview Analytics Response Interface
+ */
+interface IBusinessOverviewResponse {
+  counts: {
+    projects: number;
+    activeProjects: number;
+    inventoryItems: number;
+    lowStockItems: number;
+    shipments: number;
+    inProgressShipments: number;
+    customers: number;
+    suppliers: number;
+    purchaseOrders: number;
+    tasks: number;
+    overdueTasks: number;
+  };
+}
+
+/**
+ * Project Performance Analytics Response Interface
+ */
+interface IProjectPerformanceResponse {
+  projectsByPhase: Array<{
+    _id: string;
+    count: number;
+  }>;
+  projectsByStatus: Array<{
+    _id: string;
+    count: number;
+  }>;
+  averageProjectDuration: number;
+  onTimeCompletionRate: number;
+  projectsByCustomer: Array<{
+    _id: string;
+    count: number;
+    customerName: string;
+  }>;
+}
+
+/**
+ * Inventory Analytics Response Interface
+ */
+interface IInventoryAnalyticsResponse {
+  lowStockItems: Array<{
+    _id: string;
+    name: string;
+    sku: string;
+    quantity: number;
+    reorderPoint: number;
+    [key: string]: any;
+  }>;
+  valueByCategory: Array<{
+    _id: string;
+    totalValue: number;
+    itemCount: number;
+  }>;
+  totalValue: number;
+  noMovementItems: number;
+  inventoryByStatus: Array<{
+    status: string;
+    count: number;
+  }>;
+}
+
+/**
+ * Shipment Analytics Response Interface
+ */
+interface IShipmentAnalyticsResponse {
+  shipmentsByStatus: Array<{
+    _id: string;
+    count: number;
+  }>;
+  shipmentsByCarrier: Array<{
+    _id: string;
+    count: number;
+  }>;
+  shipmentsByType: Array<{
+    _id: string;
+    count: number;
+  }>;
+  averageShippingTime: number;
+  onTimeDeliveryRate: number;
+  totalShipments: number;
+}
+
+/**
+ * Customer Analytics Response Interface
+ */
+interface ICustomerAnalyticsResponse {
+  customersByIndustry: Array<{
+    _id: string;
+    count: number;
+  }>;
+  customersBySize: Array<{
+    _id: string;
+    count: number;
+  }>;
+  topCustomersByProjects: Array<{
+    _id: string;
+    count: number;
+    customerName: string;
+  }>;
+  customerProjectStatus: Array<{
+    _id: string;
+    customerName: string;
+    statuses: Array<{
+      status: string;
+      count: number;
+    }>;
+    totalProjects: number;
+  }>;
+  totalCustomers: number;
+}
+
+/**
+ * Time Series Data Response Interface
+ */
+interface ITimeSeriesDataResponse {
+  metric: string;
+  period: string;
+  timeSeriesData: Array<{
+    date: string;
+    count: number;
+  }>;
+}
+
+/**
+ * Project Time To Completion Response Interface
+ */
+interface IProjectTimeToCompletionResponse {
+  projectData: Array<{
+    projectName: string;
+    phase: string;
+    actualDuration: number;
+    targetDuration: number | null;
+    durationVariance: number | null;
+    variancePercentage: number | null;
+    onTime: boolean | null;
+  }>;
+  phaseAnalytics: Array<{
+    phase: string;
+    projectCount: number;
+    averageActualDuration: number;
+    averageTargetDuration: number;
+    averageVariance: number;
+    onTimePercentage: number;
+  }>;
+  overallAnalytics: {
+    totalProjects: number;
+    averageActualDuration: number;
+    averageTargetDuration: number;
+    averageVariance: number;
+    onTimePercentage: number;
+  };
+}
+
+/**
+ * MongoDB Aggregation Result Types
+ */
+interface IAggregationResult {
+  _id: string | null;
+  count: number;
+}
+
+interface IPhaseAggregationResult extends IAggregationResult {
+  _id: ProjectPhase | string;
+}
+
+interface IStatusAggregationResult extends IAggregationResult {
+  _id: ProjectStatus | string;
+}
+
+interface IDurationAggregationResult {
+  _id: null;
+  avgDuration: number;
+}
+
+interface ICustomerProjectAggregationResult extends IAggregationResult {
+  _id: string;
+  customerName: string;
+}
+
+interface ICategoryValueAggregationResult {
+  _id: string;
+  totalValue: number;
+  itemCount: number;
+}
+
+interface ITotalValueAggregationResult {
+  _id: null;
+  totalValue: number;
+}
+
+interface ITimeSeriesGroupIdFormat {
+  year: any;
+  month?: any;
+  week?: any;
+  day?: any;
+  quarter?: any;
+}
+
+interface ITimeSeriesAggregationResult {
+  _id: {
+    year: number;
+    month?: number;
+    week?: number;
+    day?: number;
+    quarter?: number;
+  };
+  count: number;
+}
+
+interface ICustomerProjectStatusResult {
+  _id: string;
+  customerName: string;
+  statuses: Array<{
+    status: string;
+    count: number;
+  }>;
+  totalProjects: number;
+}
+
+/**
+ * Response Type for API
+ */
+type ApiResponse<T> = {
+  success: boolean;
+  data: T;
+};
 
 /**
  * @desc    Get business overview analytics
@@ -79,7 +316,11 @@ import { ApiError } from '../middleware/error.middleware';
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const getBusinessOverview = async (req: Request, res: Response, next: NextFunction) => {
+export const getBusinessOverview = async (
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> => {
   try {
     // Get basic counts from each collection
     const [
@@ -124,7 +365,7 @@ export const getBusinessOverview = async (req: Request, res: Response, next: Nex
       status: { $nin: ['completed', 'cancelled'] }
     });
 
-    res.status(200).json({
+    const responseData: ApiResponse<IBusinessOverviewResponse> = {
       success: true,
       data: {
         counts: {
@@ -141,9 +382,15 @@ export const getBusinessOverview = async (req: Request, res: Response, next: Nex
           overdueTasks: overdueTasksCount
         }
       }
-    });
+    };
+
+    res.status(200).json(responseData);
   } catch (error) {
-    next(error);
+    if (error instanceof Error) {
+      next(error);
+    } else {
+      next(new ApiError(500, String(error)));
+    }
   }
 };
 
@@ -234,7 +481,11 @@ export const getBusinessOverview = async (req: Request, res: Response, next: Nex
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const getProjectPerformance = async (req: Request, res: Response, next: NextFunction) => {
+export const getProjectPerformance = async (
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> => {
   try {
     // Get date range from query params with defaults
     const { fromDate, toDate } = req.query;
@@ -252,21 +503,21 @@ export const getProjectPerformance = async (req: Request, res: Response, next: N
     };
 
     // Get projects by phase
-    const projectsByPhase = await Project.aggregate([
+    const projectsByPhase = await Project.aggregate<IPhaseAggregationResult>([
       { $match: dateFilter },
       { $group: { _id: '$phase', count: { $sum: 1 } } },
       { $sort: { count: -1 } }
     ]);
 
     // Get projects by status
-    const projectsByStatus = await Project.aggregate([
+    const projectsByStatus = await Project.aggregate<IStatusAggregationResult>([
       { $match: dateFilter },
       { $group: { _id: '$status', count: { $sum: 1 } } },
       { $sort: { count: -1 } }
     ]);
 
     // Get average project duration (for completed projects)
-    const projectDuration = await Project.aggregate([
+    const projectDuration = await Project.aggregate<IDurationAggregationResult>([
       { 
         $match: { 
           status: 'completed',
@@ -288,7 +539,7 @@ export const getProjectPerformance = async (req: Request, res: Response, next: N
     ]);
 
     // Get on-time completion rate
-    const completedProjects = await Project.find({
+    const completedProjects = await Project.find<IProjectDocument>({
       status: 'completed',
       startDate: { $exists: true, $ne: null },
       targetCompletionDate: { $exists: true, $ne: null },
@@ -308,7 +559,7 @@ export const getProjectPerformance = async (req: Request, res: Response, next: N
     const onTimeCompletionRate = totalCount > 0 ? (onTimeCount / totalCount) * 100 : 0;
 
     // Get projects by customer
-    const projectsByCustomer = await Project.aggregate([
+    const projectsByCustomer = await Project.aggregate<ICustomerProjectAggregationResult>([
       { $match: dateFilter },
       { $group: { _id: '$customer', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
@@ -330,7 +581,7 @@ export const getProjectPerformance = async (req: Request, res: Response, next: N
       }
     ]);
 
-    res.status(200).json({
+    const responseData: ApiResponse<IProjectPerformanceResponse> = {
       success: true,
       data: {
         projectsByPhase,
@@ -339,9 +590,15 @@ export const getProjectPerformance = async (req: Request, res: Response, next: N
         onTimeCompletionRate,
         projectsByCustomer
       }
-    });
+    };
+
+    res.status(200).json(responseData);
   } catch (error) {
-    next(error);
+    if (error instanceof Error) {
+      next(error);
+    } else {
+      next(new ApiError(500, String(error)));
+    }
   }
 };
 
@@ -426,7 +683,11 @@ export const getProjectPerformance = async (req: Request, res: Response, next: N
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const getInventoryAnalytics = async (req: Request, res: Response, next: NextFunction) => {
+export const getInventoryAnalytics = async (
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> => {
   try {
     // Get top low stock items
     const lowStockItems = await Inventory.find({
@@ -437,7 +698,7 @@ export const getInventoryAnalytics = async (req: Request, res: Response, next: N
     .lean();
 
     // Get inventory value distribution by category
-    const valueByCategory = await Inventory.aggregate([
+    const valueByCategory = await Inventory.aggregate<ICategoryValueAggregationResult>([
       {
         $match: {
           quantity: { $gt: 0 },
@@ -461,7 +722,7 @@ export const getInventoryAnalytics = async (req: Request, res: Response, next: N
     ]);
 
     // Get total inventory value
-    const totalInventoryValue = await Inventory.aggregate([
+    const totalInventoryValue = await Inventory.aggregate<ITotalValueAggregationResult>([
       {
         $match: {
           quantity: { $gt: 0 },
@@ -490,26 +751,30 @@ export const getInventoryAnalytics = async (req: Request, res: Response, next: N
     });
 
     // Get items by stock status
+    const outOfStockCount = await Inventory.countDocuments({ quantity: 0 });
+    const lowStockCount = await Inventory.countDocuments({ 
+      quantity: { $gt: 0, $lte: 10 } 
+    });
+    const adequateStockCount = await Inventory.countDocuments({ 
+      quantity: { $gt: 10 } 
+    });
+
     const inventoryByStatus = [
       {
         status: 'Out of Stock',
-        count: await Inventory.countDocuments({ quantity: 0 })
+        count: outOfStockCount
       },
       {
         status: 'Low Stock',
-        count: await Inventory.countDocuments({ 
-          quantity: { $gt: 0, $lte: 10 } 
-        })
+        count: lowStockCount
       },
       {
         status: 'Adequate Stock',
-        count: await Inventory.countDocuments({ 
-          quantity: { $gt: 10 } 
-        })
+        count: adequateStockCount
       }
     ];
 
-    res.status(200).json({
+    const responseData: ApiResponse<IInventoryAnalyticsResponse> = {
       success: true,
       data: {
         lowStockItems,
@@ -518,9 +783,15 @@ export const getInventoryAnalytics = async (req: Request, res: Response, next: N
         noMovementItems,
         inventoryByStatus
       }
-    });
+    };
+
+    res.status(200).json(responseData);
   } catch (error) {
-    next(error);
+    if (error instanceof Error) {
+      next(error);
+    } else {
+      next(new ApiError(500, String(error)));
+    }
   }
 };
 
@@ -614,7 +885,11 @@ export const getInventoryAnalytics = async (req: Request, res: Response, next: N
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const getShipmentAnalytics = async (req: Request, res: Response, next: NextFunction) => {
+export const getShipmentAnalytics = async (
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> => {
   try {
     // Get date range from query params with defaults
     const { fromDate, toDate } = req.query;
@@ -632,14 +907,14 @@ export const getShipmentAnalytics = async (req: Request, res: Response, next: Ne
     };
 
     // Get shipments by status
-    const shipmentsByStatus = await Shipment.aggregate([
+    const shipmentsByStatus = await Shipment.aggregate<IAggregationResult>([
       { $match: dateFilter },
       { $group: { _id: '$status', count: { $sum: 1 } } },
       { $sort: { _id: 1 } }
     ]);
 
     // Get shipments by carrier
-    const shipmentsByCarrier = await Shipment.aggregate([
+    const shipmentsByCarrier = await Shipment.aggregate<IAggregationResult>([
       { $match: dateFilter },
       { $group: { _id: '$carrier', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
@@ -647,13 +922,19 @@ export const getShipmentAnalytics = async (req: Request, res: Response, next: Ne
     ]);
 
     // Get shipments by type (inbound/outbound)
-    const shipmentsByType = await Shipment.aggregate([
+    const shipmentsByType = await Shipment.aggregate<IAggregationResult>([
       { $match: dateFilter },
       { $group: { _id: '$type', count: { $sum: 1 } } }
     ]);
 
+    // Define a specific interface for the shipping time result
+    interface IShippingTimeAggregationResult {
+      _id: null;
+      avgTime: number;
+    }
+
     // Get average shipping time (for delivered shipments)
-    const averageShippingTime = await Shipment.aggregate([
+    const averageShippingTime = await Shipment.aggregate<IShippingTimeAggregationResult>([
       { 
         $match: { 
           ...dateFilter,
@@ -675,14 +956,20 @@ export const getShipmentAnalytics = async (req: Request, res: Response, next: Ne
       { $group: { _id: null, avgTime: { $avg: '$shippingTime' } } }
     ]);
 
+    // Define an interface for the shipment document
+    interface IShipmentDeliveryDocument {
+      deliveredDate?: Date;
+      estimatedDeliveryDate?: Date;
+    }
+
     // Get on-time delivery rate
     // Find shipments with delivery dates
-    const deliveredShipments = await Shipment.find({
+    const deliveredShipments = await Shipment.find<IShipmentDeliveryDocument>({
       ...dateFilter,
       status: 'delivered',
       estimatedDeliveryDate: { $exists: true, $ne: null },
       deliveredDate: { $exists: true, $ne: null }
-    });
+    }).lean();
 
     let onTimeCount = 0;
     let totalCount = deliveredShipments.length;
@@ -695,20 +982,43 @@ export const getShipmentAnalytics = async (req: Request, res: Response, next: Ne
     });
 
     const onTimeDeliveryRate = totalCount > 0 ? (onTimeCount / totalCount) * 100 : 0;
+    const totalShipments = await Shipment.countDocuments(dateFilter);
 
-    res.status(200).json({
+    // Normalize aggregation results for the response
+    const normalizedShipmentsByStatus = shipmentsByStatus.map(item => ({
+      _id: item._id || 'unknown',
+      count: item.count || 0
+    }));
+    
+    const normalizedShipmentsByCarrier = shipmentsByCarrier.map(item => ({
+      _id: item._id || 'unknown',
+      count: item.count || 0
+    }));
+    
+    const normalizedShipmentsByType = shipmentsByType.map(item => ({
+      _id: item._id || 'unknown',
+      count: item.count || 0
+    }));
+    
+    const responseData: ApiResponse<IShipmentAnalyticsResponse> = {
       success: true,
       data: {
-        shipmentsByStatus,
-        shipmentsByCarrier,
-        shipmentsByType,
+        shipmentsByStatus: normalizedShipmentsByStatus,
+        shipmentsByCarrier: normalizedShipmentsByCarrier,
+        shipmentsByType: normalizedShipmentsByType,
         averageShippingTime: averageShippingTime.length > 0 ? averageShippingTime[0].avgTime : 0,
         onTimeDeliveryRate,
-        totalShipments: await Shipment.countDocuments(dateFilter)
+        totalShipments
       }
-    });
+    };
+
+    res.status(200).json(responseData);
   } catch (error) {
-    next(error);
+    if (error instanceof Error) {
+      next(error);
+    } else {
+      next(new ApiError(500, String(error)));
+    }
   }
 };
 
@@ -812,22 +1122,26 @@ export const getShipmentAnalytics = async (req: Request, res: Response, next: Ne
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const getCustomerAnalytics = async (req: Request, res: Response, next: NextFunction) => {
+export const getCustomerAnalytics = async (
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> => {
   try {
     // Get customer distribution by industry
-    const customersByIndustry = await Customer.aggregate([
+    const customersByIndustry = await Customer.aggregate<IAggregationResult>([
       { $group: { _id: '$industry', count: { $sum: 1 } } },
       { $sort: { count: -1 } }
     ]);
 
     // Get customer distribution by size
-    const customersBySize = await Customer.aggregate([
+    const customersBySize = await Customer.aggregate<IAggregationResult>([
       { $group: { _id: '$size', count: { $sum: 1 } } },
       { $sort: { _id: 1 } } // Sort by size (assuming sizes are like 'small', 'medium', 'large')
     ]);
 
     // Get top customers by project count
-    const topCustomersByProjects = await Project.aggregate([
+    const topCustomersByProjects = await Project.aggregate<ICustomerProjectAggregationResult>([
       { $group: { _id: '$customer', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 10 },
@@ -849,7 +1163,7 @@ export const getCustomerAnalytics = async (req: Request, res: Response, next: Ne
     ]);
 
     // Get customer projects by status
-    const customerProjectStatus = await Project.aggregate([
+    const customerProjectStatus = await Project.aggregate<ICustomerProjectStatusResult>([
       {
         $group: {
           _id: {
@@ -891,18 +1205,26 @@ export const getCustomerAnalytics = async (req: Request, res: Response, next: Ne
       }
     ]);
 
-    res.status(200).json({
+    const totalCustomers = await Customer.countDocuments();
+
+    const responseData: ApiResponse<ICustomerAnalyticsResponse> = {
       success: true,
       data: {
         customersByIndustry,
         customersBySize,
         topCustomersByProjects,
         customerProjectStatus,
-        totalCustomers: await Customer.countDocuments()
+        totalCustomers
       }
-    });
+    };
+
+    res.status(200).json(responseData);
   } catch (error) {
-    next(error);
+    if (error instanceof Error) {
+      next(error);
+    } else {
+      next(new ApiError(500, String(error)));
+    }
   }
 };
 
@@ -982,7 +1304,11 @@ export const getCustomerAnalytics = async (req: Request, res: Response, next: Ne
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const getTimeSeriesData = async (req: Request, res: Response, next: NextFunction) => {
+export const getTimeSeriesData = async (
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> => {
   try {
     // Get date range from query params
     const { metric, period = 'week', count = 12 } = req.query;
@@ -991,26 +1317,30 @@ export const getTimeSeriesData = async (req: Request, res: Response, next: NextF
       throw new ApiError(400, 'Metric parameter is required');
     }
 
+    const countAsNumber = typeof count === 'string' ? parseInt(count) : 12;
+    const periodValue = typeof period === 'string' ? period : 'week';
+    const metricValue = metric as string;
+
     // Calculate date ranges based on period
     const endDate = new Date();
     const startDate = new Date();
-    let groupIdFormat;
+    let groupIdFormat: ITimeSeriesGroupIdFormat;
     
-    switch(period) {
+    switch(periodValue) {
       case 'day':
-        startDate.setDate(endDate.getDate() - parseInt(count as string));
+        startDate.setDate(endDate.getDate() - countAsNumber);
         groupIdFormat = { year: { $year: '$createdAt' }, month: { $month: '$createdAt' }, day: { $dayOfMonth: '$createdAt' } };
         break;
       case 'week':
-        startDate.setDate(endDate.getDate() - parseInt(count as string) * 7);
+        startDate.setDate(endDate.getDate() - countAsNumber * 7);
         groupIdFormat = { year: { $year: '$createdAt' }, week: { $week: '$createdAt' } };
         break;
       case 'month':
-        startDate.setMonth(endDate.getMonth() - parseInt(count as string));
+        startDate.setMonth(endDate.getMonth() - countAsNumber);
         groupIdFormat = { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } };
         break;
       case 'quarter':
-        startDate.setMonth(endDate.getMonth() - parseInt(count as string) * 3);
+        startDate.setMonth(endDate.getMonth() - countAsNumber * 3);
         // MongoDB doesn't have a direct quarter function, so we use integer division
         groupIdFormat = { 
           year: { $year: '$createdAt' }, 
@@ -1018,11 +1348,11 @@ export const getTimeSeriesData = async (req: Request, res: Response, next: NextF
         };
         break;
       case 'year':
-        startDate.setFullYear(endDate.getFullYear() - parseInt(count as string));
+        startDate.setFullYear(endDate.getFullYear() - countAsNumber);
         groupIdFormat = { year: { $year: '$createdAt' } };
         break;
       default:
-        startDate.setDate(endDate.getDate() - 7 * parseInt(count as string));
+        startDate.setDate(endDate.getDate() - 7 * countAsNumber);
         groupIdFormat = { year: { $year: '$createdAt' }, week: { $week: '$createdAt' } };
     }
 
@@ -1031,61 +1361,40 @@ export const getTimeSeriesData = async (req: Request, res: Response, next: NextF
       createdAt: { $gte: startDate, $lte: endDate }
     };
 
-    let timeSeriesData;
+    let timeSeriesData: ITimeSeriesAggregationResult[] = [];
+
+    // Basic aggregation pipeline with proper typing
+    const aggregationPipeline = createAggregationPipeline([
+      { $match: dateFilter },
+      { $group: { _id: groupIdFormat, count: { $sum: 1 } } },
+      { $sort: { '_id.year': 1, '_id.month': 1, '_id.week': 1, '_id.day': 1 } }
+    ]);
 
     // Switch based on the requested metric
-    switch(metric) {
+    switch(metricValue) {
       case 'projects':
-        timeSeriesData = await Project.aggregate([
-          { $match: dateFilter },
-          { $group: { _id: groupIdFormat, count: { $sum: 1 } } },
-          { $sort: { '_id.year': 1, '_id.month': 1, '_id.week': 1, '_id.day': 1 } }
-        ]);
+        timeSeriesData = await Project.aggregate<ITimeSeriesAggregationResult>(aggregationPipeline);
         break;
       case 'inventory':
-        timeSeriesData = await Inventory.aggregate([
-          { $match: dateFilter },
-          { $group: { _id: groupIdFormat, count: { $sum: 1 } } },
-          { $sort: { '_id.year': 1, '_id.month': 1, '_id.week': 1, '_id.day': 1 } }
-        ]);
+        timeSeriesData = await Inventory.aggregate<ITimeSeriesAggregationResult>(aggregationPipeline);
         break;
       case 'shipments':
-        timeSeriesData = await Shipment.aggregate([
-          { $match: dateFilter },
-          { $group: { _id: groupIdFormat, count: { $sum: 1 } } },
-          { $sort: { '_id.year': 1, '_id.month': 1, '_id.week': 1, '_id.day': 1 } }
-        ]);
+        timeSeriesData = await Shipment.aggregate<ITimeSeriesAggregationResult>(aggregationPipeline);
         break;
       case 'customers':
-        timeSeriesData = await Customer.aggregate([
-          { $match: dateFilter },
-          { $group: { _id: groupIdFormat, count: { $sum: 1 } } },
-          { $sort: { '_id.year': 1, '_id.month': 1, '_id.week': 1, '_id.day': 1 } }
-        ]);
+        timeSeriesData = await Customer.aggregate<ITimeSeriesAggregationResult>(aggregationPipeline);
         break;
       case 'orders':
-        timeSeriesData = await PurchaseOrder.aggregate([
-          { $match: dateFilter },
-          { $group: { _id: groupIdFormat, count: { $sum: 1 } } },
-          { $sort: { '_id.year': 1, '_id.month': 1, '_id.week': 1, '_id.day': 1 } }
-        ]);
+        timeSeriesData = await PurchaseOrder.aggregate<ITimeSeriesAggregationResult>(aggregationPipeline);
         break;
       case 'activities':
-        timeSeriesData = await Activity.aggregate([
-          { $match: dateFilter },
-          { $group: { _id: groupIdFormat, count: { $sum: 1 } } },
-          { $sort: { '_id.year': 1, '_id.month': 1, '_id.week': 1, '_id.day': 1 } }
-        ]);
+        timeSeriesData = await Activity.aggregate<ITimeSeriesAggregationResult>(aggregationPipeline);
         break;
       case 'tasks':
-        timeSeriesData = await Task.aggregate([
-          { $match: dateFilter },
-          { $group: { _id: groupIdFormat, count: { $sum: 1 } } },
-          { $sort: { '_id.year': 1, '_id.month': 1, '_id.week': 1, '_id.day': 1 } }
-        ]);
+        timeSeriesData = await Task.aggregate<ITimeSeriesAggregationResult>(aggregationPipeline);
         break;
       default:
-        throw new ApiError(400, `Invalid metric: ${metric}`);
+        throw new ApiError(400, `Invalid metric: ${metricValue}`);
     }
 
     // Format the results for time series visualization
@@ -1110,16 +1419,22 @@ export const getTimeSeriesData = async (req: Request, res: Response, next: NextF
       };
     });
 
-    res.status(200).json({
+    const responseData: ApiResponse<ITimeSeriesDataResponse> = {
       success: true,
       data: {
-        metric,
-        period,
+        metric: metricValue,
+        period: periodValue,
         timeSeriesData: formattedData
       }
-    });
+    };
+
+    res.status(200).json(responseData);
   } catch (error) {
-    next(error);
+    if (error instanceof Error) {
+      next(error);
+    } else {
+      next(new ApiError(500, String(error)));
+    }
   }
 };
 
@@ -1224,32 +1539,85 @@ export const getTimeSeriesData = async (req: Request, res: Response, next: NextF
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const getProjectTimeToCompletion = async (req: Request, res: Response, next: NextFunction) => {
+export const getProjectTimeToCompletion = async (
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> => {
   try {
+    // Define interface for project document with only the fields we need
+    interface IProjectTimeCompletion {
+      name: string;
+      startDate: Date | string;
+      targetCompletionDate?: Date | string;
+      actualCompletionDate: Date | string;
+      phase: ProjectPhase | string;
+    }
+
+    // Define interface for project data item
+    interface IProjectAnalyticsItem {
+      projectName: string;
+      phase: string;
+      actualDuration: number;
+      targetDuration: number | null;
+      durationVariance: number | null;
+      variancePercentage: number | null;
+      onTime: boolean | null;
+    }
+
+    // Define interface for phase analytics
+    interface IPhaseAnalyticsItem {
+      phase: string;
+      projectCount: number;
+      averageActualDuration: number;
+      averageTargetDuration: number;
+      averageVariance: number;
+      onTimePercentage: number;
+    }
+
+    // Define interface for phase groups
+    interface IPhaseGroup {
+      projects: number;
+      totalActualDuration: number;
+      totalTargetDuration: number;
+      totalVariance: number;
+      onTimeCount: number;
+    }
+
     // Get completed projects with valid dates
-    const completedProjects = await Project.find({
+    const completedProjects = await Project.find<IProjectTimeCompletion>({
       status: 'completed',
       startDate: { $exists: true, $ne: null },
       actualCompletionDate: { $exists: true, $ne: null }
     }).select('name startDate targetCompletionDate actualCompletionDate phase').lean();
 
     // Calculate metrics for each project
-    const projectData = completedProjects.map(project => {
+    const projectData: IProjectAnalyticsItem[] = completedProjects.map(project => {
       const startDate = project.startDate instanceof Date ? project.startDate : new Date(project.startDate);
-      const targetDate = project.targetCompletionDate ? (project.targetCompletionDate instanceof Date ? project.targetCompletionDate : new Date(project.targetCompletionDate)) : null;
-      const actualDate = project.actualCompletionDate instanceof Date ? project.actualCompletionDate : new Date(project.actualCompletionDate);
+      const targetDate = project.targetCompletionDate 
+        ? (project.targetCompletionDate instanceof Date 
+            ? project.targetCompletionDate 
+            : new Date(project.targetCompletionDate))
+        : null;
+      const actualDate = project.actualCompletionDate instanceof Date 
+        ? project.actualCompletionDate 
+        : new Date(project.actualCompletionDate);
       
       // Calculate durations in days
       const actualDuration = Math.round((actualDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000));
-      const targetDuration = targetDate ? Math.round((targetDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000)) : null;
+      const targetDuration = targetDate 
+        ? Math.round((targetDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000)) 
+        : null;
       
       // Calculate variance
       const durationVariance = targetDuration !== null ? actualDuration - targetDuration : null;
-      const variancePercentage = targetDuration !== null && durationVariance !== null ? (durationVariance / targetDuration) * 100 : null;
+      const variancePercentage = targetDuration !== null && durationVariance !== null 
+        ? (durationVariance / targetDuration) * 100 
+        : null;
       
       return {
         projectName: project.name,
-        phase: project.phase,
+        phase: project.phase as string,
         actualDuration,
         targetDuration,
         durationVariance,
@@ -1260,13 +1628,7 @@ export const getProjectTimeToCompletion = async (req: Request, res: Response, ne
     
     // Calculate average metrics by phase
     // Initialize with all possible phases
-    const phaseGroups: Record<ProjectPhase, {
-      projects: number;
-      totalActualDuration: number;
-      totalTargetDuration: number;
-      totalVariance: number;
-      onTimeCount: number;
-    }> = {
+    const phaseGroups: Record<ProjectPhase, IPhaseGroup> = {
       discovery: { projects: 0, totalActualDuration: 0, totalTargetDuration: 0, totalVariance: 0, onTimeCount: 0 },
       design: { projects: 0, totalActualDuration: 0, totalTargetDuration: 0, totalVariance: 0, onTimeCount: 0 },
       implementation: { projects: 0, totalActualDuration: 0, totalTargetDuration: 0, totalVariance: 0, onTimeCount: 0 },
@@ -1278,27 +1640,29 @@ export const getProjectTimeToCompletion = async (req: Request, res: Response, ne
     projectData.forEach(project => {
       // Validate project.phase is a valid ProjectPhase
       if (project.phase && phaseGroups[project.phase as ProjectPhase]) {
-        phaseGroups[project.phase as ProjectPhase].projects++;
-        phaseGroups[project.phase as ProjectPhase].totalActualDuration += project.actualDuration;
+        const phase = project.phase as ProjectPhase;
+        phaseGroups[phase].projects++;
+        phaseGroups[phase].totalActualDuration += project.actualDuration;
       
         if (project.targetDuration !== null) {
-          phaseGroups[project.phase as ProjectPhase].totalTargetDuration += project.targetDuration;
+          phaseGroups[phase].totalTargetDuration += project.targetDuration;
         }
         
         if (project.durationVariance !== null) {
-          phaseGroups[project.phase as ProjectPhase].totalVariance += project.durationVariance;
+          phaseGroups[phase].totalVariance += project.durationVariance;
         }
         
         if (project.onTime === true) {
-          phaseGroups[project.phase as ProjectPhase].onTimeCount++;
+          phaseGroups[phase].onTimeCount++;
         }
       }
     });
     
     // Calculate averages for each phase
-    const phaseAnalytics = Object.keys(phaseGroups).map(phase => {
+    const phaseAnalytics: IPhaseAnalyticsItem[] = Object.keys(phaseGroups).map(phase => {
       const validPhase = phase as ProjectPhase;
       const group = phaseGroups[validPhase];
+      
       // Only return entries for phases that have projects
       if (group.projects === 0) {
         return {
@@ -1323,19 +1687,24 @@ export const getProjectTimeToCompletion = async (req: Request, res: Response, ne
     
     // Calculate overall averages
     const totalProjects = projectData.length;
-    const averageActualDuration = projectData.reduce((sum, project) => sum + project.actualDuration, 0) / totalProjects;
+    const averageActualDuration = totalProjects > 0
+      ? projectData.reduce((sum, project) => sum + project.actualDuration, 0) / totalProjects
+      : 0;
+    
     const targetDurationProjects = projectData.filter(project => project.targetDuration !== null);
     const averageTargetDuration = targetDurationProjects.length > 0
       ? targetDurationProjects.reduce((sum, project) => sum + (project.targetDuration || 0), 0) / targetDurationProjects.length
       : 0;
+    
     const varianceProjects = projectData.filter(project => project.durationVariance !== null);
     const averageVariance = varianceProjects.length > 0
       ? varianceProjects.reduce((sum, project) => sum + (project.durationVariance || 0), 0) / varianceProjects.length
       : 0;
+    
     const onTimeProjects = projectData.filter(project => project.onTime === true);
-    const onTimePercentage = (onTimeProjects.length / totalProjects) * 100;
+    const onTimePercentage = totalProjects > 0 ? (onTimeProjects.length / totalProjects) * 100 : 0;
 
-    res.status(200).json({
+    const responseData: ApiResponse<IProjectTimeToCompletionResponse> = {
       success: true,
       data: {
         projectData,
@@ -1348,8 +1717,14 @@ export const getProjectTimeToCompletion = async (req: Request, res: Response, ne
           onTimePercentage
         }
       }
-    });
+    };
+
+    res.status(200).json(responseData);
   } catch (error) {
-    next(error);
+    if (error instanceof Error) {
+      next(error);
+    } else {
+      next(new ApiError(500, String(error)));
+    }
   }
 };

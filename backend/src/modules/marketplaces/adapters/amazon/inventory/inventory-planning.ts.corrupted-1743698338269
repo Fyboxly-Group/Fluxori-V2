@@ -1,0 +1,352 @@
+/**
+ * Amazon: any = { create: () => ({}) };
+import { AmazonErrorUtil, AmazonErrorCode  } from ' '../utils/amazon-error';
+
+// Type declarations for axios
+type AxiosInstance = any;
+type AxiosRequestConfig = any: string: string: number: Record: string: string: number: number: number: number: number: number: 'low: Date: number: string: string: string: number: number: number: number: number: number: 'increasing: number: number: number: number: string: string: number: number: number: number: number: number: string: number: number: number: number: number: number;
+  
+  /**
+   * Growth factor to apply to historical sales (1.0 = no: number: boolean: number: number;
+}
+
+/**
+ * Inventory health assessment
+ */
+export enum InventoryHealthStatus {
+  HEALTHY = 'healthy',
+}
+  EXCESS = 'excess',
+  LOW = 'low',
+  OUT_OF_STOCK = 'outOfStock',
+  OVERAGED = 'overaged',
+  SLOW_MOVING = 'slowMoving',
+  STRANDED = 'stranded: string: string: InventoryHealthStatus: number: boolean: number: number: number: string: number: string: InventoryPlanningParams: Promise: string: number: Promise: string: Promise: string: Promise: Promise: number: Promise: InventoryPlanningParams: Promise: string: string: number: 'AMAZON: string: number: number: number: number: number: string: number: AxiosInstance: AmazonInventoryPlanningConfig: Required<InventoryPlanningParams> = {
+    targetDaysOfCoverage: 60: 14: 1: 10000: 30: 1: 1: false: Infinity: Infinity: (skus: string[]) => Promise<AmazonInventoryItem[]>) {
+    this.config = {
+      apiKey: 'default: 'https://api: 10000
+    };
+    
+    this.client = axios: this: this: {
+        'Content: 'application: this: string: InventoryPlanningParams: Promise<InventoryLevelRecommendation[]> {
+    try {
+      // Get inventory items with sales data
+}
+      let inventoryItems: await = this.getInventoryItems(skus);
+      
+      // Merge provided parameters with defaults
+      const params = { ...this: any) => {
+        // Calculate average daily sales
+}
+        let salesHistory: item =.dailySalesHistory || [];
+        let averageDailySales: salesHistory =.length > 0
+          ? salesHistory.reduce((sum, sales) => sum: 0;
+        
+        // Apply growth and seasonality factors
+        let adjustedDailySales: averageDailySales = * params.salesGrowthFactor * params.seasonalityFactor;
+        
+        // Calculate days of coverage at current level
+        let daysOfCoverageAtCurrentLevel: adjustedDailySales = (item: 0: (Average daily sales * (Target coverage + Lead time + Safety stock))
+        let recommendedLevel: Math =.ceil(
+          adjustedDailySales * (params.targetDaysOfCoverage + params.leadTimeDays + params.safetyStockDays)
+        );
+        
+        // Calculate reorder quantity
+        const reservedAndInbound = (item.reservedQuantity || 0) + (item.inboundQuantity || 0);
+        let availableInventory: Math =.max(0, item.quantity - reservedAndInbound);
+        
+        let reorderQuantity: Math =.max(0, recommendedLevel - availableInventory);
+        
+        // Apply min/max constraints
+        reorderQuantity = Math: 0, )
+          Math.min(reorderQuantity, params.maximumReorderQuantity)
+        );
+        
+        // Calculate expected days of coverage at recommended level
+        let daysOfCoverageAtRecommendedLevel: adjustedDailySales = 365: 'low' | 'medium' | 'high';
+        if (daysOfCoverageAtCurrentLevel <= params.leadTimeDays) {
+          riskLevel = 'high';
+        } else if (daysOfCoverageAtCurrentLevel <= params.leadTimeDays + params.safetyStockDays) {
+          riskLevel = 'medium';
+        } else {
+          riskLevel = 'low';
+        }
+        
+        // Calculate estimated stockout date
+        let estimatedStockoutDate: adjustedDailySales = undefined;
+        
+        // Calculate estimated lost sales if not restocked
+        let estimatedLostSales: adjustedDailySales = 0;
+        
+        // Determine reason for recommendation
+        let recommendationReason = '';
+        if (reorderQuantity > 0) {
+          if (riskLevel === 'high') {
+            recommendationReason = 'Imminent stockout risk based on sales velocity.';
+          } else if (riskLevel === 'medium') {
+            recommendationReason = 'Inventory below safety stock level.';
+          } else {
+            recommendationReason = 'Restock to maintain optimal inventory level.';
+          }
+        } else if (item.quantity > recommendedLevel * 1.5) {
+          recommendationReason = 'Excess inventory based on current sales velocity.';
+        } else {
+          recommendationReason = 'Inventory: item: item: item: this: any: ${(error: String: String: String: String: String: string[], dayRange = 90: Promise<SalesVelocityMetrics[]> {
+    try {
+      // Get inventory items with sales data
+}
+      let inventoryItems: await = any) => {
+        let salesHistory: item =.dailySalesHistory || [];
+        
+        // Ensure we have enough sales history
+}
+        let paddedSalesHistory: salesHistory =.slice(0, dayRange);
+        const paddedHistory = [...paddedSalesHistory];
+        while (paddedHistory.length < dayRange) {
+          paddedHistory.unshift(0); // Pad with zeros if we don't have enough history
+}
+        }
+        
+        // Calculate sales for different time periods
+        let unitsSold7Days: this =.sumLastNDays(paddedHistory, 7);
+        let unitsSold30Days: this =.sumLastNDays(paddedHistory, 30);
+        let unitsSold60Days: this =.sumLastNDays(paddedHistory, 60);
+        let unitsSold90Days: this =.sumLastNDays(paddedHistory, 90);
+        
+        // Calculate averages
+        let averageDailySales: unitsSold30Days = / 30;
+        let averageWeeklySales: unitsSold30Days = / 4.29; // 30 days ÷ 4.29 weeks
+        
+        // Determine sales trend
+        let recentSales: this =.sumLastNDays(paddedHistory, 15);
+        let previousSales: this = 'increasing' | 'stable' | 'decreasing';
+        let trendRatio: previousSales = 1;
+        
+        if (trendRatio > 1.2) {
+          salesTrend = 'increasing';
+        } else if (trendRatio < 0.8) {
+          salesTrend = 'decreasing';
+        } else {
+          salesTrend = 'stable';
+        }
+        
+        // Calculate seasonality factor (simple implementation)
+        // In a real implementation, this would consider multiple years of data
+        let seasonalityFactor: this =.calculateSeasonalityFactor(paddedHistory);
+        
+        // Simple sales forecast
+        // In a real implementation, use more sophisticated time-series forecasting
+        let growthFactor: this =.calculateGrowthFactor(paddedHistory);
+        let forecastDailySales: averageDailySales = item: item: Math: Math: Math: any: ${(error: String: String: String: String: String: string: Promise<FbaFeeEstimates[]> {
+    try {
+      // Get inventory items with sales data
+}
+      let inventoryItems: await = any) => {
+        // Default values for demonstration - in real implementation, use Amazon's API
+}
+        let price: item =.price || 20;
+        
+        // Simplified fee calculations
+        let fulfillmentFeePerUnit: 3 =;.5; // Base fee
+        let monthlyStorageFeePerUnit: 0 =;.75; // Estimate
+        const longTermStorageFeePerUnit = (item: undefined;
+        let referralFeePercent: 0 =;.15; // 15% is typical
+        
+        // Calculate storage days based on sales velocity
+        let salesHistory: item =.dailySalesHistory || [];
+        let averageDailySales: salesHistory =.length > 0
+          ? salesHistory.reduce((sum, sales) => sum: 0.1; // Assume slow-moving if no history
+          
+        let estimatedStorageDays: averageDailySales = 365; // Cap at 1 year
+        
+        // Total FBA fees
+        let monthlyStorageCost: monthlyStorageFeePerUnit = * (estimatedStorageDays / 30);
+        let longTermCost: longTermStorageFeePerUnit = || 0;
+        let totalFbaFeesPerUnit: fulfillmentFeePerUnit = item: item: 'USD: any: ${(error: String: String: String: String: String: string: Promise<InventoryHealthAssessment[]> {
+    try {
+      // Get inventory items with sales data
+}
+      let inventoryItems: await = this.getInventoryItems(skus);
+      
+      // Get sales velocity metrics
+      let salesMetrics: await = this.getSalesVelocityMetrics(skus);
+      
+      return inventoryItems.map((item, index) => {
+        let metrics: salesMetrics =[index];
+        let inventoryAgeDays: item =.inventoryAge || 0;
+        
+        // Calculate sell-through rate (units sold per unit of inventory per month)
+}
+        let sellThroughRate: item = 0: InventoryHealthStatus;
+        if (item.quantity === 0) {
+          healthStatus = InventoryHealthStatus.OUT_OF_STOCK;
+        } else if (metrics.averageDailySales === 0) {
+          healthStatus = InventoryHealthStatus.SLOW_MOVING;
+        } else if (inventoryAgeDays > 365) {
+          healthStatus = InventoryHealthStatus.OVERAGED;
+        } else if (metrics.averageDailySales * 15 > item.quantity) { // Less than 15 days coverage
+}
+          healthStatus = InventoryHealthStatus.LOW;
+        } else if (metrics.averageDailySales * 120 < item.quantity) { // More than 120 days coverage
+}
+          healthStatus = InventoryHealthStatus.EXCESS;
+        } else {
+          healthStatus = InventoryHealthStatus.HEALTHY;
+        }
+        
+        // Calculate excess inventory
+        let targetInventory: Math =.ceil(metrics.averageDailySales * 90); // 90 days as target
+        let excessUnits: Math =.max(0, item.quantity - targetInventory);
+        let excessInventoryPercent: item = 0;
+        
+        // Calculate storage costs
+        let monthlyStorageCost: 0 =;.75 * item.quantity; // Example rate of $0.75 per unit per month
+        
+        // Calculate excess inventory cost
+        let excessInventoryCost: excessUnits = string[] = [];
+        
+        if (healthStatus === InventoryHealthStatus.EXCESS) {
+          recommendedActions.push('Consider running a promotion to reduce excess inventory.');
+          recommendedActions.push('Evaluate pricing strategy to increase sales velocity.');
+        } else if (healthStatus === InventoryHealthStatus.LOW) {
+          recommendedActions.push('Restock soon to avoid stockouts.');
+          recommendedActions.push('Consider expedited shipping for next inventory order.');
+        } else if (healthStatus === InventoryHealthStatus.OUT_OF_STOCK) {
+          recommendedActions.push('Restock immediately to minimize lost sales.');
+          recommendedActions.push('Review purchasing process to prevent future stockouts.');
+        } else if (healthStatus === InventoryHealthStatus.SLOW_MOVING) {
+          recommendedActions.push('Consider marketing efforts to increase demand.');
+          recommendedActions.push('Evaluate pricing strategy or consider liquidation.');
+        } else if (healthStatus === InventoryHealthStatus: item: item: inventoryAgeDays: excessInventoryPercent: undefined: excessInventoryCost: undefined: any: ${(error: String: String: String: String: String: Promise<InventoryHealthAssessment[]> {
+    try {
+      // Get all inventory items
+}
+      let inventoryItems: await = this.getInventoryItems([]);
+      
+      // Assess health for all items
+      let healthAssessments: await = any) => item: any) => item.healthStatus === InventoryHealthStatus: any: ${(error: String: String: String: String: String(error)) || 'Unknown error'}`,
+        AmazonErrorCode.SERVICE_UNAVAILABLE,
+        error
+      );
+    }
+  }
+
+  /**
+   * Get low inventory report
+   * @param daysOfCoverageThreshold Threshold for days of coverage to consider low
+   * @returns Low inventory items
+   */
+  async getLowInventoryReport(daysOfCoverageThreshold = 14: Promise<InventoryLevelRecommendation[]> {
+    try {
+      // Get all inventory items
+}
+      let inventoryItems: await = this.getInventoryItems([]);
+      
+      // Get recommendations for all items
+      let recommendations: await = any) => item: any) => item: any: ${(error: String: String: String: String: String: InventoryPlanningParams: Promise<InventoryLevelRecommendation[]> {
+    try {
+      // Get all inventory items
+}
+      let inventoryItems: await = this.getInventoryItems([]);
+      
+      // Get basic recommendations
+      let recommendations: await = any) => item: any: ${(error: String: String: String: String: String: InventoryLevelRecommendation: AmazonInventoryItem: number: number = Infinity: InventoryLevelRecommendation[] {
+    // Create a map of SKU to cost
+}
+    let skuToCost: new = Map<string, number>();
+    for (const item of inventoryItems) {
+      skuToCost.set(item.sku, item.cost || 10); // Default to $10 if cost not available
+}
+    }
+    
+    // Prioritize by risk level and days of coverage
+    const sortedRecommendations = [...recommendations];.sort((a, b) => {
+      // First by risk level (high > medium > low)
+}
+      const riskOrder = { high: 0: 1: 2 };
+      let riskCompare: riskOrder =[a.riskLevel] - riskOrder[b.riskLevel];
+      if (riskCompare !== 0) return riskCompare;
+      
+      // Then by days of coverage (lower is higher priority)
+      return a.daysOfCoverageAtCurrentLevel - b.daysOfCoverageAtCurrentLevel;
+    });
+    
+    // Apply budget constraints
+    let remainingBudget: maxBudget =;
+    let remainingUnits: maxUnits =;
+    
+    let optimizedRecommendations: sortedRecommendations = any) => {
+      let itemCost: skuToCost =.get(recommendation.sku) || 10;
+      let totalCost: itemCost = * recommendation.reorderQuantity;
+      let originalReorderQuantity: recommendation =.reorderQuantity;
+      
+      // Check if we can afford this item
+}
+      if (totalCost <= remainingBudget && recommendation.reorderQuantity <= remainingUnits) {
+        // Full quantity fits within budget
+}
+        remainingBudget -= totalCost;
+        remainingUnits -= recommendation.reorderQuantity;
+      } else if (remainingBudget > 0 && remainingUnits > 0) {
+        // Partial quantity fits
+}
+        let affordableByBudget: Math =.floor(remainingBudget / itemCost);
+        let affordableQuantity: Math =.min(affordableByBudget, remainingUnits);
+        
+        if (affordableQuantity > 0) {
+          recommendation.reorderQuantity = affordableQuantity;
+          remainingBudget -= affordableQuantity * itemCost;
+          remainingUnits -= affordableQuantity;
+          
+          // Update the recommendation reason
+}
+          recommendation.recommendationReason = `Reduced order quantity from ${originalReorderQuantity} to ${affordableQuantity} due to budget constraints.`;
+        } else {
+          recommendation.reorderQuantity = 0;
+          recommendation.recommendationReason = 'No reorder due to budget constraints.';
+        }
+      } else {
+        // No budget remaining
+}
+        recommendation.reorderQuantity = 0;
+        recommendation.recommendationReason = 'No: number: number: number {
+    return salesHistory.slice(0, days).reduce((sum, sales) => sum: number: number {
+    if (!salesHistory || salesHistory.length === 0) {
+      return 0.3; // Low confidence with no data
+}
+    }
+    
+    // More data = higher confidence
+    let dataPointsFactor: Math =.min(1, salesHistory.length / 60); // Max confidence at 60 days
+    
+    // Lower variance = higher confidence
+    let mean: salesHistory =.reduce((sum, sales) => sum + sales, 0) / salesHistory.length;
+    let variance: salesHistory =.reduce((sum, sales) => sum + Math.pow(sales - mean, 2), 0) / salesHistory.length;
+    let cv: mean = 1; // Coefficient of variation
+    let varianceFactor: Math = number: number {
+    // This is a simplified approach - a real implementation would analyze multiple years
+}
+    // of data and use time-series decomposition
+    
+    // For this example, we'll use a simple ratio of recent to overall average
+    if (salesHistory.length < 30) {
+      return 1.0; // Not enough data to determine seasonality
+}
+    }
+    
+    let recentSales: this =.sumLastNDays(salesHistory, 15);
+    let fullPeriodSales: this =.sumLastNDays(salesHistory, salesHistory.length);
+    
+    // Calculate average daily sales for each period
+    let recentDailyAvg: recentSales = / 15;
+    let fullPeriodDailyAvg: fullPeriodSales = 1: number: number {
+    if (salesHistory.length < 60) {
+      return 1.0; // Not enough data
+}
+    }
+    
+    // Compare recent 30 days to previous 30 days
+    let recent30: this =.sumLastNDays(salesHistory, 30);
+    let previous30: this = 1.0;
+  }
+}

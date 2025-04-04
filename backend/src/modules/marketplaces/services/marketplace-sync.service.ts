@@ -70,10 +70,10 @@ export class MarketplaceSyncService {
    */
   public async syncProduct(
     product: { 
-      sku: string; 
+      sku: string;
       title: string; 
       description?: string; 
-      price: number; 
+      price: number;
       stockLevel: number; 
       active: boolean; 
     },
@@ -87,7 +87,7 @@ export class MarketplaceSyncService {
     
     // Determine which marketplaces to sync with
     const targetMarketplaces = marketplaceIds 
-      ? marketplaceIds.map(id => id.toLowerCase())
+      ? marketplaceIds.map((id: any) => id.toLowerCase())
       : Array.from(this.activeAdapters.keys());
     
     // Sync with each marketplace
@@ -127,8 +127,8 @@ export class MarketplaceSyncService {
         }
         
         // Check if stock update failed for this SKU
-        if (stockResult.data?.failed.some(f => f.sku === product.sku)) {
-          const reason = stockResult.data?.failed.find(f => f.sku === product.sku)?.reason || 'Unknown error';
+        if (stockResult.data?.failed.some((f: any) => f.sku === product.sku)) {
+          const reason = stockResult.data?.failed.find((f: any) => f.sku === product.sku)?.reason || 'Unknown error';
           throw new Error(`Stock update failed: ${reason}`);
         }
         
@@ -140,8 +140,8 @@ export class MarketplaceSyncService {
         }
         
         // Check if price update failed for this SKU
-        if (priceResult.data?.failed.some(f => f.sku === product.sku)) {
-          const reason = priceResult.data?.failed.find(f => f.sku === product.sku)?.reason || 'Unknown error';
+        if (priceResult.data?.failed.some((f: any) => f.sku === product.sku)) {
+          const reason = priceResult.data?.failed.find((f: any) => f.sku === product.sku)?.reason || 'Unknown error';
           throw new Error(`Price update failed: ${reason}`);
         }
         
@@ -153,8 +153,8 @@ export class MarketplaceSyncService {
         }
         
         // Check if status update failed for this SKU
-        if (statusResult.data?.failed.some(f => f.sku === product.sku)) {
-          const reason = statusResult.data?.failed.find(f => f.sku === product.sku)?.reason || 'Unknown error';
+        if (statusResult.data?.failed.some((f: any) => f.sku === product.sku)) {
+          const reason = statusResult.data?.failed.find((f: any) => f.sku === product.sku)?.reason || 'Unknown error';
           throw new Error(`Status update failed: ${reason}`);
         }
         
@@ -195,7 +195,7 @@ export class MarketplaceSyncService {
     
     // Determine which marketplaces to sync with
     const targetMarketplaces = marketplaceIds 
-      ? marketplaceIds.map(id => id.toLowerCase())
+      ? marketplaceIds.map((id: any) => id.toLowerCase())
       : Array.from(this.activeAdapters.keys());
     
     // Sync with each marketplace
@@ -212,7 +212,7 @@ export class MarketplaceSyncService {
       
       try {
         // Convert updates to StockUpdatePayload format
-        const stockUpdates: StockUpdatePayload[] = updates.map(update => ({
+        const stockUpdates: StockUpdatePayload[] = updates.map((update: any) => ({
           sku: update.sku,
           quantity: update.quantity
         }));
@@ -288,7 +288,7 @@ export class MarketplaceSyncService {
     daysSince: number = 7,
     page: number = 0,
     pageSize: number = 20
-  ) {
+  ) : Promise<void> {
     const adapter = this.activeAdapters.get(marketplaceId.toLowerCase());
     
     if (!adapter) {
@@ -337,7 +337,7 @@ export class MarketplaceSyncService {
    * Close all active marketplace adapters
    */
   public async closeAll(): Promise<void> {
-    const closePromises = Array.from(this.activeAdapters.values()).map(adapter => adapter.close());
+    const closePromises = Array.from(this.activeAdapters.values()).map((adapter: any) => adapter.close());
     await Promise.all(closePromises);
     this.activeAdapters.clear();
   }

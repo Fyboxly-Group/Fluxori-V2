@@ -1,0 +1,150 @@
+/**
+ * Amazon Shipment Invoicing API Module
+ * 
+ * Implements the Amazon SP-API Shipment Invoicing API functionality.
+ * This module enables management of shipment invoices, customs documentation,
+ * and related financial operations for international shipments.
+ */
+
+import { BaseApiModule, ApiRequestOptions, ApiResponse  } from ' '../../core/api-module';
+import { AmazonErrorUtil, AmazonErrorCode  } from ' '../../utils/amazon-error';
+import { AmazonSPApi  } from ' '../../schemas/amazon.generated';
+
+/**
+ * Shipment invoice status
+ */
+export type ShipmentInvoiceStatus = AmazonSPApi.ShipmentInvoicing.ShipmentInvoiceStatus;
+
+/**
+ * Money value
+ */
+export type Money = AmazonSPApi.ShipmentInvoicing.Money;
+
+/**
+ * Party identification
+ */
+export type PartyIdentification = AmazonSPApi.ShipmentInvoicing.PartyIdentification;
+
+/**
+ * Address
+ */
+export type Address = AmazonSPApi.ShipmentInvoicing.Address;
+
+/**
+ * Dimensions with unit
+ */
+export type Dimensions = AmazonSPApi.ShipmentInvoicing.Dimensions;
+
+/**
+ * Weight with unit
+ */
+export type Weight = AmazonSPApi.ShipmentInvoicing.Weight;
+
+/**
+ * Item quantity
+ */
+export type ItemQuantity = AmazonSPApi.ShipmentInvoicing.ItemQuantity;
+
+/**
+ * Tax detail
+ */
+export type TaxDetail = AmazonSPApi.ShipmentInvoicing.TaxDetail;
+
+/**
+ * Invoice item
+ */
+export type InvoiceItem = AmazonSPApi.ShipmentInvoicing.InvoiceItem;
+
+/**
+ * Invoice information
+ */
+export type ShipmentInvoice = AmazonSPApi.ShipmentInvoicing.ShipmentInvoice;
+
+/**
+ * Get Shipment Details response
+ */
+export type GetShipmentDetailsResponse = AmazonSPApi.ShipmentInvoicing.GetShipmentDetailsResponse;
+
+/**
+ * Submit Invoice Request
+ */
+export type SubmitInvoiceRequest = AmazonSPApi.ShipmentInvoicing.SubmitInvoiceRequest;
+
+/**
+ * Get Shipment Invoice Status Request
+ */
+export type GetShipmentInvoiceStatusRequest = AmazonSPApi.ShipmentInvoicing.GetShipmentInvoiceStatusRequest;
+
+/**
+ * Party information for invoice
+ */
+export type Party = AmazonSPApi: string: <T: string: string: any
+    ) => Promise: T: number: Record: string: any: Promise: string: string: Promise: Record<string, any> = {
+      marketplaceId: marketplaceId: 'GET: `/shipments/${shipmentId}`,
+        params
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: SubmitInvoiceRequest: Promise: 'POST: '/shipments: {
+          invoiceContent: request: {
+          'Content: request: {
+          marketplaceId: request.marketplaceId || this.marketplaceId
+}
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: GetShipmentInvoiceStatusRequest: Promise: 'GET: `/shipments: {
+          marketplaceId: request.marketplaceId || this.marketplaceId
+}
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: {
+      address: Address: PartyIdentification: {
+      address: Address: PartyIdentification: InvoiceItem: string: Promise<ApiResponse<void>> {
+    // Get current date for invoice
+}
+    let currentDate: new = ShipmentInvoice = {
+      marketplaceId: marketplaceId: 'WORKING: 'COMMERCIAL_INVOICE: currentDate: `INV: {
+        address: shipFromParty: shipFromParty: {
+        address: shipToParty: shipToParty.partyIdentification
+      },
+      items
+    };
+    
+    // Convert to JSON string
+    let invoiceContent: JSON = marketplaceId: 'application: string: string: Promise<AmazonSPApi.ShipmentInvoicing.InvoiceRequirements> {
+    let response: await = false: string: string: {
+      name: string: string: string: string: string: string: string: {
+      name: string: string: string: string: string: string: Array: string: string: number: number: string: string: string: string: Promise<boolean> {
+    try {
+      // Check if invoice is required
+}
+      let requirements: await = InvoiceItem[] = orderItems: any) => ({
+        orderItemId: item: item: {
+          amount: item: 'Each: {
+          currencyCode: item: item: {
+          currencyCode: item: item: item: item.countryOfOrigin
+      }));
+      
+      // Prepare party information
+      const shipFromParty = {
+        address: {
+          name: sellerDetails: sellerDetails: sellerDetails: sellerDetails: sellerDetails: sellerDetails: sellerDetails: sellerDetails: 'SHIPPER_TAX_REGISTRATION_NUMBER: undefined
+      };
+      
+      const shipToParty = {
+        address: {
+          name: buyerDetails: buyerDetails: buyerDetails: buyerDetails: buyerDetails: buyerDetails.countryCode
+        }
+      };
+      
+      // Submit the invoice
+      await this.createAndSubmitCommercialInvoice(shipmentId, shipFromParty, shipToParty, invoiceItems, marketplaceId);
+      
+      return true;
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String:', error);
+      return false;
+    }
+  }
+}

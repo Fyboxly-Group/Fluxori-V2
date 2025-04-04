@@ -6,34 +6,7 @@
  * is Amazon's service for delivery and cash on delivery collection.
  */
 
-// Define necessary types for TypeScript validation
-class BaseApiModule {
-  protected moduleName: string;
-  protected marketplaceId: string;
-
-  constructor(moduleName: string, apiVersion: string, makeApiRequest: any, marketplaceId: string) {
-    this.moduleName = moduleName;
-    this.marketplaceId = marketplaceId;
-  }
-
-  protected makeRequest<T>(options: any): Promise<ApiResponse<T>> {
-    return Promise<any>.resolve({ data: {} as T, status: 200, headers: {} } as ApiResponse<T>);
-  }
-}
-
-interface ApiRequestOptions {
-  method: string;
-  path: string;
-  data?: any;
-  params?: Record<string, any>;
-}
-
-interface ApiResponse<T> {
-  data: T;
-  status: number;
-  headers: Record<string, string>;
-}
-
+import { BaseApiModule, ApiRequestOptions, ApiResponse } from '../core/api-module';
 import { AmazonErrorUtil, AmazonErrorCode } from '../utils/amazon-error';
 
 /**
@@ -112,6 +85,81 @@ export interface Item {
 }
 
 /**
+ * Time slot for scheduling Easy Ship pickups
+ */
+export interface TimeSlot {
+  /**
+   * Start time of the slot (ISO 8601 format)
+   */
+  startTime: string;
+  
+  /**
+   * End time of the slot (ISO 8601 format)
+   */
+  endTime: string;
+}
+
+/**
+ * Package details for Easy Ship
+ */
+export interface PackageDetails {
+  /**
+   * Package dimensions
+   */
+  dimensions: Dimensions;
+  
+  /**
+   * Package weight
+   */
+  weight: Weight;
+  
+  /**
+   * Items in the package
+   */
+  items: Item[];
+}
+
+/**
+ * Schedule request details
+ */
+export interface CreateScheduleRequest {
+  /**
+   * Amazon order ID
+   */
+  amazonOrderId: string;
+  
+  /**
+   * Marketplace ID (optional, will use the module's marketplace ID if not provided)
+   */
+  marketplaceId?: string;
+  
+  /**
+   * Pickup time slot
+   */
+  timeSlot: TimeSlot;
+  
+  /**
+   * Package details
+   */
+  packageDetails: PackageDetails;
+}
+
+/**
+ * Schedule response
+ */
+export interface CreateScheduleResponse {
+  /**
+   * The scheduled pickup ID
+   */
+  scheduledPackageId: string;
+  
+  /**
+   * Confirmed time slot
+   */
+  timeSlot: TimeSlot;
+}
+
+/**
  * Implementation of the Amazon Easy Ship API
  */
 export class EasyShipModule extends BaseApiModule {
@@ -123,11 +171,7 @@ export class EasyShipModule extends BaseApiModule {
    */
   constructor(
     apiVersion: string,
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
+    makeApiRequest: ApiRequestFunction,
     marketplaceId: string
   ) {
     super('easyShip', apiVersion, makeApiRequest, marketplaceId);
@@ -136,11 +180,11 @@ export class EasyShipModule extends BaseApiModule {
   /**
    * Initialize the module
    * @param config Module-specific configuration
-   * @returns Promise<any> that resolves when initialization is complete
+   * @returns Promise that resolves when initialization is complete
    */
   protected async initializeModule(config?: any): Promise<void> {
     // No specific initialization required for this module
-    return Promise<any>.resolve();
+    return Promise.resolve();
   }
   
   /**
@@ -148,34 +192,158 @@ export class EasyShipModule extends BaseApiModule {
    * @param details The schedule details
    * @returns The created schedule
    */
-  public async createSchedule(details: any): Promise<ApiResponse<any>> {
+  public async createSchedule(details: CreateScheduleRequest): Promise<ApiResponse<CreateScheduleResponse>> {
     if (!details.marketplaceId && !this.marketplaceId) {
-      throw AmazonErrorUtil.createError(
-        'Marketplace ID is required to create schedule',
-        AmazonErrorCode.INVALID_INPUT
-      );
+      throw AmazonErrorUtil.createError('Marketplace ID is required to create schedule', AmazonErrorCode.INVALID_INPUT);
+    }
+    
+    // Validate required fields
+    if (!details.amazonOrderId) {
+      throw AmazonErrorUtil.createError('Amazon order ID is required', AmazonErrorCode.INVALID_INPUT);
+    }
+    
+    if (!details.timeSlot) {
+      throw AmazonErrorUtil.createError('Time slot is required', AmazonErrorCode.INVALID_INPUT);
+    }
+    
+    if (!details.packageDetails) {
+      throw AmazonErrorUtil.createError('Package details are required', AmazonErrorCode.INVALID_INPUT);
     }
     
     try {
-      return await this.makeRequest<any>({
+      return await this.makeRequest<CreateScheduleResponse>({
         method: 'POST',
         path: '/schedule',
-        data: details
+        data: {
+          ...details,
+          marketplaceId: details.marketplaceId || this.marketplaceId
+        }
       });
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.createSchedule`);
     }
   }
   
   /**
-   * Placeholder method for creating an Easy Ship order
+   * Get list of available time slots for Easy Ship orders
+   * @param amazonOrderId Amazon order ID
+   * @param marketplaceId Optional marketplace ID (uses module's marketplace ID if not provided)
+   * @returns List of available time slots
    */
-  public async createEasyShipOrder(orderId: string): Promise<any> {
-    // This is a placeholder implementation
-    return {
-      success: true,
-      orderId
+  public async getTimeSlots(amazonOrderId: string, marketplaceId?: string): Promise<ApiResponse<TimeSlot[]>> {
+    if (!amazonOrderId) {
+      throw AmazonErrorUtil.createError('Amazon order ID is required', AmazonErrorCode.INVALID_INPUT);
+    }
+    
+    const params: Record<string, any> = {
+      amazonOrderId,
+      marketplaceId: marketplaceId || this.marketplaceId
     };
+    
+    try {
+      return await this.makeRequest<TimeSlot[]>({
+        method: 'GET',
+        path: '/timeSlots',
+        params
+      });
+    } catch (error) {
+      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getTimeSlots`);
+    }
+  }
+  
+  /**
+   * Update or cancel an existing Easy Ship order schedule
+   * @param scheduledPackageId ID of the scheduled package
+   * @param updateAction Action to perform (reschedule or cancel)
+   * @param timeSlot New time slot (required for reschedule, ignored for cancel)
+   * @returns Updated schedule
+   */
+  public async updateSchedule(
+    scheduledPackageId: string, 
+    updateAction: 'reschedule' | 'cancel',
+    timeSlot?: TimeSlot
+  ): Promise<ApiResponse<CreateScheduleResponse>> {
+    if (!scheduledPackageId) {
+      throw AmazonErrorUtil.createError('Scheduled package ID is required', AmazonErrorCode.INVALID_INPUT);
+    }
+    
+    if (updateAction === 'reschedule' && !timeSlot) {
+      throw AmazonErrorUtil.createError('Time slot is required for reschedule action', AmazonErrorCode.INVALID_INPUT);
+    }
+    
+    try {
+      return await this.makeRequest<CreateScheduleResponse>({
+        method: 'PATCH',
+        path: `/schedule/${scheduledPackageId}`,
+        data: {
+          action: updateAction,
+          timeSlot: updateAction === 'reschedule' ? timeSlot : undefined,
+          marketplaceId: this.marketplaceId
+        }
+      });
+    } catch (error) {
+      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.updateSchedule`);
+    }
+  }
+  
+  /**
+   * Get the shipping label for an Easy Ship order
+   * @param scheduledPackageId ID of the scheduled package
+   * @param labelFormat Format of the label (PDF, PNG, etc.)
+   * @returns Shipping label data
+   */
+  public async getShippingLabel(
+    scheduledPackageId: string,
+    labelFormat: 'PDF' | 'PNG' = 'PDF'
+  ): Promise<ApiResponse<{ labelData: string }>> {
+    if (!scheduledPackageId) {
+      throw AmazonErrorUtil.createError('Scheduled package ID is required', AmazonErrorCode.INVALID_INPUT);
+    }
+    
+    try {
+      return await this.makeRequest<{ labelData: string }>({
+        method: 'GET',
+        path: `/shippingLabel/${scheduledPackageId}`,
+        params: {
+          labelFormat,
+          marketplaceId: this.marketplaceId
+        }
+      });
+    } catch (error) {
+      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getShippingLabel`);
+    }
+  }
+  
+  /**
+   * Get the status of an Easy Ship order
+   * @param amazonOrderId Amazon order ID
+   * @returns Order status
+   */
+  public async getOrderStatus(amazonOrderId: string): Promise<ApiResponse<{
+    amazonOrderId: string;
+    scheduledPackageId?: string;
+    status: 'SCHEDULED' | 'PICKING_UP' | 'DELIVERED' | 'CANCELLED' | 'FAILED';
+    statusDetails?: string;
+  }>> {
+    if (!amazonOrderId) {
+      throw AmazonErrorUtil.createError('Amazon order ID is required', AmazonErrorCode.INVALID_INPUT);
+    }
+    
+    try {
+      return await this.makeRequest<{
+        amazonOrderId: string;
+        scheduledPackageId?: string;
+        status: 'SCHEDULED' | 'PICKING_UP' | 'DELIVERED' | 'CANCELLED' | 'FAILED';
+        statusDetails?: string;
+      }>({
+        method: 'GET',
+        path: `/order/${amazonOrderId}`,
+        params: {
+          marketplaceId: this.marketplaceId
+        }
+      });
+    } catch (error) {
+      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getOrderStatus`);
+    }
   }
 }

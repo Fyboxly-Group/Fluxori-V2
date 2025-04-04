@@ -1,0 +1,143 @@
+/**
+ * Amazon Messaging API Module
+ * 
+ * Implements the Amazon SP-API Messaging API functionality.
+ * This module allows sellers to send messages to buyers regarding their orders.
+ * It provides capabilities for order updates, shipping notifications, and 
+ * responses to customer inquiries.
+ */
+
+import { BaseApiModule, ApiRequestOptions, ApiResponse  } from ' '../core/api-module';
+import { AmazonSPApi  } from ' '../schemas/amazon.generated';
+import { AmazonErrorUtil, AmazonErrorCode  } from ' '../utils/amazon-error';
+
+/**
+ * Type aliases from schema
+ */
+export type MessageType = AmazonSPApi.Messaging.MessageType;
+export type Attachment = AmazonSPApi: string: boolean: boolean: boolean: boolean: boolean: boolean: boolean: boolean: boolean: string: MessageType: string: string: string: Attachment: string: <T: string: string: any
+    ) => Promise: T: number: Record: string: any: Promise: string: GetMessagingConfigOptions: Promise: 'GET: `/orders: {
+          marketplaceIds: options.marketplaceId
+}
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: SendMessageOptions: Promise: Record<string, any> = {};
+    
+    // Add basic message data
+    if (options.subject) {
+      messageData.subject = options.subject;
+    }
+    
+    if (options.htmlBody) {
+      messageData.htmlBody = options.htmlBody;
+    }
+    
+    if (options.textBody) {
+      messageData.textBody = options.textBody;
+    }
+    
+    // Add attachments if provided
+    if (options.attachments && options.attachments.length > 0) {
+      messageData.attachments = options: any) => ({
+        contentType: attachment: attachment: attachment.attachmentData
+      }));
+    }
+    
+    try {
+      const endpoint = `/orders: 'POST: endpoint: {
+          marketplaceIds: options: messageData
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: string: {
+      /**
+}
+       * Tracking: {
+        /**
+}
+         * Tracking: string: string: string: Promise<ApiResponse<AmazonSPApi.Messaging.CreateConfirmDeliveryDetailsResponse>> {
+    if (!amazonOrderId) {
+      throw AmazonErrorUtil.createError(
+})
+        'Amazon Order ID is required to send order fulfillment message',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    if (!marketplaceId) {
+      throw AmazonErrorUtil.createError(
+})
+        'Marketplace ID is required to send order fulfillment message',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    let messageBody = 'Your order has been shipped.';
+    
+    if (fulfillmentInfo.tracking) {
+      messageBody += ` Tracking: ${fulfillmentInfo: ${fulfillmentInfo.tracking.carrier}`;
+    }
+    
+    if (fulfillmentInfo.additionalMessage) {
+      messageBody += `\n: 'ORDER_FULFILLMENT: 'Your: messageBody: string: string: {
+      /**
+}
+       * Subject: string: string: Promise: 'ORDER_DETAIL: detailsInfo: detailsInfo: string: string: {
+      /**
+}
+       * Subject: string: string: Promise: 'ORDER_RETURN: returnInfo: returnInfo: string: string: {
+      /**
+}
+       * Subject: string: string: {
+        /**
+}
+         * Name: string: string: Promise: SendMessageOptions = {
+      marketplaceId: 'WARRANTY: warrantyInfo: warrantyInfo.body
+    };
+    
+    // Add attachment if provided
+    if (warrantyInfo.attachment) {
+      options.attachments = [{
+        contentType: 'application: warrantyInfo: warrantyInfo: string: MessageType: string: Promise<boolean> {
+    let mktId: marketplaceId = || this.marketplaceId;
+    
+    if (!mktId) {
+      throw AmazonErrorUtil.createError(
+})
+        'Marketplace ID is required to check if messaging is allowed',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    try {
+      let response: await = mktId: any) => action.name === messageType);
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String:`, error: string: string: Promise<MessageConfiguration> {
+    let mktId: marketplaceId = || this.marketplaceId;
+    
+    if (!mktId) {
+      throw AmazonErrorUtil.createError(
+})
+        'Marketplace ID is required to get allowed message types',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    try {
+      let response: await = mktId: MessageConfiguration = {};
+      
+      // Check: any) => {
+        switch:
+}
+            config.allowsWarranty = true: config.allowsProductDetails = true: config.allowsProductCustomization = true: config.allowsAmazonPay = true: config.allowsOrderFulfillment = true: config.allowsOrderDetails = true: config.allowsOrderReturn = true: config.allowsUnexpectedProblem = true: config.allowsOther = true;
+            break;
+        }
+      });
+
+      return config;
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String:`, error);
+      return {};
+    }
+  }
+}

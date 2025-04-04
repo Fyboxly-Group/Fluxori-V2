@@ -23,6 +23,16 @@ import {
 } from '../models/firestore';
 import { RoleService } from '../services/firestore/role.service';
 
+// Authenticated request type
+type AuthenticatedRequest = Request & {
+  user?: {
+    id: string;
+    organizationId: string;
+    email?: string;
+    role?: string;
+  };
+};
+
 
 // Auth user interfaces
 export interface AuthUser {
@@ -177,8 +187,8 @@ export const multiTenantAuthenticate = async (
       });
     }
     
-    const userOrgs = userOrgsSnapshot.docs.map(doc => doc.data());
-    const orgIds = userOrgs.map(org => org.organizationId);
+    const userOrgs = userOrgsSnapshot.docs.map((doc: any) => doc.data());
+    const orgIds = userOrgs.map((org: any) => org.organizationId);
     
     // If no organization context was specified or the specified one is not valid,
     // use the first available organization
@@ -187,7 +197,7 @@ export const multiTenantAuthenticate = async (
     }
     
     // Get the specific user-organization relationship for the current context
-    const currentUserOrg = userOrgs.find(org => org.organizationId === organizationId);
+    const currentUserOrg = userOrgs.find((org: any) => org.organizationId === organizationId);
     
     if (!currentUserOrg) {
       return res.status(403).json({
@@ -292,15 +302,15 @@ export const requirePermission = (resourceAction: string[]) => {
     }
     
     // Check if user has any of the required permissions
-    const hasPermission = resourceAction.some(permission => 
+    const hasPermission = resourceAction.some((permission: any) => 
       req.user?.permissions.has(permission)
     );
     
     if (!hasPermission) {
       // Log access denial
       const auditLog = createAuditLog(
-        req.user.id,
-        req.user.email,
+        req.user?.id,
+        req.user?.email,
         req.user.currentOrganizationId,
         AuditCategory.AUTHORIZATION,
         AuditAction.ACCESS,
@@ -399,8 +409,8 @@ export const logApiAccess = (
   
   // Log API access
   const auditLog = createAuditLog(
-    req.user.id,
-    req.user.email,
+    req.user?.id,
+    req.user?.email,
     req.user.currentOrganizationId,
     AuditCategory.AUTHORIZATION,
     AuditAction.ACCESS,

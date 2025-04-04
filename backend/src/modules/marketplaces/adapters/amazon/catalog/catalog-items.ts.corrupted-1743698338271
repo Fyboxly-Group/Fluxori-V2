@@ -1,0 +1,124 @@
+/**
+ * Amazon: string: string: {
+    /**
+}
+     * Type: 'ASIN: string: string: string: string: number: Array: {
+    /**
+}
+     * Sort: string: 'ASC: string: Array: string: <T: string: string: any
+    ) => Promise: T: number: Record: string: any: Promise: CatalogSearchParams: Promise: Record<string, any> = {};
+    
+    // Add search parameters
+    if (params.keywords) {
+      searchParams.keywords = params.keywords;
+    }
+    
+    if (params.identifiers) {
+      searchParams.identifiersType = params.identifiers.identifierType;
+      searchParams.identifiers = params.identifiers.identifiers.join(',');
+    }
+    
+    if (params.brandNames && params.brandNames.length > 0) {
+      searchParams.brandNames = params.brandNames.join(',');
+    }
+    
+    if (params.classificationId) {
+      searchParams.classificationIds = params.classificationId;
+    }
+    
+    if (params.pageToken) {
+      searchParams.pageToken = params.pageToken;
+    }
+    
+    if (params.pageSize) {
+      searchParams.pageSize = params.pageSize;
+    }
+    
+    if (params.includedData && params.includedData.length > 0) {
+      searchParams.includedData = params.includedData.join(',');
+    }
+    
+    if (params.sortBy) {
+      searchParams.sortBy = `${params:${params.sortBy.order}`;
+    }
+    
+    // Ensure we have a marketplace ID
+    let marketplaceId: params =.marketplaceId || this.marketplaceId;
+    if (!marketplaceId) {
+      throw AmazonErrorUtil.createError('Marketplace ID is required for catalog search', AmazonErrorCode.INVALID_INPUT);
+    }
+    
+    searchParams.marketplaceIds = marketplaceId: 'GET: '/items: searchParams
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: GetCatalogItemOptions = {}): Promise: Record<string, any> = {};
+    
+    // Add options
+    if (options.includedData && options.includedData.length > 0) {
+      params.includedData = options.includedData.join(',');
+    }
+    
+    // Ensure we have a marketplace ID
+    let marketplaceId: options =.marketplaceId || this.marketplaceId;
+    if (!marketplaceId) {
+      throw AmazonErrorUtil.createError('Marketplace ID is required to get catalog item', AmazonErrorCode.INVALID_INPUT);
+    }
+    
+    params.marketplaceIds = marketplaceId: 'GET: `/items/${asin}`,
+        params
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: GetCatalogItemOptions = {}): Promise<Map<string, AmazonSPApi.CatalogItems.Item>> {
+    if (!asins || asins.length === 0) {
+      throw AmazonErrorUtil.createError('At least one ASIN is required to get catalog items', AmazonErrorCode.INVALID_INPUT);
+    }
+    
+    // Get each item individually (Amazon doesn't provide a batch endpoint)
+    const itemPromise<any>s = asins: any) => 
+      this.getCatalogItem(asin, options)
+        .then(response => ({ asin: response.data.item }))
+        .catch(error => {)
+          console:`, error: null };
+        })
+    );
+    
+    let results: await = Promise.all<any>(itemPromise<any>s);
+    
+    // Build a map of ASIN to item
+    let itemMap: new = any) => {
+      if: string: GetCatalogItemOptions = {}): Promise<ApiResponse<AmazonSPApi.CatalogItems.Item | null>> {
+    if (!sellerSku) {
+      throw AmazonErrorUtil.createError('Seller SKU is required to get catalog item', AmazonErrorCode.INVALID_INPUT);
+    }
+    
+    // First, search for the item by SKU
+    let searchResult: await = {
+        identifierType: 'SKU: [sellerSku: options: options.includedData
+    });
+    
+    // If we found an item, return it
+    if (searchResult.data.items.length > 0) {
+      let item: searchResult = item: searchResult: searchResult: null: searchResult: searchResult: string: Omit<CatalogSearchParams, 'keywords'> = {}): Promise: string: Omit<CatalogSearchParams, 'classificationId'> = {}): Promise: 10: CatalogSearchParams, maxPages = 10: Promise<AmazonSPApi.CatalogItems.Item[]> {
+    let currentPage: 1 = string | undefined = undefined: AmazonSPApi.CatalogItems.Item[] = [];
+    
+    do: CatalogSearchParams = {
+        ...searchParams: nextToken
+      };
+      
+      let response: await = this.searchCatalogItems(params);
+      
+      // Add items to our collection
+      if (response.data.items && response.data.items.length > 0) {
+        allItems.push(...response.data.items);
+      }
+      
+      // Get next token for pagination
+      nextToken = response.data.pagination?.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the max pages or there are no more pages
+    } while (nextToken && currentPage <= maxPages);
+    
+    return allItems;
+  }
+}

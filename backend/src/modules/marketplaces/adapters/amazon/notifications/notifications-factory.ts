@@ -1,46 +1,44 @@
 /**
- * Factory for creating notifications-related API modules
+ * Amazon Notifications API Factory
+ * 
+ * Factory function for creating and registering an Amazon Notifications API module.
  */
 
-import { NotificationsModule } from './notifications';
-import { ModuleRegistry } from '../core/module-registry';
-import { getDefaultModuleVersion } from '../core/module-definitions';
+import { NotificationsModule, NotificationsModuleOptions } from './notifications';
+import { ApiRequestFunction } from '../../../core/base-module.interface';
+import { ModuleRegistry } from '../../../core/module-registry';
+import { getModuleDefaultVersion } from '../../../core/module-definitions';
 
 /**
- * Factory for creating notifications-related API modules
+ * Creates and registers a Notifications module
+ * 
+ * @param apiRequest API request function
+ * @param marketplaceId Marketplace ID
+ * @param registry Module registry for registration
+ * @param apiVersion Optional API version to use
+ * @param options Optional module-specific options
+ * @returns The created Notifications module
  */
-export class NotificationsModuleFactory {
-  /**
-   * Create a Notifications module and register it with the provided registry
-   * @param makeApiRequest Function to make API requests
-   * @param marketplaceId Marketplace ID
-   * @param registry Module registry to register with
-   * @param apiVersion Optional API version (uses default if not provided)
-   * @returns The created module
-   */
-  public static createNotificationsModule(
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string,
-    registry: ModuleRegistry,
-    apiVersion?: string
-  ): NotificationsModule {
-    // Use provided version or get the default
-    const version = apiVersion || getDefaultModuleVersion('notifications') || 'v1';
-    
-    // Create the module
-    const module = new NotificationsModule(
-      version,
-      makeApiRequest,
-      marketplaceId
-    );
-    
-    // Register the module
-    registry.registerModule(module);
-    
-    return module;
-  }
+export function createNotificationsModule(
+  apiRequest: ApiRequestFunction,
+  marketplaceId: string,
+  registry: ModuleRegistry,
+  apiVersion?: string,
+  options: NotificationsModuleOptions = {}
+): NotificationsModule {
+  // Use provided version or get the default
+  const version = apiVersion || getModuleDefaultVersion('notifications') || 'v1';
+  
+  // Create the module
+  const module = new NotificationsModule(
+    version,
+    apiRequest,
+    marketplaceId,
+    options
+  );
+  
+  // Register the module
+  registry.registerModule(module.moduleId, module);
+  
+  return module;
 }

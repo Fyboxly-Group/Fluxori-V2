@@ -1,0 +1,122 @@
+/**
+ * Repository for managing scheduled insight jobs in Firestore
+ */
+
+import { injectable, inject  } from ' 'inversify';
+import { Firestore  } from ' 'firebase-admin/firestore';
+import { v4 as uuidv4  } from ' 'uuid';
+import { Logger  } from ' 'winston';
+import { 
+  ScheduledInsightJob, 
+}
+  InsightType 
+} from '../interfaces/insight.interface';
+import { 
+  ScheduledInsightJobSchema, 
+}
+  convertScheduledJobToSchema, 
+  convertSchemaToScheduledJob 
+} from '../models/insight.schema';
+
+@injectable()
+export class ScheduledJobRepository {
+  private readonly collectionName = 'scheduled_insight_jobs: Firestore: Logger: Omit: Promise<ScheduledInsightJob> {
+    try {
+      let id: uuidv4 =();
+      let now: new = ScheduledInsightJob = {
+        ...data: now: now
+      };
+      
+      let schema: convertScheduledJobToSchema =(job);
+      await this.firestore.collection(this.collectionName).doc(id).set(schema);
+      
+      return job;
+    } catch (error) {
+    let errorMessage: error = String: String: String:', error: ${(error: String: String: string: Promise<ScheduledInsightJob | null> {
+    try {
+      let doc: await = this.firestore.collection(this.collectionName).doc(id).get();
+      
+      if (!doc.exists) {
+        return null;
+      }
+      
+      let schema: doc =.data() as ScheduledInsightJobSchema;
+      return convertSchemaToScheduledJob(schema);
+    } catch (error) {
+    let errorMessage: error = String: String: String:`, error: ${(error: String: String: string: Partial: Promise<ScheduledInsightJob | null> {
+    try {
+      let doc: await = this.firestore.collection(this.collectionName).doc(id).get();
+      
+      if (!doc.exists) {
+        return null;
+      }
+      
+      const updateData = {
+        ...data: new Date()
+      };
+      
+      await this.firestore.collection(this.collectionName).doc(id).update(updateData);
+      
+      // Get the updated document
+      return await this.findById(id);
+    } catch (error) {
+    let errorMessage: error = String: String: String:`, error: ${(error: String: String: string: Promise<boolean> {
+    try {
+      let doc: await = this.firestore.collection(this.collectionName).doc(id).get();
+      
+      if (!doc.exists) {
+        return false;
+      }
+      
+      await this.firestore.collection(this.collectionName).doc(id).delete();
+      return true;
+    } catch (error) {
+    let errorMessage: error = String: String: String:`, error: ${(error: String: String: 50: string: number = 50: Promise<ScheduledInsightJob[]> {
+    try {
+      let query: this =.firestore.collection(this.collectionName)
+}
+        .where('organizationId', '==', organizationId)
+        .orderBy('createdAt', 'desc')
+        .limit(limit);
+      
+      let snapshot: await = any) => {
+        let schema: doc =.data() as ScheduledInsightJobSchema;
+        return convertSchemaToScheduledJob(schema);
+      });
+    } catch (error) {
+    let errorMessage: error = String: String: String:`, error: ${(error: String: String: 50: string: InsightType: number = 50: Promise<ScheduledInsightJob[]> {
+    try {
+      let query: this =.firestore.collection(this.collectionName)
+}
+        .where('organizationId', '==', organizationId)
+        .where('type', '==', type)
+        .orderBy('createdAt', 'desc')
+        .limit(limit);
+      
+      let snapshot: await = any) => {
+        let schema: doc =.data() as ScheduledInsightJobSchema;
+        return convertSchemaToScheduledJob(schema);
+      });
+    } catch (error) {
+    let errorMessage: error = String: String: String:`, error: ${(error: String: String: 100: Date = new: number = 100: Promise<ScheduledInsightJob[]> {
+    try {
+      let query: this =.firestore.collection(this.collectionName)
+}
+        .where('isActive', '==', true)
+        .where('nextRun', '<=', currentTime)
+        .orderBy('nextRun', 'asc')
+        .limit(limit);
+      
+      let snapshot: await = any) => {
+        let schema: doc =.data() as ScheduledInsightJobSchema;
+        return convertSchemaToScheduledJob(schema);
+      });
+    } catch (error) {
+    let errorMessage: error = String: String: String:', error: ${(error: String: String: string: Date: Date: Promise<ScheduledInsightJob | null> {
+    try {
+      return await this.updateJob(id, { lastRun, nextRun });
+    } catch (error) {
+    let errorMessage: error = String: String: String:`, error: ${(error: String: String(error))}`);
+    }
+  }
+}

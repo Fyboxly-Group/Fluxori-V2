@@ -4,6 +4,16 @@ import Task from '../models/task.model';
 import { ApiError } from '../middleware/error.middleware';
 import { ActivityService } from '../services/activity.service';
 
+// Authenticated request type
+type AuthenticatedRequest = Request & {
+  user?: {
+    id: string;
+    organizationId: string;
+    email?: string;
+    role?: string;
+  };
+};
+
 /**
  * @desc    Create a new task
  * @route   POST /api/tasks
@@ -36,8 +46,8 @@ export const createTask = async (req: Request, res: Response, next: NextFunction
     // Log activity
     if (req.user) {
       await ActivityService.logTaskCreate(
-        task._id,
-        req.user._id,
+        (task as any)._id,
+        (req.user as any)._id,
         task.title
       );
     }
@@ -47,6 +57,7 @@ export const createTask = async (req: Request, res: Response, next: NextFunction
       data: task,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -71,7 +82,7 @@ export const getAllTasks = async (req: Request, res: Response, next: NextFunctio
       query.assignedTo = assignedTo;
     } else if (req.user) {
       // Default to current user's tasks if no assignedTo specified
-      query.assignedTo = req.user._id;
+      query.assignedTo = (req.user as any)._id;
     }
     
     if (priority) {
@@ -113,6 +124,7 @@ export const getAllTasks = async (req: Request, res: Response, next: NextFunctio
       data: tasks,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -124,7 +136,7 @@ export const getAllTasks = async (req: Request, res: Response, next: NextFunctio
  */
 export const getTaskById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const taskId = req.params.id;
+    const taskId = req.params.id as any;
     
     if (!mongoose.Types.ObjectId.isValid(taskId)) {
       throw new ApiError(400, 'Invalid task ID');
@@ -143,6 +155,7 @@ export const getTaskById = async (req: Request, res: Response, next: NextFunctio
       data: task,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -154,7 +167,7 @@ export const getTaskById = async (req: Request, res: Response, next: NextFunctio
  */
 export const updateTask = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const taskId = req.params.id;
+    const taskId = req.params.id as any;
     const updates = req.body;
     
     if (!mongoose.Types.ObjectId.isValid(taskId)) {
@@ -169,9 +182,9 @@ export const updateTask = async (req: Request, res: Response, next: NextFunction
     }
     
     // Check if user is authorized to update this task
-    if (req.user && !req.user.role.includes('admin') && 
-        task.assignedTo.toString() !== req.user._id.toString() && 
-        task.createdBy.toString() !== req.user._id.toString()) {
+    if (req.user && !req.user?.role.includes('admin') && 
+        task.assignedTo.toString() !== (req.user as any)._id.toString() && 
+        task.createdBy.toString() !== (req.user as any)._id.toString()) {
       throw new ApiError(403, 'You are not authorized to update this task');
     }
     
@@ -196,16 +209,16 @@ export const updateTask = async (req: Request, res: Response, next: NextFunction
     if (req.user) {
       if (oldStatus !== task.status) {
         await ActivityService.logTaskStatusChange(
-          task._id,
-          req.user._id,
+          (task as any)._id,
+          (req.user as any)._id,
           task.title,
           oldStatus,
           task.status
         );
       } else {
         await ActivityService.logTaskUpdate(
-          task._id,
-          req.user._id,
+          (task as any)._id,
+          (req.user as any)._id,
           task.title,
           updates
         );
@@ -217,6 +230,7 @@ export const updateTask = async (req: Request, res: Response, next: NextFunction
       data: task,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -228,7 +242,7 @@ export const updateTask = async (req: Request, res: Response, next: NextFunction
  */
 export const deleteTask = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const taskId = req.params.id;
+    const taskId = req.params.id as any;
     
     if (!mongoose.Types.ObjectId.isValid(taskId)) {
       throw new ApiError(400, 'Invalid task ID');
@@ -242,8 +256,8 @@ export const deleteTask = async (req: Request, res: Response, next: NextFunction
     }
     
     // Check if user is authorized to delete this task
-    if (req.user && !req.user.role.includes('admin') && 
-        task.createdBy.toString() !== req.user._id.toString()) {
+    if (req.user && !req.user?.role.includes('admin') && 
+        task.createdBy.toString() !== (req.user as any)._id.toString()) {
       throw new ApiError(403, 'You are not authorized to delete this task');
     }
     
@@ -260,7 +274,7 @@ export const deleteTask = async (req: Request, res: Response, next: NextFunction
         entityType: 'task',
         action: 'delete',
         status: 'completed',
-        userId: req.user._id,
+        userId: (req.user as any)._id,
       });
     }
     
@@ -269,6 +283,7 @@ export const deleteTask = async (req: Request, res: Response, next: NextFunction
       message: 'Task deleted successfully',
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };

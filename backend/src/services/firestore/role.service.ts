@@ -246,8 +246,8 @@ export class RoleService {
       .get();
     
     // Combine organization-specific and system roles
-    const orgRoles = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-    const sysRoles = systemRolesSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    const orgRoles = snapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
+    const sysRoles = systemRolesSnapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
     
     return [...orgRoles, ...sysRoles];
   }
@@ -262,7 +262,7 @@ export class RoleService {
       .where('scope', '==', RoleScope.SYSTEM)
       .get();
     
-    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    return snapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
   }
   
   /**
@@ -397,7 +397,7 @@ export class RoleService {
     }
     
     // Remove role from user-organization roles array
-    const newRoles = userOrg.roles.filter(id => id !== roleId);
+    const newRoles = userOrg.roles.filter((id: any) => id !== roleId);
     
     // Ensure user has at least one role - use Member if removing the last role
     if (newRoles.length === 0) {
@@ -584,7 +584,7 @@ export class RoleService {
     
     // Add custom permissions
     if (userOrg.permissions?.customPermissions) {
-      userOrg.permissions.customPermissions.forEach(perm => {
+      userOrg.permissions.customPermissions.forEach((perm: any) => {
         permissions.add(perm);
       });
     }
@@ -595,28 +595,28 @@ export class RoleService {
       if (!role) continue;
       
       // Add each permission
-      role.permissions.forEach(permission => {
+      role.permissions.forEach((permission: any) => {
         const permString = `${permission.resource}:${permission.action}`;
         permissions.add(permString);
         
         // Add wildcard permissions
         if (permission.resource === '*') {
-          Object.values(PermissionResource).forEach(resource => {
+          Object.values(PermissionResource).forEach((resource: any) => {
             const wildcardPerm = `${resource}:${permission.action}`;
             permissions.add(wildcardPerm);
           });
         }
         
         if (permission.action === '*') {
-          Object.values(PermissionAction).forEach(action => {
+          Object.values(PermissionAction).forEach((action: any) => {
             const wildcardPerm = `${permission.resource}:${action}`;
             permissions.add(wildcardPerm);
           });
         }
         
         if (permission.resource === '*' && permission.action === '*') {
-          Object.values(PermissionResource).forEach(resource => {
-            Object.values(PermissionAction).forEach(action => {
+          Object.values(PermissionResource).forEach((resource: any) => {
+            Object.values(PermissionAction).forEach((action: any) => {
               const wildcardPerm = `${resource}:${action}`;
               permissions.add(wildcardPerm);
             });
@@ -627,7 +627,7 @@ export class RoleService {
     
     // Remove restricted permissions
     if (userOrg.permissions?.restrictedPermissions) {
-      userOrg.permissions.restrictedPermissions.forEach(perm => {
+      userOrg.permissions.restrictedPermissions.forEach((perm: any) => {
         permissions.delete(perm);
       });
     }

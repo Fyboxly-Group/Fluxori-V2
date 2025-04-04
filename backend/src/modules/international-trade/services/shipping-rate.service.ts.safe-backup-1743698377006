@@ -1,0 +1,18 @@
+// @ts-nocheck
+import { Types } from 'mongoose';
+
+/**
+ * Shipping Rate Service for international trade
+ */
+export class ShippingRateService {
+  /**
+   * Get shipping rates
+   */
+  async getShippingRates(shipmentData: any): Promise<any[]> {
+    // Placeholder implementation
+    return [
+      { carrier: 'DHL', rate: 25.99 },
+      { carrier: 'FedEx', rate: 27.99 }
+    ];
+  }
+}

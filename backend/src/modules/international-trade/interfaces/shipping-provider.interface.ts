@@ -1,212 +1,225 @@
-import { 
-  IInternationalShipment, 
-  ICustomsDeclaration, 
-  IShippingRate 
-} from '../models/international-trade.model';
+import { IInternationalShipment, ICustomsDeclaration, IAddress } from '../models/international-trade.model';
 
 /**
- * Rate Request interface - common format for all shipping providers
+ * Interface for tracking events returned by shipping providers
  */
-export interface RateRequest {
-  origin: {
-    country: string;
-    postalCode: string;
-    city?: string;
-    state?: string;
-  };
-  destination: {
-    country: string;
-    postalCode: string;
-    city?: string;
-    state?: string;
-  };
-  packages: Array<{
-    weight: number;
-    weightUnit: string;
-    length: number;
-    width: number;
-    height: number;
-    dimensionUnit: string;
-    packageType?: string;
-  }>;
-  options?: {
-    insuranceRequired?: boolean;
-    insuranceAmount?: number;
-    signatureRequired?: boolean;
-    residentialDelivery?: boolean;
-    saturdayDelivery?: boolean;
-  };
-  shipmentType?: string;
-}
-
-/**
- * Rate Quote interface - common format for all shipping providers
- */
-export interface RateQuote {
-  carrierId: string;
-  carrierName: string;
-  serviceCode: string;
-  serviceName: string;
-  baseRate: number;
-  taxes: number;
-  fees: number;
-  totalRate: number;
-  currency: string;
-  estimatedDelivery?: Date;
-  transitDays?: number;
-  guaranteedDelivery: boolean;
-}
-
-/**
- * Shipment Request interface - common format for all shipping providers
- */
-export interface ShipmentRequest {
-  shipment: IInternationalShipment;
-  customsDeclaration?: ICustomsDeclaration;
-  selectedRate?: IShippingRate;
-  options?: {
-    returnShippingLabel?: boolean;
-    printCustomsForm?: boolean;
-    emailNotifications?: boolean;
-    notificationEmail?: string;
-  };
-}
-
-/**
- * Shipment Response interface - common format for all shipping providers
- */
-export interface ShipmentResponse {
-  success: boolean;
-  trackingNumber?: string;
-  labelUrl?: string;
-  customsFormUrl?: string;
-  shipmentId?: string;
-  carrierShipmentId?: string;
-  estimatedDelivery?: Date;
-  totalCost?: number;
-  currency?: string;
-  errors?: Array<{
-    code: string;
-    message: string;
-    field?: string;
-  }>;
-}
-
-/**
- * Tracking Request interface - common format for all shipping providers
- */
-export interface TrackingRequest {
-  trackingNumber: string;
-  carrierCode: string;
-}
-
-/**
- * Tracking Event interface - common format for all shipping providers
- */
-export interface TrackingEvent {
+export interface ITrackingEvent {
   timestamp: Date;
   status: string;
   location: string;
   description: string;
-  isDelivered: boolean;
 }
 
 /**
- * Tracking Response interface - common format for all shipping providers
+ * Interface for tracking information returned by shipping providers
  */
-export interface TrackingResponse {
-  success: boolean;
+export interface ITrackingInfo {
   trackingNumber: string;
-  carrierCode: string;
-  carrierName: string;
+  carrier: string;
   status: string;
   estimatedDelivery?: Date;
-  actualDelivery?: Date;
-  events: TrackingEvent[];
-  errors?: Array<{
-    code: string;
-    message: string;
-  }>;
+  events: ITrackingEvent[];
 }
 
 /**
- * Shipping Provider Authentication interface - common format for all shipping providers
+ * Interface for shipping rate returned by providers
  */
-export interface ShippingProviderAuth {
-  type: 'api_key' | 'oauth2' | 'basic';
-  credentials: {
-    [key: string]: string;
+export interface IShippingRate {
+  provider: string;
+  serviceCode: string;
+  serviceName: string;
+  price: number;
+  currency: string;
+  estimatedDelivery: {
+    min: number; // Delivery estimate in days (minimum)
+    max: number; // Delivery estimate in days (maximum)
+  };
+  restrictions?: {
+    weight?: {
+      min: number;
+      max: number;
+      unit: string;
+    };
+    dimensions?: {
+      maxLength: number;
+      maxWidth: number;
+      maxHeight: number;
+      unit: string;
+    };
   };
 }
 
 /**
- * Shipping Provider interface - to be implemented by all shipping provider adapters
+ * Interface for created shipment response from providers
+ */
+export interface ICreatedShipment {
+  success: boolean;
+  shipmentId: string;
+  trackingNumber: string;
+  carrier: string;
+  service: string;
+  price: number;
+  currency: string;
+  estimatedDelivery?: Date;
+  labels?: {
+    format: string; // PDF, PNG, etc.
+    size: string; // 4x6, A4, etc.
+    url: string; // URL to download the label
+    data?: string; // Base64 encoded label data
+  }[];
+  documents?: {
+    type: string; // Commercial Invoice, etc.
+    format: string; // PDF, etc.
+    url: string; // URL to download the document
+    data?: string; // Base64 encoded document data
+  }[];
+}
+
+/**
+ * Interface for shipping provider authentication
+ */
+export interface IShippingProviderAuth {
+  apiKey?: string;
+  username?: string;
+  password?: string;
+  accountId?: string;
+  accountNumber?: string;
+  accessToken?: string;
+  refreshToken?: string;
+  [key: string]: string | undefined;
+}
+
+/**
+ * Request interface for getting shipping rates
+ */
+export interface IRateRequest {
+  origin: IAddress;
+  destination: IAddress;
+  packageDetails: {
+    weight: number;
+    weightUnit: string;
+    dimensions?: {
+      length: number;
+      width: number;
+      height: number;
+      unit: string;
+    };
+  };
+  items?: Array<{
+    description: string;
+    quantity: number;
+    value: number;
+    hsCode?: string;
+    originCountry?: string;
+  }>;
+  options?: {
+    insurance?: {
+      required: boolean;
+      value: number;
+    };
+    signature?: boolean;
+    saturdayDelivery?: boolean;
+    dangerousGoods?: boolean;
+    dryIce?: boolean;
+  };
+  shipmentDate?: Date;
+  currency?: string;
+}
+
+/**
+ * Request interface for creating a shipment
+ */
+export interface IShipmentRequest {
+  shipment: Omit<IInternationalShipment, '_id' | 'userId' | 'organizationId' | 'createdAt' | 'updatedAt' | 'status'>;
+  customsDeclaration?: Omit<ICustomsDeclaration, '_id' | 'shipmentId' | 'userId' | 'organizationId' | 'createdAt' | 'updatedAt' | 'status'>;
+  options?: {
+    insurance?: {
+      required: boolean;
+      value: number;
+    };
+    signature?: boolean;
+    saturdayDelivery?: boolean;
+    dangerousGoods?: boolean;
+    returnShippingLabel?: boolean;
+    labelFormat?: string; // PDF, PNG, etc.
+    labelSize?: string; // 4x6, A4, etc.
+  };
+  shipmentDate: Date;
+  serviceCode: string; // Specific carrier service code
+  returnLabel?: boolean;
+}
+
+/**
+ * Request interface for tracking a shipment
+ */
+export interface ITrackingRequest {
+  trackingNumber: string;
+  carrier?: string;
+}
+
+/**
+ * Interface that all shipping provider adapters must implement
  */
 export interface IShippingProvider {
-  /**
-   * Provider identification
-   */
-  providerId: string;
-  providerName: string;
+  name: string;
+  supportedCountries: string[];
+  supportedServices: {
+    code: string;
+    name: string;
+    description?: string;
+    international: boolean;
+    domestic: boolean;
+  }[];
   
   /**
-   * Authentication with the shipping provider
+   * Authenticates with the shipping provider's API
    */
-  authenticate(auth: ShippingProviderAuth): Promise<boolean>;
+  authenticate(): Promise<boolean>;
   
   /**
-   * Get shipping rates from the provider
+   * Validates credentials for the shipping provider
    */
-  getRates(request: RateRequest): Promise<RateQuote[]>;
+  validateCredentials(): Promise<boolean>;
   
   /**
-   * Create a shipment with the provider
+   * Gets shipping rates from the provider
    */
-  createShipment(request: ShipmentRequest): Promise<ShipmentResponse>;
+  getRates(request: IRateRequest): Promise<IShippingRate[]>;
   
   /**
-   * Track a shipment with the provider
+   * Creates a new shipment with the provider
    */
-  trackShipment(request: TrackingRequest): Promise<TrackingResponse>;
+  createShipment(request: IShipmentRequest): Promise<ICreatedShipment>;
   
   /**
-   * Cancel a shipment with the provider
+   * Gets tracking information for a shipment
    */
-  cancelShipment(shipmentId: string): Promise<{
-    success: boolean;
-    message?: string;
-    refundAmount?: number;
-    currency?: string;
-    errors?: Array<{
-      code: string;
-      message: string;
-    }>;
+  getTracking(request: ITrackingRequest): Promise<ITrackingInfo>;
+  
+  /**
+   * Cancels a shipment
+   */
+  cancelShipment(shipmentId: string): Promise<boolean>;
+  
+  /**
+   * Validates an address with the provider
+   */
+  validateAddress(address: IAddress): Promise<{
+    valid: boolean;
+    suggested?: IAddress;
+    messages?: string[];
   }>;
   
   /**
-   * Validate a shipping address with the provider
+   * Generates a return label for a shipment
    */
-  validateAddress(address: {
-    country: string;
-    postalCode: string;
-    city?: string;
-    state?: string;
-    addressLine1?: string;
-    addressLine2?: string;
-  }): Promise<{
-    valid: boolean;
-    normalizedAddress?: {
-      country: string;
-      postalCode: string;
-      city: string;
-      state: string;
-      addressLine1: string;
-      addressLine2?: string;
+  createReturnLabel(shipmentId: string): Promise<{
+    success: boolean;
+    label?: {
+      format: string;
+      size: string;
+      url: string;
+      data?: string;
     };
-    errors?: Array<{
-      code: string;
-      message: string;
-      field?: string;
-    }>;
   }>;
 }

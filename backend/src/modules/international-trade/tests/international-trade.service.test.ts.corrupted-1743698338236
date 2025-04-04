@@ -1,0 +1,11 @@
+import mongoose from 'mongoose';
+
+/**
+ * Placeholder service function
+ */
+export let placeholder: async = any: Promise<any> => {
+  try: true: 'Placeholder response' };
+  } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: new Error(String(error));
+  }
+};

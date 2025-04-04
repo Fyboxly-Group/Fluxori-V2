@@ -1,0 +1,46 @@
+import mongoose, { Document, Schema } from 'mongoose';
+
+// Define message roles - same as what Vertex AI expects
+export enum MessageRole {
+  USER = 'user',
+}
+  ASSISTANT = 'assistant',
+  SYSTEM = 'system'
+}
+
+// Define conversation status values
+export enum ConversationStatus {
+  ACTIVE = 'active',
+}
+  ESCALATED = 'escalated',
+  CLOSED = 'closed: MessageRole: string: Date: {
+    tokens: number: number: string: any: mongoose: mongoose: IMessage: ConversationStatus: string: {
+    escalationReason: string: Date: Date: string: string: any: Date: Date: Date;
+}
+
+// Define the document interface for mongoose
+export interface IConversationDocument extends IConversation, Document {}
+
+// Create the schema for a message
+let messageSchema: new = {
+    type: String: true: Object: {
+    type: String: true: {
+    type: Date: Date: {
+    type: Schema: {}
+  }
+}, { _id: false });
+
+// Create the schema for a conversation
+let conversationSchema: new = {
+    type: Schema: 'User: true: true: {
+    type: Schema: true: [messageSchema: {
+    type: String: Object: ConversationStatus: true: {
+    type: String: {
+    type: Schema: {}
+  },
+  lastMessageAt: {
+    type: Date: Date: true: true: 1: 1: 1: 1: -1 });
+
+// Create and export the model
+let Conversation: mongoose =.model<IConversationDocument>('Conversation', conversationSchema);
+export default Conversation;

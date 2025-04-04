@@ -1,8 +1,18 @@
-// @ts-nocheck - Added by final-ts-fix.js
-import { IOrderMapper } from './order-mapper.interface';
-import { MarketplaceOrder, OrderStatus as MarketplaceOrderStatus, PaymentStatus as MarketplacePaymentStatus } from '../../marketplaces/models/marketplace.models';
-import { IOrder, OrderStatus, PaymentStatus, FulfillmentType } from '../models/order.model';
-import mongoose from 'mongoose';
+import { IOrderMapper, orderMapperRegistry } from './order-mapper.interface';
+import { 
+  MarketplaceOrder, 
+  OrderStatus as MarketplaceOrderStatus, 
+  PaymentStatus as MarketplacePaymentStatus, 
+  OrderItem 
+} from '../../marketplaces/models/marketplace.models';
+import { 
+  IOrder, 
+  OrderStatus, 
+  PaymentStatus, 
+  FulfillmentType,
+  IOrderLineItem 
+} from '../models/order.model';
+import { Timestamp } from 'firebase-admin/firestore';
 
 /**
  * Maps Amazon orders to Fluxori's standardized order format
@@ -20,9 +30,6 @@ export class AmazonOrderMapper implements IOrderMapper {
     userId: string,
     organizationId: string
   ): IOrder {
-    const userObjectId = new mongoose.Types.ObjectId(userId);
-    const orgObjectId = new mongoose.Types.ObjectId(organizationId);
-
     const orderStatus = this.mapOrderStatus(marketplaceOrder.orderStatus);
     const paymentStatus = this.mapPaymentStatus(marketplaceOrder.paymentStatus);
 
@@ -49,9 +56,30 @@ export class AmazonOrderMapper implements IOrderMapper {
       }
     }
 
+    // Map line items
+    const lineItems = this.mapLineItems(marketplaceOrder.orderItems);
+
+    // Convert dates to Firestore timestamps
+    const now = Timestamp.now();
+    const orderDate = marketplaceOrder.createdAt ? 
+      Timestamp.fromDate(new Date(marketplaceOrder.createdAt)) : 
+      now;
+    
+    const shippedDate = marketplaceOrder.shippingDetails.shippedAt ? 
+      Timestamp.fromDate(new Date(marketplaceOrder.shippingDetails.shippedAt)) : 
+      undefined;
+    
+    const deliveredDate = marketplaceOrder.shippingDetails.deliveredAt ? 
+      Timestamp.fromDate(new Date(marketplaceOrder.shippingDetails.deliveredAt)) : 
+      undefined;
+    
+    const estimatedDeliveryDate = marketplaceOrder.shippingDetails.estimatedDelivery ? 
+      Timestamp.fromDate(new Date(marketplaceOrder.shippingDetails.estimatedDelivery)) : 
+      undefined;
+
     return {
-      userId: userObjectId,
-      organizationId: orgObjectId,
+      userId: userId,
+      organizationId: organizationId,
       marketplaceId: 'amazon',
       marketplaceName,
       marketplaceOrderId: marketplaceOrder.marketplaceOrderId,
@@ -63,21 +91,7 @@ export class AmazonOrderMapper implements IOrderMapper {
       customerPhone: marketplaceOrder.customerDetails.phone,
       shippingAddress: marketplaceOrder.shippingDetails.address,
       billingAddress: marketplaceOrder.customerDetails.billingAddress,
-      lineItems: marketplaceOrder.orderItems.map((item: any) => ({
-        sku: item.sku,
-        marketplaceProductId: item.marketplaceProductId,
-        title: item.title,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        tax: item.tax,
-        discount: item.discount,
-        total: item.total,
-        imageUrl: item.imageUrl,
-        attributes: item.attributes ? item.attributes.map((attr: any) => ({
-          name: attr.name,
-          value: String(attr.value)
-        })) : []
-      })),
+      lineItems,
       currency: marketplaceOrder.currencyCode,
       subtotal: marketplaceOrder.subtotal,
       tax: marketplaceOrder.tax,
@@ -85,19 +99,42 @@ export class AmazonOrderMapper implements IOrderMapper {
       discount: marketplaceOrder.discount,
       total: marketplaceOrder.total,
       notes: marketplaceOrder.notes,
-      fulfillmentType: this.mapFulfillmentType(marketplaceOrder.fulfillmentType),
-      orderDate: marketplaceOrder.createdAt,
-      processedDate: new Date(),
+      fulfillmentType: this.mapFulfillmentType(marketplaceOrder.marketplaceSpecific?.fulfillmentChannel),
+      orderDate,
+      processedDate: now,
       trackingNumber: marketplaceOrder.shippingDetails.trackingNumber,
       trackingCompany: marketplaceOrder.shippingDetails.carrier,
       trackingUrl: marketplaceOrder.shippingDetails.trackingUrl,
-      estimatedDeliveryDate: marketplaceOrder.shippingDetails.estimatedDelivery,
-      shippedDate: marketplaceOrder.shippingDetails.shippedAt,
-      deliveredDate: marketplaceOrder.shippingDetails.deliveredAt,
+      estimatedDeliveryDate,
+      shippedDate,
+      deliveredDate,
       marketplaceData,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      createdAt: now,
+      updatedAt: now
     };
+  }
+
+  /**
+   * Map Amazon order items to Fluxori order line items
+   * @param items - Amazon order items
+   * @returns Fluxori order line items
+   */
+  private mapLineItems(items: OrderItem[]): IOrderLineItem[] {
+    return items.map((item) => ({
+      sku: item.sku,
+      marketplaceProductId: item.marketplaceProductId || '',
+      title: item.title,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      tax: item.tax,
+      discount: item.discount,
+      total: item.total,
+      imageUrl: item.imageUrl,
+      attributes: item.attributes ? item.attributes.map((attr) => ({
+        name: attr.name,
+        value: String(attr.value)
+      })) : []
+    }));
   }
 
   /**
@@ -178,15 +215,21 @@ export class AmazonOrderMapper implements IOrderMapper {
    * @returns Fluxori fulfillment type
    */
   private mapFulfillmentType(
-    fulfillmentType?: 'marketplace_fulfilled' | 'seller_fulfilled'
+    fulfillmentType?: string
   ): FulfillmentType | undefined {
     if (!fulfillmentType) {
       return undefined;
     }
     
-    switch (fulfillmentType) {
+    switch (fulfillmentType.toLowerCase()) {
+      case 'amazon':
+      case 'fba':
+      case 'amazon_fulfilled':
       case 'marketplace_fulfilled':
         return FulfillmentType.MARKETPLACE_FULFILLED;
+      case 'merchant':
+      case 'fbm':
+      case 'merchant_fulfilled':
       case 'seller_fulfilled':
         return FulfillmentType.SELLER_FULFILLED;
       default:
@@ -240,3 +283,9 @@ export class AmazonOrderMapper implements IOrderMapper {
     return marketplaceRegions[marketplaceId];
   }
 }
+
+// Register the mapper
+const amazonOrderMapper = new AmazonOrderMapper();
+orderMapperRegistry.registerMapper('amazon', amazonOrderMapper);
+
+export default amazonOrderMapper;

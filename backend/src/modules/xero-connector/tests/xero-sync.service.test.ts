@@ -101,7 +101,7 @@ describe('XeroSyncService', () => {
     });
     
     it('should handle sync creation errors', async() => {
-      // Mock XeroSyncStatus model to throw error
+      // Mock XeroSyncStatus model to throw error instanceof Error ? error : new Error(String(error));
       const mockSyncStatusModel = mongoose.model('XeroSyncStatus');
       (mockSyncStatusModel.create as jest.Mock).mockRejectedValue(new Error('Database error'));
       
@@ -155,7 +155,7 @@ describe('XeroSyncService', () => {
     });
     
     it('should handle database errors', async() => {
-      // Mock Customer model to throw error
+      // Mock Customer model to throw error instanceof Error ? error : new Error(String(error));
       const mockCustomerModel = mongoose.model('Customer');
       (mockCustomerModel.find as jest.Mock).mockRejectedValue(new Error('Database error'));
       
@@ -209,7 +209,7 @@ describe('XeroSyncService', () => {
     });
     
     it('should handle database errors', async() => {
-      // Mock Order model to throw error
+      // Mock Order model to throw error instanceof Error ? error : new Error(String(error));
       const mockOrderModel = mongoose.model('Order');
       (mockOrderModel.find as jest.Mock).mockRejectedValue(new Error('Database error'));
       

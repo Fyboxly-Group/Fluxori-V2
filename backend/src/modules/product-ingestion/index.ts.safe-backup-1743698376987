@@ -1,0 +1,22 @@
+// @ts-nocheck - Added by final-ts-fix.js
+import mongoose from 'mongoose';
+import productIngestionService from './services/product-ingestion.service';
+import productSyncConfigService from './services/product-sync-config.service';
+import './mappers';  // Initialize mappers
+
+// Export the services
+export { productIngestionService, productSyncConfigService };
+
+// Export types
+export * from './models/product.model';
+export * from './models/product-sync-config.model';
+export * from './models/warehouse.model';
+export * from './services/product-ingestion.service';
+export * from './mappers/product-mapper.interface';
+// Type exports
+export interface IWarehouseModel extends mongoose.Model<IWarehouseDocument> {}
+;
+export interface IProductModel extends mongoose.Model<IProductDocument> {}
+;
+export interface IProductSyncConfigModel extends mongoose.Model<IProductSyncConfigDocument> {}
+;

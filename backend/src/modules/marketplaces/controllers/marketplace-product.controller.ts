@@ -6,6 +6,16 @@ import InventoryItem from '../../../models/inventory.model';
 // Import the extended Express Request interface with user property
 import '../../../middleware/auth.middleware';
 
+// Authenticated request type
+type AuthenticatedRequest = Request & {
+  user?: {
+    id: string;
+    organizationId: string;
+    email?: string;
+    role?: string;
+  };
+};
+
 /**
  * Controller for marketplace product operations
  */
@@ -16,13 +26,13 @@ export class MarketplaceProductController {
    * @param req - Express request
    * @param res - Express response
    */
-  static async pushProductUpdates(req: Request, res: Response) {
+  static async pushProductUpdates(req: Request, res: Response) : Promise<void> {
     try {
       const { productId, marketplaceId } = req.params;
       const { price, rrp, stock, status } = req.body;
       
       // Ensure user is authenticated
-      if (!req.user || !req.user.id) {
+      if (!req.user || !req.user?.id) {
         throw new ApiError(401, 'Unauthorized');
       }
       
@@ -36,7 +46,7 @@ export class MarketplaceProductController {
       }
       
       // Check if product belongs to the user
-      if (product.createdBy.toString() !== req.user.id && req.user.role !== 'admin') {
+      if (product.createdBy.toString() !== req.user?.id && req.user?.role !== 'admin') {
         return res.status(403).json({
           success: false,
           message: 'You do not have permission to push updates for this product'
@@ -71,7 +81,7 @@ export class MarketplaceProductController {
       const result = await pushService.pushProductUpdate(
         productId,
         marketplaceId,
-        req.user.id,
+        req.user?.id,
         {
           price: price !== undefined ? Number(price) : undefined,
           rrp: rrp !== undefined ? Number(rrp) : undefined,
@@ -104,13 +114,13 @@ export class MarketplaceProductController {
    * @param req - Express request
    * @param res - Express response
    */
-  static async getConnectedMarketplaces(req: Request, res: Response) {
+  static async getConnectedMarketplaces(req: Request, res: Response) : Promise<void> {
     try {
       // In a real implementation, you would fetch the actual connections from your database
       // For now, we'll return mock data
       
       // Ensure user is authenticated
-      if (!req.user || !req.user.id) {
+      if (!req.user || !req.user?.id) {
         throw new ApiError(401, 'Unauthorized');
       }
       

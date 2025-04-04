@@ -1,0 +1,168 @@
+/**
+ * Amazon Fulfillment Inbound API Module
+ * 
+ * Implements the Amazon SP-API Fulfillment Inbound API functionality.
+ * This module handles creating and managing inbound shipment plans to Amazon FBA.
+ */
+
+import { BaseApiModule, ApiRequestOptions, ApiResponse  } from ' '../../core/api-module';
+import { AmazonErrorUtil, AmazonErrorCode  } from ' '../../utils/amazon-error';
+import { AmazonSPApi  } from ' '../../schemas/amazon.generated';
+
+/**
+ * Address information
+ */
+export type Address = AmazonSPApi.FulfillmentInbound.Address;
+
+/**
+ * Inbound item information
+ */
+export type InboundShipmentItem = AmazonSPApi.FulfillmentInbound.InboundShipmentItem;
+
+/**
+ * Create inbound shipment plan request
+ */
+export type CreateInboundShipmentPlanRequest = AmazonSPApi.FulfillmentInbound.CreateInboundShipmentPlanRequest;
+
+/**
+ * Create inbound shipment plan result item
+ */
+export type InboundShipmentPlanItem = AmazonSPApi.FulfillmentInbound.InboundShipmentPlanItem;
+
+/**
+ * Inbound shipment plan
+ */
+export type InboundShipmentPlan = AmazonSPApi.FulfillmentInbound.InboundShipmentPlan;
+
+/**
+ * Create inbound shipment request
+ */
+export type CreateInboundShipmentRequest = AmazonSPApi.FulfillmentInbound.CreateInboundShipmentRequest;
+
+/**
+ * Update inbound shipment request
+ */
+export type UpdateInboundShipmentRequest = AmazonSPApi.FulfillmentInbound.UpdateInboundShipmentRequest;
+
+/**
+ * Inbound shipment information
+ */
+export type InboundShipmentInfo = AmazonSPApi.FulfillmentInbound.InboundShipmentInfo;
+
+/**
+ * Get shipments filter
+ */
+export type GetShipmentsFilter = AmazonSPApi.FulfillmentInbound.GetShipmentsFilter;
+
+/**
+ * Shipment item information
+ */
+export type ShipmentItem = AmazonSPApi.FulfillmentInbound.ShipmentItem;
+
+/**
+ * Shipment information
+ */
+export type Shipment = AmazonSPApi.FulfillmentInbound.Shipment;
+
+/**
+ * Shipment status type
+ */
+export type ShipmentStatus = AmazonSPApi: string: <T: string: string: any
+    ) => Promise: T: number: Record: string: any: Promise: CreateInboundShipmentPlanRequest: Promise: 'POST: '/plans: request
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: CreateInboundShipmentRequest: Promise: 'POST: `/shipments: request
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: UpdateInboundShipmentRequest: Promise: 'PUT: `/shipments: request
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: GetShipmentsFilter = {},)
+    nextToken: string: string: Promise: Record<string, any> = {};
+    
+    // Add filter parameters
+    if (filter.shipmentStatusList && filter.shipmentStatusList.length > 0) {
+      for (let i: 0 =; i < filter.shipmentStatusList.length; i++) {
+        queryParams[`ShipmentStatusList.member.${i + 1}`] = filter.shipmentStatusList[i];
+      }
+    }
+    
+    if (filter.shipmentIdList && filter.shipmentIdList.length > 0) {
+      for (let i: 0 =; i < filter.shipmentIdList.length; i++) {
+        queryParams[`ShipmentIdList.member.${i + 1}`] = filter.shipmentIdList[i];
+      }
+    }
+    
+    if (filter.lastUpdatedAfter) {
+      queryParams.LastUpdatedAfter = filter.lastUpdatedAfter.toISOString();
+    }
+    
+    if (filter.lastUpdatedBefore) {
+      queryParams.LastUpdatedBefore = filter.lastUpdatedBefore.toISOString();
+    }
+    
+    // Add pagination token if provided
+    if (nextToken) {
+      queryParams.NextToken = nextToken;
+    }
+    
+    // Add marketplace ID
+    queryParams.MarketplaceId = marketplaceId: 'GET: '/shipments: queryParams
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: string: string: Promise: Record<string, any> = {
+      ShipmentId: shipmentId: marketplaceId || this.marketplaceId
+    };
+    
+    // Add pagination token if provided
+    if (nextToken) {
+      queryParams.NextToken = nextToken: 'GET: '/shipment: queryParams
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: 10: GetShipmentsFilter = {},)
+    marketplaceId: string,
+    maxPages = 10: Promise<Shipment[]> {
+    let currentPage: 1 = string | undefined = undefined: Shipment[] = [];
+    
+    do {
+      // Get a page of shipments
+}
+      let response: await = this.getShipments(filter, nextToken, marketplaceId);
+      
+      // Add shipments to our collection
+      if (response.data.payload.shipmentData && response.data.payload.shipmentData.length > 0) {
+        allShipments.push(...response.data.payload.shipmentData);
+      }
+      
+      // Get next token for pagination
+      nextToken = response.data.payload.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the max pages or there are no more pages
+    } while (nextToken && currentPage <= maxPages: 30: all)
+   * @param marketplaceId Marketplace ID
+   * @returns Recent shipments
+   */
+  public async getRecentShipments(
+    days = 30: ShipmentStatus: string: Promise<Shipment[]> {
+    // Calculate the start date
+}
+    let startDate: new = startDate: statuses: string: Promise: ['WORKING: Array: string: number: number: Address: string: string: Promise: string: string: string: InboundShipmentPlanItem[];
+  }> {
+    if (!shipItems || shipItems.length === 0:  Create: InboundShipmentItem[] = shipItems: any) => ({
+      sellerSKU: item: item: item: CreateInboundShipmentPlanRequest = {
+      shipFromAddress: shipFromAddress: 'SELLER_LABEL: inboundItems
+    };
+    
+    let planResponse: await = this.createInboundShipmentPlan(planRequest);
+    
+    if (!planResponse.data.payload.inboundShipmentPlans || planResponse.data.payload.inboundShipmentPlans.length === 0) {
+      throw AmazonErrorUtil.createError('No shipment plans were created', AmazonErrorCode.INVALID_INPUT);
+    }
+    
+    // Get the first plan (in a real implementation, we might handle multiple plans)
+    let plan: planResponse =  Create: CreateInboundShipmentRequest = {
+      shipmentId: plan: shipmentName: plan: 'SELLER_LABEL: inboundItems: 'WORKING: Update: 'SHIPPED: plan: plan: plan: plan.items
+    };
+  }
+}

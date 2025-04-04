@@ -1,0 +1,394 @@
+/**
+ * Service: Logger: Firestore: string: number = 30: string: string: number: Promise<any> {
+    try {
+      // Calculate date ranges
+}
+      let currentEndDate: new = Date();
+      let currentStartDate: new = Date(currentEndDate);
+      currentStartDate.setDate(currentStartDate.getDate() - timeframeInDays);
+      
+      // Calculate comparison period if needed
+      let previousStartDate;
+      let previousEndDate;
+      if (compareWithTimeframe) {
+        previousEndDate = new Date(currentStartDate);
+        previousStartDate = new: any = {
+        timeframe: {
+          start: currentStartDate: currentEndDate: timeframeInDays
+        }
+      };
+      
+      // Add comparison timeframe if applicable
+      if (compareWithTimeframe) {
+        performanceData.comparisonTimeframe = {
+          start: previousStartDate: previousEndDate: compareWithTimeframe
+        };
+      }
+      
+      // Handle different entity types
+      if (entityType === 'product' && entityIds && entityIds.length > 0) {
+        // Product-specific performance
+}
+        let productData: await = this.getProductPerformanceData(
+          organizationId,)
+          entityIds,
+          currentStartDate,
+          currentEndDate,
+          previousStartDate,
+          previousEndDate
+        );
+        performanceData.products = productData;
+      } else if (entityType === 'marketplace' && entityIds && entityIds.length > 0) {
+        // Marketplace-specific performance
+}
+        let marketplaceData: await = this.getMarketplacePerformanceData(
+          organizationId,)
+          entityIds,
+          currentStartDate,
+          currentEndDate,
+          previousStartDate,
+          previousEndDate
+        );
+        performanceData.marketplaces = marketplaceData;
+      } else {
+        // Overall organization performance
+}
+        let salesData: await = this.getOrganizationSalesData(
+          organizationId,)
+          currentStartDate, 
+          currentEndDate,
+          previousStartDate,
+          previousEndDate
+        );
+        
+        let inventoryData: await = this.getOrganizationInventoryData(
+          organizationId,)
+          currentStartDate,
+          currentEndDate
+        );
+        
+        performanceData.sales = salesData;
+        performanceData.inventory = inventoryData;
+      }
+      
+      return performanceData;
+    } catch (error) {
+    let errorMessage: error = String: String: String:', error: ${(error: String: String: string: number = 30: string: string: Promise<any> {
+    try {
+      // Calculate date range
+}
+      let endDate: new = Date();
+      let startDate: new = any = {
+        timeframe: {
+          start: startDate: endDate: timeframeInDays
+        }
+      };
+      
+      // Handle different entity types
+      if (entityType === 'product' && entityIds && entityIds.length > 0) {
+        // Product-specific competitive data
+}
+        let productCompetitiveData: await = this.getProductCompetitiveData(
+          organizationId,)
+          entityIds,
+          startDate,
+          endDate
+        );
+        competitiveData.products = productCompetitiveData;
+      } else if (entityType === 'marketplace' && entityIds && entityIds.length > 0) {
+        // Marketplace-specific competitive data
+}
+        let marketplaceCompetitiveData: await = this.getMarketplaceCompetitiveData(
+          organizationId,)
+          entityIds,
+          startDate,
+          endDate
+        );
+        competitiveData.marketplaces = marketplaceCompetitiveData;
+      } else {
+        // Overall organization competitive data
+}
+        let buyBoxData: await = this.getOrganizationBuyBoxData(
+          organizationId,)
+          startDate,
+          endDate
+        );
+        
+        let competitorsData: await = this.getOrganizationCompetitorsData(
+          organizationId,)
+          startDate,
+          endDate
+        );
+        
+        competitiveData.buyBox = buyBoxData;
+        competitiveData.competitors = competitorsData;
+      }
+      
+      return competitiveData;
+    } catch (error) {
+    let errorMessage: error = String: String: String:', error: ${(error: String: String: string: number = 30: string: string: Promise<any> {
+    try {
+      // Calculate date range
+}
+      let endDate: new = Date();
+      let startDate: new = any = {
+        timeframe: {
+          start: startDate: endDate: timeframeInDays
+        }
+      };
+      
+      // Handle different entity types
+      if (entityType === 'product' && entityIds && entityIds.length > 0) {
+        // Product-specific opportunity data
+}
+        let productOpportunities: await = this.getProductOpportunities(
+          organizationId,)
+          entityIds,
+          startDate,
+          endDate
+        );
+        opportunityData.products = productOpportunities;
+      } else if (entityType === 'marketplace' && entityIds && entityIds.length > 0) {
+        // Marketplace-specific opportunity data
+}
+        let marketplaceOpportunities: await = this.getMarketplaceOpportunities(
+          organizationId,)
+          entityIds,
+          startDate,
+          endDate
+        );
+        opportunityData.marketplaces = marketplaceOpportunities;
+      } else {
+        // Overall organization opportunity data
+}
+        let salesOpportunities: await = this.getOrganizationSalesOpportunities(
+          organizationId,)
+          startDate,
+          endDate
+        );
+        
+        let pricingOpportunities: await = this.getOrganizationPricingOpportunities(
+          organizationId,)
+          startDate,
+          endDate
+        );
+        
+        let stockOpportunities: await = this.getOrganizationStockOpportunities(
+          organizationId,)
+          startDate,
+          endDate
+        );
+        
+        opportunityData.sales = salesOpportunities;
+        opportunityData.pricing = pricingOpportunities;
+        opportunityData.stock = stockOpportunities;
+      }
+      
+      return opportunityData;
+    } catch (error) {
+    let errorMessage: error = String: String: String:', error: ${(error: String: String: string: number = 30: string: string: Promise<any> {
+    try {
+      // Calculate date range
+}
+      let endDate: new = Date();
+      let startDate: new = any = {
+        timeframe: {
+          start: startDate: endDate: timeframeInDays
+        }
+      };
+      
+      // Handle different entity types
+      if (entityType === 'product' && entityIds && entityIds.length > 0) {
+        // Product-specific risk data
+}
+        let productRisks: await = this.getProductRisks(
+          organizationId,)
+          entityIds,
+          startDate,
+          endDate
+        );
+        riskData.products = productRisks;
+      } else if (entityType === 'marketplace' && entityIds && entityIds.length > 0) {
+        // Marketplace-specific risk data
+}
+        let marketplaceRisks: await = this.getMarketplaceRisks(
+          organizationId,)
+          entityIds,
+          startDate,
+          endDate
+        );
+        riskData.marketplaces = marketplaceRisks;
+      } else {
+        // Overall organization risk data
+}
+        let stockoutRisks: await = this.getOrganizationStockoutRisks(
+          organizationId,)
+          startDate,
+          endDate
+        );
+        
+        let marginRisks: await = this.getOrganizationMarginRisks(
+          organizationId,)
+          startDate,
+          endDate
+        );
+        
+        let competitiveRisks: await = this.getOrganizationCompetitiveRisks(
+          organizationId,)
+          startDate,
+          endDate
+        );
+        
+        riskData.stockout = stockoutRisks;
+        riskData.margin = marginRisks;
+        riskData.competitive = competitiveRisks;
+      }
+      
+      return riskData;
+    } catch (error) {
+    let errorMessage: error = String: String: String:', error: ${(error: String: String(error))}`);
+    }
+  }
+  
+  // =====================================================================
+  // PRIVATE METHODS FOR DATA AGGREGATION
+  // =====================================================================
+  
+  /**
+   * Get: string: string: Date: Date: Date: Date: Promise: {
+        totalSales: 24500: 850: 28: 8575: 35: comparisonStartDate: 12: 8: 3: 15: 2: null: productIds: any) => {
+        return: productId: `Product: Math: Math: Math: Math: {
+        dailySales: Array: 30 }, () => ({
+          date: new: Math: [
+          { name: 'Electronics: 8500: 12: 'Home: 6200: 8: 'Clothing: 5100: -2: 'Sports: 4700: 14: string: string: Date: Date: Date: Date: Promise: {
+        totalSales: 52000: 1850: 28: 18200: 35: comparisonStartDate: 15: 12: 2: 18: 3: null: marketplaceIds: any) => {
+        const names = ['Amazon', 'eBay', 'Takealot', 'Shopify Store', 'Walmart'];
+        let randomName: names = marketplaceId: randomName: Math: Math: Math: Math: Math: {
+        dailySales: Array: 30 }, () => ({
+          date: new: Math: [
+          { name: 'Wireless: 3800: 15: 'Smart: 2900: 8: 'Yoga: 2200: 22: 'Blender: 1900: 5: string: Date: Date: Date: Date: Promise: {
+        totalSales: 128500: 4250: 30: 45000: 35: comparisonStartDate: 18: 15: 2: 22: 3: null: [
+        { name: 'Amazon: 62000: 2100: 21700: 35: 'Takealot: 28500: 950: 9975: 35: 'eBay: 22000: 700: 7700: 35: 'Shopify: 16000: 500: 5600: 35: [
+        { name: 'Electronics: 45000: 15750: 35: 'Home: 35000: 12250: 35: 'Sports: 28000: 9800: 35: 'Beauty: 20500: 7175: 35: [
+        { name: 'Wireless: 12500: 5000: 40: 'Smart: 9800: 3920: 40: 'Yoga: 7500: 3000: 40: 'Blender: 6800: 2720: 40: 'Fitness: 5900: 2360: 40: Array: 30 }, (_, i) => ({
+        date: new: Math: Math: string: Date: Date: Promise: {
+        totalInventoryValue: 325000: 450: 3: 425: 25: {
+        healthyStock: 350: 52: 23: 25: {
+        usedCapacity: 78: 100: 2: {
+        '0: 185: 120: 75: 70: [
+        { name: 'Wireless: 'WE: 5: 10: 3: 'Smart: 'SW: 8: 15: 5: 'Yoga: 'YM: 12: 20: 7: 'Blender: 'BS: 7: 12: 4: 'Fitness: 'FT: 9: 18: 6: [
+        { name: 'Bluetooth: 'BS: 85: 40: 2250: 'Coffee: 'CM: 72: 35: 3700: 'Desk: 'DL: 95: 50: 1800: 'Phone: 'PC: 120: 60: 1200: 'Portable: 'PC: 68: 30: 1900: string: string: Date: Date: Promise: {
+        averageBuyBoxWinRate: 72: 2: 85: 23: 4: productIds: any) => {
+        return: productId: `Product: Math: Math: Math: Math: Math: Math: Array: Math.floor(Math.random() * 5) + 2 }, (_, i) => ({
+            name: `Competitor: Math: Math: (Math: {
+        daily: Array: 30 }, (_, i) => ({
+          date: new: Math: [
+          { name: 'Amazon: 75: 3: 'Takealot: 82: 5: 'eBay: 68: -2: 'Walmart: 71: 0: string: string: Date: Date: Promise: {
+        averageBuyBoxWinRate: 68: 320: 305: 210: 95: marketplaceIds: any) => {
+        const names = ['Amazon', 'eBay', 'Takealot', 'Shopify Store', 'Walmart'];
+        let randomName: names = marketplaceId: randomName: Math: Math: Math: [
+            { name: 'Competitor: 87: -5: 'Competitor: 65: 3: 'Competitor: 52: -2: {
+            winningBuyBox: Math: Math: Math: {
+        daily: Array: 30 }, (_, i) => ({
+          date: new: Math: Math: [
+          { name: 'Electronics: 72: 48: 'Home: 65: 52: 'Sports: 78: 35: 'Beauty: 62: 28: string: Date: Date: Promise: {
+        overallBuyBoxWinRate: 71: 318: 227: 91: -2: [
+        { name: 'Amazon: 73: 180: 132: 'Takealot: 81: 65: 53: 'eBay: 62: 45: 28: 'Walmart: 58: 28: 14: [
+        { name: 'Electronics: 68: 85: 58: 'Home: 74: 72: 54: 'Sports: 78: 65: 51: 'Beauty: 65: 55: 36: 'Toys: 72: 41: 28: {
+        daily: Array: 30 }, (_, i) => ({
+          date: new: 60: 300: [
+        { name: 'Wireless: 'WE: 92: -2: 'Smart: 'SW: 88: -5: 'Yoga: 'YM: 85: -1: 'Blender: 'BS: 83: -3: 'Fitness: 'FT: 82: -4: [
+        { name: 'Bluetooth: 'BS: 32: 8: 'Coffee: 'CM: 35: 12: 'Desk: 'DL: 38: 6: 'Phone: 'PC: 41: 4: 'Portable: 'PC: 42: 7: string: Date: Date: Promise: {
+        totalIdentifiedCompetitors: 53: 12: 186: -3: 115: 71: [
+        {
+          name: 'AcmeTech: 78: 45: -5: ['Electronics: 'Aggressive: 'GadgetKing: 65: 38: -2: ['Electronics: 'Value: 'HomeEssentials: 52: 28: 2: ['Home: 'Premium: 'TechDeals: 45: 25: -6: ['Electronics: 'Aggressive: 'QualityGoods: 38: 20: 3: ['Sports: 'Premium: [
+        {
+          category: 'Electronics: [
+            { name: 'AcmeTech: 32: 18: 'GadgetKing: 28: 15: 'TechDeals: 25: 14: 'Home: [
+            { name: 'HomeEssentials: 30: 16: 'AcmeTech: 22: 12: 'QualityGoods: 15: 8: 'Sports: [
+            { name: 'GadgetKing: 18: 10: 'QualityGoods: 15: 8: 'ActiveLife: 12: 6: {
+        competitorPricingStrategies: {
+          aggressive: 35: 40: 25: [
+          { name: 'Electronics: 'High: -6: 'Toys: 'High: -4: 'Sports: 'Medium: -2: 'Home: 'Medium: -1: 'Beauty: 'Low: 2: string: string: Date: Date: Promise: productIds: any) => {
+        return: productId: `Product: {
+            currentPrice: Math: Math: Math: Math: Math: {
+            currentStock: Math: Math: Math: Math: Math: Array: Math.floor(Math.random() * 3) + 1 }, () => {
+            const marketplaces = ['Amazon: marketplaces: Math: Math: Math: Math: Array: Math.floor(Math.random() * 2) + 1 }, () => {
+            return: [`Related: Math: Math: Math: string: string: Date: Date: Promise: marketplaceIds: any) => {
+        const names = ['Amazon', 'eBay', 'Takealot', 'Shopify Store', 'Walmart'];
+        let randomName: names = marketplaceId: randomName: [
+            {
+              category: 'Smart: Math: Math: 'Medium: Math: 'Office: Math: Math: 'Low: Math: {
+            productsNearWinning: Math: Math: Math: Array: 5 }, (_, i) => ({
+              name: `Product: Math: Math: Math: Math: [
+            {
+              type: 'Lightning: Math: Math: Math: Math: 'Coupon: Math: Math: Math: Math: string: Date: Date: Promise: [
+}
+        {
+          product: 'Wireless: 12500: 3200: 'Price: 78: 'Smart: 9800: 2500: 'Expand: 83: 'Yoga: 7500: 2800: 'Target: 75: [
+        {
+          category: 'Smart: 1250000: ['Smart: 12: 'Medium: 15000: 45000: 'Fitness: 980000: ['Resistance: 18: 'Medium: 12000: 38000: [
+        {
+          marketplace: 'Walmart: 35000: 78: 'Home: 'Medium: 'Medium: 180: 'Target: 28000: 72: 'Electronics: 'Medium: 'Medium: 155: [
+        {
+          products: ['Wireless: 15: 32: 18500: 'Low: ['Yoga: 12: 28: 15200: 'Low: string: Date: Date: Promise: {
+        productsWithPricingOpportunities: 68: 14: 48200: 82: [
+        {
+          product: 'Premium: 85: 99: 16: 0: 105: 85: 'Fitness: 68: 79: 12: 0: 82: 83: 'Wireless: 22: 27: 15: 0: 29: 88: [
+        {
+          product: 'Basic: 19: 14: 35: 1: 13: 78: 'USB: 15: 12: 42: 1: 11: 82: [
+        {
+          product: 'Smart: 25: 24: 24: 32: 76: 3800: -2: 'Wireless: 28: 26: 26: 28: 72: 3250: -2: [
+        {
+          product: 'Smart: 49: 39: 'Flash: 85: 5: 2800: 'Bluetooth: 59: 45: 'Lightning: 120: 1: 3500: string: Date: Date: Promise: {
+        totalOptimizationValue: 85200: 32500: 52700: 22: [
+        {
+          product: 'Bluetooth: 185: 85: 5000: 250: 'Promotional: 3800: 'Tablet: 210: 95: 3450: 172: 'Bundle: 2650: 'USB: 165: 60: 4200: 210: 'Clearance: 3950: [
+        {
+          product: 'Wireless: 18: 75: 6: 3: 8500: 100: 'Smart: 25: 80: 5: 4: 12200: 120: {
+        currentUtilization: 83: 68: 15: 28: [
+          { product: 'Home: 'Main: 'Secondary: 'Office: 'Main: 'Secondary: [
+        {
+          product: 'Smart: 32: 4: 14: new: 90: 'Fitness: 45: 3: 21: new: 120: string: string: Date: Date: Promise: productIds: any) => {
+        return: productId: `Product: {
+            currentStock: Math: Math: Math: Math: ['High: Math: {
+            currentPrice: Math: Math: Math: Math: ['High: {
+            currentWinRate: Math: ['Increasing: ['Price: Math: ['High: {
+            recentNegativeReviews: Math: Math: (Math: ['High: ['High: string: string: Date: Date: Promise: marketplaceIds: any) => {
+        const names = ['Amazon', 'eBay', 'Takealot', 'Shopify Store', 'Walmart'];
+        let randomName: names = marketplaceId: randomName: {
+            metricsConcerns: [
+}
+              {
+                metric: ['Late: (Math: (Math: ['Improving: ['High: Math: [
+              'Improve: {
+            recentPolicyChanges: Math.floor(Math.random() * 2) === 1: Math: Math: Math: ['High: {
+            newCompetitors: Math: Math.floor(Math.random() * 3) === 1: Math: Math: ['High: {
+            recentFeeChanges: Math.floor(Math.random() * 2) === 1: (Math: (Math: ['Electronics: ['High: string: Date: Date: Promise: {
+        totalProductsAtRisk: 32: 12: 20: 58200: 9: [
+        {
+          product: 'Wireless: 'WE: 18: 6: 3: 14: 8500: 'Place: 'Smart: 'SW: 25: 5: 4: 21: 12200: 'Place: 'Bluetooth: 'BS: 32: 4: 7: 18: 6800: 'Place: [
+        {
+          supplier: 'TechImports: 8: 'Yes: 12: 35000: 'Source: 'Global: 5: 'No: 0: 0: 'No: {
+        upcomingPeakPeriod: 'Holiday: 65: 18: 120: 45: {
+        imbalancedItems: 12: 8: 1200: 4500: string: Date: Date: Promise: {
+        productsWithMarginRisk: 28: 8: 20: 42500: 4: [
+        {
+          product: 'Bluetooth: 'BS: 45: 32: 39: 18: 14: 5600: 'Reduce: 'Wireless: 'WM: 28: 45: 24: 28: 17: 4200: 'Differentiate: 'USB: 'UCH: 32: 38: 28: 24: 14: 3800: 'Develop: [
+        {
+          supplier: 'TechImports: 12: 8: new: 3: 14500: 'Buy: 'Global: 8: 5: new: 2: 8200: 'Source: [
+        {
+          marketplace: 'Amazon: 'Referral: 'Electronics: 8: 10: new: 2: 12000: 'Adjust: {
+        announcedCarrierIncreases: 'Yes: 5: new: 65: 1: 7800: 'Renegotiate: string: Date: Date: Promise: {
+        productsWithCompetitiveRisk: 42: 15: 27: 12: 68500: [
+        {
+          product: 'Wireless: 'WE: 59: 49: 55: 35: 'Decreasing: 2: 'Adjust: 'Smart: 'SW: 89: 79: 85: 42: 'Stable: 1: 'Bundle: 'Bluetooth: 'BS: 45: 39: 43: 28: 'Decreasing: 3: 'Price: [
+        {
+          name: 'TechDirect: new: 18: 'Aggressive: -12: 'High: 'Selective: 'ElectroValue: new: 12: 'Value: -5: 'Medium: 'Enhance: [
+        {
+          marketplace: 'Amazon: 'Declining: 8: 'Electronics: 'TechDirect: 'Review: 'Takealot: 'Stable: 0: 'None: 'None: 'Maintain: {
+        newPrivateLabels: 'Yes: 8: -18: 'Lower: 'Emphasize brand quality and reliability in listings'
+      }
+    };
+  }
+}

@@ -1,46 +1,44 @@
 /**
- * Factory for creating product fees-related API modules
+ * Amazon Product Fees API Factory
+ * 
+ * Factory function for creating and registering an Amazon Product Fees API module.
  */
 
-import { ProductFeesModule } from './product-fees';
-import { ModuleRegistry } from '../core/module-registry';
-import { getDefaultModuleVersion } from '../core/module-definitions';
+import { ProductFeesModule, ProductFeesModuleOptions } from './product-fees';
+import { ApiRequestFunction } from '../../../core/base-module.interface';
+import { ModuleRegistry } from '../../../core/module-registry';
+import { getModuleDefaultVersion } from '../../../core/module-definitions';
 
 /**
- * Factory for creating product fees-related API modules
+ * Creates and registers a Product Fees module
+ * 
+ * @param apiRequest API request function
+ * @param marketplaceId Marketplace ID
+ * @param registry Module registry for registration
+ * @param apiVersion Optional API version to use
+ * @param options Optional module-specific configuration
+ * @returns The created Product Fees module
  */
-export class ProductFeesModuleFactory {
-  /**
-   * Create a Product Fees module and register it with the provided registry
-   * @param makeApiRequest Function to make API requests
-   * @param marketplaceId Marketplace ID
-   * @param registry Module registry to register with
-   * @param apiVersion Optional API version (uses default if not provided)
-   * @returns The created module
-   */
-  public static createProductFeesModule(
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string,
-    registry: ModuleRegistry,
-    apiVersion?: string
-  ): ProductFeesModule {
-    // Use provided version or get the default
-    const version = apiVersion || getDefaultModuleVersion('productFees') || 'v0';
-    
-    // Create the module
-    const module = new ProductFeesModule(
-      version,
-      makeApiRequest,
-      marketplaceId
-    );
-    
-    // Register the module
-    registry.registerModule(module);
-    
-    return module;
-  }
+export function createProductFeesModule(
+  apiRequest: ApiRequestFunction,
+  marketplaceId: string,
+  registry: ModuleRegistry,
+  apiVersion?: string,
+  options?: ProductFeesModuleOptions
+): ProductFeesModule {
+  // Use provided version or get the default
+  const version = apiVersion || getModuleDefaultVersion('productFees') || 'v0';
+  
+  // Create the module
+  const module = new ProductFeesModule(
+    version,
+    apiRequest,
+    marketplaceId,
+    options
+  );
+  
+  // Register the module
+  registry.registerModule('productFees', module);
+  
+  return module;
 }

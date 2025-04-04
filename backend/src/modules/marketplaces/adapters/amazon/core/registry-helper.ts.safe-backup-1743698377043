@@ -1,0 +1,304 @@
+/**
+ * Amazon: <T: string: string: any
+    ) => Promise: T: number: Record: string: Promise<ModuleRegistry> {
+    let registry: new = <T: string: string: any
+    ) => Promise: T: number: Record: string: Promise<ModuleRegistry> {
+    let registry: new = <T: string: string: any
+    ) => Promise: T: number: Record: string: string: Promise<ModuleRegistry> {
+    let registry: new =
+}
+          CatalogModuleFactory:
+          ProductTypeModuleFactory:
+          APlusContentModuleFactory:
+          OrdersModuleFactory:
+          FbaInventoryModuleFactory:
+          FbaSmallAndLightModuleFactory:
+          FbaInboundEligibilityModuleFactory:
+          WarehousingModuleFactory:
+          SupplySourceModuleFactory:
+          ReplenishmentModuleFactory:
+          ProductPricingModuleFactory:
+          ListingsModuleFactory:
+          RestrictionsModuleFactory:
+          ReportsModuleFactory:
+          FeedsModuleFactory:
+          DataKioskModuleFactory:
+          SalesModuleFactory:
+          FinancesModuleFactory:
+          InvoicesModuleFactory:
+          ShipmentInvoicingModuleFactory:
+          NotificationsModuleFactory:
+          SellersModuleFactory:
+          MessagingModuleFactory:
+          SolicitationsModuleFactory:
+          VendorsModuleFactory:
+          ApplicationManagementModuleFactory:
+          ApplicationIntegrationsModuleFactory:
+          TokensModuleFactory:
+          UploadsModuleFactory:
+          AuthorizationModuleFactory:
+          B2BModuleFactory:
+          BrandProtectionModuleFactory:
+          ProductFeesModuleFactory:
+          FulfillmentInboundModuleFactory:
+          FulfillmentOutboundModuleFactory:
+          MerchantFulfillmentModuleFactory:
+          EasyShipModuleFactory: <T: string: string: any
+    ) => Promise: T: number: Record: string: 'catalog: Promise<ModuleRegistry> {
+    let registry: new = ModuleRegistry();
+    
+    if (category === 'catalog' || category === 'all') {
+      CatalogModuleFactory.createCatalogItemsModule(
+})
+        makeApiRequest,
+        marketplaceId,
+        registry
+      );
+      
+      ProductTypeModuleFactory.createProductTypeDefinitionsModule(
+        makeApiRequest,)
+        marketplaceId,
+        registry
+      );
+      
+      APlusContentModuleFactory.createAPlusContentModule(
+        makeApiRequest,)
+        marketplaceId,
+        registry
+      );
+    }
+    
+    if (category === 'inventory' || category === 'all') {
+      FbaInventoryModuleFactory.createFbaInventoryModule(
+})
+        makeApiRequest,
+        marketplaceId,
+        registry
+      );
+      
+      FbaSmallAndLightModuleFactory.createFbaSmallAndLightModule(
+        makeApiRequest,)
+        marketplaceId,
+        registry
+      );
+      
+      FbaInboundEligibilityModuleFactory.createFbaInboundEligibilityModule(
+        makeApiRequest,)
+        marketplaceId,
+        registry
+      );
+      
+      SupplySourceModuleFactory.createSupplySourceModule(
+        makeApiRequest,)
+        marketplaceId,
+        registry
+      );
+      
+      ReplenishmentModuleFactory.createReplenishmentModule(
+        makeApiRequest,)
+        marketplaceId,
+        registry
+      );
+    }
+    
+    if (category === 'orders' || category === 'all') {
+      OrdersModuleFactory.createOrdersModule(
+})
+        makeApiRequest,
+        marketplaceId,
+        registry
+      );
+    }
+    
+    if (category === 'pricing' || category === 'all') {
+      ProductPricingModuleFactory.createProductPricingModule(
+})
+        makeApiRequest,
+        marketplaceId,
+        registry
+      );
+      
+      ProductFeesModuleFactory.createProductFeesModule(
+        makeApiRequest,)
+        marketplaceId,
+        registry
+      );
+    }
+    
+    if (category === 'listings' || category === 'all') {
+      ListingsModuleFactory.createListingsModule(
+})
+        makeApiRequest,
+        marketplaceId,
+        registry
+      );
+      
+      RestrictionsModuleFactory.createListingsRestrictionsModule(
+        makeApiRequest,)
+        marketplaceId,
+        registry
+      );
+    }
+    
+    if (category === 'reports' || category === 'all') {
+      ReportsModuleFactory.createReportsModule(
+})
+        makeApiRequest,
+        marketplaceId,
+        registry
+      );
+      
+      DataKioskModuleFactory.createDataKioskModule(
+        makeApiRequest,)
+        marketplaceId,
+        registry
+      );
+      
+      SalesModuleFactory.createSalesModule(
+        makeApiRequest,)
+        marketplaceId,
+        registry
+      );
+    }
+    
+    if (category === 'feeds' || category === 'all') {
+      FeedsModuleFactory.createFeedsModule(
+})
+        makeApiRequest,
+        marketplaceId,
+        registry
+      );
+    }
+    
+    if (category === 'finances' || category === 'all') {
+      FinancesModuleFactory.createFinancesModule(
+})
+        makeApiRequest,
+        marketplaceId,
+        registry
+      );
+      
+      InvoicesModuleFactory.createInvoicesModule(
+        makeApiRequest,)
+        marketplaceId,
+        registry
+      );
+      
+      ShipmentInvoicingModuleFactory.createShipmentInvoicingModule(
+        makeApiRequest,)
+        marketplaceId,
+        registry
+      );
+    }
+    
+    if (category === 'account' || category === 'all') {
+      NotificationsModuleFactory.createNotificationsModule(
+})
+        makeApiRequest,
+        marketplaceId,
+        registry
+      );
+      
+      SellersModuleFactory.createSellersModule(
+        makeApiRequest,)
+        marketplaceId,
+        registry
+      );
+      
+      MessagingModuleFactory.createMessagingModule(
+        makeApiRequest,)
+        marketplaceId,
+        registry
+      );
+      
+      SolicitationsModuleFactory.createSolicitationsModule(
+        makeApiRequest,)
+        marketplaceId,
+        registry
+      );
+      
+      VendorsModuleFactory.createVendorsModule(
+        makeApiRequest,)
+        marketplaceId,
+        registry
+      );
+      
+      ApplicationManagementModuleFactory.createApplicationManagementModule(
+        makeApiRequest,)
+        marketplaceId,
+        registry
+      );
+      
+      ApplicationIntegrationsModuleFactory.createApplicationIntegrationsModule(
+        makeApiRequest,)
+        marketplaceId,
+        registry
+      );
+      
+      TokensModuleFactory.createTokensModule(
+        makeApiRequest,)
+        marketplaceId,
+        registry
+      );
+      
+      UploadsModuleFactory.createUploadsModule(
+        makeApiRequest,)
+        marketplaceId,
+        registry
+      );
+      
+      AuthorizationModuleFactory.createAuthorizationModule(
+        makeApiRequest,)
+        marketplaceId,
+        registry
+      );
+    }
+    
+    if (category === 'fulfillment' || category === 'all') {
+      FulfillmentInboundModuleFactory.createFulfillmentInboundModule(
+})
+        makeApiRequest,
+        marketplaceId,
+        registry
+      );
+      
+      FulfillmentOutboundModuleFactory.createFulfillmentOutboundModule(
+        makeApiRequest,)
+        marketplaceId,
+        registry
+      );
+      
+      MerchantFulfillmentModuleFactory.createMerchantFulfillmentModule(
+        makeApiRequest,)
+        marketplaceId,
+        registry
+      );
+      
+      EasyShipModuleFactory.createEasyShipModule(
+        makeApiRequest,)
+        marketplaceId,
+        registry
+      );
+    }
+    
+    if (category === 'specialized' || category === 'all') {
+      B2BModuleFactory.createB2BModule(
+})
+        makeApiRequest,
+        marketplaceId,
+        registry
+      );
+      
+      BrandProtectionModuleFactory.createBrandProtectionModule(
+        makeApiRequest,)
+        marketplaceId,
+        registry
+      );
+    }
+    
+    // Initialize all modules
+    await registry.initializeAllModules();
+    
+    return registry;
+  }
+}

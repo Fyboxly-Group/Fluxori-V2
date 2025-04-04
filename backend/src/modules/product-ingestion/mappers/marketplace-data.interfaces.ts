@@ -1,4 +1,3 @@
-// @ts-nocheck - Added by final-ts-fix.js
 /**
  * Interfaces for marketplace-specific product data
  * These interfaces provide strong typing for marketplace-specific fields

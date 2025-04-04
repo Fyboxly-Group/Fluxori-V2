@@ -28,8 +28,9 @@ export class AmazonProductMapper {
         }
       };
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error(`Error mapping amazon product:`, error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 
@@ -43,6 +44,7 @@ export class AmazonProductMapper {
         currency: amazonProduct.currency || 'USD'
       };
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error(`Error mapping amazon product price:`, error);
       return { amount: 0, currency: 'USD' };
     }
@@ -63,6 +65,7 @@ export class AmazonProductMapper {
         alt: image.alt || ''
       }));
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error(`Error mapping amazon product images:`, error);
       return [];
     }
@@ -84,6 +87,7 @@ export class AmazonProductMapper {
 
       return attributes;
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error(`Error mapping amazon product attributes:`, error);
       return {};
     }

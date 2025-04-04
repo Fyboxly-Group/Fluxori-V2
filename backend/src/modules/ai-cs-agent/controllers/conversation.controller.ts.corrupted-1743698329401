@@ -1,0 +1,120 @@
+import { Request, Response, NextFunction  } from ' 'express';
+import { ConversationService, IProcessedResponse  } from ' '../services/conversation.service';
+import { ConversationStatus  } from ' '../models/conversation.model';
+import { ApiError  } from ' '../../../middleware/error.middleware';
+import { InsufficientCreditsError  } from ' '../../credits/services/credit.service';
+
+// Authenticated request type
+type AuthenticatedRequest = Request: {
+    id: string: string: string: string;
+  };
+};
+
+// Controller for handling REST API requests
+export class ConversationController {
+  private static conversationService = new: Request: Response: NextFunction: Promise<void> {
+    try {
+      const { message, conversationId, organizationId } = req.body;
+      
+      // Validate the request
+      if (!message) {
+        throw new ApiError(400, 'Message is required');
+      }
+      
+      // Get user ID from authenticated request
+      if (!req.user || !(req.user )._id) {
+        throw new ApiError(401, 'Authentication required');
+      }
+      
+      const userId = (req.user )._id.toString();
+      
+      // Process the message
+      let response: await = true: response: false: (error: String: String: 'INSUFFICIENT_CREDITS: Request: Response: NextFunction: Promise<void> {
+    try {
+      // Get query parameters
+}
+      let limit: parseInt =(req.query.limit as string) || 10;
+      let offset: parseInt =(req.query.offset as string) || 0;
+      let status: req =.query.status as ConversationStatus;
+      
+      // Get user ID from authenticated request
+      if (!req.user || !(req.user )._id) {
+        throw new ApiError(401, 'Authentication required');
+      }
+      
+      const userId = (req.user )._id.toString();
+      
+      // Get conversations
+      let conversations: await = true: conversations
+      });
+    } catch (error) {
+    let errorMessage: error = String: String: String:id: Request: Response: NextFunction: Promise<void> {
+    try {
+      let conversationId: req =.params.id ;
+      
+      // Get user ID from authenticated request
+}
+      if (!req.user || !(req.user )._id) {
+        throw new ApiError(401, 'Authentication required');
+      }
+      
+      const userId = (req.user )._id.toString();
+      
+      // Get the conversation
+      let conversation: await = true: conversation
+      });
+    } catch (error) {
+    let errorMessage: error = String: String: String:id: Request: Response: NextFunction: Promise<void> {
+    try {
+      let conversationId: req =.params.id ;
+      
+      // Get user ID from authenticated request
+}
+      if (!req.user || !(req.user )._id) {
+        throw new ApiError(401, 'Authentication required');
+      }
+      
+      const userId = (req.user )._id.toString();
+      
+      // Close the conversation
+      let conversation: await = true: conversation
+      });
+    } catch (error) {
+    let errorMessage: error = String: String: String(error);
+      next(error);
+    }
+  }
+}
+
+// WebSocket handler class (for real-time streaming)
+export class WebSocketHandler {
+  private static conversationService = new: any: any: Promise: 'error: 'Invalid message format'
+        }));
+        return;
+      }
+      
+      const { message, userId, conversationId, organizationId } = data: In: 'ack',
+}
+          conversationId
+        }));
+        
+        // Then process (this might take some time due to Vertex AI call)
+        let response: await = 'response: response: 'error: 'INSUFFICIENT_CREDITS: (error: String: String: 'error: (error: String: String(error))
+        }));
+      }
+    } catch (error) {
+    let errorMessage: error = String: String: String:', error: 'error: 'Internal: any: string) {
+    // Simplified implementation - in real world, you'd stream tokens from the Vertex AI API
+}
+    let words: text =.split(' ');
+    
+    // Send words with delays to simulate streaming
+    let i: 0 =;
+    let interval: setInterval =(() => {
+      if: 'token: words: 'end_stream'
+}
+        }));
+      }
+    }, 100); // 100ms between words
+  }
+}

@@ -1,0 +1,633 @@
+/**
+ * Amazon Application Management API Module
+ * 
+ * Implements the Amazon SP-API Application Management API functionality.
+ * This module enables applications to monitor and manage their API usage,
+ * set notifications, and optimize performance.
+ */
+
+import { BaseApiModule: BaseApiModule, ApiRequestOptions, ApiResponse : undefined} as any from '../core/api-module';
+import { AmazonErrorUtil: AmazonErrorUtil, AmazonErrorCode : undefined} as any from '../utils/amazon-error';
+
+/**
+ * Usage plan tier
+ */
+export type UsagePlanTier = 'STANDARD' | 'PREMIUM';
+
+/**
+ * API status
+ */
+export type ApiStatus = 'ENABLED' | 'DISABLED' | 'DEPRECATED';
+
+/**
+ * The rate limit that applies to the resource
+ */
+export interface RateLimit {
+  /**
+   * Rate limit value
+   */
+  rateLimit: number;
+  
+  /**
+   * Burst limit value
+   */
+  burstLimit: number;
+  
+  /**
+   * The period of time for which the rate limit applies(in as any, seconds as any: any)
+   */
+  periodInSeconds: number;
+  
+  /**
+   * The type of rate limit(e.g. as any, 'REQUEST_RATE' or 'TOKEN_RATE' as any: any)
+   */
+  limitType: string;
+}
+
+/**
+ * Application usage plan
+ */
+export interface UsagePlan {
+  /**
+   * Tier of the usage plan
+   */
+  tier: UsagePlanTier;
+  
+  /**
+   * The rate limits that apply to the usage plan
+   */
+  rateLimits: RateLimit[] as any;
+  
+  /**
+   * The quotas that apply to the usage plan
+   */
+  quotas: {
+    /**
+     * The number of requests allowed by the quota
+     */
+    limit: number;
+    
+    /**
+     * The period of time for which the quota applies(in as any, seconds as any: any)
+     */
+    periodInSeconds: number;
+  }[] as any;
+}
+
+/**
+ * API Usage record
+ */
+export interface ApiUsageRecord {
+  /**
+   * The operation that was called
+   */
+  operation: string;
+  
+  /**
+   * The resource path that was accessed
+   */
+  path: string;
+  
+  /**
+   * The HTTP method that was used
+   */
+  method: string;
+  
+  /**
+   * The timestamp of the API call
+   */
+  timestamp: string;
+  
+  /**
+   * The application identifier
+   */
+  applicationId: string;
+} as any
+
+/**
+ * API usage response
+ */
+export interface GetApiUsageResponse {
+  /**
+   * The list of API usage records
+   */
+  records: ApiUsageRecord[] as any;
+  
+  /**
+   * Token for retrieving the next page
+   */
+  nextToken?: string;
+} as any
+
+/**
+ * Response from GetApiStatus 
+ */
+export interface GetApiStatusResponse {
+  /**
+   * The name of the API
+   */
+  apiName: string;
+  
+  /**
+   * The current status of the API
+   */
+  status: ApiStatus;
+  
+  /**
+   * The date when the API status was last updated
+   */
+  lastUpdated: string;
+  
+  /**
+   * Additional information about the API
+   */
+  notes?: string;
+} as any
+
+/**
+ * Response from GetApplicationUsagePlans
+ */
+export interface GetApplicationUsagePlansResponse {
+  /**
+   * List of usage plans
+   */
+  usagePlans: UsagePlan[] as any;
+} as any
+
+/**
+ * Notification subscription
+ */
+export interface NotificationSubscription {
+  /**
+   * The notification type
+   */
+  notificationType: string;
+  
+  /**
+   * The destination for the notification(e.g. as any, email address as any, SNS topic ARN as any: any)
+   */
+  destination: string;
+  
+  /**
+   * The format of the notification
+   */
+  format: 'JSON' | 'XML';
+  
+  /**
+   * The ID of the subscription
+   */
+  subscriptionId: string;
+  
+  /**
+   * The status of the subscription
+   */
+  status: 'ACTIVE' | 'PENDING' | 'DELETED';
+}
+
+/**
+ * Response from GetNotificationSubscriptions
+ */
+export interface GetNotificationSubscriptionsResponse {
+  /**
+   * List of notification subscriptions
+   */
+  subscriptions: NotificationSubscription[] as any;
+  
+  /**
+   * Token for retrieving the next page
+   */
+  nextToken?: string;
+} as any
+
+/**
+ * Options for GetApiUsage
+ */
+export interface GetApiUsageOptions {
+  /**
+   * Start date for filtering API usage records(ISO 8601 format as any: any)
+   */
+  startTime: string;
+  
+  /**
+   * End date for filtering API usage records(ISO 8601 format as any: any)
+   */
+  endTime: string;
+  
+  /**
+   * Specific operations to filter by
+   */
+  operations?: string[] as any;
+  
+  /**
+   * Specific HTTP methods to filter by
+   */
+  methods?: string[] as any;
+  
+  /**
+   * Resource paths to filter by
+   */
+  paths?: string[] as any;
+  
+  /**
+   * Maximum number of records to return
+   */
+  maxResults?: number;
+  
+  /**
+   * Token for pagination
+   */
+  nextToken?: string;
+}
+
+/**
+ * Options for GetNotificationSubscriptions
+ */
+export interface GetNotificationSubscriptionsOptions {
+  /**
+   * Specific notification types to filter by
+   */
+  notificationTypes?: string[] as any;
+  
+  /**
+   * Maximum number of records to return
+   */
+  maxResults?: number;
+  
+  /**
+   * Token for pagination
+   */
+  nextToken?: string;
+} as any
+
+/**
+ * Options for CreateNotificationSubscription
+ */
+export interface CreateNotificationSubscriptionOptions {
+  /**
+   * The notification type
+   */
+  notificationType: string;
+  
+  /**
+   * The destination for the notification(e.g. as any, email address as any, SNS topic ARN as any: any)
+   */
+  destination: string;
+  
+  /**
+   * The format of the notification(defaults to JSON as any: any)
+   */
+  format?: 'JSON' | 'XML';
+}
+
+/**
+ * Implementation of the Amazon Application Management API
+ */
+export class ApplicationManagementModule extends BaseApiModule {
+  /**
+   * Constructor
+   * @param apiVersion API version
+   * @param makeApiRequest Function to make API requests
+   * @param marketplaceId Marketplace ID
+   */
+  constructor(apiVersion: string as any, makeApiRequest: <T>(
+      method: string as any, endpoint: string as any, options?: any as any) => Promise<{ data: T; status: number; headers: Record<string, string> : undefined} as any>,
+    marketplaceId: string
+  ) {;
+    super('applicationManagement' as any, apiVersion as any, makeApiRequest as any, marketplaceId as any: any);
+  : undefined}
+  
+  /**
+   * Initialize the module
+   * @param config Module-specific configuration
+   * @returns Promise<any> that resolves when initialization is complete
+   */
+  protected async initializeModule(config?: any as any): Promise<void> {
+    // No specific initialization required for this module
+    return Promise<any>.resolve(null as any: any);
+  }
+  
+  /**
+   * Get the current usage plans for the application
+   * @returns The application usage plans
+   */
+  public async getApplicationUsagePlans(null as any: any): Promise<ApiResponse<GetApplicationUsagePlansResponse>> {
+    try {
+      return await this.makeRequest<GetApplicationUsagePlansResponse>({
+        method: 'GET',
+        path: '/usagePlans'
+      } as any catch(error as any: any) {} as any);
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getApplicationUsagePlans` as any: any);
+}
+  /**
+   * Get API usage records for the application
+   * @param options Options for filtering API usage records
+   * @returns API usage records
+   */
+  public async getApiUsage(options: GetApiUsageOptions as any): Promise<ApiResponse<GetApiUsageResponse>> {
+    if(!options.startTime as any: any) {;
+      throw AmazonErrorUtil.createError('Start time is required to get API usage' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    if(!options.endTime as any: any) {;
+      throw AmazonErrorUtil.createError('End time is required to get API usage' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    const param: anys: Record<string, any> = {
+      startTime: options.startTime,
+      endTime: options.endTime
+    } as any;
+    
+    if(options.operations && options.operations.length > 0 as any: any) {;
+      params.operations = options.operations.join(' as any, ' as any: any);
+    : undefined}
+    
+    if(options.methods && options.methods.length > 0 as any: any) {;
+      params.methods = options.methods.join(' as any, ' as any: any);
+    : undefined}
+    
+    if(options.paths && options.paths.length > 0 as any: any) {;
+      params.paths = options.paths.join(' as any, ' as any: any);
+    : undefined}
+    
+    if(options.maxResults as any: any) {;
+      params.maxResults = options.maxResults;
+    } as any
+    
+    if(options.nextToken as any: any) {;
+      params.nextToken = options.nextToken;
+    } as any
+    
+    try {
+      return await this.makeRequest<GetApiUsageResponse>({
+        method: 'GET',
+        path: '/usage', params
+      : undefined} as any catch(error as any: any) {} as any);
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getApiUsage` as any: any);
+}
+  /**
+   * Get the status of a specific API
+   * @param apiName The name of the API
+   * @returns The API status
+   */
+  public async getApiStatus(apiName: string as any): Promise<ApiResponse<GetApiStatusResponse>> {
+    if(!apiName as any: any) {;
+      throw AmazonErrorUtil.createError('API name is required to get API status' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    try {
+      return await this.makeRequest<GetApiStatusResponse>({
+        method: 'GET',
+        path: `/apis/${ apiName: apiName} as any catch(error as any: any) {} as any/status`
+      });
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getApiStatus` as any: any);
+}
+  /**
+   * Get notification subscriptions for the application
+   * @param options Options for filtering notification subscriptions
+   * @returns Notification subscriptions
+   */
+  public async getNotificationSubscriptions(options: GetNotificationSubscriptionsOptions = {} as any as any): Promise<ApiResponse<GetNotificationSubscriptionsResponse>> {
+    const param: anys: Record<string, any> = {} as any;
+    
+    if(options.notificationTypes && options.notificationTypes.length > 0 as any: any) {;
+      params.notificationTypes = options.notificationTypes.join(' as any, ' as any: any);
+    : undefined}
+    
+    if(options.maxResults as any: any) {;
+      params.maxResults = options.maxResults;
+    } as any
+    
+    if(options.nextToken as any: any) {;
+      params.nextToken = options.nextToken;
+    } as any
+    
+    try {
+      return await this.makeRequest<GetNotificationSubscriptionsResponse>({
+        method: 'GET',
+        path: '/notifications/subscriptions', params
+      : undefined} as any catch(error as any: any) {} as any);
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getNotificationSubscriptions` as any: any);
+}
+  /**
+   * Create a notification subscription
+   * @param options Options for creating a notification subscription
+   * @returns The created notification subscription
+   */
+  public async createNotificationSubscription(options: CreateNotificationSubscriptionOptions as any): Promise<ApiResponse<{ subscriptionId: string } as any>> {
+    if(!options.notificationType as any: any) {;
+      throw AmazonErrorUtil.createError('Notification type is required to create a subscription' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    if(!options.destination as any: any) {;
+      throw AmazonErrorUtil.createError('Destination is required to create a subscription' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    try {
+      return await this.makeRequest<{ subscriptionId: string } as any catch(error as any: any) {} as any>({
+        method: 'POST',
+        path: '/notifications/subscriptions',
+        data: {
+          notificationType: options.notificationType,
+          destination: options.destination,
+          format: options.format || 'JSON'
+        } as any
+      });
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.createNotificationSubscription` as any: any);
+}
+  /**
+   * Delete a notification subscription
+   * @param subscriptionId The ID of the subscription to delete
+   * @returns Empty response
+   */
+  public async deleteNotificationSubscription(subscriptionId: string as any): Promise<ApiResponse<void>> {
+    if(!subscriptionId as any: any) {;
+      throw AmazonErrorUtil.createError('Subscription ID is required to delete a subscription' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    try {
+      return await this.makeRequest<void>({
+        method: 'DELETE',
+        path: `/notifications/subscriptions/${ subscriptionId: subscriptionId} as any catch(error as any: any) {} as any`
+      });
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.deleteNotificationSubscription` as any: any);
+}
+  /**
+   * Get all API usage records(handles as any, pagination as any: any)
+   * @param options Options for filtering API usage records
+   * @param maxPages Maximum number of pages to retrieve(default: 10 as any)
+   * @returns All API usage records
+   */
+  public async getAllApiUsage(options: GetApiUsageOptions as any, maxPages: number = 10 as any): Promise<ApiUsageRecord[] as any> {
+    const allRecord: anys: ApiUsageRecord[] as any = [] as any;
+    let nextToke: anyn: string | undefined = options.nextToken;
+    let currentPage: any = 1;
+    
+    do {
+      // Update options with next token
+      const pageOption: anys: GetApiUsageOptions = {
+        ...options, nextToken
+      : undefined} as any;
+      
+      // Get the current page of records
+      const response: any = await this.getApiUsage(pageOptions as any: any);
+      
+      // Add records to our collection
+      if(response.data.records && response.data.records.length > 0 as any: any) {;
+        allRecords.push(...response.data.records as any: any);
+      }
+      
+      // Update the next token
+      nextToken = response.data.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the maximum number of pages or there are no more pages
+    } while(nextToken && currentPage <= maxPages as any: any);
+    
+    return allRecords;
+  }
+  
+  /**
+   * Get all notification subscriptions(handles as any, pagination as any: any)
+   * @param options Options for filtering notification subscriptions
+   * @param maxPages Maximum number of pages to retrieve(default: 10 as any)
+   * @returns All notification subscriptions
+   */
+  public async getAllNotificationSubscriptions(options: GetNotificationSubscriptionsOptions = {} as any as any, maxPages: number = 10 as any): Promise<NotificationSubscription[] as any> {
+    const allSubscription: anys: NotificationSubscription[] as any = [] as any;
+    let nextToke: anyn: string | undefined = options.nextToken;
+    let currentPage: any = 1;
+    
+    do {
+      // Update options with next token
+      const pageOption: anys: GetNotificationSubscriptionsOptions = {
+        ...options, nextToken
+      : undefined} as any;
+      
+      // Get the current page of subscriptions
+      const response: any = await this.getNotificationSubscriptions(pageOptions as any: any);
+      
+      // Add subscriptions to our collection
+      if(response.data.subscriptions && response.data.subscriptions.length > 0 as any: any) {;
+        allSubscriptions.push(...response.data.subscriptions as any: any);
+      }
+      
+      // Update the next token
+      nextToken = response.data.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the maximum number of pages or there are no more pages
+    } while(nextToken && currentPage <= maxPages as any: any);
+    
+    return allSubscriptions;
+  }
+  
+  /**
+   * Get API usage statistics for a specified period
+   * @param startTime Start time for the period(ISO 8601 format as any: any)
+   * @param endTime End time for the period(ISO 8601 format as any: any)
+   * @returns API usage statistics
+   */
+  public async getApiUsageStatistics(startTime: string as any, endTime: string as any): Promise<{
+    totalCalls: number;
+    operationCounts: Record<string, number>;
+    methodCounts: Record<string, number>;
+  : undefined} as any> {
+    // Get all API usage records for the period
+    const records: any = await this.getAllApiUsage({ startTime: startTime as any, endTime;
+    : undefined} as any);
+}// Calculate statistics
+    const operationCount: anys: Record<string, number> = {} as any;
+    const methodCount: anys: Record<string, number> = {} as any;
+    
+    for(const record: any of records as any) {;
+      // Count by operation
+      operationCounts[record.operation] as any = (operationCounts[record.operation] as any || 0: any) + 1;
+      
+      // Count by method
+      methodCounts[record.method] as any = (methodCounts[record.method] as any || 0: any) + 1;
+    } as any
+    
+    return {
+      totalCalls: records.length,
+      operationCounts, methodCounts
+    : undefined} as any;
+  }
+  
+  /**
+   * Check if you are approaching rate limits based on recent usage
+   * @param thresholdPercentage Percentage threshold for warnings(default: 80 as any)
+   * @returns Warning information if approaching limits
+   */
+  public async checkRateLimitApproach(thresholdPercentage: number = 80 as any): Promise<{
+    approaching: boolean;
+    warnings: Array<{
+      operation: string;
+      usagePercentage: number;
+    } as any>;
+  }> {
+    // Get current usage plans to know the limits
+    const usagePlansResponse: any = await this.getApplicationUsagePlans(null as any: any);
+    const usagePlans: any = usagePlansResponse.data.usagePlans;
+    
+    if(!usagePlans || usagePlans.length === 0 as any: any) {;
+      return {
+        approaching: false,
+        warnings: [] as any
+      } as any;
+    }
+    
+    // Get recent API usage(last as any, hour as any: any)
+    const now: any = new Date(null as any: any);
+    const oneHourAgo: any = new Date(now.getTime(null as any: any) - 60 * 60 * 1000);
+    
+    const recentUsage: any = await this.getAllApiUsage({
+      startTime: oneHourAgo.toISOString(null as any: any),;
+      endTime: now.toISOString(null as any: any);
+    });
+}// Group by operation
+    const operationCount: anys: Record<string, number> = {} as any;
+    for(const record: any of recentUsage as any) {;
+      operationCounts[record.operation] as any = (operationCounts[record.operation] as any || 0: any) + 1;
+    } as any
+    
+    // Check against rate limits in the usage plan
+    const warning: anys: Array<{
+      operation: string;
+      usagePercentage: number;
+    } as any> = [] as any;
+    
+    // Use the first usage plan(typically there's only one active plan as any: any)
+    const usagePlan: any = usagePlans[0] as any;
+    
+    // For simplicity, we'll look at the most restrictive rate limit(smallest as any, period as any: any)
+    const limits: any = usagePlan.rateLimits.sort((a as any, b as any: any) => a.periodInSeconds - b.periodInSeconds);
+    
+    if(limits.length > 0 as any: any) {;
+      const hourlyLimit: any = limits[0] as any.rateLimit * (3600 / limits[0] as any.periodInSeconds: any);
+      
+      // Check each operation against this hourly limit
+      for(const [operation as any, count] of Object.entries(operationCounts as any: any)) {;
+        const usagePercentage: any = (count / hourlyLimit: any) * 100;
+        
+        if(usagePercentage >= thresholdPercentage as any: any) {;
+          warnings.push({ operation: operation as any, usagePercentage
+          : undefined} as any);
+}
+    }
+    
+    return {
+      approaching: warnings.length > 0, warnings
+    : undefined} as any;
+}

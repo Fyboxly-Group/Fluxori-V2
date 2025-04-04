@@ -29,294 +29,249 @@ interface NewLeadtimeOrderWebhook {
   };
 }
 
-interface NewDropShipOrderWebhook {
+interface OrderStatusUpdateWebhook {
   order_id: number;
-  ready_for_collect_due_date: string;
-  acceptance_due_date: string;
-  merchant_warehouse: {
-    warehouse_id: number;
-    name: string;
+  order_item_id: number;
+  offer: {
+    offer_id: number;
+    sku: string;
+    barcode: string;
   };
-  offers: Array<{
-    offer: {
-      offer_id: number;
-      sku: string;
-      barcode: string;
-      leadtime_stock: Array<{
-        merchant_warehouse: {
-          warehouse_id: number;
-          name: string;
-        };
-        quantity_available: number;
-      }>;
-    };
-    quantity_required: number;
-  }>;
+  status: string;
+  tracking_number: string;
+  tracking_url: string;
+  courier: string;
   event_date: string;
 }
 
-interface SaleStatusChangedWebhook {
-  sale: {
-    order_item_id: number;
-    order_id: number;
-    order_date: string;
-    sale_status: string;
-    offer_id: number;
-    tsin: number;
-    sku: string;
-    customer: string;
-    product_title: string;
-    takealot_url_mobi: string;
-    selling_price: number;
-    quantity: number;
-    warehouse: string;
-    customer_warehouse: string;
-    promotion: string;
-    shipment_id: number;
-    shipment_state_id: number;
-    po_number: number;
-    shipment_name: string;
-    takealot_url: string;
+interface InventoryUpdateWebhook {
+  offer_id: number;
+  sku: string;
+  barcode: string;
+  quantity_available: number;
+  event_date: string;
+  warehouse: {
+    warehouse_id: number;
+    name: string;
   };
-  event_timestamp_utc: string;
 }
 
-interface BatchCompletedWebhook {
-  seller_id: number;
-  batch_id: number;
-  status: string;
-}
-
-interface OfferUpdatedWebhook {
-  seller_id: number;
+interface ProductContentUpdateWebhook {
   offer_id: number;
-  values_changed: Record<string, any>;
-  batch_id?: number;
+  sku: string;
+  barcode: string;
+  title: string;
+  description: string;
+  category: string;
+  brand: string;
+  approval_status: string;
+  event_date: string;
 }
 
-interface OfferCreatedWebhook {
-  seller_id: number;
+interface PriceUpdateWebhook {
   offer_id: number;
-  merchant_sku: string;
-  tsin_id: number;
-  gtin: string;
-  minimum_leadtime_days: number;
-  maximum_leadtime_days: number;
+  sku: string;
+  barcode: string;
+  original_price: number;
   selling_price: number;
-  rrp: number;
-  merchant_warehouse_stock: Record<string, any>;
-  batch_id?: number;
+  event_date: string;
 }
 
-type TakealotWebhookPayload = 
-  | NewLeadtimeOrderWebhook
-  | NewDropShipOrderWebhook
-  | SaleStatusChangedWebhook
-  | BatchCompletedWebhook
-  | OfferUpdatedWebhook
-  | OfferCreatedWebhook;
+interface PromoticStatusUpdateWebhook {
+  promo_id: number;
+  sku: string;
+  barcode: string;
+  status: string;
+  start_date: string;
+  end_date: string;
+  discount_percentage: number;
+  event_date: string;
+}
+
+interface ReviewWebhook {
+  offer_id: number;
+  sku: string;
+  barcode: string;
+  review_id: number;
+  rating: number;
+  content: string;
+  customer_name: string;
+  event_date: string;
+}
+
+interface ReturnRequestWebhook {
+  order_id: number;
+  order_item_id: number;
+  offer: {
+    offer_id: number;
+    sku: string;
+    barcode: string;
+  };
+  reason: string;
+  status: string;
+  quantity: number;
+  event_date: string;
+}
 
 /**
- * Type for webhook handler function
- */
-type WebhookHandler<T> = (payload: T) => Promise<void>;
-
-/**
- * Takealot webhook handler
- * Handles incoming webhooks from Takealot, validates them, and dispatches to the appropriate handler
+ * Takealot Webhook Handler
+ * Processes webhook events from Takealot marketplace
  */
 export class TakealotWebhookHandler {
-  private readonly secret: string;
-  private readonly handlers: Map<string, WebhookHandler<any>> = new Map();
-
-  /**
-   * Constructor
-   * @param secret - Webhook secret for verifying requests
-   */
-  constructor(secret: string) {
-    this.secret = secret;
-    this.setupDefaultHandlers();
+  private readonly webhookSecret: string;
+  
+  constructor(webhookSecret: string) {
+    this.webhookSecret = webhookSecret;
   }
-
+  
   /**
-   * Express middleware to handle incoming webhooks
+   * Handle incoming webhook from Takealot
+   * @param req Express request
+   * @param res Express response
    */
-  public handleWebhook = async (req: Request, res: Response): Promise<void> => {
-    // Verify the request is from Takealot
-    if (!this.verifyRequest(req)) {
-      console.error('Invalid webhook signature');
+  async handleWebhook(req: Request, res: Response): Promise<void> {
+    // Verify webhook signature
+    const signature = req.headers['x-takealot-signature'] as string;
+    
+    if (!signature || !this.verifySignature(signature, JSON.stringify(req.body))) {
       res.status(401).json({ error: 'Invalid signature' });
       return;
     }
-
-    // Get the event type from headers
-    const eventType = req.headers['x-takealot-event'] as string;
-    if (!eventType) {
-      console.error('Missing event type header');
-      res.status(400).json({ error: 'Missing event type' });
-      return;
-    }
-
-    // Get the payload
-    const payload = req.body as TakealotWebhookPayload;
-
+    
+    // Process based on webhook type
+    const eventType = req.headers['x-takealot-event-type'] as string;
+    
     try {
-      // Process the webhook
-      await this.processWebhook(eventType, payload);
+      switch (eventType) {
+        case 'new_leadtime_order':
+          await this.handleNewLeadtimeOrder(req.body as NewLeadtimeOrderWebhook);
+          break;
+          
+        case 'order_status_update':
+          await this.handleOrderStatusUpdate(req.body as OrderStatusUpdateWebhook);
+          break;
+          
+        case 'inventory_update':
+          await this.handleInventoryUpdate(req.body as InventoryUpdateWebhook);
+          break;
+          
+        case 'product_content_update':
+          await this.handleProductContentUpdate(req.body as ProductContentUpdateWebhook);
+          break;
+          
+        case 'price_update':
+          await this.handlePriceUpdate(req.body as PriceUpdateWebhook);
+          break;
+          
+        case 'promo_status_update':
+          await this.handlePromoStatusUpdate(req.body as PromoticStatusUpdateWebhook);
+          break;
+          
+        case 'review':
+          await this.handleReview(req.body as ReviewWebhook);
+          break;
+          
+        case 'return_request':
+          await this.handleReturnRequest(req.body as ReturnRequestWebhook);
+          break;
+          
+        default:
+          console.warn(`Unhandled Takealot webhook event type: ${eventType}`);
+      }
       
-      // Respond with success
+      // Send success response
       res.status(200).json({ success: true });
     } catch (error) {
-      console.error(`Error processing ${eventType} webhook:`, error);
-      res.status(500).json({ error: 'Error processing webhook' });
+      console.error('Error processing Takealot webhook:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
-  };
-
-  /**
-   * Register a handler for a specific event type
-   * @param eventType - The webhook event type to handle
-   * @param handler - The handler function
-   */
-  public registerHandler<T extends TakealotWebhookPayload>(
-    eventType: string, 
-    handler: WebhookHandler<T>
-  ): void {
-    this.handlers.set(eventType, handler);
   }
-
+  
   /**
-   * Process a webhook
-   * @param eventType - The webhook event type
-   * @param payload - The webhook payload
+   * Verify webhook signature
+   * @param signature Signature from webhook header
+   * @param payload Webhook payload
    */
-  private async processWebhook(eventType: string, payload: TakealotWebhookPayload): Promise<void> {
-    // Get the handler for this event type
-    const handler = this.handlers.get(eventType);
+  private verifySignature(signature: string, payload: string): boolean {
+    // In a real implementation, verify the signature using HMAC
+    const hmac = crypto.createHmac('sha256', this.webhookSecret);
+    const calculatedSignature = hmac.update(payload).digest('hex');
     
-    if (!handler) {
-      console.warn(`No handler registered for event type: ${eventType}`);
-      return;
-    }
-    
-    // Execute the handler
-    await handler(payload);
-  }
-
-  /**
-   * Verify that the request is from Takealot
-   * @param req - The Express request object
-   */
-  private verifyRequest(req: Request): boolean {
-    // Get the signature from headers
-    const signature = req.headers['x-takealot-signature'] as string;
-    if (!signature) {
-      return false;
-    }
-    
-    // Compute the HMAC
-    const hmac = crypto.createHmac('sha256', this.secret);
-    const digest = hmac.update(JSON.stringify(req.body)).digest('hex');
-    
-    // Compare with the provided signature
     return crypto.timingSafeEqual(
-      Buffer.from(digest),
-      Buffer.from(signature)
+      Buffer.from(signature),
+      Buffer.from(calculatedSignature)
     );
   }
-
+  
   /**
-   * Set up default handlers for common webhook events
+   * Handle new leadtime order webhook
+   * @param data Webhook payload
    */
-  private setupDefaultHandlers(): void {
-    // Handler for new leadtime orders
-    this.registerHandler<NewLeadtimeOrderWebhook>(
-      'New Leadtime Order',
-      async (payload) => {
-        console.log(`New leadtime order received: ${payload.order_id}`);
-        
-        // Extract product details
-        const { offer, quantity } = payload;
-        
-        // Log the inventory update
-        console.log(`Inventory update required for SKU ${offer.sku}: -${quantity}`);
-        
-        // Here you would update your internal inventory system
-        // Example:
-        // await inventoryService.decrementStock(offer.sku, quantity);
-      }
-    );
-    
-    // Handler for new drop ship orders
-    this.registerHandler<NewDropShipOrderWebhook>(
-      'New Drop Ship Order',
-      async (payload) => {
-        console.log(`New drop ship order received: ${payload.order_id}`);
-        
-        // Extract product details
-        for (const offerItem of payload.offers) {
-          const { offer, quantity_required } = offerItem;
-          
-          // Log the inventory update
-          console.log(`Inventory update required for SKU ${offer.sku}: -${quantity_required}`);
-          
-          // Here you would update your internal inventory system
-          // Example:
-          // await inventoryService.decrementStock(offer.sku, quantity_required);
-        }
-      }
-    );
-    
-    // Handler for sale status changes
-    this.registerHandler<SaleStatusChangedWebhook>(
-      'Sale Status Changed',
-      async (payload) => {
-        const { sale } = payload;
-        console.log(`Sale status changed for order ${sale.order_id}: ${sale.sale_status}`);
-        
-        // Here you would update your internal order tracking system
-        // Example:
-        // await orderService.updateOrderStatus(sale.order_id.toString(), sale.sale_status);
-      }
-    );
-    
-    // Handler for batch completions
-    this.registerHandler<BatchCompletedWebhook>(
-      'Batch Completed',
-      async (payload) => {
-        console.log(`Batch ${payload.batch_id} completed with status: ${payload.status}`);
-        
-        // Here you would handle the batch completion
-        // Example:
-        // await batchService.processBatchCompletion(payload.batch_id, payload.status);
-      }
-    );
-    
-    // Handler for offer updates
-    this.registerHandler<OfferUpdatedWebhook>(
-      'Offer Updated',
-      async (payload) => {
-        console.log(`Offer ${payload.offer_id} updated. Fields changed:`, payload.values_changed);
-        
-        // Here you would update your internal product catalog
-        // Example:
-        // await catalogService.updateProduct(payload.offer_id.toString(), payload.values_changed);
-      }
-    );
-    
-    // Handler for offer creations
-    this.registerHandler<OfferCreatedWebhook>(
-      'Offer Created',
-      async (payload) => {
-        console.log(`New offer created: ${payload.offer_id}, SKU: ${payload.merchant_sku}`);
-        
-        // Here you would add the new product to your internal catalog
-        // Example:
-        // await catalogService.createProduct({
-        //   externalId: payload.offer_id.toString(),
-        //   sku: payload.merchant_sku,
-        //   // ... other fields
-        // });
-      }
-    );
+  private async handleNewLeadtimeOrder(data: NewLeadtimeOrderWebhook): Promise<void> {
+    // Implementation would process the leadtime order
+    console.log('Processing new leadtime order:', data.order_id);
+  }
+  
+  /**
+   * Handle order status update webhook
+   * @param data Webhook payload
+   */
+  private async handleOrderStatusUpdate(data: OrderStatusUpdateWebhook): Promise<void> {
+    // Implementation would update order status
+    console.log('Processing order status update:', data.order_id, data.status);
+  }
+  
+  /**
+   * Handle inventory update webhook
+   * @param data Webhook payload
+   */
+  private async handleInventoryUpdate(data: InventoryUpdateWebhook): Promise<void> {
+    // Implementation would update inventory
+    console.log('Processing inventory update for SKU:', data.sku, data.quantity_available);
+  }
+  
+  /**
+   * Handle product content update webhook
+   * @param data Webhook payload
+   */
+  private async handleProductContentUpdate(data: ProductContentUpdateWebhook): Promise<void> {
+    // Implementation would update product content
+    console.log('Processing product content update for SKU:', data.sku);
+  }
+  
+  /**
+   * Handle price update webhook
+   * @param data Webhook payload
+   */
+  private async handlePriceUpdate(data: PriceUpdateWebhook): Promise<void> {
+    // Implementation would update price
+    console.log('Processing price update for SKU:', data.sku, data.selling_price);
+  }
+  
+  /**
+   * Handle promotion status update webhook
+   * @param data Webhook payload
+   */
+  private async handlePromoStatusUpdate(data: PromoticStatusUpdateWebhook): Promise<void> {
+    // Implementation would update promotion status
+    console.log('Processing promo status update for SKU:', data.sku, data.status);
+  }
+  
+  /**
+   * Handle review webhook
+   * @param data Webhook payload
+   */
+  private async handleReview(data: ReviewWebhook): Promise<void> {
+    // Implementation would process review
+    console.log('Processing review for SKU:', data.sku, data.rating);
+  }
+  
+  /**
+   * Handle return request webhook
+   * @param data Webhook payload
+   */
+  private async handleReturnRequest(data: ReturnRequestWebhook): Promise<void> {
+    // Implementation would process return request
+    console.log('Processing return request for order:', data.order_id, data.status);
   }
 }

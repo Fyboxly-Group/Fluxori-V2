@@ -1,23 +1,23 @@
+/**
+ * AI Customer Service Agent module
+ * Provides conversational AI capabilities for customer service
+ */
+
+// Import routes
 import conversationRoutes from './routes/conversation.routes';
-import { ConversationService } from './services/conversation.service';
-import { VertexAIService } from './services/vertex-ai.service';
-import { RAGService } from './services/rag.service';
-import { initializeWebSocket } from './utils/websocket';
-import { Server as HttpServer } from 'http';
 
-// Re-export key components
-export {
-  conversationRoutes,
-  ConversationService,
-  VertexAIService,
-  RAGService,
-  initializeWebSocket
-};
+// Export controllers for direct use
+export { conversationController } from './controllers/conversation.controller';
 
-// Initialization function for the module
-export const initializeAICsAgentModule = (httpServer: HttpServer) => {
-  // Initialize WebSocket server
-  initializeWebSocket(httpServer);
-  
-  console.log('AI Customer Service Agent module initialized');
+// Export services for direct use
+export { ConversationService } from './services/conversation.service';
+export { RAGService } from './services/rag.service';
+export { VertexAIService } from './services/vertex-ai.service';
+
+// Export for registration in app.ts
+export default {
+  routes: {
+    path: '/api/conversations',
+    router: conversationRoutes
+  }
 };

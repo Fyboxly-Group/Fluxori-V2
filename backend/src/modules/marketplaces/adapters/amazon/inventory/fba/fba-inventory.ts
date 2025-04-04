@@ -2,343 +2,720 @@
  * Amazon FBA Inventory API Module
  * 
  * Implements the Amazon SP-API FBA Inventory API functionality.
- * This module handles inventory management for Fulfillment by Amazon.
+ * This module provides operations for retrieving information about inventory in
+ * Amazon's fulfillment network.
  */
 
-// Define necessary types for TypeScript validation
-class BaseApiModule {
-  protected moduleName: string;
-  protected marketplaceId: string;
-
-  constructor(moduleName: string, apiVersion: string, makeApiRequest: any, marketplaceId: string) {
-    this.moduleName = moduleName;
-    this.marketplaceId = marketplaceId;
-  }
-
-  protected makeRequest<T>(options: any): Promise<ApiResponse<T>> {
-    return Promise<any>.resolve({ data: {} as T, status: 200, headers: {} } as ApiResponse<T>);
-  }
-}
-
-interface ApiRequestOptions {
-  method: string;
-  path: string;
-  data?: any;
-  params?: Record<string, any>;
-}
-
-interface ApiResponse<T> {
-  data: T;
-  status: number;
-  headers: Record<string, string>;
-}
-
-// Mock AmazonSPApi namespace
-namespace AmazonSPApi {
-  export namespace FbaInventory {
-    export interface GetInventorySummariesResponse {
-      payload: {
-        inventorySummaries: any[];
-        pagination?: {
-          nextToken?: string;
-        };
-      };
-    }
-  }
-}
-
-import { AmazonErrorUtil, AmazonErrorCode } from '../../utils/amazon-error';
+import { ApiModule } from '../../core/api-module';
+import { ApiRequestFunction, ApiResponse } from '../../core/base-module.interface';
+import AmazonErrorHandler, { AmazonErrorCode } from '../../utils/amazon-error';
 
 /**
- * Granularity type for inventory aggregation
+ * FBA inventory summary condition types
  */
-export type GranularityType = 'Marketplace' | 'ASIN' | 'Seller' | 'MSKU';
+export type ConditionType = 'SELLER_DAMAGED' | 'WAREHOUSE_DAMAGED' | 'DISTRIBUTOR_DAMAGED' | 
+  'CUSTOMER_DAMAGED' | 'USED_LIKE_NEW' | 'USED_VERY_GOOD' | 'USED_GOOD' | 'USED_ACCEPTABLE' | 
+  'COLLECTIBLE_LIKE_NEW' | 'COLLECTIBLE_VERY_GOOD' | 'COLLECTIBLE_GOOD' | 'COLLECTIBLE_ACCEPTABLE' | 
+  'NEW' | 'OPEN_BOX' | 'DEFECTIVE' | 'CLUB';
 
 /**
- * Parameters for getting inventory summaries
+ * FBA inventory classification types
  */
-export interface GetInventorySummariesParams {
+export type ClassificationType = 'WORKING' | 'NOT_WORKING' | 'EDIBLE' | 'EXPIRED' | 'FLUID_DAMAGED';
+
+/**
+ * FBA inventory detail granularity types
+ */
+export type GranularityType = 'Marketplace' | 'GlobalInventory';
+
+/**
+ * FBA inventory filter options for get inventory summary
+ */
+export interface InventorySummaryFilters {
   /**
-   * Marketplace ID to get inventory from
-   */
-  marketplaceId?: string;
-  
-  /**
-   * List of SKUs to retrieve
-   */
-  sellerSkus?: string[];
-  
-  /**
-   * Granularity type for inventory aggregation
+   * Granularity of inventory summary data
    */
   granularityType?: GranularityType;
   
   /**
-   * Granularity ID (e.g. marketplace ID for Marketplace granularity)
+   * Granularity identifier (marketplace ID)
    */
   granularityId?: string;
-  
+}
+
+/**
+ * FBA inventory query parameters for get inventory
+ */
+export interface InventoryQueryParams {
   /**
-   * Start date for inventory lookup
+   * List of SKUs to query
    */
-  startDate?: Date;
+  sellerSkus?: string[];
   
   /**
-   * Token for pagination
+   * List of ASINs to query
+   */
+  asinList?: string[];
+  
+  /**
+   * Start date for inventory query
+   */
+  startDateTime?: string;
+  
+  /**
+   * Details level ('All' or 'Basic')
+   */
+  detailsLevel?: 'All' | 'Basic';
+  
+  /**
+   * Marketplace ID to filter by
+   */
+  marketplaceIds?: string[];
+  
+  /**
+   * Maximum number of items per page
+   */
+  maxResultsPerPage?: number;
+  
+  /**
+   * Next token for pagination
    */
   nextToken?: string;
+}
+
+/**
+ * Inventory summary response item
+ */
+export interface InventorySummaryItem {
+  /**
+   * Marketplace ID
+   */
+  marketplaceId?: string;
   
   /**
-   * Maximum number of results to return
+   * FNSKU identifier
    */
-  maxResults?: number;
-}
-
-/**
- * Inventory detail information for a specific SKU
- */
-export interface InventoryDetailBySku {
-  sku: string;
+  fnSku?: string;
+  
+  /**
+   * ASIN identifier
+   */
   asin?: string;
-  condition?: string;
-  totalQuantity: number;
-  fulfillableQuantity: number;
-  inboundWorking: number;
-  inboundShipped: number;
-  inboundReceiving: number;
-  reserved: {
-    total: number;
-    customerOrders: number;
-    fcProcessing: number;
-    fcTransfer: number;
+  
+  /**
+   * Product name
+   */
+  productName?: string;
+  
+  /**
+   * Condition of the product
+   */
+  condition?: ConditionType;
+  
+  /**
+   * Sales condition of the inventory
+   */
+  salesChannel?: string;
+  
+  /**
+   * Total units
+   */
+  totalUnits?: number;
+  
+  /**
+   * Units in inbound shipments
+   */
+  inboundShippedUnits?: number;
+  
+  /**
+   * Units being received by Amazon
+   */
+  inboundReceivingUnits?: number;
+  
+  /**
+   * Units in fulfillable inventory
+   */
+  fulfillableUnits?: number;
+  
+  /**
+   * Units in unfulfillable inventory
+   */
+  unfulfillableUnits?: number;
+  
+  /**
+   * Units with customer reservations
+   */
+  reservedUnits?: number;
+  
+  /**
+   * Units pending removal
+   */
+  pendingRemovalUnits?: number;
+  
+  /**
+   * Research status
+   */
+  researchingUnits?: {
+    /**
+     * Units in FC processing
+     */
+    fcProcessingUnits?: number;
+    
+    /**
+     * Units in FC transfer
+     */
+    fcTransferUnits?: number;
+    
+    /**
+     * Units in FC research
+     */
+    fcResearchUnits?: number;
   };
-  unfulfillable: {
-    total: number;
-    customerDamaged: number;
-    warehouseDamaged: number;
-    distributorDamaged: number;
-    carrierDamaged: number;
-    defective: number;
-    expired: number;
+}
+
+/**
+ * Inventory summary response
+ */
+export interface InventorySummaryResponse {
+  /**
+   * Response payload
+   */
+  payload: {
+    /**
+     * List of inventory summaries
+     */
+    inventorySummaries: InventorySummaryItem[];
+    
+    /**
+     * Next token for pagination
+     */
+    nextToken?: string;
+    
+    /**
+     * Granularity type
+     */
+    granularity?: {
+      /**
+       * Type of granularity
+       */
+      granularityType: GranularityType;
+      
+      /**
+       * Granularity ID
+       */
+      granularityId: string;
+    };
   };
-  lastUpdated?: Date;
 }
 
 /**
- * Inventory level information
+ * Inventory details
  */
-export interface InventoryLevel {
-  sku: string;
-  asin?: string;
-  condition?: string;
-  totalQuantity: number;
-  availableQuantity: number;
-  reservedQuantity: number;
-  inboundQuantity: number;
-  unfulfillableQuantity: number;
+export interface InventoryDetails {
+  /**
+   * Quantity for a specific condition
+   */
+  quantity?: number;
+  
+  /**
+   * Fulfillable quantity
+   */
+  fulfillableQuantity?: number;
+  
+  /**
+   * Unfulfillable quantity
+   */
+  unfulfillableQuantity?: number;
+  
+  /**
+   * Inbound working quantity
+   */
+  inboundWorkingQuantity?: number;
+  
+  /**
+   * Inbound shipped quantity
+   */
+  inboundShippedQuantity?: number;
+  
+  /**
+   * Inbound received quantity
+   */
+  inboundReceivedQuantity?: number;
+  
+  /**
+   * Reserved quantity information
+   */
+  reservedQuantity?: {
+    /**
+     * Total reserved
+     */
+    totalReservedQuantity?: number;
+    
+    /**
+     * Pending customer order quantity
+     */
+    pendingCustomerOrderQuantity?: number;
+    
+    /**
+     * Pending transshipment quantity
+     */
+    pendingTransshipmentQuantity?: number;
+    
+    /**
+     * FC processing quantity
+     */
+    fcProcessingQuantity?: number;
+  };
 }
 
 /**
- * Low stock inventory item
+ * FBA inventory item
  */
-export interface LowStockInventoryItem {
-  sku: string;
+export interface InventoryItem {
+  /**
+   * Seller SKU
+   */
+  sellerSku: string;
+  
+  /**
+   * FNSKU identifier
+   */
+  fnSku?: string;
+  
+  /**
+   * ASIN identifier
+   */
   asin?: string;
-  totalQuantity: number;
-  availableQuantity: number;
-  inboundQuantity: number;
+  
+  /**
+   * Product name
+   */
+  productName?: string;
+  
+  /**
+   * Item condition
+   */
+  condition?: ConditionType;
+  
+  /**
+   * Item inventory details by condition type
+   */
+  inventoryDetails?: Record<ConditionType, InventoryDetails>;
+  
+  /**
+   * Last updated timestamp
+   */
+  lastUpdatedTime?: string;
+  
+  /**
+   * Product details
+   */
+  productDetails?: {
+    /**
+     * List of dimensions
+     */
+    dimensions?: {
+      /**
+       * Height
+       */
+      height?: {
+        /**
+         * Value
+         */
+        value?: number;
+        
+        /**
+         * Unit
+         */
+        unit?: string;
+      };
+      
+      /**
+       * Length
+       */
+      length?: {
+        /**
+         * Value
+         */
+        value?: number;
+        
+        /**
+         * Unit
+         */
+        unit?: string;
+      };
+      
+      /**
+       * Width
+       */
+      width?: {
+        /**
+         * Value
+         */
+        value?: number;
+        
+        /**
+         * Unit
+         */
+        unit?: string;
+      };
+      
+      /**
+       * Weight
+       */
+      weight?: {
+        /**
+         * Value
+         */
+        value?: number;
+        
+        /**
+         * Unit
+         */
+        unit?: string;
+      };
+    };
+  };
+}
+
+/**
+ * Inventory response data
+ */
+export interface InventoryResponse {
+  /**
+   * Response payload
+   */
+  payload: {
+    /**
+     * List of inventory items
+     */
+    inventory: InventoryItem[];
+    
+    /**
+     * Pagination token
+     */
+    nextToken?: string;
+    
+    /**
+     * List of marketplace IDs
+     */
+    marketplaceIds?: string[];
+  };
+}
+
+/**
+ * Interface for FBA inventory module options
+ */
+export interface FBAInventoryModuleOptions {
+  // Optional configuration specific to FBA inventory module
 }
 
 /**
  * Implementation of the Amazon FBA Inventory API
  */
-export class FbaInventoryModule extends BaseApiModule {
+export class FBAInventoryModule extends ApiModule<FBAInventoryModuleOptions> {
+  /**
+   * The unique identifier for this module
+   */
+  readonly moduleId: string = 'fbaInventory';
+  
+  /**
+   * The human-readable name of this module
+   */
+  readonly moduleName: string = 'FBA Inventory';
+  
+  /**
+   * The API version this module uses
+   */
+  readonly apiVersion: string;
+  
+  /**
+   * The base URL path for API requests
+   */
+  readonly basePath: string;
+  
   /**
    * Constructor
    * @param apiVersion API version
-   * @param makeApiRequest Function to make API requests
+   * @param apiRequest Function to make API requests
    * @param marketplaceId Marketplace ID
+   * @param options Module-specific options
    */
   constructor(
-    apiVersion: string,
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string
+    apiVersion: string, 
+    apiRequest: ApiRequestFunction,
+    marketplaceId: string,
+    options: FBAInventoryModuleOptions = {}
   ) {
-    super('fbaInventory', apiVersion, makeApiRequest, marketplaceId);
+    super(apiRequest, marketplaceId, options);
+    this.apiVersion = apiVersion;
+    this.basePath = `/fba/inventory/${apiVersion}`;
   }
   
   /**
-   * Initialize the module
-   * @param config Module-specific configuration
-   * @returns Promise<any> that resolves when initialization is complete
+   * Get inventory summary
+   * @param filters Optional filters for inventory summary
+   * @returns Inventory summary response
    */
-  protected async initializeModule(config?: any): Promise<void> {
-    // No specific initialization required for this module
-    return Promise<any>.resolve();
-  }
-  
-  /**
-   * Get inventory summaries from Amazon
-   * @param params Parameters for getting inventory summaries
-   * @returns Inventory summaries response
-   */
-  public async getInventorySummaries(params: GetInventorySummariesParams = {}): Promise<ApiResponse<AmazonSPApi.FbaInventory.GetInventorySummariesResponse>> {
-    const queryParams: Record<string, any> = {};
-    
-    // Add granularity
-    const granularityType = params.granularityType || 'Marketplace';
-    queryParams.granularityType = granularityType;
-    
-    // Add granularity ID (based on granularity type)
-    if (granularityType === 'Marketplace') {
-      // For Marketplace granularity, use the marketplace ID
-      const marketplaceId = params.marketplaceId || this.marketplaceId;
-      if (!marketplaceId) {
-        throw AmazonErrorUtil.createError(
-          'Marketplace ID is required for Marketplace granularity',
-          AmazonErrorCode.INVALID_INPUT
-        );
-      }
-      queryParams.granularityId = marketplaceId;
-    } else if (params.granularityId) {
-      // For other granularity types, use the provided ID
-      queryParams.granularityId = params.granularityId;
-    }
-    
-    // Add filters
-    if (params.sellerSkus && params.sellerSkus.length > 0) {
-      queryParams.sellerSkus = params.sellerSkus.join(',');
-    }
-    
-    if (params.startDate) {
-      queryParams.startDate = params.startDate.toISOString();
-    }
-    
-    // Add pagination
-    if (params.nextToken) {
-      queryParams.nextToken = params.nextToken;
-    }
-    
-    if (params.maxResults) {
-      queryParams.maxResults = params.maxResults;
-    }
-    
+  public async getInventorySummary(
+    filters?: InventorySummaryFilters
+  ): Promise<ApiResponse<InventorySummaryResponse>> {
     try {
-      return await this.makeRequest<AmazonSPApi.FbaInventory.GetInventorySummariesResponse>({
-        method: 'GET',
-        path: '/summaries',
-        params: queryParams
-      });
+      // Build query parameters
+      const queryParams: Record<string, any> = {};
+      
+      if (filters?.granularityType) {
+        queryParams.granularityType = filters.granularityType;
+      }
+      
+      if (filters?.granularityId) {
+        queryParams.granularityId = filters.granularityId;
+      }
+      
+      // Make the API request
+      return await this.request<InventorySummaryResponse>(
+        'summaries',
+        'GET',
+        queryParams
+      );
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getInventorySummaries`);
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getInventorySummary`);
     }
   }
-
+  
   /**
-   * Get inventory for specific SKUs
-   * @param skus List of SKUs to retrieve inventory for
-   * @returns Inventory for the specified SKUs
+   * Get detailed inventory for specified SKUs or ASINs
+   * @param params Query parameters for inventory details
+   * @returns Detailed inventory information
    */
-  public async getInventoryForSkus(skus: string[]): Promise<ApiResponse<AmazonSPApi.FbaInventory.GetInventorySummariesResponse>> {
-    if (!skus || skus.length === 0) {
-      throw AmazonErrorUtil.createError(
-        'At least one SKU is required',
+  public async getInventory(params?: InventoryQueryParams): Promise<ApiResponse<InventoryResponse>> {
+    try {
+      // Build query parameters
+      const queryParams: Record<string, any> = {};
+      
+      // Add marketplace IDs (default to the module's marketplace ID if not provided)
+      const marketplaceIds = params?.marketplaceIds || [this.marketplaceId];
+      queryParams.marketplaceIds = marketplaceIds;
+      
+      // Add optional parameters
+      if (params?.detailsLevel) {
+        queryParams.details = params.detailsLevel;
+      }
+      
+      if (params?.startDateTime) {
+        queryParams.startDateTime = params.startDateTime;
+      }
+      
+      if (params?.sellerSkus && params.sellerSkus.length > 0) {
+        queryParams.sellerSkus = params.sellerSkus;
+      }
+      
+      if (params?.asinList && params.asinList.length > 0) {
+        queryParams.asinList = params.asinList;
+      }
+      
+      if (params?.maxResultsPerPage) {
+        queryParams.maxResultsPerPage = params.maxResultsPerPage;
+      }
+      
+      if (params?.nextToken) {
+        queryParams.nextToken = params.nextToken;
+      }
+      
+      // Make the API request
+      return await this.request<InventoryResponse>(
+        'inventory',
+        'GET',
+        queryParams
+      );
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getInventory`);
+    }
+  }
+  
+  /**
+   * Get inventory for a specific SKU
+   * @param sku Seller SKU to query
+   * @param marketplaceIds Optional list of marketplace IDs
+   * @returns Inventory information for the specified SKU
+   */
+  public async getInventoryBySku(
+    sku: string,
+    marketplaceIds?: string[]
+  ): Promise<InventoryItem | null> {
+    if (!sku) {
+      throw AmazonErrorHandler.createError(
+        'SKU is required',
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
-    return this.getInventorySummaries({
-      sellerSkus: skus,
-      granularityType: 'MSKU'
-    });
+    try {
+      const response = await this.getInventory({
+        sellerSkus: [sku],
+        marketplaceIds: marketplaceIds || [this.marketplaceId],
+        detailsLevel: 'All'
+      });
+      
+      return response.data.payload.inventory.length > 0 
+        ? response.data.payload.inventory[0] 
+        : null;
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getInventoryBySku`);
+    }
   }
   
   /**
-   * Get all pages of inventory summaries
-   * @param params Parameters for getting inventory summaries
-   * @param maxPages Maximum number of pages to retrieve (default: 10)
-   * @returns All inventory summaries from all pages
+   * Get inventory for a specific ASIN
+   * @param asin ASIN to query
+   * @param marketplaceIds Optional list of marketplace IDs
+   * @returns Inventory information for the specified ASIN
+   */
+  public async getInventoryByAsin(
+    asin: string,
+    marketplaceIds?: string[]
+  ): Promise<InventoryItem[]> {
+    if (!asin) {
+      throw AmazonErrorHandler.createError(
+        'ASIN is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    try {
+      const response = await this.getInventory({
+        asinList: [asin],
+        marketplaceIds: marketplaceIds || [this.marketplaceId],
+        detailsLevel: 'All'
+      });
+      
+      return response.data.payload.inventory;
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getInventoryByAsin`);
+    }
+  }
+  
+  /**
+   * Get all inventory items across all pages
+   * @param params Query parameters for inventory details
+   * @returns All inventory items
+   */
+  public async getAllInventoryItems(
+    params?: Omit<InventoryQueryParams, 'nextToken'>
+  ): Promise<InventoryItem[]> {
+    let allItems: InventoryItem[] = [];
+    let nextToken: string | undefined;
+    
+    try {
+      do {
+        const response = await this.getInventory({
+          ...params,
+          nextToken
+        });
+        
+        if (response.data.payload.inventory && response.data.payload.inventory.length > 0) {
+          allItems = [...allItems, ...response.data.payload.inventory];
+        }
+        
+        nextToken = response.data.payload.nextToken;
+      } while (nextToken);
+      
+      return allItems;
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getAllInventoryItems`);
+    }
+  }
+  
+  /**
+   * Get all inventory summaries across all pages
+   * @param filters Optional filters for inventory summary
+   * @returns All inventory summary items
    */
   public async getAllInventorySummaries(
-    params: GetInventorySummariesParams = {},
-    maxPages: number = 10
-  ): Promise<any[]> {
-    let currentPage = 1;
-    let nextToken: string | undefined = undefined;
-    const allInventorySummaries: any[] = [];
+    filters?: InventorySummaryFilters
+  ): Promise<InventorySummaryItem[]> {
+    let allSummaries: InventorySummaryItem[] = [];
+    let nextToken: string | undefined;
     
-    do {
-      // Update params with next token if available
-      const pageParams: GetInventorySummariesParams = {
-        ...params,
-        nextToken
-      };
+    try {
+      do {
+        const response = await this.getInventorySummary(filters);
+        
+        if (response.data.payload.inventorySummaries && response.data.payload.inventorySummaries.length > 0) {
+          allSummaries = [...allSummaries, ...response.data.payload.inventorySummaries];
+        }
+        
+        nextToken = response.data.payload.nextToken;
+      } while (nextToken);
       
-      const response = await this.getInventorySummaries(pageParams);
-      
-      // Add inventory summaries to our collection
-      if (response.data.payload.inventorySummaries && response.data.payload.inventorySummaries.length > 0) {
-        allInventorySummaries.push(...response.data.payload.inventorySummaries);
-      }
-      
-      // Get next token for pagination
-      nextToken = response.data.payload.pagination?.nextToken;
-      currentPage++;
-      
-      // Stop if we've reached the max pages or there are no more pages
-    } while (nextToken && currentPage <= maxPages);
-    
-    return allInventorySummaries;
+      return allSummaries;
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getAllInventorySummaries`);
+    }
   }
   
   /**
-   * Get inventory levels for all SKUs
-   * @returns Inventory levels for all SKUs
+   * Get low stock inventory items (items with fulfillable quantity below threshold)
+   * @param threshold Threshold for low stock
+   * @param marketplaceIds Optional list of marketplace IDs
+   * @returns Low stock inventory items
    */
-  public async getAllInventoryLevels(): Promise<InventoryLevel[]> {
-    const summaries = await this.getAllInventorySummaries({
-      granularityType: 'Seller'
-    });
-    
-    return summaries.map((summary: any) => {
-      const details = summary.inventoryDetails || {};
+  public async getLowStockItems(
+    threshold: number = 5,
+    marketplaceIds?: string[]
+  ): Promise<InventoryItem[]> {
+    try {
+      const allItems = await this.getAllInventoryItems({
+        marketplaceIds: marketplaceIds || [this.marketplaceId],
+        detailsLevel: 'All'
+      });
       
-      return {
-        sku: summary.sellerSku || '',
-        asin: summary.asin,
-        condition: summary.condition,
-        totalQuantity: summary.totalQuantity || 0,
-        availableQuantity: details.fulfillableQuantity || 0,
-        reservedQuantity: details.reservedQuantity?.total || 0,
-        inboundQuantity: (details.inboundWorkingQuantity || 0) + 
-                       (details.inboundShippedQuantity || 0) + 
-                       (details.inboundReceivingQuantity || 0),
-        unfulfillableQuantity: details.unfulfillableQuantity?.total || 0
-      };
-    });
+      // Filter for items with fulfillable quantity below threshold
+      return allItems.filter(item => {
+        if (!item.inventoryDetails) return false;
+        
+        // Check all condition types for fulfillable quantity
+        for (const condition in item.inventoryDetails) {
+          const details = item.inventoryDetails[condition as ConditionType];
+          if (details && details.fulfillableQuantity !== undefined && 
+              details.fulfillableQuantity <= threshold) {
+            return true;
+          }
+        }
+        
+        return false;
+      });
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getLowStockItems`);
+    }
   }
   
   /**
-   * Get low stock inventory (items with low fulfillable quantity)
-   * @param threshold Threshold for low stock (default: 5)
-   * @returns Low stock items
+   * Get total inventory count across all conditions
+   * @param marketplaceIds Optional list of marketplace IDs
+   * @returns Total inventory count
    */
-  public async getLowStockInventory(threshold: number = 5): Promise<LowStockInventoryItem[]> {
-    const allInventory = await this.getAllInventoryLevels();
-    
-    return allInventory
-      .filter((item: any) => item.availableQuantity <= threshold)
-      .map((item: any) => ({
-        sku: item.sku,
-        asin: item.asin,
-        totalQuantity: item.totalQuantity,
-        availableQuantity: item.availableQuantity,
-        inboundQuantity: item.inboundQuantity
-      }));
+  public async getTotalInventoryCount(
+    marketplaceIds?: string[]
+  ): Promise<number> {
+    try {
+      const summary = await this.getInventorySummary({
+        granularityType: 'Marketplace',
+        granularityId: marketplaceIds?.[0] || this.marketplaceId
+      });
+      
+      let totalCount = 0;
+      
+      // Sum up the total units from all summaries
+      summary.data.payload.inventorySummaries.forEach(item => {
+        if (item.totalUnits) {
+          totalCount += item.totalUnits;
+        }
+      });
+      
+      return totalCount;
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getTotalInventoryCount`);
+    }
   }
 }

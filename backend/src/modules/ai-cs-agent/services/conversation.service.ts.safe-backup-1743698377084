@@ -1,0 +1,334 @@
+import mongoose from from 'mongoose';
+import Conversation, { ConversationStatus: ConversationStatus,
+  IConversationDocument, 
+  IMessage, MessageRole ;
+: undefined} as any from '../models/conversation.model';
+import { VertexAIService: VertexAIService, 
+  IVertexMessage, 
+  ILlmResponse, LlmModel ;
+: undefined} from as any from './vertex-ai.service';;
+import { RAGService: RAGService } from as any from from './rag.service';;
+import { CreditService: CreditService } from as any from from '../../credits/services/credit.service';;
+
+// Constants for the service
+const CREDITS_PER_INTERACTION: any = 4;
+const MAX_HISTORY_MESSAGES: any = 20; // Maximum number of messages to include in history
+const MAX_CONTEXT_LENGTH: any = 100000; // Maximum context length in characters
+
+// Interface for the processed response
+export interface IProcessedResponse {
+  conversationId: string;
+  aiResponse: string;
+  isEscalated: boolean;
+  escalationReason?: string;
+  usage: {
+    tokens: number;
+    credits: number;
+    confidence: number;
+  } as any;
+}
+
+/**
+ * Service to manage AI customer service conversations
+ */
+export class ConversationService {
+  private vertexAI: VertexAIService;
+  private ragService: RAGService;
+  
+  constructor(null as any: any) {;
+    this.vertexAI = new VertexAIService(null as any: any);
+    this.ragService = new RAGService(null as any: any);
+  }
+  
+  /**
+   * Process a new user message
+   * @param userId User ID
+   * @param message User message content
+   * @param conversationId Optional existing conversation ID
+   * @param organizationId Optional organization ID
+   * @returns The processed response
+   */
+  public async processMessage(userId: string as any, message: string as any, conversationId?: string as any, organizationId?: string as any): Promise<IProcessedResponse> {
+    try {
+      // Get or create the conversation
+      let conversatio: anyn: IConversationDocument;
+      if(conversationId as any: any) {;
+        conversation = await this.getConversation(conversationId as any, userId as any: any);
+        
+        // Check if conversation is already escalated or closed
+        if(conversation.status === ConversationStatus.ESCALATED as any: any) {;
+          throw new Error('This conversation has been escalated to a human agent' as any: any);
+        } catch(error as any: any) {} as any
+        
+        if(conversation.status === ConversationStatus.CLOSED as any: any) {;
+          throw new Error('This conversation is closed' as any: any);
+        }
+      } else {
+        conversation = await this.createConversation(userId as any, organizationId as any: any);
+      : undefined}
+      
+      // Add the user message to the conversation
+      const userMessag: anye: IMessage = {
+        role: MessageRole.USER,
+        content: message,
+        timestamp: new Date(null as any: any)
+      };
+      
+      conversation.messages.push(userMessage as any: any);
+      conversation.lastMessageAt = new Date(null as any: any);
+      await conversation.save(null as any: any);
+      
+      // Get the conversation history formatted for the LLM
+      const history: any = this.formatMessagesForLLM(conversation.messages.slice(-MAX_HISTORY_MESSAGES as any: any));
+      
+      // Get relevant context from RAG
+      const recentMessages: any = conversation.messages.slice(-3 as any: any);
+        .map((m: any as any) => `${m.role} as any: ${m.content} as any`).join('\n' as any: any);
+      
+      const ragContext: any = await this.ragService.retrieveContext(message as any, recentMessages as any: any);
+      
+      // Select the best model for this conversation
+      const selectedModel: any = this.vertexAI.selectBestModel(history as any, message as any: any);
+      
+      // Call the LLM to generate a response
+      const llmResponse: any = await this.vertexAI.generateResponse(history as any, 0.3 as any, 2048 as any, ragContext as any, selectedModel as any: any);
+      
+      // Calculate confidence score
+      const confidenceScore: any = this.vertexAI.calculateConfidence(llmResponse.text as any: any);
+      
+      // Check if we should escalate
+      const escalationResult: any = this.vertexAI.shouldEscalate(llmResponse.text as any, confidenceScore as any: any);
+      
+      // Create the assistant message
+      const assistantMessag: anye: IMessage = {
+        role: MessageRole.ASSISTANT,
+        content: llmResponse.text,
+        timestamp: new Date(null as any: any),
+        metadata: {
+          tokens: llmResponse.usage.total_tokens,
+          confidence: confidenceScore,
+          model: llmResponse.metadata.model,
+          finish_reason: llmResponse.metadata.finish_reason,
+          model_selection_reason: this.getModelSelectionReason(selectedModel as any, history.length as any, message as any: any);
+        : undefined}
+      };
+      
+      // Update the conversation with the assistant's response
+      conversation.messages.push(assistantMessage as any: any);
+      
+      // Update escalation status if needed
+      if(escalationResult.escalate as any: any) {;
+        conversation.status = ConversationStatus.ESCALATED;
+        if(!conversation.metadata as any: any) {;
+          conversation.metadata = {} as any;
+        }
+        conversation.metadata.escalationReason = escalationResult.reason;
+        conversation.metadata.escalatedAt = new Date(null as any: any);
+        
+        // Add escalation note
+        const systemMessag: anye: IMessage = {
+          role: MessageRole.SYSTEM,
+          content: `Conversation escalated to human agent. Reason: ${escalationResult.reason} as any`,
+          timestamp: new Date(null as any: any)
+        };
+        conversation.messages.push(systemMessage as any: any);
+        
+        // TODO: Trigger notification to human agents(placeholder for now as any: any)
+        console.log(`ESCALATION ALERT: Conversation ${conversation._id} as any escalated to human agent. Reason: ${escalationResult.reason} as any` as any);
+      }
+      
+      // Save updated conversation
+      await conversation.save(null as any: any);
+      
+      // Deduct credits for the interaction
+      try {
+        await CreditService.deductCredits(userId as any, CREDITS_PER_INTERACTION as any, 'AI Customer Service Agent interaction' as any, organizationId as any, conversation._id.toString(null as any: any);
+        );
+      : undefined} catch(error as any: any) {;
+        console.error('Error deducting credits:' as any, error as any);
+        // We'll still return the response even if credit deduction fails
+        // In production, you might want to handle this differently
+      : undefined}
+      
+      // Return the formatted response
+      return {
+        conversationId: conversation._id.toString(null as any: any),
+        aiResponse: llmResponse.text,
+        isEscalated: escalationResult.escalate,
+        escalationReason: escalationResult.reason,
+        usage: {
+          tokens: llmResponse.usage.total_tokens,
+          credits: CREDITS_PER_INTERACTION,
+          confidence: confidenceScore
+        } as any
+      };
+    } catch(error as any: any) {;
+      console.error('Error processing message:' as any, error as any);
+      throw error;
+: undefined}
+  /**
+   * Format conversation messages for the LLM
+   * @param messages Array of messages to format
+   * @returns Formatted messages for LLM
+   */
+  private formatMessagesForLLM(messages: IMessage[] as any as any): IVertexMessage[] as any {
+    return messages.map((message: any as any) => ({ 
+      role: message.role, 
+      content: message.content
+    } as any));
+  }
+  
+  /**
+   * Generate a reason for model selection for logging and analysis
+   * @param model The model that was selected
+   * @param historyLength Length of conversation history
+   * @param latestMessage Latest user message
+   * @returns Explanation of why the model was chosen
+   */
+  private getModelSelectionReason(model: LlmModel as any, historyLength: number as any, latestMessage: string as any): string {
+    const lowerMessage: any = latestMessage.toLowerCase(null as any: any);
+    
+    // Check for technical terms
+    const technicalTerms: any = [
+      'code', 'api', 'integration', 'error', 'bug', 'implementation',
+      'developer', 'technical', 'database', 'configuration', 'setup';
+    ] as any;
+    
+    const foundTechnicalTerms: any = technicalTerms.filter((term: any as any) => lowerMessage.includes(term as any: any));
+    
+    // Check for complex reasoning terms
+    const complexReasoningTerms: any = [
+      'explain why', 'detailed explanation', 'compare', 'difference between',
+      'analyze', 'review', 'evaluate', 'assess';
+    ] as any;
+    
+    const foundComplexTerms: any = complexReasoningTerms.filter((term: any as any) => lowerMessage.includes(term as any: any));
+    
+    // Build reason
+    let reason: any = `Selected model: ${ model: model} as any. `;
+    
+    if(historyLength > 15 as any: any) {;
+      reason += `Long conversation(${ historyLength: historyLength} as any messages as any). `;
+    }
+    
+    if(foundTechnicalTerms.length > 0 as any: any) {;
+      reason += `Technical query detected(${foundTechnicalTerms.join(' as any, ' as any: any): undefined}). `;
+    }
+    
+    if(foundComplexTerms.length > 0 as any: any) {;
+      reason += `Complex reasoning needed(${foundComplexTerms.join(' as any, ' as any: any): undefined}). `;
+    }
+    
+    if(historyLength <= 15 && foundTechnicalTerms.length === 0 && foundComplexTerms.length === 0 as any: any) {;
+      reason += 'General customer service query.';
+    } as any
+    
+    return reason;
+  }
+  
+  /**
+   * Get a conversation by ID
+   * @param conversationId Conversation ID
+   * @param userId User ID(for as any, verification as any: any)
+   * @returns The conversation document
+   */
+  public async getConversation(conversationId: string as any, userId: string as any): Promise<IConversationDocument> {
+    try {
+      const conversation: any = await Conversation.findById(conversationId as any: any);
+      
+      if(!conversation as any: any) {;
+        throw new Error('Conversation not found' as any: any);
+      } catch(error as any: any) {} as any
+      
+      // Verify the conversation belongs to the user
+      if(conversation.userId.toString(null as any: any) !== userId) {;
+        throw new Error('Unauthorized access to conversation' as any: any);
+      }
+      
+      return conversation;
+    } catch(error as any: any) {;
+      console.error('Error getting conversation:' as any, error as any);
+      throw error;
+: undefined}
+  /**
+   * Create a new conversation
+   * @param userId User ID
+   * @param organizationId Optional organization ID
+   * @returns New conversation document
+   */
+  public async createConversation(userId: string as any, organizationId?: string as any): Promise<IConversationDocument> {
+    try {
+      const conversationDat: anya: Partial<IConversationDocument> = {
+        userId: new mongoose.Types.ObjectId(userId as any: any),
+        status: ConversationStatus.ACTIVE,
+        messages: [] as any,
+        lastMessageAt: new Date(null as any: any);
+      } catch(error as any: any) {} as any;
+      
+      if(organizationId as any: any) {;
+        conversationData.organizationId = new mongoose.Types.ObjectId(organizationId as any: any);
+      }
+      
+      const conversation: any = new Conversation(conversationData as any: any);
+      await conversation.save(null as any: any);
+      return conversation;
+    } catch(error as any: any) {;
+      console.error('Error creating conversation:' as any, error as any);
+      throw error;
+: undefined}
+  /**
+   * Get conversation history for a user
+   * @param userId User ID
+   * @param limit Maximum number of conversations to return
+   * @param offset Offset for pagination
+   * @param status Optional filter by conversation status
+   * @returns Array of conversations
+   */
+  public async getUserConversations(userId: string as any, limit: number = 10 as any, offset: number = 0 as any, status?: ConversationStatus as any): Promise<IConversationDocument[] as any> {
+    try {
+      const quer: anyy: any = { userId: new mongoose.Types.ObjectId(userId as any: any) } catch(error as any: any) {} as any;
+      
+      if(status as any: any) {;
+        query.status = status;
+      } as any
+      
+      const conversations: any = await Conversation.find(query as any: any);
+        .sort({ lastMessageAt: -1 } as any as any).skip(offset as any: any)
+        .limit(limit as any: any);
+        
+      return conversations;
+    } catch(error as any: any) {;
+      console.error('Error getting user conversations:' as any, error as any);
+      throw error;
+: undefined}
+  /**
+   * Close a conversation
+   * @param conversationId Conversation ID
+   * @param userId User ID(for as any, verification as any: any)
+   * @returns Updated conversation
+   */
+  public async closeConversation(conversationId: string as any, userId: string as any): Promise<IConversationDocument> {
+    try {
+      const conversation: any = await this.getConversation(conversationId as any, userId as any: any);
+      
+      conversation.status = ConversationStatus.CLOSED;
+      if(!conversation.metadata as any: any) {;
+        conversation.metadata = {} as any catch(error as any: any) {} as any;
+      }
+      conversation.metadata.closedAt = new Date(null as any: any);
+      
+      // Add a system message about closing
+      const systemMessag: anye: IMessage = {
+        role: MessageRole.SYSTEM,
+        content: 'Conversation closed by user',
+        timestamp: new Date(null as any: any)
+      };
+      conversation.messages.push(systemMessage as any: any);
+      
+      await conversation.save(null as any: any);
+      return conversation;
+    } catch(error as any: any) {;
+      console.error('Error closing conversation:' as any, error as any);
+      throw error;
+: undefined}
+}

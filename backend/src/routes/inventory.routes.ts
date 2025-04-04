@@ -10,6 +10,7 @@ import {
   getLowStockItems,
 } from '../controllers/inventory.controller';
 import { authenticate, authorize } from '../middleware/auth.middleware';
+import { container } from '../config/inversify';
 
 const router = express.Router();
 

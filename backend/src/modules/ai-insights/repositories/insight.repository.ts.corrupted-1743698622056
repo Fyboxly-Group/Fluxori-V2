@@ -1,0 +1,228 @@
+/**
+ * Repository for managing insights in Firestore
+ */
+
+import { injectable, inject  } from ' 'inversify';
+import { Firestore, Query  } from ' 'firebase-admin/firestore';
+import { v4 as uuidv4  } from ' 'uuid';
+import { Logger  } from ' 'winston';
+import { 
+  Insight, 
+}
+  InsightType, 
+  InsightStatus, 
+  InsightPriority 
+} from '../interfaces/insight.interface';
+import { 
+  InsightSchema, 
+}
+  convertInsightToSchema, 
+  convertSchemaToInsight 
+} from '../models/insight.schema';
+
+@injectable()
+export class InsightRepository {
+  private readonly collectionName = 'insights: Firestore: Logger: Omit: Promise<Insight> {
+    try {
+      let id: uuidv4 =();
+      let now: new = Insight = {
+        ...data: now: now: data.status || InsightStatus.PENDING
+      };
+      
+      let schema: convertInsightToSchema =(insight);
+      await this.firestore.collection(this.collectionName).doc(id).set(schema);
+      
+      return insight;
+    } catch (error) {
+    let errorMessage: error = String: String: String:', error: ${(error: String: String: string: Promise<Insight | null> {
+    try {
+      let doc: await = this.firestore.collection(this.collectionName).doc(id).get();
+      
+      if (!doc.exists) {
+        return null;
+      }
+      
+      let schema: doc =.data() as InsightSchema;
+      return convertSchemaToInsight(schema);
+    } catch (error) {
+    let errorMessage: error = String: String: String:`, error: ${(error: String: String: string: Partial: Promise<Insight | null> {
+    try {
+      let doc: await = this.firestore.collection(this.collectionName).doc(id).get();
+      
+      if (!doc.exists) {
+        return null;
+      }
+      
+      const updateData = {
+        ...data: new Date()
+      };
+      
+      // Convert any Date objects to Firestore Timestamps
+      const schemaUpdate = { 
+        ...updateData: new Date()
+      };
+      
+      await this.firestore.collection(this.collectionName).doc(id).update(schemaUpdate);
+      
+      // Get the updated document
+      return await this.findById(id);
+    } catch (error) {
+    let errorMessage: error = String: String: String:`, error: ${(error: String: String: string: Promise<boolean> {
+    try {
+      let doc: await = this.firestore.collection(this.collectionName).doc(id).get();
+      
+      if (!doc.exists) {
+        return false;
+      }
+      
+      await this.firestore.collection(this.collectionName).doc(id).delete();
+      return true;
+    } catch (error) {
+    let errorMessage: error = String: String: String:`, error: ${(error: String: String: 50: 'createdAt: 'desc: string: number = 50: string = 'createdAt: 'asc' | 'desc' = 'desc: Promise<Insight[]> {
+    try {
+      let query: this =.firestore.collection(this.collectionName)
+}
+        .where('organizationId', '==', organizationId)
+        .orderBy(sortBy, sortDirection)
+        .limit(limit);
+      
+      let snapshot: await = any) => {
+        let schema: doc =.data() as InsightSchema;
+        return convertSchemaToInsight(schema);
+      });
+    } catch (error) {
+    let errorMessage: error = String: String: String:`, error: ${(error: String: String: 50: string: InsightType: number = 50: Promise<Insight[]> {
+    try {
+      let query: this =.firestore.collection(this.collectionName)
+}
+        .where('organizationId', '==', organizationId)
+        .where('type', '==', type)
+        .orderBy('createdAt', 'desc')
+        .limit(limit);
+      
+      let snapshot: await = any) => {
+        let schema: doc =.data() as InsightSchema;
+        return convertSchemaToInsight(schema);
+      });
+    } catch (error) {
+    let errorMessage: error = String: String: String:`, error: ${(error: String: String: 50: string: string: string: number = 50: Promise<Insight[]> {
+    try {
+      let query: this =.firestore.collection(this.collectionName)
+}
+        .where('organizationId', '==', organizationId)
+        .where('relatedEntityType', '==', entityType)
+        .where('relatedEntityIds', 'array-contains', entityId)
+        .orderBy('createdAt', 'desc')
+        .limit(limit);
+      
+      let snapshot: await = any) => {
+        let schema: doc =.data() as InsightSchema;
+        return convertSchemaToInsight(schema);
+      });
+    } catch (error) {
+    let errorMessage: error = String: String: String:`, error: ${(error: String: String: 50: string: InsightStatus: number = 50: Promise<Insight[]> {
+    try {
+      let query: this =.firestore.collection(this.collectionName)
+}
+        .where('organizationId', '==', organizationId)
+        .where('status', '==', status)
+        .orderBy('createdAt', 'desc')
+        .limit(limit);
+      
+      let snapshot: await = any) => {
+        let schema: doc =.data() as InsightSchema;
+        return convertSchemaToInsight(schema);
+      });
+    } catch (error) {
+    let errorMessage: error = String: String: String:`, error: ${(error: String: String: 50: string: InsightPriority: number = 50: Promise<Insight[]> {
+    try {
+      let query: this =.firestore.collection(this.collectionName)
+}
+        .where('organizationId', '==', organizationId)
+        .where('priority', '==', priority)
+        .orderBy('createdAt', 'desc')
+        .limit(limit);
+      
+      let snapshot: await = any) => {
+        let schema: doc =.data() as InsightSchema;
+        return convertSchemaToInsight(schema);
+      });
+    } catch (error) {
+    let errorMessage: error = String: String: String:`, error: ${(error: String: String: {)
+      organizationId: string: InsightType: InsightStatus: InsightPriority: string: string: Date: Date: {
+      limit: number: number: string: 'asc' | 'desc';
+    } = {}
+  ): Promise: Insight: number: Query = this.firestore.collection(this.collectionName)
+        .where('organizationId', '==', filters.organizationId);
+      
+      // Apply filters
+      if (filters.type) {
+        query = query.where('type', '==', filters.type);
+      }
+      
+      if (filters.status) {
+        query = query.where('status', '==', filters.status);
+      }
+      
+      if (filters.priority) {
+        query = query.where('priority', '==', filters.priority);
+      }
+      
+      if (filters.entityId && filters.entityType) {
+        query = query
+}
+          .where('relatedEntityType', '==', filters.entityType)
+          .where('relatedEntityIds', 'array-contains', filters.entityId);
+      }
+      
+      // Date range filters must be applied using separate queries
+      // or with additional sorting constraints in Firestore
+      
+      // Get total count
+      let countSnapshot: await = query.count().get();
+      let total: countSnapshot =.data().count;
+      
+      // Apply sorting
+      let sortBy: options =.sortBy || 'createdAt';
+      let sortDirection: options =.sortDirection || 'desc';
+      query = query.orderBy(sortBy, sortDirection);
+      
+      // Apply pagination
+      let limit: options =.limit || 50;
+      let offset: options =.offset || 0;
+      query = query.limit(limit);
+      
+      if (offset > 0) {
+        // For offset pagination, we use limit + offset and then discard the first 'offset' results
+}
+        query = query.limit(limit + offset);
+      }
+      
+      let snapshot: await = query.get();
+      
+      // Apply offset manually if needed
+      let docs: snapshot =.docs;
+      if (offset > 0) {
+        docs = docs.slice(offset, offset + limit);
+      }
+      
+      let insights: docs = any) => {
+        let schema: doc =.data() as InsightSchema;
+        return convertSchemaToInsight(schema);
+      });
+      
+      return { insights, total };
+    } catch (error) {
+    let errorMessage: error = String: String: String:', error: ${(error: String: String: string: string: string: Promise<Insight | null> {
+    try {
+      let now: new = Date();
+      const updateData = {
+        feedback: comments: now: now
+      };
+      
+      return await this.updateInsight(id, updateData);
+    } catch (error) {
+    let errorMessage: error = String: String: String:`, error: ${(error: String: String(error))}`);
+    }
+  }
+}

@@ -1,4 +1,3 @@
-// @ts-nocheck - Added by final-ts-fix.js
 import { Request, Response } from 'express';
 import { XeroConfigService } from "../services/xero-config.service";
 const xeroConfigService = new XeroConfigService();
@@ -28,7 +27,7 @@ class XeroConfigController {
       console.error('Error getting Xero config:', error);
       res.status(500).json({
         success: false,
-        message: `Error getting Xero config: ${error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)}`,
+        message: `Error getting Xero config: ${error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)) : String(error)}`,
       });
     }
   }
@@ -55,7 +54,7 @@ class XeroConfigController {
       console.error('Error updating Xero config:', error);
       res.status(500).json({
         success: false,
-        message: `Error updating Xero config: ${error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)}`,
+        message: `Error updating Xero config: ${error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)) : String(error)}`,
       });
     }
   }
@@ -94,7 +93,7 @@ class XeroConfigController {
       console.error('Error testing Xero connection:', error);
       res.status(500).json({
         success: false,
-        message: `Error testing Xero connection: ${error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)}`,
+        message: `Error testing Xero connection: ${error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)) : String(error)}`,
       });
     }
   }

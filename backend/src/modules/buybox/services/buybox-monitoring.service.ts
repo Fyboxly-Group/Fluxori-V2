@@ -1,10 +1,10 @@
-// @ts-nocheck - Added by final-ts-fix.js
 /**
  * Buy Box Monitoring Service
  * 
  * Coordinates Buy Box monitoring activities
  */
 import { Timestamp } from 'firebase-admin/firestore';
+import { injectable } from 'inversify';
 import { 
   BuyBoxHistory, 
   BuyBoxSnapshot, 
@@ -16,18 +16,103 @@ import {
   FirestoreInventoryItem,
   FirestoreInventoryItemWithId
 } from '../../../models/firestore/inventory.schema';
-import { getBuyBoxMonitorFactory } from '../factories/buybox-monitor.factory';
-import { getBuyBoxHistoryRepository } from '../repositories/buybox-history.repository';
-import { getInventoryRepository } from '../../inventory/repositories/inventory.repository';
+import { BuyBoxMonitorFactory, getBuyBoxMonitorFactory } from '../factories/buybox-monitor.factory';
+import { IBuyBoxHistoryRepository, getBuyBoxHistoryRepository } from '../repositories/buybox-history.repository';
+import { getInventoryRepository, IInventoryRepository } from '../../inventory/repositories/inventory.repository';
 import { IBuyBoxMonitor } from '../services/buybox-monitor.interface';
 import { Logger } from '../../../utils/logger';
 
 import { WithId } from '../../../types';
 
 /**
- * Buy Box monitoring service
+ * Interface for the result of executing a rule
  */
-export class BuyBoxMonitoringService {
+export interface IRuleExecutionResult {
+  success: boolean;
+  message: string;
+  updates: number;
+}
+
+/**
+ * Interface for the result of updating a price
+ */
+export interface IPriceUpdateResult {
+  success: boolean;
+  message?: string;
+}
+
+/**
+ * Interface for the result of calculating a suggested price
+ */
+export interface ISuggestedPrice {
+  suggestedPrice: number;
+  reason: string;
+}
+
+/**
+ * Interface for Buy Box Monitoring Service
+ */
+export interface IBuyBoxMonitoringService {
+  /**
+   * Initialize Buy Box monitoring for a product on a marketplace
+   */
+  initializeMonitoring(
+    productId: string,
+    marketplaceId: string,
+    marketplaceProductId: string,
+    monitoringFrequency?: number
+  ): Promise<BuyBoxHistory>;
+  
+  /**
+   * Initialize Buy Box monitoring for all products on a marketplace
+   */
+  initializeMonitoringForMarketplace(
+    marketplaceId: string,
+    monitoringFrequency?: number
+  ): Promise<number>;
+  
+  /**
+   * Stop Buy Box monitoring for a product
+   */
+  stopMonitoring(
+    productId: string, 
+    marketplaceId: string
+  ): Promise<boolean>;
+  
+  /**
+   * Check Buy Box status for all monitored products
+   */
+  checkAllMonitoredProducts(): Promise<number>;
+  
+  /**
+   * Check Buy Box status for a specific product
+   */
+  checkBuyBoxStatus(
+    productId: string,
+    marketplaceId: string,
+    marketplaceProductId: string
+  ): Promise<BuyBoxSnapshot>;
+  
+  /**
+   * Apply repricing rules to all monitored products
+   */
+  applyRepricingRules(
+    productId?: string,
+    marketplaceId?: string,
+    ruleIds?: string[]
+  ): Promise<number>;
+  
+  /**
+   * Execute a specific rule manually
+   */
+  executeRuleManually(ruleId: string): Promise<IRuleExecutionResult>;
+}
+
+/**
+ * Buy Box monitoring service implementation
+ */
+@injectable()
+export class BuyBoxMonitoringService implements IBuyBoxMonitoringService {
   private readonly logger: Logger;
   
   /**
@@ -86,7 +171,12 @@ export class BuyBoxMonitoringService {
         `Failed to initialize Buy Box monitoring for ${productId} on ${marketplaceId}`,
         error
       );
-      throw error;
+      
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error(String(error));
+      }
     }
   }
   
@@ -120,7 +210,7 @@ export class BuyBoxMonitoringService {
       
       for (const product of products) {
         try {
-          const marketplaceListing = product.marketplaces[marketplaceId];
+          const marketplaceListing = product.marketplaces?.[marketplaceId];
           if (!marketplaceListing) continue;
           
           await this.initializeMonitoring(
@@ -146,7 +236,12 @@ export class BuyBoxMonitoringService {
         `Failed to initialize monitoring for marketplace ${marketplaceId}`, 
         error
       );
-      throw error;
+      
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error(String(error));
+      }
     }
   }
   
@@ -223,7 +318,12 @@ export class BuyBoxMonitoringService {
       return successCount;
     } catch (error) {
       this.logger.error('Failed to check monitored products', error);
-      throw error;
+      
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error(String(error));
+      }
     }
   }
   
@@ -264,29 +364,55 @@ export class BuyBoxMonitoringService {
         `Failed to check Buy Box status for ${productId} on ${marketplaceId}`, 
         error
       );
-      throw error;
+      
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error(String(error));
+      }
     }
   }
   
   /**
    * Apply repricing rules to all monitored products
+   * @param productId Optional product ID to apply rules to a specific product
+   * @param marketplaceId Optional marketplace ID to apply rules to a specific marketplace
+   * @param ruleIds Optional array of rule IDs to apply specific rules
    * @returns Number of products updated
    */
-  async applyRepricingRules(): Promise<number> {
+  async applyRepricingRules(
+    productId?: string,
+    marketplaceId?: string,
+    ruleIds?: string[]
+  ): Promise<number> {
     try {
       this.logger.info('Applying repricing rules to monitored products');
       
       // Get all repricing rules
       const repository = getBuyBoxHistoryRepository();
-      const rules = await repository.getRules();
+      let rules = await repository.getRules();
+      
+      // Filter rules by provided IDs if specified
+      if (ruleIds && ruleIds.length > 0) {
+        rules = rules.filter(rule => ruleIds.includes(rule.id));
+      }
       
       if (rules.length === 0) {
         this.logger.info('No active repricing rules found');
         return 0;
       }
       
-      // Get all monitored products
-      const monitoredProducts = await repository.getMonitored();
+      // Get monitored products
+      let monitoredProducts = await repository.getMonitored();
+      
+      // Filter by product ID and marketplace ID if specified
+      if (productId) {
+        monitoredProducts = monitoredProducts.filter(history => history.productId === productId);
+      }
+      
+      if (marketplaceId) {
+        monitoredProducts = monitoredProducts.filter(history => history.marketplaceId === marketplaceId);
+      }
       
       this.logger.info(
         `Found ${rules.length} active rules and ${monitoredProducts.length} monitored products`
@@ -367,7 +493,124 @@ export class BuyBoxMonitoringService {
       return updatedCount;
     } catch (error) {
       this.logger.error('Failed to apply repricing rules', error);
-      throw error;
+      
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error(String(error));
+      }
+    }
+  }
+  
+  /**
+   * Execute a specific rule manually
+   * @param ruleId The ID of the rule to execute
+   * @returns Result of the rule execution
+   */
+  async executeRuleManually(ruleId: string): Promise<IRuleExecutionResult> {
+    try {
+      this.logger.info(`Executing rule ${ruleId} manually`);
+      
+      // Get the rule
+      const repository = getBuyBoxHistoryRepository();
+      const rules = await repository.getRules();
+      
+      const rule = rules.find(r => r.id === ruleId);
+      
+      if (!rule) {
+        return {
+          success: false,
+          message: `Rule not found: ${ruleId}`,
+          updates: 0
+        };
+      }
+      
+      if (!rule.isActive) {
+        return {
+          success: false,
+          message: `Rule is not active: ${ruleId}`,
+          updates: 0
+        };
+      }
+      
+      // Apply just this rule to all applicable products
+      const monitoredProducts = await repository.getMonitored();
+      let updatedCount = 0;
+      
+      // Only process products for the rule's marketplaces
+      const applicableProducts = monitoredProducts.filter(
+        history => rule.marketplaces.includes(history.marketplaceId)
+      );
+      
+      for (const history of applicableProducts) {
+        try {
+          // Get product data
+          const inventoryRepo = getInventoryRepository();
+          const product = await inventoryRepo.getInventoryItemById(history.productId);
+          
+          if (!product) {
+            continue;
+          }
+          
+          // Check if rule applies to this product
+          const isApplicable = this.isRuleApplicableToProduct(rule, product);
+          
+          if (!isApplicable) {
+            continue;
+          }
+          
+          // Calculate new price based on rule
+          const newPrice = await this.calculatePriceFromRule(
+            rule, 
+            product, 
+            history
+          );
+          
+          if (newPrice === null) {
+            continue; // No price change needed
+          }
+          
+          // Get appropriate monitor
+          const factory = getBuyBoxMonitorFactory();
+          const monitor = factory.getMonitor(history.marketplaceId);
+          
+          // Update price
+          const result = await monitor.updatePrice(
+            history.productId,
+            history.marketplaceProductId,
+            newPrice
+          );
+          
+          if (result.success) {
+            updatedCount++;
+            
+            // Update product price in Firestore
+            await inventoryRepo.updateInventoryItem(history.productId, {
+              [`marketplaces.${history.marketplaceId}.price`]: newPrice
+            });
+          }
+        } catch (error) {
+          this.logger.error(
+            `Failed to apply rule ${ruleId} to product ${history.productId}`, 
+            error
+          );
+          // Continue with next product
+        }
+      }
+      
+      return {
+        success: true,
+        message: `Rule executed successfully. Updated ${updatedCount} products.`,
+        updates: updatedCount
+      };
+    } catch (error) {
+      this.logger.error(`Failed to execute rule ${ruleId}`, error);
+      
+      return {
+        success: false,
+        message: `Error executing rule: ${error instanceof Error ? error.message : String(error)}`,
+        updates: 0
+      };
     }
   }
   
@@ -384,12 +627,12 @@ export class BuyBoxMonitoringService {
     marketplaceId: string
   ): RepricingRule[] {
     // Filter rules that apply to this marketplace
-    const marketplaceRules = rules.filter(rule => 
+    const marketplaceRules = rules.filter((rule: RepricingRule) => 
       rule.marketplaces.includes(marketplaceId)
     );
     
     // Filter rules that match product criteria
-    return marketplaceRules.filter(rule => {
+    return marketplaceRules.filter((rule: RepricingRule) => {
       // Skip if no product filter
       if (!rule.productFilter) return true;
       
@@ -412,7 +655,7 @@ export class BuyBoxMonitoringService {
       // Check categories
       if (filter.categories && filter.categories.length > 0) {
         const productCategories = product.categories || [];
-        if (!filter.categories.some(cat => productCategories.includes(cat))) {
+        if (!filter.categories.some((cat: string) => productCategories.includes(cat))) {
           return false;
         }
       }

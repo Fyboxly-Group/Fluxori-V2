@@ -5,6 +5,6 @@
  * after TypeScript validation passes.
  */
 
-export const placeholder = async (input: any): Promise<any> => {
-  return { success: true };
+export const placeholder = async (): Promise<any> => {
+  return true;
 };

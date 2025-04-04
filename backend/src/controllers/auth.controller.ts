@@ -1,16 +1,29 @@
 import { Request, Response, NextFunction } from 'express';
-import * as jwt from 'jsonwebtoken';
+import { injectable, inject } from 'inversify';
+import { TYPES } from '../config/inversify';
 import User, { IUserDocument } from '../models/user.model';
 import { ApiError } from '../middleware/error.middleware';
 import { ActivityService } from '../services/activity.service';
-import '../middleware/auth.middleware'; // Import for req.user definition
+import { IAuthService, AuthService } from '../services/auth.service';
+import { ILoggerService } from '../services/logger.service';
+import { AuthenticatedRequest } from '../types/express-extensions';
 import { Types } from 'mongoose';
-import { generateToken, generateResetToken } from '../utils/jwt.utils';
 
 /**
- * @desc    Register a new user
- * @route   POST /api/auth/register
- * @access  Public
+ * Authentication controller
+ * Handles user registration, login, and authentication
+ */
+@injectable()
+export class AuthController {
+  constructor(
+    @inject(TYPES.AuthService) private authService: IAuthService,
+    @inject(TYPES.LoggerService) private logger: ILoggerService
+  ) {}
+
+/**
+ * Register a new user
+ * @route POST /api/auth/register
+ * @access Public
  * @swagger
  * /auth/register:
  *   post:
@@ -64,24 +77,26 @@ import { generateToken, generateResetToken } from '../utils/jwt.utils';
  *                   $ref: '#/components/schemas/User'
  *       400:
  *         description: Invalid input or user already exists
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const register = async (
+public register = async (
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> => {
   try {
     const { email, password, firstName, lastName } = req.body;
+    
+    // Validate required fields
+    if (!email || !password || !firstName || !lastName) {
+      throw new ApiError(400, 'Please provide all required fields', {
+        ...(email ? {} : { email: ['Email is required'] }),
+        ...(password ? {} : { password: ['Password is required'] }),
+        ...(firstName ? {} : { firstName: ['First name is required'] }),
+        ...(lastName ? {} : { lastName: ['Last name is required'] }),
+      });
+    }
     
     // Check if user exists
     const userExists = await User.findOne({ email });
@@ -100,9 +115,15 @@ export const register = async (
       lastName,
     });
     
+    // Generate token
+    const token = this.authService.generateToken(user._id, {
+      email: user.email,
+      role: user.role,
+    });
+    
     // Return user without password
     const userWithoutPassword = {
-      _id: user._id,
+      id: user._id.toString(),
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
@@ -113,17 +134,19 @@ export const register = async (
     
     res.status(201).json({
       success: true,
+      token,
       data: userWithoutPassword,
     });
   } catch (error) {
+    this.logger.error('Error registering user', { error });
     next(error);
   }
 };
 
 /**
- * @desc    Login user
- * @route   POST /api/auth/login
- * @access  Public
+ * Login user
+ * @route POST /api/auth/login
+ * @access Public
  * @swagger
  * /auth/login:
  *   post:
@@ -165,87 +188,63 @@ export const register = async (
  *                   $ref: '#/components/schemas/User'
  *       400:
  *         description: Missing email or password
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
  *         description: Invalid credentials
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const login = async (
+public login = async (
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> => {
   try {
     const { email, password } = req.body;
     
-    // Check for required fields
-    if (!email || !password) {
-      throw new ApiError(400, 'Please provide email and password', {
-        ...(email ? {} : { email: ['Email is required'] }),
-        ...(password ? {} : { password: ['Password is required'] }),
+    try {
+      // Authenticate user with auth service
+      const { user, token } = await this.authService.authenticateUser(email, password);
+      
+      // Update last login (already done in the auth service)
+      
+      // Log login activity
+      await ActivityService.logUserLogin(user._id as unknown as Types.ObjectId);
+      
+      // Return user without password
+      const userWithoutPassword = {
+        id: user._id.toString(),
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      };
+      
+      res.status(200).json({
+        success: true,
+        token,
+        user: userWithoutPassword,
       });
+    } catch (authError) {
+      // Rethrow authentication errors
+      if (authError instanceof ApiError) {
+        throw authError;
+      }
+      
+      // Log and throw generic error
+      this.logger.error('Authentication error', { email, error: authError });
+      throw new ApiError(500, 'Authentication failed');
     }
-    
-    // Find user by email
-    const user = await User.findOne({ email });
-    
-    if (!user) {
-      throw new ApiError(401, 'Invalid credentials');
-    }
-    
-    // Verify password
-    const isMatch = await user.comparePassword(password);
-    
-    if (!isMatch) {
-      throw new ApiError(401, 'Invalid credentials');
-    }
-    
-    // Update last login
-    user.lastLogin = new Date();
-    await user.save();
-    
-    // Generate token
-    const token = generateToken(user._id ? user._id.toString() : '');
-    
-    // Log login activity
-    await ActivityService.logUserLogin(user._id as unknown as Types.ObjectId);
-    
-    // Return user without password
-    const userWithoutPassword = {
-      _id: user._id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role: user.role,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
-    
-    res.status(200).json({
-      success: true,
-      token,
-      user: userWithoutPassword,
-    });
   } catch (error) {
     next(error);
   }
 };
 
 /**
- * @desc    Get current user
- * @route   GET /api/auth/me
+ * Get current user
+ * @route GET /api/auth/me
+ * @access Private
  * @swagger
  * /auth/me:
  *   get:
@@ -268,48 +267,50 @@ export const login = async (
  *                   $ref: '#/components/schemas/User'
  *       401:
  *         description: Not authenticated
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- * @access  Private
  */
-export const getCurrentUser = async (
-  req: Request,
+public getCurrentUser = async (
+  req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> => {
   try {
-    const user = req.user;
+    // User is guaranteed to exist on AuthenticatedRequest
+    const userId = req.user.id;
     
-    if (!user) {
-      throw new ApiError(401, 'Authentication required');
+    try {
+      // Get user with full details from database
+      const user = await this.authService.getUserById(userId);
+      
+      // Return user without password
+      const userWithoutPassword = {
+        id: user._id.toString(),
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        organizationId: (user as any).organizationId?.toString() || '',
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      };
+      
+      res.status(200).json({
+        success: true,
+        data: userWithoutPassword,
+      });
+    } catch (fetchError) {
+      // Log and handle user fetch errors
+      this.logger.error('Error fetching user details', { userId, error: fetchError });
+      throw new ApiError(500, 'Failed to fetch user details');
     }
-    
-    // Return user without password
-    const userWithoutPassword = {
-      _id: user._id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role: user.role,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
-    
-    res.status(200).json({
-      success: true,
-      data: userWithoutPassword,
-    });
   } catch (error) {
     next(error);
   }
 };
 
 /**
- * @desc    Forgot password
- * @route   POST /api/auth/forgot-password
- * @access  Public
+ * Request password reset
+ * @route POST /api/auth/forgot-password
+ * @access Public
  * @swagger
  * /auth/forgot-password:
  *   post:
@@ -344,16 +345,12 @@ export const getCurrentUser = async (
  *                   example: If your email exists in our system, you will receive password reset instructions shortly.
  *       400:
  *         description: Email not provided
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const forgotPassword = async (
+public forgotPassword = async (
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> => {
   try {
     const { email } = req.body;
     
@@ -368,17 +365,21 @@ export const forgotPassword = async (
     
     // Don't leak information about user existence
     if (!user) {
+      this.logger.info('Password reset requested for non-existent email', { email });
       return res.status(200).json({
         success: true,
         message: 'If your email exists in our system, you will receive password reset instructions shortly.',
       });
     }
     
-    // Generate reset token (would typically send email with this token)
-    const resetToken = generateResetToken(user._id as unknown as Types.ObjectId);
+    // Generate reset token using the auth service
+    const resetToken = this.authService.generateResetToken(user._id);
     
-    // For demo purpose, just return the token
-    // In production, send email with reset link
+    // Log password reset request for security auditing
+    this.logger.info('Password reset requested', { userId: user._id.toString(), email });
+    
+    // For demo purposes, return the token in development mode
+    // In production, would send email with reset link
     res.status(200).json({
       success: true,
       message: 'If your email exists in our system, you will receive password reset instructions shortly.',
@@ -386,14 +387,15 @@ export const forgotPassword = async (
       ...(process.env.NODE_ENV !== 'production' && { resetToken }),
     });
   } catch (error) {
+    this.logger.error('Error processing password reset request', { error });
     next(error);
   }
 };
 
 /**
- * @desc    Reset password
- * @route   POST /api/auth/reset-password
- * @access  Public
+ * Reset user password
+ * @route POST /api/auth/reset-password
+ * @access Public
  * @swagger
  * /auth/reset-password:
  *   post:
@@ -433,25 +435,18 @@ export const forgotPassword = async (
  *                   example: Password reset successful
  *       400:
  *         description: Invalid input or password requirements not met
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
  *         description: Invalid or expired token
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  */
-export const resetPassword = async (
+public resetPassword = async (
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> => {
   try {
     const { token, password } = req.body;
     
+    // Validate input
     if (!token || !password) {
       throw new ApiError(400, 'Please provide token and password', {
         ...(token ? {} : { token: ['Token is required'] }),
@@ -459,6 +454,7 @@ export const resetPassword = async (
       });
     }
     
+    // Validate password requirements
     if (password.length < 8) {
       throw new ApiError(400, 'Password must be at least 8 characters long', {
         password: ['Password must be at least 8 characters long'],
@@ -466,24 +462,28 @@ export const resetPassword = async (
     }
     
     try {
-      // Verify token
-      const resetSecret = process.env.JWT_RESET_SECRET || 'reset_secret';
-      const resetSecretKey = Buffer.from(resetSecret, 'utf-8');
-      // Use type assertion for the secret and specify the return type
-      const decoded = jwt.verify(token, resetSecretKey) as { id: string };
+      // Verify token using auth service
+      const validationResult = this.authService.validateToken(token, { resetToken: true });
       
-      // Find user by id
-      const user = await User.findById(decoded.id);
+      if (!validationResult.valid || !validationResult.payload) {
+        throw new ApiError(401, 'Invalid or expired reset token');
+      }
+      
+      // Get user ID from token payload
+      const userId = validationResult.payload.id;
+      
+      // Find user by ID
+      const user = await User.findById(userId);
       
       if (!user) {
-        throw new ApiError(400, 'Invalid or expired token');
+        throw new ApiError(400, 'User not found');
       }
       
       // Update password
       user.password = password;
       await user.save();
       
-      // Log activity
+      // Log activity for auditing
       await ActivityService.logActivity({
         description: 'Password reset successful',
         entityType: 'user',
@@ -493,12 +493,22 @@ export const resetPassword = async (
         userId: user._id as unknown as Types.ObjectId,
       });
       
+      this.logger.info('Password reset successful', { userId: user._id.toString() });
+      
       res.status(200).json({
         success: true,
         message: 'Password reset successful',
       });
-    } catch (error) {
-      throw new ApiError(400, 'Invalid or expired token');
+    } catch (tokenError) {
+      // Log token validation error
+      this.logger.error('Reset token validation failed', { error: tokenError });
+      
+      // Preserve API errors
+      if (tokenError instanceof ApiError) {
+        throw tokenError;
+      }
+      
+      throw new ApiError(401, 'Invalid or expired reset token');
     }
   } catch (error) {
     next(error);
@@ -506,27 +516,57 @@ export const resetPassword = async (
 };
 
 /**
- * @desc    Logout user
- * @route   POST /api/auth/logout
- * @access  Private
+ * Logout user
+ * @route POST /api/auth/logout
+ * @access Private
+ * @swagger
+ * /auth/logout:
+ *   post:
+ *     summary: Logout current user
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Logged out successfully
+ *       401:
+ *         description: Not authenticated
  */
-export const logout = async (
-  req: Request,
+public logout = async (
+  req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> => {
   try {
     // In a token-based authentication system, the client is responsible
     // for removing the token. Server-side, we just log the activity.
-    if (req.user) {
-      await ActivityService.logUserLogout(req.user._id as unknown as Types.ObjectId);
-    }
+    
+    // Log the logout activity for auditing
+    await ActivityService.logUserLogout(req.user._id as unknown as Types.ObjectId);
+    
+    this.logger.info('User logged out', { 
+      userId: req.user.id, 
+      email: req.user.email 
+    });
     
     res.status(200).json({
       success: true,
       message: 'Logged out successfully',
     });
   } catch (error) {
+    this.logger.error('Error logging out user', { error });
     next(error);
   }
-};
+}
+}

@@ -1,0 +1,6 @@
+// Automatically: ConfigManager) {
+    return new ProductTypesModule();
+  }
+}
+
+export default ProductTypesModuleFactory;

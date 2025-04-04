@@ -1,4 +1,3 @@
-// @ts-nocheck - Added by final-ts-fix.js
 /**
  * Firestore Order Service
  * 
@@ -28,7 +27,7 @@ export class OrderService {
   /**
    * Create a new order in Firestore
    * @param orderData Order data to create
-   * @returns Promise with created order ID
+   * @returns Promise<any> with created order ID
    */
   static async createOrder(orderData: FirestoreOrder): Promise<string> {
     try {
@@ -46,14 +45,14 @@ export class OrderService {
       return orderRef.id;
     } catch (error) {
       console.error('Error creating order in Firestore:', error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
   /**
    * Get an order by ID
    * @param orderId The ID of the order to retrieve
-   * @returns Promise with order data or null if not found
+   * @returns Promise<any> with order data or null if not found
    */
   static async getOrderById(orderId: string): Promise<FirestoreOrderWithId | null> {
     try {
@@ -69,7 +68,7 @@ export class OrderService {
       return orderDoc.data() as FirestoreOrderWithId;
     } catch (error) {
       console.error(`Error getting order ${orderId} from Firestore:`, error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -79,7 +78,7 @@ export class OrderService {
    * @param marketplaceName The marketplace name
    * @param userId The user ID (optional if orgId is provided)
    * @param orgId The org ID (optional if userId is provided)
-   * @returns Promise with order data or null if not found
+   * @returns Promise<any> with order data or null if not found
    */
   static async getOrderByMarketplaceId(
     marketplaceOrderId: string,
@@ -115,7 +114,7 @@ export class OrderService {
       return snapshot.docs[0].data() as FirestoreOrderWithId;
     } catch (error) {
       console.error(`Error getting order by marketplace ID ${marketplaceOrderId} from Firestore:`, error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -123,7 +122,7 @@ export class OrderService {
    * Update an existing order
    * @param orderId The ID of the order to update
    * @param updateData The data to update
-   * @returns Promise with success status
+   * @returns Promise<any> with success status
    */
   static async updateOrder(
     orderId: string,
@@ -139,14 +138,14 @@ export class OrderService {
       return true;
     } catch (error) {
       console.error(`Error updating order ${orderId} in Firestore:`, error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
   /**
    * Delete an order
    * @param orderId The ID of the order to delete
-   * @returns Promise with success status
+   * @returns Promise<any> with success status
    */
   static async deleteOrder(orderId: string): Promise<boolean> {
     try {
@@ -154,14 +153,14 @@ export class OrderService {
       return true;
     } catch (error) {
       console.error(`Error deleting order ${orderId} from Firestore:`, error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
   /**
    * Fetch orders with pagination and filtering
    * @param options Options for fetching orders
-   * @returns Promise with array of orders and last document for pagination
+   * @returns Promise<any> with array of orders and last document for pagination
    */
   static async fetchOrders(
     options: OrderFetchOptions
@@ -238,7 +237,7 @@ export class OrderService {
       return { orders, lastDoc };
     } catch (error) {
       console.error('Error fetching orders from Firestore:', error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -247,7 +246,7 @@ export class OrderService {
    * @param sku The SKU to search for
    * @param userId The user ID
    * @param limit The maximum number of results
-   * @returns Promise with array of orders
+   * @returns Promise<any> with array of orders
    */
   static async searchOrdersBySku(
     sku: string, 
@@ -278,7 +277,7 @@ export class OrderService {
       return orders;
     } catch (error) {
       console.error(`Error searching orders by SKU ${sku} in Firestore:`, error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -286,7 +285,7 @@ export class OrderService {
    * Get count of orders by status for a specific user or organization
    * @param userId The user ID (optional if orgId is provided)
    * @param orgId The org ID (optional if userId is provided)
-   * @returns Promise with counts by status
+   * @returns Promise<any> with counts by status
    */
   static async getOrderCountsByStatus(
     userId?: string,
@@ -325,7 +324,7 @@ export class OrderService {
       return countsByStatus;
     } catch (error) {
       console.error('Error getting order counts by status from Firestore:', error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -333,7 +332,7 @@ export class OrderService {
    * Batch create or update orders
    * @param orders Array of orders to create or update
    * @param createOrUpdate Whether to create or update
-   * @returns Promise with success status
+   * @returns Promise<any> with success status
    */
   static async batchCreateOrUpdateOrders(
     orders: FirestoreOrder[],
@@ -383,7 +382,7 @@ export class OrderService {
       return true;
     } catch (error) {
       console.error('Error batch processing orders in Firestore:', error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 }

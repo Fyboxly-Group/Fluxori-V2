@@ -20,6 +20,7 @@ export class WebhookController {
     try {
       await takealotWebhookHandler.handleWebhook(req, res);
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error('Error in Takealot webhook handler:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
@@ -39,6 +40,7 @@ export class WebhookController {
       
       res.status(200).json({ success: true, message: 'Webhook received successfully' });
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error('Error in test webhook handler:', error);
       res.status(500).json({ error: 'Internal server error' });
     }

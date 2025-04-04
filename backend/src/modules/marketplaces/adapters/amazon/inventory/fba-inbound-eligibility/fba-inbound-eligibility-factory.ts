@@ -1,46 +1,44 @@
 /**
- * Factory for creating FBA Inbound Eligibility API module
+ * Amazon FBA Inbound Eligibility API Factory
+ * 
+ * Factory function for creating and registering an Amazon FBA Inbound Eligibility API module.
  */
 
-import { FbaInboundEligibilityModule } from './fba-inbound-eligibility';
-import { ModuleRegistry } from '../../core/module-registry';
-import { getDefaultModuleVersion } from '../../core/module-definitions';
+import { FBAInboundEligibilityModule, FBAInboundEligibilityModuleOptions } from './fba-inbound-eligibility';
+import { ApiRequestFunction } from '../../../core/base-module.interface';
+import { ModuleRegistry } from '../../../core/module-registry';
+import { getModuleDefaultVersion } from '../../../core/module-definitions';
 
 /**
- * Factory for creating FBA Inbound Eligibility API module
+ * Creates and registers an FBA Inbound Eligibility module
+ * 
+ * @param apiRequest API request function
+ * @param marketplaceId Marketplace ID
+ * @param registry Module registry for registration
+ * @param apiVersion Optional API version to use
+ * @param options Optional module-specific options
+ * @returns The created FBA Inbound Eligibility module
  */
-export class FbaInboundEligibilityModuleFactory {
-  /**
-   * Create an FBA Inbound Eligibility module and register it with the provided registry
-   * @param makeApiRequest Function to make API requests
-   * @param marketplaceId Marketplace ID
-   * @param registry Module registry to register with
-   * @param apiVersion Optional API version (uses default if not provided)
-   * @returns The created module
-   */
-  public static createFbaInboundEligibilityModule(
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string,
-    registry: ModuleRegistry,
-    apiVersion?: string
-  ): FbaInboundEligibilityModule {
-    // Use provided version or get the default
-    const version = apiVersion || getDefaultModuleVersion('fbaInboundEligibility') || '2022-05-01';
-    
-    // Create the module
-    const module = new FbaInboundEligibilityModule(
-      version,
-      makeApiRequest,
-      marketplaceId
-    );
-    
-    // Register the module
-    registry.registerModule(module);
-    
-    return module;
-  }
+export function createFBAInboundEligibilityModule(
+  apiRequest: ApiRequestFunction,
+  marketplaceId: string,
+  registry: ModuleRegistry,
+  apiVersion?: string,
+  options: FBAInboundEligibilityModuleOptions = {}
+): FBAInboundEligibilityModule {
+  // Use provided version or get the default
+  const version = apiVersion || getModuleDefaultVersion('fbaInboundEligibility') || 'v1';
+  
+  // Create the module
+  const module = new FBAInboundEligibilityModule(
+    version,
+    apiRequest,
+    marketplaceId,
+    options
+  );
+  
+  // Register the module
+  registry.registerModule(module.moduleId, module);
+  
+  return module;
 }

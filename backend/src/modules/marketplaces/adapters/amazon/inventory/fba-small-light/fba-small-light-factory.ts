@@ -1,46 +1,41 @@
 /**
- * Factory for creating FBA Small and Light API module
+ * Factory for creating FBA Small and Light API modules
  */
-
-import { FbaSmallAndLightModule } from './fba-small-light';
-import { ModuleRegistry } from '../../core/module-registry';
-import { getDefaultModuleVersion } from '../../core/module-definitions';
+import { ApiRequestFunction } from '../../../amazon/core/base-module.interface';
+import { ModuleRegistry } from '../../../amazon/core/module-registry';
+import { getModuleDefaultVersion } from '../../../amazon/core/module-definitions';
+import { FbaSmallAndLightModule, FbaSmallAndLightModuleOptions } from './fba-small-light';
 
 /**
- * Factory for creating FBA Small and Light API module
+ * Create a new FBA Small and Light module instance
+ * 
+ * @param apiVersion - API version to use (optional, defaults to latest version)
+ * @param makeApiRequest - Function to make API requests
+ * @param marketplaceId - Amazon marketplace ID
+ * @param registry - Module registry for registration
+ * @param options - Additional module options
+ * @returns Initialized FBA Small and Light module
  */
-export class FbaSmallAndLightModuleFactory {
-  /**
-   * Create an FBA Small and Light module and register it with the provided registry
-   * @param makeApiRequest Function to make API requests
-   * @param marketplaceId Marketplace ID
-   * @param registry Module registry to register with
-   * @param apiVersion Optional API version (uses default if not provided)
-   * @returns The created module
-   */
-  public static createFbaSmallAndLightModule(
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string,
-    registry: ModuleRegistry,
-    apiVersion?: string
-  ): FbaSmallAndLightModule {
-    // Use provided version or get the default
-    const version = apiVersion || getDefaultModuleVersion('fbaSmallAndLight') || '2021-08-01';
-    
-    // Create the module
-    const module = new FbaSmallAndLightModule(
-      version,
-      makeApiRequest,
-      marketplaceId
-    );
-    
-    // Register the module
-    registry.registerModule(module);
-    
-    return module;
-  }
+export function createFbaSmallAndLightModule(
+  apiVersion: string | undefined,
+  makeApiRequest: ApiRequestFunction,
+  marketplaceId: string,
+  registry: ModuleRegistry,
+  options: FbaSmallAndLightModuleOptions = {}
+): FbaSmallAndLightModule {
+  // Use provided version or get the default
+  const version = apiVersion || getModuleDefaultVersion('fbaSmallAndLight') || '2021-08-01';
+  
+  // Create the module
+  const module = new FbaSmallAndLightModule(
+    version,
+    makeApiRequest,
+    marketplaceId,
+    options
+  );
+  
+  // Register the module
+  registry.registerModule(module.moduleId, module);
+  
+  return module;
 }

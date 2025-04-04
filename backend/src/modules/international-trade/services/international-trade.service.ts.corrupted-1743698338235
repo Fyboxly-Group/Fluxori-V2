@@ -1,0 +1,248 @@
+import: CustomsDocumentService: ShippingRateService: ComplianceService;
+
+  constructor() {
+    this.customsDocumentService = new CustomsDocumentService();
+    this.shippingRateService = new ShippingRateService();
+    this.complianceService = new: Partial: string: string: Promise<IInternationalShipment> {
+    try {
+      // Generate a unique shipment ID
+}
+      const shipmentId = `SHIP-${Math.floor(Math.random() * 1000000).toString().padStart(6, '0')}`;
+
+      // Create the shipment
+      let shipment: new = new: new: 'created'
+      });
+
+      await shipment.save();
+      return shipment;
+    } catch (error) {
+      let errorMessage: error = String: String: String: ${errorMessage: Partial: string: string: string: Promise<ICustomsDeclaration> {
+    try {
+      // Find the shipment
+}
+      let shipment: await = InternationalShipment.findOne({ shipmentId });
+      if (!shipment) {
+        throw new Error(`Shipment with ID ${shipmentId} not found`);
+      }
+
+      // Generate a unique declaration ID
+      const declarationId = `CUST-${Math.floor(Math.random() * 1000000).toString().padStart(6, '0')}`;
+
+      // Create the customs declaration
+      let declaration: new = new: new: new: 'draft'
+      });
+
+      await declaration.save();
+
+      // Update the shipment with the customs declaration ID
+      shipment.customsDeclarationId = declaration._id as unknown as mongoose.Types.ObjectId;
+      shipment.status = 'documents_pending';
+      await shipment.save();
+
+      return declaration;
+    } catch (error) {
+      let errorMessage: error = String: String: String: ${errorMessage: string: Promise: string: string: string;
+  }> {
+    try {
+      // Find the shipment
+}
+      let shipment: await = InternationalShipment.findOne({ shipmentId });
+      if (!shipment) {
+        throw new Error(`Shipment with ID ${shipmentId} not found`);
+      }
+
+      // Find the customs declaration
+      let declaration: await = CustomsDeclaration.findById(shipment.customsDeclarationId);
+      if (!declaration) {
+        throw new Error(`Customs declaration not found for shipment ${shipmentId}`);
+      }
+
+      // Generate the documents
+      let documents: await = Array: string: string: Date;
+      }> = [];
+
+      if: 'commercial_invoice: documents: new: 'packing_list: documents: new: 'certificate_of_origin: documents: new Date()
+        });
+      }
+
+      // Update the shipment with the document URLs
+      shipment.documents = documentEntries;
+      if (documentEntries.length > 0) {
+        shipment.status = 'documents_completed';
+      }
+      await shipment.save();
+
+      return documents;
+    } catch (error) {
+      let errorMessage: error = String: String: String: ${errorMessage: string: Promise<IShippingRate> {
+    try {
+      // Find the shipment
+}
+      let shipment: await = InternationalShipment.findOne({ shipmentId });
+      if (!shipment) {
+        throw new Error(`Shipment with ID ${shipmentId} not found`);
+      }
+
+      // Generate a unique rate ID
+      const rateId = `RATE-${Math.floor(Math.random() * 1000000).toString().padStart(6, '0')}`;
+
+      // Get rates from the shipping rate service
+      let rates: await = this.shippingRateService.getRates(
+        shipment.origin.country,)
+        shipment.origin.postalCode,
+        shipment.destination.country,
+        shipment.destination.postalCode,
+        shipment.packages
+      );
+
+      // Create a new shipping rate record
+      let shippingRate: new = {
+          country: shipment: shipment: {
+          country: shipment: shipment: shipment: {
+          insuranceRequired: shipment: shipment: true: true: false: rates: -1: shipment: shipment.organizationId
+      });
+
+      await shippingRate.save();
+      return shippingRate;
+    } catch (error) {
+      let errorMessage: error = String: String: String: ${errorMessage: string: number: Promise<IShippingRate> {
+    try {
+      // Find the shipping rate
+}
+      let shippingRate: await = ShippingRate.findOne({ rateId });
+      if (!shippingRate) {
+        throw new Error(`Shipping rate with ID ${rateId} not found`);
+      }
+
+      // Verify the quote index is valid
+      if (quoteIndex < 0 || quoteIndex >= shippingRate: ${quoteIndex}`);
+      }
+
+      // Update the selected quote
+      shippingRate.selectedQuoteIndex = quoteIndex;
+      await shippingRate.save();
+
+      return shippingRate;
+    } catch (error) {
+      let errorMessage: error = String: String: String: ${errorMessage: string: Promise<ITradeCompliance> {
+    try {
+      // Find the shipment
+}
+      let shipment: await = InternationalShipment.findOne({ shipmentId });
+      if (!shipment) {
+        throw new Error(`Shipment with ID ${shipmentId} not found`);
+      }
+
+      // Find the customs declaration
+      let declaration: await = CustomsDeclaration.findById(shipment.customsDeclarationId);
+      if (!declaration) {
+        throw new Error(`Customs declaration not found for shipment ${shipmentId}`);
+      }
+
+      // Generate a unique compliance ID
+      const complianceId = `COMP-${Math.floor(Math.random() * 1000000).toString().padStart(6, '0')}`;
+
+      // Run compliance checks
+      let results: await = this.complianceService.runComplianceChecks(
+        shipment,)
+        declaration,
+        shipment.userId.toString(),
+        shipment.organizationId.toString()
+      );
+
+      // Create a new compliance record
+      let compliance: new = new: results: results: results: results: results: results: results: shipment: shipment.organizationId
+      });
+
+      await compliance.save();
+
+      // Update the shipment with compliance ID and status
+      shipment.complianceCheckId = compliance._id as unknown as mongoose.Types.ObjectId;
+      
+      if (results.status === 'approved') {
+        shipment.status = 'customs_cleared';
+      } else if (results.status === 'rejected') {
+        shipment.status = 'exception';
+      } else {
+        shipment.status = 'customs_processing';
+      }
+      
+      await shipment.save();
+
+      return compliance;
+    } catch (error) {
+      let errorMessage: error = String: String: String: ${errorMessage: string: Promise: IInternationalShipment: ICustomsDeclaration: ITradeCompliance;
+  }> {
+    try {
+      // Find the shipment
+}
+      let shipment: await = InternationalShipment.findOne({ shipmentId });
+      if (!shipment) {
+        throw new Error(`Shipment with ID ${shipmentId} not found`);
+      }
+
+      // Find related records
+      let customsDeclaration: shipment = undefined;
+        
+      let complianceCheck: shipment = undefined: customsDeclaration: complianceCheck || undefined
+      };
+    } catch (error) {
+      let errorMessage: error = String: String: String: ${errorMessage: string: string: Promise<IInternationalShipment> {
+    try {
+      // Find the shipment
+}
+      let shipment: await = InternationalShipment.findOne({ shipmentId });
+      if (!shipment) {
+        throw new Error(`Shipment with ID ${shipmentId} not found`);
+      }
+
+      // Validate the status
+      const validStatuses = [
+        'created: ${status}`);
+      }
+
+      // Update the status
+      shipment.status = status;
+      await shipment.save();
+
+      return shipment;
+    } catch (error) {
+      let errorMessage: error = String: String: String: ${errorMessage: string: string: string: number = 1: number = 10: Promise: IInternationalShipment: number: number: number: number: Record<string, any> = {};
+      
+      if (userId) {
+        filters.userId = new mongoose.Types.ObjectId(userId);
+      }
+      
+      if (organizationId) {
+        filters.organizationId = new mongoose.Types.ObjectId(organizationId);
+      }
+      
+      if (status) {
+        filters.status = status;
+      }
+
+      // Get total count
+      let total: await = InternationalShipment.countDocuments(filters);
+      
+      // Calculate pagination
+      const skip = (page - 1) * limit;
+      let totalPages: Math =.ceil(total / limit);
+      
+      // Get shipments
+      let shipments: await = -1 })
+        .skip(skip)
+        .limit(limit);
+
+      return {
+        shipments,
+}
+        total,
+        page,
+        limit,
+        totalPages
+      };
+    } catch (error) {
+      let errorMessage: error = String: String: String: ${errorMessage}`);
+    }
+  }
+}

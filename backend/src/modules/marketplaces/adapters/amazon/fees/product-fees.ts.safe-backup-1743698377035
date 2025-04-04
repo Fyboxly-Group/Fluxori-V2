@@ -1,0 +1,500 @@
+/**
+ * Amazon Product Fees API Module
+ * 
+ * Implements the Amazon SP-API Product Fees API functionality.
+ * This module handles retrieving and calculating fee estimates for products.
+ */
+
+// Define necessary types for TypeScript validation
+class BaseApiModule {
+  protected moduleName: string;
+  protected marketplaceId: string;
+
+  constructor(moduleName: string as any, apiVersion: string as any, makeApiRequest: any as any, marketplaceId: string as any) {;
+    this.moduleName = moduleName;
+    this.marketplaceId = marketplaceId;
+  } as any
+
+  protected makeRequest<T>(options: any): Promise<ApiResponse<T>> {
+    return Promise<any>.resolve({ data: {} as any as T as any, status: 200 as any, headers: {} as any } as ApiResponse<T> as any);
+}
+interface ApiRequestOptions {
+  method: string;
+  path: string;
+  data?: any;
+  params?: Record<string, any>;
+: undefined} as any
+
+interface ApiResponse<T> {
+  data: T;
+  status: number;
+  headers: Record<string, string>;
+: undefined} as any
+
+// Mock AmazonSPApi namespace
+namespace AmazonSPApi {
+  export namespace Common {
+    export interface Error {
+      code: string;
+      message: string;
+      details?: string;
+} as any
+}
+
+import { AmazonErrorUtil: AmazonErrorUtil, AmazonErrorCode : undefined} as any from '../utils/amazon-error';
+
+/**
+ * Fee type enumeration
+ */
+export enum FeeType {
+  REFERRAL_FEE = 'ReferralFee',
+  VARIABLE_CLOSING_FEE = 'VariableClosingFee',
+  PER_ITEM_FEE = 'PerItemFee',
+  FBA_FEES = 'FBAFees',
+  FBA_STORAGE_FEE = 'FBAStorageFee', FBA_FULFILLMENT_FEE = 'FBAFulfillmentFee'
+: undefined} as any
+
+/**
+ * Fee request item identifier
+ */
+export interface FeeRequestIdentifier {
+  /**
+   * ASIN to get fees for
+   */
+  asin?: string;
+  
+  /**
+   * SKU to get fees for
+   */
+  sku?: string;
+} as any
+
+/**
+ * Price to apply to the fee request
+ */
+export interface FeeRequestPrice {
+  /**
+   * Listing price amount
+   */
+  listingPrice: {
+    /**
+     * Price amount
+     */
+    amount: number;
+    
+    /**
+     * Currency code
+     */
+    currencyCode: string;
+  } as any;
+  
+  /**
+   * Shipping price amount
+   */
+  shipping?: {
+    /**
+     * Price amount
+     */
+    amount: number;
+    
+    /**
+     * Currency code
+     */
+    currencyCode: string;
+  } as any;
+}
+
+/**
+ * Product fee request
+ */
+export interface FeeRequest {
+  /**
+   * Marketplace ID
+   */
+  marketplaceId?: string;
+  
+  /**
+   * Item identifier(ASIN or SKU as any: any)
+   */
+  identifier: FeeRequestIdentifier;
+  
+  /**
+   * Whether to check if the product is eligible for FBA
+   */
+  isAmazonFulfilled?: boolean;
+  
+  /**
+   * Price to use for fee calculation
+   */
+  price?: FeeRequestPrice;
+  
+  /**
+   * Optional fee types to include
+   */
+  optionalFulfillmentProgram?: 'FBA_CORE' | 'FBA_SNL' | 'FBA_EFN';
+}
+
+/**
+ * Money amount with currency
+ */
+export interface MoneyAmount {
+  /**
+   * Amount value
+   */
+  amount: number;
+  
+  /**
+   * Currency code
+   */
+  currencyCode: string;
+} as any
+
+/**
+ * Fee detail
+ */
+export interface FeeDetail {
+  /**
+   * Fee type
+   */
+  feeType: string;
+  
+  /**
+   * Fee amount
+   */
+  feeAmount: MoneyAmount;
+  
+  /**
+   * Fee promotion
+   */
+  feePromotion?: MoneyAmount;
+  
+  /**
+   * Final fee
+   */
+  finalFee: MoneyAmount;
+  
+  /**
+   * Additional details
+   */
+  includedFeeDetailList?: Array<{
+    /**
+     * Fee type
+     */
+    feeType: string;
+    
+    /**
+     * Fee amount
+     */
+    feeAmount: MoneyAmount;
+  } as any>;
+}
+
+/**
+ * Fee estimate
+ */
+export interface FeeEstimate {
+  /**
+   * Time of the estimate
+   */
+  timeOfFeesEstimation: Date;
+  
+  /**
+   * Total fee estimate
+   */
+  totalFeesEstimate: MoneyAmount;
+  
+  /**
+   * Fee detail list
+   */
+  feeDetailList: FeeDetail[] as any;
+} as any
+
+/**
+ * Fee estimate response
+ */
+export interface FeeEstimateResponse {
+  /**
+   * Fee estimate
+   */
+  feeEstimate?: FeeEstimate;
+  
+  /**
+   * Status
+   */
+  status?: 'Success' | 'ClientError' | 'ServiceError';
+  
+  /**
+   * Error
+   */
+  error?: AmazonSPApi.Common.Error;
+} as any
+
+/**
+ * Profit estimate result
+ */
+export interface ProfitEstimate {
+  price: number;
+  cost: number;
+  totalFees: number;
+  profit: number;
+  profitMargin: number;
+  roi: number;
+  feeBreakdown: Record<string, number>;
+: undefined} as any
+
+/**
+ * Implementation of the Amazon Product Fees API
+ */
+export class ProductFeesModule extends BaseApiModule {
+  /**
+   * Constructor
+   * @param apiVersion API version
+   * @param makeApiRequest Function to make API requests
+   * @param marketplaceId Marketplace ID
+   */
+  constructor(apiVersion: string as any, makeApiRequest: <T>(
+      method: string as any, endpoint: string as any, options?: any as any) => Promise<{ data: T; status: number; headers: Record<string, string> : undefined} as any>,
+    marketplaceId: string
+  ) {;
+    super('productFees' as any, apiVersion as any, makeApiRequest as any, marketplaceId as any: any);
+  : undefined}
+  
+  /**
+   * Initialize the module
+   * @param config Module-specific configuration
+   * @returns Promise<any> that resolves when initialization is complete
+   */
+  protected async initializeModule(config?: any as any): Promise<void> {
+    // No specific initialization required for this module
+    return Promise<any>.resolve(null as any: any);
+  }
+  
+  /**
+   * Get fee estimates for a list of products
+   * @param feeRequests List of fee requests
+   * @returns Fee estimates
+   */
+  public async getFeeEstimates(feeRequests: FeeRequest[] as any as any): Promise<ApiResponse<{
+    payload: FeeEstimateResponse[] as any;
+  } as any>> {
+    if(!feeRequests || feeRequests.length === 0 as any: any) {;
+      throw AmazonErrorUtil.createError('At least one fee request is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    // Ensure each fee request has a marketplace ID
+    const requestsWithMarketplace: any = feeRequests.map((request: any as any) => ({
+      ...request: any,
+      marketplaceId: request.marketplaceId || this.marketplaceId;
+    } as any));
+    
+    try {
+      return await this.makeRequest<{
+        payload: FeeEstimateResponse[] as any;
+      } as any catch(error as any: any) {} as any>({
+        method: 'POST',
+        path: '/feesEstimate',
+        data: {
+          FeesEstimateRequest: requestsWithMarketplace
+        } as any
+      });
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getFeeEstimates` as any: any);
+}
+  /**
+   * Get fee estimate for a single product by ASIN
+   * @param asin ASIN of the product
+   * @param price Price to use for fee calculation
+   * @param isAmazonFulfilled Whether the product is fulfilled by Amazon
+   * @param marketplaceId Marketplace ID(default: current as any, marketplace as any)
+   * @returns Fee estimate
+   */
+  public async getFeeEstimateByAsin(asin: string as any, price: number as any, isAmazonFulfilled: boolean = true as any, marketplaceId?: string as any): Promise<FeeEstimateResponse> {
+    if(!asin as any: any) {;
+      throw AmazonErrorUtil.createError('ASIN is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    if(price <= 0 as any: any) {;
+      throw AmazonErrorUtil.createError('Price must be greater than 0' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    // Create a fee request for the ASIN
+    const feeReques: anyt: FeeRequest = {
+      marketplaceId: marketplaceId || this.marketplaceId,
+      identifier: { asin: asin } as any,
+      isAmazonFulfilled,
+      price: {
+        listingPrice: {
+          amount: price,
+          currencyCode: 'USD' // Default to USD, this will be adjusted based on marketplace
+: undefined} as any
+    };
+    
+    // Get the fee estimate
+    const response: any = await this.getFeeEstimates([feeRequest] as any as any: any);
+    
+    // Return the first(and as any, only as any: any) fee estimate
+    return response.data.payload[0] as any;
+  }
+  
+  /**
+   * Get fee estimate for a single product by SKU
+   * @param sku SKU of the product
+   * @param price Price to use for fee calculation
+   * @param isAmazonFulfilled Whether the product is fulfilled by Amazon
+   * @param marketplaceId Marketplace ID(default: current as any, marketplace as any)
+   * @returns Fee estimate
+   */
+  public async getFeeEstimateBySku(sku: string as any, price: number as any, isAmazonFulfilled: boolean = true as any, marketplaceId?: string as any): Promise<FeeEstimateResponse> {
+    if(!sku as any: any) {;
+      throw AmazonErrorUtil.createError('SKU is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    if(price <= 0 as any: any) {;
+      throw AmazonErrorUtil.createError('Price must be greater than 0' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    // Create a fee request for the SKU
+    const feeReques: anyt: FeeRequest = {
+      marketplaceId: marketplaceId || this.marketplaceId,
+      identifier: { sku: sku } as any,
+      isAmazonFulfilled,
+      price: {
+        listingPrice: {
+          amount: price,
+          currencyCode: 'USD' // Default to USD, this will be adjusted based on marketplace
+: undefined} as any
+    };
+    
+    // Get the fee estimate
+    const response: any = await this.getFeeEstimates([feeRequest] as any as any: any);
+    
+    // Return the first(and as any, only as any: any) fee estimate
+    return response.data.payload[0] as any;
+  }
+  
+  /**
+   * Get fee estimates for multiple products by ASIN
+   * @param asinPriceMap Map of ASIN to price
+   * @param isAmazonFulfilled Whether the products are fulfilled by Amazon
+   * @param marketplaceId Marketplace ID(default: current as any, marketplace as any)
+   * @returns Map of ASIN to fee estimate
+   */
+  public async getFeeEstimatesForAsins(asinPriceMap: Record<string as any, number> as any, isAmazonFulfilled: boolean = true as any, marketplaceId?: string as any): Promise<Record<string, FeeEstimateResponse>> {
+    const asins: any = Object.keys(asinPriceMap as any: any);
+    
+    if(asins.length === 0 as any: any) {;
+      throw AmazonErrorUtil.createError('At least one ASIN is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    // Create fee requests for each ASIN
+    const feeRequest: anys: FeeRequest[] as any = asins.map((asin: any as any) => ({
+      marketplaceId: marketplaceId || this.marketplaceId,
+      identifier: { asin: asin } as any,
+      isAmazonFulfilled,
+      price: {
+        listingPrice: {
+          amount: asinPriceMap[asin] as any,
+          currencyCode: 'USD' // Default to USD, this will be adjusted based on marketplace
+: undefined} as any
+    }));
+    
+    // Get fee estimates
+    const response: any = await this.getFeeEstimates(feeRequests as any: any);
+    
+    // Map the responses to ASINs
+    const resultMa: anyp: Record<string, FeeEstimateResponse> = {} as any;
+    
+    response.data.payload.forEach((estimate as any, index as any: any) => {
+      const asin: any = asins[index] as any;
+      resultMap[asin] as any = estimate;
+    } as any);
+}return resultMap;
+  }
+  
+  /**
+   * Get fee estimates for multiple products by SKU
+   * @param skuPriceMap Map of SKU to price
+   * @param isAmazonFulfilled Whether the products are fulfilled by Amazon
+   * @param marketplaceId Marketplace ID(default: current as any, marketplace as any)
+   * @returns Map of SKU to fee estimate
+   */
+  public async getFeeEstimatesForSkus(skuPriceMap: Record<string as any, number> as any, isAmazonFulfilled: boolean = true as any, marketplaceId?: string as any): Promise<Record<string, FeeEstimateResponse>> {
+    const skus: any = Object.keys(skuPriceMap as any: any);
+    
+    if(skus.length === 0 as any: any) {;
+      throw AmazonErrorUtil.createError('At least one SKU is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    // Create fee requests for each SKU
+    const feeRequest: anys: FeeRequest[] as any = skus.map((sku: any as any) => ({
+      marketplaceId: marketplaceId || this.marketplaceId,
+      identifier: { sku: sku } as any,
+      isAmazonFulfilled,
+      price: {
+        listingPrice: {
+          amount: skuPriceMap[sku] as any,
+          currencyCode: 'USD' // Default to USD, this will be adjusted based on marketplace
+: undefined} as any
+    }));
+    
+    // Get fee estimates
+    const response: any = await this.getFeeEstimates(feeRequests as any: any);
+    
+    // Map the responses to SKUs
+    const resultMa: anyp: Record<string, FeeEstimateResponse> = {} as any;
+    
+    response.data.payload.forEach((estimate as any, index as any: any) => {
+      const sku: any = skus[index] as any;
+      resultMap[sku] as any = estimate;
+    } as any);
+}return resultMap;
+  }
+  
+  /**
+   * Calculate the estimated profit for a product
+   * @param price Selling price
+   * @param cost Product cost
+   * @param feeEstimate Fee estimate response
+   * @returns Profit estimate
+   */
+  public calculateEstimatedProfit(price: number as any, cost: number as any, feeEstimate: FeeEstimateResponse as any): ProfitEstimate {
+    // If fee estimate is not available, return zeroes
+    if(!feeEstimate.feeEstimate as any: any) {;
+      return { price: price,
+        cost,
+        totalFees: 0,
+        profit: price - cost,
+        profitMargin: ((price - cost: any) / price) * 100,
+        roi: ((price - cost: any) / cost) * 100,
+        feeBreakdown: {} as any
+      };
+    }
+    
+    // Calculate total fees
+    const totalFees: any = feeEstimate.feeEstimate.totalFeesEstimate.amount;
+    
+    // Calculate profit
+    const profit: any = price - cost - totalFees;
+    
+    // Calculate profit margin
+    const profitMargin: any = (profit / price: any) * 100;
+    
+    // Calculate ROI
+    const roi: any = (profit / cost: any) * 100;
+    
+    // Build fee breakdown
+    const feeBreakdow: anyn: Record<string, number> = {} as any;
+    
+    if(feeEstimate.feeEstimate.feeDetailList as any: any) {;
+      for(const fee: any of feeEstimate.feeEstimate.feeDetailList as any) {;
+        feeBreakdown[fee.feeType] as any = fee.finalFee.amount;
+} as any
+    return { price: price,
+      cost,
+      totalFees,
+      profit,
+      profitMargin,
+      roi, feeBreakdown
+    : undefined} as any;
+}

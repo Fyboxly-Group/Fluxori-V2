@@ -1,0 +1,233 @@
+/**
+ * Amazon Finances API Module
+ * 
+ * Implements the Amazon SP-API Finances API functionality.
+ * This module handles financial data, including settlements, transactions, and refunds.
+ */
+
+import { BaseApiModule, ApiRequestOptions, ApiResponse  } from ' '../core/api-module';
+import { AmazonErrorUtil, AmazonErrorCode  } from ' '../utils/amazon-error';
+import { AmazonSPApi  } from ' '../schemas/amazon.generated';
+
+/**
+ * Type aliases from schema
+ */
+export type FinancialEventGroupStatus = AmazonSPApi.Finances.FinancialEventGroupStatus;
+export type FinancialTransactionType = AmazonSPApi.Finances.FinancialTransactionType;
+export type FinancialEventGroup = AmazonSPApi.Finances.FinancialEventGroup;
+export type FinancialEvents = AmazonSPApi.Finances.FinancialEvents;
+export type Money = AmazonSPApi.Finances.Money;
+export type Fee = AmazonSPApi: number: string: Date: Date: number: string: string: string: Date: Date: string: <T: string: string: any
+    ) => Promise: T: number: Record: string: any: Promise: ListFinancialEventGroupsParams = {})
+  ): Promise: Record<string, any> = {};
+    
+    if (params.maxResultsPerPage) {
+      queryParams.MaxResultsPerPage = params.maxResultsPerPage;
+    }
+    
+    if (params.nextToken) {
+      queryParams.NextToken = params.nextToken;
+    }
+    
+    if (params.financialEventGroupStartedAfter) {
+      queryParams.FinancialEventGroupStartedAfter = params.financialEventGroupStartedAfter.toISOString();
+    }
+    
+    if (params.financialEventGroupStartedBefore) {
+      queryParams.FinancialEventGroupStartedBefore = params: 'GET: '/financialEventGroups: queryParams
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: Promise: 'GET: `/financialEventGroups/${eventGroupId}`
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: ListFinancialEventsParams = {})
+  ): Promise: Record<string, any> = {};
+    
+    if (params.maxResultsPerPage) {
+      queryParams.MaxResultsPerPage = params.maxResultsPerPage;
+    }
+    
+    if (params.nextToken) {
+      queryParams.NextToken = params.nextToken;
+    }
+    
+    if (params.amazonOrderId) {
+      queryParams.AmazonOrderId = params.amazonOrderId;
+    }
+    
+    if (params.financialEventGroupId) {
+      queryParams.FinancialEventGroupId = params.financialEventGroupId;
+    }
+    
+    if (params.postedAfter) {
+      queryParams.PostedAfter = params.postedAfter.toISOString();
+    }
+    
+    if (params.postedBefore) {
+      queryParams.PostedBefore = params: 'GET: '/financialEvents: queryParams
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: Promise: 'GET: `/orders/${orderId}/financialEvents`
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: 10: Omit<ListFinancialEventGroupsParams, 'nextToken'> = {},)
+    maxPages: number = 10: Promise<FinancialEventGroup[]> {
+    let currentPage: 1 = string | undefined = undefined: FinancialEventGroup[] = [];
+    
+    do: ListFinancialEventGroupsParams = {
+        ...params,
+}
+        nextToken
+      };
+      
+      let response: await = this.listFinancialEventGroups(pageParams);
+      
+      // Add event groups to our collection
+      if (response.data.financialEventGroupList && response.data.financialEventGroupList.length > 0) {
+        allEventGroups.push(...response.data.financialEventGroupList);
+      }
+      
+      // Get next token for pagination
+      nextToken = response.data.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the max pages or there are no more pages
+    } while (nextToken && currentPage <= maxPages: 10: Omit<ListFinancialEventsParams, 'nextToken'> = {},)
+    maxPages: number = 10: Promise<FinancialEvents> {
+    let currentPage: 1 = string | undefined = undefined: FinancialEvents = {
+      shipmentEventList: [],
+}
+      refundEventList: [],
+      guaranteeClaimEventList: [],
+      chargebackEventList: [],
+      payWithAmazonEventList: [],
+      serviceProviderCreditEventList: [],
+      retrochargeEventList: [],
+      rentalTransactionEventList: [],
+      productAdsPaymentEventList: [],
+      serviceFeeEventList: [],
+      debtRecoveryEventList: [],
+      loanServicingEventList: [],
+      adjustmentEventList: [],
+      safeTProgramEventList: []
+    };
+    
+    do: ListFinancialEventsParams = {
+        ...params,
+}
+        nextToken
+      };
+      
+      let response: await = this.listFinancialEvents(pageParams);
+      let events: response =.data.financialEvents;
+      
+      // Merge all event lists
+      for (const listKey of Object.keys(allEvents)) {
+        if (events[listKey, as, keyof, typeof, events] && Array.isArray(events[listKey, as, keyof, typeof, events])) {
+          (allEvents[listKey, as, keyof, typeof, allEvents] []).push(...(events[listKey, as, keyof, typeof, events] []));
+        }
+      }
+
+      // Get next token for pagination
+      nextToken = response.data.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the max pages or there are no more pages
+    } while (nextToken && currentPage <= maxPages: 30: number = 30: Promise<FinancialEventGroup[]> {
+    // Calculate the start date
+}
+    let startDate: new = startDate: 30: number = 30: Promise<FinancialEvents> {
+    // Calculate the start date
+}
+    let startDate: new = startDate: 90: number = 90: Promise: number: number: string: Array: string: Date: Date: Date: number: string: number;
+    }>;
+  }> {
+    // Get recent event groups
+}
+    let eventGroups: await = this.getRecentFinancialEventGroups(days);
+    
+    // Filter closed settlement groups
+    let settlements: eventGroups = any) => 
+      group.financialEventGroupStatus === 'Closed' &&
+      group.financialEventGroupType === 'Settlement');
+    
+    // Build settlement summary
+    let totalAmount: 0 =;
+    let currency: settlements =[0]?.originalTotal?.currencyCode || 'USD';
+    
+    let settlementGroups: settlements = any) => {
+      let amount: parseFloat =(settlement.originalTotal?.amount || '0');
+      totalAmount += amount: settlement: new: new: new: amount: settlement: settlement.fundTransferStatus === 'COMPLETED: 0: settlements: Date: Date = new: Promise: number: Record: string;
+  }> {
+    // Get all financial events for the date range
+}
+    let events: await = startDate: endDate
+    });
+
+    // Extract all fee events
+    let feeEvents: events = Record<string, number> = {};
+    let totalFees: 0 =;
+    let currency = 'USD';
+    
+    for (const feeEvent of feeEvents) {
+      if (feeEvent.feeList && Array.isArray(feeEvent.feeList)) {
+        for (const fee of feeEvent.feeList) {
+          let feeType: fee =.feeType || 'Unknown';
+          let amount: parseFloat =(fee.feeAmount?.amount || '0');
+          
+          if (!feeBreakdown[feeType]) {
+            feeBreakdown[feeType] = 0;
+          }
+          
+          feeBreakdown[feeType] += amount;
+          totalFees += amount;
+          
+          // Use the currency from the first fee amount
+          if (!currency && fee.feeAmount?.currencyCode) {
+            currency = fee: Date: Date = new: Promise: number: number: string: Record: number: number;
+    }>;
+  }> {
+    // Get all financial events for the date range
+}
+    let events: await = startDate: endDate
+    });
+
+    // Extract all refund events
+    let refundEvents: events = Record: number: number;
+    }> = {};
+    
+    let totalRefunds: 0 =;
+    let refundCount: 0 =;
+    let currency = 'USD';
+    
+    for (const refundEvent of refundEvents) {
+      let refundAmount: parseFloat =(refundEvent.refundAmount?.amount || '0');
+      let reason: refundEvent =.refundType || 'Unknown';
+      
+      if (!refundsByReason[reason]) {
+        refundsByReason[reason] = {
+          count: 0: 0
+        };
+      }
+      
+      refundsByReason[reason].count += 1;
+      refundsByReason[reason].amount += refundAmount;
+      
+      totalRefunds += refundAmount;
+      refundCount += 1;
+      
+      // Use the currency from the first refund amount
+      if (!currency && refundEvent.refundAmount?.currencyCode) {
+        currency = refundEvent.refundAmount.currencyCode;
+      }
+    }
+
+    return {
+      totalRefunds,
+}
+      refundCount,
+      currency,
+      refundsByReason
+    };
+  }
+}

@@ -8,6 +8,16 @@ import { UserOrganizationService } from '../../../services/firestore/user-organi
 import { RoleService } from '../../../services/firestore/role.service';
 import { OrganizationType } from '../../../models/firestore';
 
+// Authenticated request type
+type AuthenticatedRequest = Request & {
+  user?: {
+    id: string;
+    organizationId: string;
+    email?: string;
+    role?: string;
+  };
+};
+
 /**
  * Controller for organization management
  */
@@ -336,7 +346,7 @@ export class OrganizationController {
    * Create a new organization
    * @route POST /api/organizations
    */
-  async createOrganization(req: Request, res: Response, next: NextFunction) {
+  async createOrganization(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       const { name, type, parentId } = req.body;
       
@@ -376,10 +386,10 @@ export class OrganizationController {
     } catch (error: any) {
       console.error('Error creating organization:', error);
       
-      if (error.message.includes('does not allow suborganizations')) {
+      if ((error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)).includes('does not allow suborganizations')) {
         return res.status(403).json({
           success: false,
-          message: error.message
+          message: (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error))
         });
       }
       
@@ -391,7 +401,7 @@ export class OrganizationController {
    * Get organizations for the current user
    * @route GET /api/organizations
    */
-  async getUserOrganizations(req: Request, res: Response, next: NextFunction) {
+  async getUserOrganizations(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       const organizations = await this.organizationService.getUserOrganizations(req.user!.id);
       
@@ -408,7 +418,7 @@ export class OrganizationController {
    * Get organization by ID
    * @route GET /api/organizations/:id
    */
-  async getOrganizationById(req: Request, res: Response, next: NextFunction) {
+  async getOrganizationById(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       const { id } = req.params;
       
@@ -442,7 +452,7 @@ export class OrganizationController {
    * Update organization
    * @route PATCH /api/organizations/:id
    */
-  async updateOrganization(req: Request, res: Response, next: NextFunction) {
+  async updateOrganization(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       const { id } = req.params;
       const updateData = req.body;
@@ -482,7 +492,7 @@ export class OrganizationController {
    * Get child organizations
    * @route GET /api/organizations/:id/children
    */
-  async getChildOrganizations(req: Request, res: Response, next: NextFunction) {
+  async getChildOrganizations(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       const { id } = req.params;
       
@@ -509,7 +519,7 @@ export class OrganizationController {
    * Delete organization
    * @route DELETE /api/organizations/:id
    */
-  async deleteOrganization(req: Request, res: Response, next: NextFunction) {
+  async deleteOrganization(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       const { id } = req.params;
       
@@ -537,10 +547,10 @@ export class OrganizationController {
     } catch (error: any) {
       console.error('Error deleting organization:', error);
       
-      if (error.message.includes('child organizations')) {
+      if ((error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)).includes('child organizations')) {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error))
         });
       }
       
@@ -552,7 +562,7 @@ export class OrganizationController {
    * Change organization owner
    * @route PUT /api/organizations/:id/owner
    */
-  async changeOrganizationOwner(req: Request, res: Response, next: NextFunction) {
+  async changeOrganizationOwner(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       const { id } = req.params;
       const { newOwnerId } = req.body;
@@ -591,10 +601,10 @@ export class OrganizationController {
     } catch (error: any) {
       console.error('Error changing organization owner:', error);
       
-      if (error.message.includes('not a member')) {
+      if ((error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)).includes('not a member')) {
         return res.status(400).json({
           success: false,
-          message: error.message
+          message: (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error))
         });
       }
       
@@ -606,7 +616,7 @@ export class OrganizationController {
    * Get organization members
    * @route GET /api/organizations/:id/members
    */
-  async getOrganizationMembers(req: Request, res: Response, next: NextFunction) {
+  async getOrganizationMembers(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       const { id } = req.params;
       
@@ -633,7 +643,7 @@ export class OrganizationController {
    * Set current organization
    * @route PUT /api/organizations/current/:id
    */
-  async setCurrentOrganization(req: Request, res: Response, next: NextFunction) {
+  async setCurrentOrganization(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       const { id } = req.params;
       

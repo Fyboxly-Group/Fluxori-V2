@@ -1,0 +1,150 @@
+import { IndexServiceClient } from '@google-cloud/aiplatform';
+import { VectorMatch, SearchOptions } from '../interfaces/vector-search.interface';
+
+/**
+ * Service for performing vector similarity search using Google Vertex AI Vector Search
+ */
+export class VectorSearchService {
+  private client: IndexServiceClient;
+  private projectId: string;
+  private location: string;
+  private indexEndpoint: string;
+  private indexId: string;
+  private deployedIndexId: string;
+  
+  /**
+   * Creates an instance of VectorSearchService.
+   */
+  constructor() {
+    this.client = new IndexServiceClient({
+      apiEndpoint: 'europe-west1-aiplatform.googleapis.com' // European endpoint
+    });
+    
+    this.projectId = process.env.GCP_PROJECT_ID || '';
+    this.location = process.env.GCP_LOCATION || 'europe-west1';
+    this.indexEndpoint = process.env.VECTOR_SEARCH_INDEX_ENDPOINT || '';
+    this.indexId = process.env.VECTOR_SEARCH_INDEX_ID || '';
+    this.deployedIndexId = process.env.VECTOR_SEARCH_DEPLOYED_INDEX_ID || '';
+    
+    if (!this.projectId || !this.indexEndpoint || !this.indexId || !this.deployedIndexId) {
+      console.error('Missing required environment variables for VectorSearchService');
+    }
+  }
+  
+  /**
+   * Search for similar vectors in the index
+   * @param embedding Query embedding vector
+   * @param options Search options
+   * @returns Array of vector matches
+   */
+  public async searchSimilarVectors(
+    embedding: number[],
+    options: SearchOptions = {}
+  ): Promise<VectorMatch[]> {
+    try {
+      const topK = options.topK || 3;
+      const minScore = options.minScore || 0.7;
+      
+      // Format the endpoint name
+      const formattedEndpoint = `projects/${this.projectId}/locations/${this.location}/indexEndpoints/${this.indexEndpoint}`;
+      
+      // Build the request
+      const request = {
+        indexEndpoint: formattedEndpoint,
+        deployedIndexId: this.deployedIndexId,
+        queries: [{
+          datapoint: {
+            datapoint_id: 'query', // Placeholder ID for the query
+            feature_vector: embedding,
+          },
+          neighbor_count: topK,
+        }],
+      };
+      
+      // Set a timeout to handle potential API delays
+      const timeoutMs = 30000; // 30 seconds
+      const requestWithTimeout = Promise.race<any>([
+        this.client.findNeighbors(request),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Vector search API request timed out')), timeoutMs)
+        )
+      ]);
+      
+      // Wait for the response
+      const [response] = await requestWithTimeout as [any, any];
+      
+      // Process and format the results
+      const results: VectorMatch[] = [];
+      
+      if (!response.nearest_neighbors || response.nearest_neighbors.length === 0) {
+        return results;
+      }
+      
+      // Get the neighbors for the first (and only) query
+      const neighbors = response.nearest_neighbors[0].neighbors || [];
+      
+      // Transform into our VectorMatch interface
+      for (const neighbor of neighbors) {
+        const score = neighbor.distance;
+        
+        // Skip results below the minimum score threshold
+        if (score < minScore) continue;
+        
+        // Extract document ID and metadata
+        const id = neighbor.datapoint.datapoint_id;
+        const metadata = this.extractMetadataFromResponse(neighbor.datapoint);
+        
+        results.push({
+          id,
+          score,
+          metadata,
+        });
+      }
+      
+      return results;
+    } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error);
+      console.error('Error searching similar vectors:', error);
+      throw new Error(`Failed to search similar vectors: ${(error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error))}`);
+    }
+  }
+  
+  /**
+   * Extract metadata from the response data point
+   * @param datapoint The data point from the response
+   * @returns Extracted metadata
+   */
+  private extractMetadataFromResponse(datapoint: any): any {
+    try {
+      // The structure depends on how metadata was stored in the Vector Search index
+      // This is an example and should be adapted to your actual structure
+      const metadata = datapoint.restricts || {};
+      
+      // Parse nested JSON if needed
+      if (metadata.json_metadata && typeof metadata.json_metadata === 'string') {
+        try {
+          metadata.parsedMetadata = JSON.parse(metadata.json_metadata);
+        } catch (e) {
+          console.warn('Failed to parse metadata JSON:', e);
+        }
+      }
+      
+      return {
+        source: metadata.source || 'unknown',
+        title: metadata.title,
+        url: metadata.url,
+        category: metadata.category,
+        created: metadata.created ? new Date(metadata.created) : undefined,
+        updated: metadata.updated ? new Date(metadata.updated) : undefined,
+        author: metadata.author,
+        tags: metadata.tags ? (Array.isArray(metadata.tags) ? metadata.tags : [metadata.tags]) : [],
+        // Include any additional parsed metadata
+        ...(metadata.parsedMetadata || {})
+      };
+    } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error);
+      console.warn('Error extracting metadata:', error);
+      return { source: 'unknown' };
+    }
+  }
+}

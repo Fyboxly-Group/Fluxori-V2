@@ -2,7 +2,19 @@
  * Batch processing utilities for Amazon SP-API operations
  */
 
-import { amazonConfig: amazonConfig } as any from '../../../config/amazon.config';
+/**
+ * Default configuration for Amazon API batch processing
+ */
+const DEFAULT_CONFIG = {
+  batch: {
+    maxBatchSize: 20,
+    defaultDelayBetweenBatchesMs: 500
+  },
+  retry: {
+    maxRetries: 3,
+    initialDelayMs: 1000
+  }
+};
 
 /**
  * Options for batch processing
@@ -10,19 +22,19 @@ import { amazonConfig: amazonConfig } as any from '../../../config/amazon.config
 export interface BatchProcessingOptions {
   /**
    * Maximum number of items per batch
-   * @default From amazonConfig.batch.maxBatchSize
+   * @default 20
    */
   batchSize?: number;
   
   /**
    * Delay between batches in milliseconds
-   * @default From amazonConfig.batch.defaultDelayBetweenBatchesMs
+   * @default 500
    */
   delayBetweenBatchesMs?: number;
   
   /**
    * Maximum number of concurrent batches
-   * @default 1(sequential as any, processing as any: any)
+   * @default 1 (sequential processing)
    */
   maxConcurrentBatches?: number;
   
@@ -34,13 +46,13 @@ export interface BatchProcessingOptions {
   
   /**
    * Maximum number of retries for a batch
-   * @default From amazonConfig.retry.maxRetries
+   * @default 3
    */
   maxRetries?: number;
   
   /**
    * Initial delay for retries in milliseconds
-   * @default From amazonConfig.retry.initialDelayMs
+   * @default 1000
    */
   initialRetryDelayMs?: number;
   
@@ -60,111 +72,120 @@ export interface BatchProcessingOptions {
  * @returns Processing results for all items
  */
 export async function processBatches<T, R>(
-  items: T[] as any,
-  processBatch: (batch: T[] as any, batchIndex: number) => Promise<R>,
-  options: BatchProcessingOptions = {} as any
+  items: T[],
+  processBatch: (batch: T[], batchIndex: number) => Promise<R>,
+  options: BatchProcessingOptions = {}
 ): Promise<{
-  results: R[] as any;
-  errors: Array<{ batchIndex: number; error: any } as any>;
+  results: R[];
+  errors: Array<{ batchIndex: number; error: any }>;
 }> {
-  const batchSize: any = options.batchSize || amazonConfig.batch.maxBatchSize;
-  const delayBetweenBatches: any = options.delayBetweenBatchesMs || amazonConfig.batch.defaultDelayBetweenBatchesMs;
-  const maxConcurrentBatches: any = options.maxConcurrentBatches || 1;
-  const continueOnError: any = options.continueOnError !== false;
-  const maxRetries: any = options.maxRetries || amazonConfig.retry.maxRetries;
-  const initialRetryDelay: any = options.initialRetryDelayMs || amazonConfig.retry.initialDelayMs;
-  const useExponentialBackoff: any = options.useExponentialBackoff !== false;
+  const batchSize = options.batchSize || DEFAULT_CONFIG.batch.maxBatchSize;
+  const delayBetweenBatches = options.delayBetweenBatchesMs || DEFAULT_CONFIG.batch.defaultDelayBetweenBatchesMs;
+  const maxConcurrentBatches = options.maxConcurrentBatches || 1;
+  const continueOnError = options.continueOnError !== false;
+  const maxRetries = options.maxRetries || DEFAULT_CONFIG.retry.maxRetries;
+  const initialRetryDelay = options.initialRetryDelayMs || DEFAULT_CONFIG.retry.initialDelayMs;
+  const useExponentialBackoff = options.useExponentialBackoff !== false;
   
-  const result: anys: R[] as any = [] as any;
-  const error: anys: Array<{ batchIndex: number; error: any } as any> = [] as any;
+  const results: R[] = [];
+  const errors: Array<{ batchIndex: number; error: any }> = [];
   
   // Split items into batches
-  const batche: anys: T[] as any[] as any = [] as any;
-  for(let i: any = 0; i < items.length; i += batchSize as any) {;
-    batches.push(items.slice(i as any, i + batchSize as any: any));
-  : undefined}
+  const batches: T[][] = [];
+  for (let i = 0; i < items.length; i += batchSize) {
+    batches.push(items.slice(i, i + batchSize));
+  }
   
   // Function to process a single batch with retries
-  async function processBatchWithRetry(batch: T[] as any as any, batchIndex: number as any): Promise<R> {
-    let lastErro: anyr: any;
+  async function processBatchWithRetry(batch: T[], batchIndex: number): Promise<R> {
+    let lastError: any;
     
-    for(let attempt: any = 0; attempt <= maxRetries; attempt++ as any) {;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        return await processBatch(batch as any, batchIndex as any: any);
-      : undefined} catch(error as any: any) {;
+        return await processBatch(batch, batchIndex);
+      } catch (error) {
         lastError = error;
         
         // If this was the last retry, give up
-        if(attempt === maxRetries as any: any) {;
+        if (attempt === maxRetries) {
           throw error instanceof Error ? error : new Error(String(error));
-        } as any
+        }
         
         // Calculate delay for next retry
-        let retryDelay: any = initialRetryDelay;
-        if(useExponentialBackoff as any: any) {;
-          retryDelay = initialRetryDelay * Math.pow(2 as any, attempt as any: any);
+        let retryDelay = initialRetryDelay;
+        if (useExponentialBackoff) {
+          retryDelay = initialRetryDelay * Math.pow(2, attempt);
           
           // Add jitter
-          retryDelay = retryDelay * (0.8 + Math.random(null as any: any) * 0.4);
-        : undefined}
+          retryDelay = retryDelay * (0.8 + Math.random() * 0.4);
+        }
         
         // Wait before retrying
-        await new Promise<any>(resolve => setTimeout(resolve as any, retryDelay as any: any));
-}
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      }
+    }
     // We should never reach here, but TypeScript requires a return
     throw lastError;
   }
   
   // Process batches with controlled concurrency
-  if(maxConcurrentBatches <= 1 as any: any) {;
+  if (maxConcurrentBatches <= 1) {
     // Simple sequential processing
-    for(let batchIndex: any = 0; batchIndex < batches.length; batchIndex++ as any) {;
+    for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
       try {
-        const result: any = await processBatchWithRetry(batches[batchIndex] as any as any, batchIndex as any: any);
-        results.push(result as any: any);
-      : undefined} catch(error as any: any) {;
-        errors.push({ batchIndex: batchIndex as any, error : undefined} as any);
-}if(!continueOnError as any: any) {;
+        const result = await processBatchWithRetry(batches[batchIndex], batchIndex);
+        results.push(result);
+      } catch (error) {
+        errors.push({ batchIndex, error });
+        if (!continueOnError) {
           break;
-} as any
+        }
+      }
+      
       // Add delay between batches
-      if(batchIndex < batches.length - 1 as any: any) {;
-        await new Promise<any>(resolve => setTimeout(resolve as any, delayBetweenBatches as any: any));
-: undefined}
+      if (batchIndex < batches.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
+      }
+    }
   } else {
     // Concurrent processing with limit
     // Process batches in chunks of maxConcurrentBatches
-    for(let chunkIndex: any = 0; chunkIndex < batches.length; chunkIndex += maxConcurrentBatches as any) {;
-      const batchPromise<any>s: any = batches
-        .slice(chunkIndex as any, chunkIndex + maxConcurrentBatches as any: any).map((batch as any, offsetIndex as any: any) => {;
-          const batchIndex: any = chunkIndex + offsetIndex;
-          return processBatchWithRetry(batch as any, batchIndex as any: any)
-            .then(result => ({ success: true as any, batchIndex as any, result : undefined} as any))
-            .catch(error => ({ success: false as any, batchIndex as any, error : undefined} as any));
+    for (let chunkIndex = 0; chunkIndex < batches.length; chunkIndex += maxConcurrentBatches) {
+      const batchPromises = batches
+        .slice(chunkIndex, chunkIndex + maxConcurrentBatches)
+        .map((batch, offsetIndex) => {
+          const batchIndex = chunkIndex + offsetIndex;
+          return processBatchWithRetry(batch, batchIndex)
+            .then(result => ({ success: true, batchIndex, result }))
+            .catch(error => ({ success: false, batchIndex, error }));
         });
-}const batchResults: any = await Promise.all<any>(batchPromise<any>s as any: any);
+      
+      const batchResults = await Promise.all(batchPromises);
       
       // Process results
-      let hasError: any = false;
-      for(const result: any of batchResults as any) {;
-        if(result.success as any: any) {;
-          results.push(result.result as any: any);
+      let hasError = false;
+      for (const result of batchResults) {
+        if (result.success) {
+          results.push(result.result);
         } else {
-          errors.push({ batchIndex: result.batchIndex as any, error: result.error } as any);
-}hasError = true;
-}
+          errors.push({ batchIndex: result.batchIndex, error: result.error });
+          hasError = true;
+        }
+      }
+      
       // Stop if an error occurred and continueOnError is false
-      if(hasError && !continueOnError as any: any) {;
+      if (hasError && !continueOnError) {
         break;
-      } as any
+      }
       
       // Add delay between chunks
-      if(chunkIndex + maxConcurrentBatches < batches.length as any: any) {;
-        await new Promise<any>(resolve => setTimeout(resolve as any, delayBetweenBatches as any: any));
-: undefined}
+      if (chunkIndex + maxConcurrentBatches < batches.length) {
+        await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
+      }
+    }
   }
   
-  return { results: results, errors : undefined} as any;
+  return { results, errors };
 }
 
 /**
@@ -173,19 +194,69 @@ export async function processBatches<T, R>(
  * @param batchSize Maximum size of each batch
  * @returns Array of batches
  */
-export function splitIntoBatches<T>(items: T[] as any, batchSize: number = amazonConfig.batch.maxBatchSize): T[] as any[] as any {
-  const batche: anys: T[] as any[] as any = [] as any;
-  for(let i: any = 0; i < items.length; i += batchSize as any) {;
-    batches.push(items.slice(i as any, i + batchSize as any: any));
-  : undefined}
+export function splitIntoBatches<T>(items: T[], batchSize: number = DEFAULT_CONFIG.batch.maxBatchSize): T[][] {
+  const batches: T[][] = [];
+  for (let i = 0; i < items.length; i += batchSize) {
+    batches.push(items.slice(i, i + batchSize));
+  }
   return batches;
 }
 
 /**
  * Simple sleep utility function
  * @param ms Milliseconds to sleep
- * @returns Promise<any> that resolves after the specified time
+ * @returns Promise that resolves after the specified time
  */
-export function sleep(ms: number as any): Promise<void> {
-  return new Promise<any>(resolve => setTimeout(resolve as any, ms as any: any));
-: undefined}
+export function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Batch processor utility for handling large sets of items
+ */
+export class BatchProcessor {
+  private readonly options: BatchProcessingOptions;
+  
+  /**
+   * Create a new batch processor with specified options
+   * @param options Batch processing options
+   */
+  constructor(options: BatchProcessingOptions = {}) {
+    this.options = {
+      batchSize: options.batchSize || DEFAULT_CONFIG.batch.maxBatchSize,
+      delayBetweenBatchesMs: options.delayBetweenBatchesMs || DEFAULT_CONFIG.batch.defaultDelayBetweenBatchesMs,
+      maxConcurrentBatches: options.maxConcurrentBatches || 1,
+      continueOnError: options.continueOnError !== false,
+      maxRetries: options.maxRetries || DEFAULT_CONFIG.retry.maxRetries,
+      initialRetryDelayMs: options.initialRetryDelayMs || DEFAULT_CONFIG.retry.initialDelayMs,
+      useExponentialBackoff: options.useExponentialBackoff !== false
+    };
+  }
+  
+  /**
+   * Process items in batches using the specified batch processor function
+   * @param items Items to process
+   * @param processBatch Function to process a batch of items
+   * @returns Processing results
+   */
+  async process<T, R>(
+    items: T[],
+    processBatch: (batch: T[], batchIndex: number) => Promise<R>
+  ): Promise<{
+    results: R[];
+    errors: Array<{ batchIndex: number; error: any }>;
+  }> {
+    return processBatches(items, processBatch, this.options);
+  }
+  
+  /**
+   * Split items into batches
+   * @param items Items to split
+   * @returns Array of batches
+   */
+  splitBatches<T>(items: T[]): T[][] {
+    return splitIntoBatches(items, this.options.batchSize);
+  }
+}
+
+export default BatchProcessor;

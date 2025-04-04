@@ -1,39 +1,64 @@
 /**
- * Re-export of common API types from base-module.interface.ts
+ * Request options for Amazon API calls
  */
-export { ApiResponse, ApiRequestFunction } from './base-module.interface';
-
-/**
- * Common error response structure
- */
-export interface ErrorResponse {
-  code: string;
-  message: string;
-  details?: string;
+export interface RequestOptions {
+  /**
+   * Amazon marketplace ID
+   */
+  marketplaceId: string;
+  
+  /**
+   * Request timeout in milliseconds
+   */
+  timeout?: number;
+  
+  /**
+   * Whether to retry on failure
+   */
+  retry?: boolean;
 }
 
 /**
- * Common paginated response structure
+ * Common paginated response structure for Amazon APIs
  */
 export interface PaginatedResponse<T = any> {
+  /**
+   * The list of items returned
+   */
   items: T[];
+  
+  /**
+   * Token for the next page of results
+   */
   nextToken?: string;
-  totalCount?: number;
-}
-
-/**
- * Common Amazon marketplace identifier
- */
-export interface MarketplaceIdentifier {
-  marketplaceId: string;
-  countryCode?: string;
-  name?: string;
-}
-
-/**
- * Generic success response
- */
-export interface SuccessResponse {
-  success: boolean;
-  message?: string;
+  
+  /**
+   * Current page number
+   */
+  pageNumber: number;
+  
+  /**
+   * Size of each page
+   */
+  pageSize: string;
+  
+  /**
+   * Total number of pages
+   */
+  totalPages?: string;
+  
+  /**
+   * Total number of items across all pages
+   */
+  totalItems?: string;
+  
+  /**
+   * Whether there are more items to fetch
+   */
+  hasMore: boolean;
+  
+  /**
+   * Query used to fetch these results
+   */
+  query?: string;
 }

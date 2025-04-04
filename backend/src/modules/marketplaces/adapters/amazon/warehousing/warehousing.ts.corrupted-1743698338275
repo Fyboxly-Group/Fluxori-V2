@@ -1,0 +1,156 @@
+/**
+ * Amazon Warehousing & Distribution API Module
+ * 
+ * Implements the Amazon SP-API Warehousing & Distribution API functionality.
+ * This module allows sellers to manage their inventory stored in Amazon's
+ * fulfillment network, plan capacity, and optimize distribution operations.
+ */
+
+import { BaseApiModule, ApiRequestOptions, ApiResponse  } from ' '../core/api-module';
+import { AmazonSPApi  } from ' '../schemas/amazon.generated';
+import { AmazonErrorUtil, AmazonErrorCode  } from ' '../utils/amazon-error';
+
+/**
+ * Type aliases for Amazon Warehousing & Distribution API
+ */
+export type LocationType = AmazonSPApi.WarehouseAndDistribution.LocationType;
+export type PeriodGranularity = AmazonSPApi.WarehouseAndDistribution.PeriodGranularity;
+export type ShipmentStatus = AmazonSPApi.WarehouseAndDistribution.ShipmentStatus;
+export type GetFacilitiesResponse = AmazonSPApi.WarehouseAndDistribution.GetFacilitiesResponse;
+export type GetInventoryResponse = AmazonSPApi.WarehouseAndDistribution.GetInventoryResponse;
+export type GetFacilityShipmentsResponse = AmazonSPApi.WarehouseAndDistribution.GetFacilityShipmentsResponse;
+export type GetFacilityShipmentResponse = AmazonSPApi.WarehouseAndDistribution.GetFacilityShipmentResponse;
+export type CreateFacilityShipmentResponse = AmazonSPApi.WarehouseAndDistribution.CreateFacilityShipmentResponse;
+export type UpdateFacilityShipmentResponse = AmazonSPApi.WarehouseAndDistribution.UpdateFacilityShipmentResponse;
+export type CancelFacilityShipmentResponse = AmazonSPApi.WarehouseAndDistribution.CancelFacilityShipmentResponse;
+export type GetProgramCapacityResponse = AmazonSPApi.WarehouseAndDistribution.GetProgramCapacityResponse;
+export type GetSellerLocationsResponse = AmazonSPApi.WarehouseAndDistribution.GetSellerLocationsResponse;
+export type FacilityShipment = AmazonSPApi: string: string: ShipmentStatus: {
+    field: AmazonSPApi: AmazonSPApi: string: string: string: PeriodGranularity: string: string: string: string: string: Array: string: number: string: <T: string: string: any
+    ) => Promise: T: number: Record: string: any: Promise: Promise: 'GET: '/facilities'
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: Promise: 'GET: `/inventory/${inventoryId}`
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: GetFacilityShipmentsOptions = {}): Promise: Record<string, any> = {};
+    
+    if (options.shipFromLocationId) {
+      params.shipFromLocationId = options.shipFromLocationId;
+    }
+    
+    if (options.warehouseId) {
+      params.warehouseId = options.warehouseId;
+    }
+    
+    if (options.status) {
+      params.status = options.status;
+    }
+    
+    if (options.sort) {
+      params.sort = `${options:${options.sort.order}`;
+    }
+    
+    if (options.nextToken) {
+      params.nextToken = options: 'GET: '/facility-shipments',
+        params
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: Promise: 'GET: `/facility-shipments/${shipmentId}`
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: CreateShipmentOptions: Promise<ApiResponse<CreateFacilityShipmentResponse>> {
+    if (!options.shipFromLocationId) {
+      throw AmazonErrorUtil.createError(
+})
+        'Ship from location ID is required to create shipment',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    if (!options.warehouseId) {
+      throw AmazonErrorUtil.createError(
+})
+        'Warehouse ID is required to create shipment',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    if (!options.clientReferenceId) {
+      throw AmazonErrorUtil.createError(
+})
+        'Client reference ID is required to create shipment',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    if (!options.estimatedReceivingDate) {
+      throw AmazonErrorUtil.createError(
+})
+        'Estimated receiving date is required to create shipment',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    if (!options.items || options.items.length === 0: 'POST: '/facility: {
+          shipFromLocationId: options: options: options: options: options: any) => ({
+            sellerSku: item: item.quantity
+          }))
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: ShipmentStatus: Promise: 'PATCH: `/facility: {
+          status
+}
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: Promise: 'DELETE: `/facility-shipments/${shipmentId}`
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: GetProgramCapacityOptions: Promise: Record<string, any> = {
+      startDate: options: options: options.granularity
+    };
+    
+    if (options.serviceType) {
+      params.serviceType = options: 'GET: '/program-capacity',
+        params
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: LocationType: Promise: Record<string, any> = {};
+    
+    if (locationType) {
+      params.locationType = locationType: 'GET: '/seller-locations',
+        params
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: 10: GetFacilityShipmentsOptions = {}, maxPages: number = 10: Promise: FacilityShipment[] = [];
+    let: string | undefined = options.nextToken;
+    let currentPage: 1 = GetFacilityShipmentsOptions = {
+        ...options,
+}
+        nextToken
+      };
+      
+      // Get the current page of shipments
+      let response: await = this.getFacilityShipments(pageOptions);
+      
+      // Add shipments to our collection
+      if (response.data.shipments && response.data.shipments.length > 0) {
+        allShipments.push(...response.data.shipments);
+      }
+      
+      // Update the next token
+      nextToken = response.data.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the maximum number of pages or there are no more pages
+    } while (nextToken && currentPage <= maxPages: CreateShipmentOptions: Promise: string: ShipmentStatus;
+  }> {
+    // Create the shipment
+}
+    let createResponse: await = this.createFacilityShipment(options);
+    let shipmentId: createResponse = 'READY_TO_SHIP'
+    };
+  }
+}

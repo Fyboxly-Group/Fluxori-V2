@@ -12,7 +12,7 @@ export class SeedService {
   /**
    * Seed users
    */
-  static async seedUsers() {
+  static async seedUsers() : Promise<void> {
     const users = [
       {
         email: 'admin@fluxori.com',
@@ -50,6 +50,7 @@ export class SeedService {
       console.log('Users seeded successfully');
       return true;
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error('Error seeding users:', error);
       return false;
     }
@@ -58,7 +59,7 @@ export class SeedService {
   /**
    * Seed tasks
    */
-  static async seedTasks() {
+  static async seedTasks() : Promise<void> {
     try {
       // Get user IDs
       const admin = await User.findOne({ email: 'admin@fluxori.com' });
@@ -154,6 +155,7 @@ export class SeedService {
       console.log('Tasks seeded successfully');
       return true;
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error('Error seeding tasks:', error);
       return false;
     }
@@ -162,7 +164,7 @@ export class SeedService {
   /**
    * Seed activities
    */
-  static async seedActivities() {
+  static async seedActivities() : Promise<void> {
     try {
       // Get user IDs
       const admin = await User.findOne({ email: 'admin@fluxori.com' });
@@ -263,6 +265,7 @@ export class SeedService {
       console.log('Activities seeded successfully');
       return true;
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error('Error seeding activities:', error);
       return false;
     }
@@ -271,7 +274,7 @@ export class SeedService {
   /**
    * Run all seed methods
    */
-  static async seedAll() {
+  static async seedAll() : Promise<void> {
     await this.seedUsers();
     await this.seedTasks();
     await this.seedActivities();

@@ -1,46 +1,41 @@
 /**
- * Factory for creating Brand Protection API module
+ * Factory for creating and registering an Amazon Brand Protection API module
  */
-
-import { BrandProtectionModule } from './brand-protection';
 import { ModuleRegistry } from '../core/module-registry';
-import { getDefaultModuleVersion } from '../core/module-definitions';
+import { BrandProtectionModule, BrandProtectionModuleOptions } from './brand-protection';
+import { ApiRequestFunction } from '../core/base-module.interface';
+import { getModuleDefaultVersion } from '../core/registry-helper';
 
 /**
- * Factory for creating Brand Protection API module
+ * Creates a new Brand Protection module, registers it in the provided registry, and returns it
+ * 
+ * @param apiVersion API version to use, or undefined to use the default
+ * @param makeApiRequest Function to make API requests
+ * @param marketplaceId Amazon marketplace ID
+ * @param registry Module registry to register the module in
+ * @param options Additional module options
+ * @returns The created Brand Protection module
  */
-export class BrandProtectionModuleFactory {
-  /**
-   * Create a Brand Protection module and register it with the provided registry
-   * @param makeApiRequest Function to make API requests
-   * @param marketplaceId Marketplace ID
-   * @param registry Module registry to register with
-   * @param apiVersion Optional API version (uses default if not provided)
-   * @returns The created module
-   */
-  public static createBrandProtectionModule(
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string,
-    registry: ModuleRegistry,
-    apiVersion?: string
-  ): BrandProtectionModule {
-    // Use provided version or get the default
-    const version = apiVersion || getDefaultModuleVersion('brandProtection') || 'v1';
-    
-    // Create the module
-    const module = new BrandProtectionModule(
-      version,
-      makeApiRequest,
-      marketplaceId
-    );
-    
-    // Register the module
-    registry.registerModule(module);
-    
-    return module;
-  }
+export function createBrandProtectionModule(
+  apiVersion: string | undefined,
+  makeApiRequest: ApiRequestFunction,
+  marketplaceId: string,
+  registry: ModuleRegistry,
+  options: BrandProtectionModuleOptions = {}
+): BrandProtectionModule {
+  // Use provided version or get the default
+  const version = apiVersion || getModuleDefaultVersion('brandProtection') || 'v1';
+  
+  // Create the module
+  const module = new BrandProtectionModule(
+    version,
+    makeApiRequest,
+    marketplaceId,
+    options
+  );
+  
+  // Register the module
+  registry.registerModule(module);
+  
+  return module;
 }

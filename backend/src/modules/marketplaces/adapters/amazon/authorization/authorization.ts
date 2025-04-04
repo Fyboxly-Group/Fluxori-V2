@@ -1,177 +1,173 @@
 /**
  * Amazon Authorization API Module
  * 
- * Implements the Amazon SP-API Authorization API functionality.
- * This module handles OAuth 2.0 authorization flows, token management,
- * and role-based permissions for secure application access.
+ * Implements the Amazon SP-API Authorization functionality.
+ * This module allows managing authorization for Amazon Selling Partner API,
+ * including checking authorization status and managing scopes.
  */
 
-import { BaseApiModule, ApiRequestOptions, ApiResponse } from '../core/api-module';
-import { AmazonErrorUtil, AmazonErrorCode } from '../utils/amazon-error';
-
-/**
- * Grant type for authorization
- */
-export type GrantType = 'authorization_code' | 'refresh_token';
+import { BaseApiModule } from '../core/api-module';
+import { AmazonErrorUtil } from '../utils/amazon-error';
+import { PaginatedResponse } from '../core/api-types';
 
 /**
- * Authentication scope
+ * Scope authorization status
  */
-export type AuthScope = 
-  | 'sellingpartnerapi::notifications'
-  | 'sellingpartnerapi::migration'
-  | 'sellingpartnerapi::sales'
-  | 'sellingpartnerapi::feeds'
-  | 'sellingpartnerapi::orders' 
-  | 'sellingpartnerapi::orders:read'
-  | 'sellingpartnerapi::orders:write'
-  | 'sellingpartnerapi::finances'
-  | 'sellingpartnerapi::listings' 
-  | 'sellingpartnerapi::listings:read' 
-  | 'sellingpartnerapi::listings:write'
-  | 'sellingpartnerapi::catalog'
-  | 'sellingpartnerapi::messaging'
-  | 'sellingpartnerapi::reports'
-  | 'sellingpartnerapi::fulfillment-outbound'
-  | 'sellingpartnerapi::fulfillment-inbound'
-  | 'sellingpartnerapi::shipping'
-  | 'sellingpartnerapi::tokens'
-  | 'sellingpartnerapi::tokens:read'
-  | 'sellingpartnerapi::tokens:write';
+export interface ScopeAuthorization {
+  /**
+   * The scope for which authorization status is returned
+   */
+  scope: string;
 
-/**
- * Token data
- */
-export interface TokenData {
   /**
-   * Access token used for API authorization
+   * Whether the selling partner is authorized against the scope
    */
-  access_token: string;
-  
-  /**
-   * Token type (typically "bearer")
-   */
-  token_type: string;
-  
-  /**
-   * Expiration time in seconds
-   */
-  expires_in: number;
-  
-  /**
-   * Refresh token used to get new access tokens
-   */
-  refresh_token: string;
+  sellingPartnerAuthorized: boolean;
 }
 
 /**
- * Authorization code exchange request
+ * Response for getting authorization scopes
  */
-export interface AuthorizationCodeExchangeRequest {
+export interface GetAuthorizationScopesResponse {
   /**
-   * Authorization code received from OAuth redirect
+   * Array of scope authorization statuses
+   */
+  scopesAuthorizations: ScopeAuthorization[];
+}
+
+/**
+ * Status of authorization code by selling partner
+ */
+export interface AuthorizationCode {
+  /**
+   * The authorization code used to authorize access to a selling partner's data
    */
   authorizationCode: string;
-  
-  /**
-   * Client ID
-   */
-  clientId: string;
-  
-  /**
-   * Client secret
-   */
-  clientSecret: string;
-  
-  /**
-   * Redirect URI matching the one used in authorization request
-   */
-  redirectUri: string;
-}
 
-/**
- * Refresh token request
- */
-export interface RefreshTokenRequest {
   /**
-   * Refresh token
+   * The developer ID from developing partner's LWA application
    */
-  refreshToken: string;
-  
-  /**
-   * Client ID
-   */
-  clientId: string;
-  
-  /**
-   * Client secret
-   */
-  clientSecret: string;
-}
+  developerId: string;
 
-/**
- * User permissions data
- */
-export interface UserPermissions {
-  /**
-   * List of scopes the user has authorized
-   */
-  authorizedScopes: AuthScope[];
-  
   /**
    * The selling partner ID
    */
-  sellerId: string;
-  
+  sellingPartnerId: string;
+
   /**
-   * List of marketplace IDs the user has access to
+   * Timestamp when the authorization code was created
    */
-  marketplaceIds: string[];
-  
+  createdTime: string;
+
   /**
-   * The role of the user
+   * Timestamp when the authorization code expires
    */
-  role?: 'ADMIN' | 'VIEWER' | 'EDITOR';
-  
-  /**
-   * Indicates whether the user has authorized your application with delegated access
-   */
-  hasDelegatedAccess?: boolean;
+  expiresTime: string;
 }
 
 /**
- * Generate authorization URL options
+ * Parameters for getting authorization codes
  */
-export interface GenerateAuthorizationUrlOptions {
+export interface GetAuthorizationCodeParams {
   /**
-   * OAuth client ID
+   * The developer ID from your LWA application
    */
-  clientId: string;
+  developerId?: string;
+
+  /**
+   * The selling partner ID (MWS account ID)
+   */
+  sellingPartnerId?: string;
+
+  /**
+   * List of scopes to filter by
+   */
+  scopes?: string[];
+
+  /**
+   * The pagination token to retrieve the next page
+   */
+  nextToken?: string;
+
+  /**
+   * The maximum number of authorization codes to return per page
+   */
+  maxResults?: number;
+}
+
+/**
+ * Parameters for requesting authorization scopes approval
+ */
+export interface RequestAuthorizationApprovalParams {
+  /**
+   * List of scopes to request approval for
+   */
+  scopes: string[];
+
+  /**
+   * The selling partner ID for which to request approval
+   */
+  sellingPartnerId: string;
+
+  /**
+   * The developer ID to associate with the approval
+   */
+  developerId: string;
+
+  /**
+   * Custom notes about the approval request
+   */
+  notes?: string;
+
+  /**
+   * Landing page URL after approval
+   */
+  redirectUri?: string;
+}
+
+/**
+ * Response for requesting authorization scope approval
+ */
+export interface RequestAuthorizationApprovalResponse {
+  /**
+   * Status of the approval request
+   */
+  status: string;
   
   /**
-   * OAuth redirect URI
+   * URL that the seller needs to visit to approve the request
    */
-  redirectUri: string;
+  approvalUrl?: string;
   
   /**
-   * OAuth state parameter for security validation
+   * Unique identifier for the approval request
    */
-  state?: string;
-  
+  requestId?: string;
+}
+
+/**
+ * Scope configuration for LWA application
+ */
+export interface ScopeConfig {
   /**
-   * List of OAuth scopes to request
+   * The scope name
    */
-  scopes?: AuthScope[];
-  
+  scope: string;
+
   /**
-   * Whether to enable delegated seller access
+   * The seller-facing name of the scope
    */
-  enableDelegatedAccess?: boolean;
-  
+  sellerFacingName: string;
+
   /**
-   * Amazon environment (sandbox or production)
+   * The seller-facing description of the scope
    */
-  environment?: 'SANDBOX' | 'PRODUCTION';
+  sellerFacingDescription: string;
+
+  /**
+   * Whether the scope requires selling partner approval
+   */
+  requiresSellerApproval: boolean;
 }
 
 /**
@@ -185,10 +181,10 @@ export class AuthorizationModule extends BaseApiModule {
    * @param marketplaceId Marketplace ID
    */
   constructor(
-    apiVersion: string,
+    apiVersion: string, 
     makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
+      method: string, 
+      endpoint: string, 
       options?: any
     ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
     marketplaceId: string
@@ -199,449 +195,225 @@ export class AuthorizationModule extends BaseApiModule {
   /**
    * Initialize the module
    * @param config Module-specific configuration
-   * @returns Promise<any> that resolves when initialization is complete
+   * @returns Promise that resolves when initialization is complete
    */
   protected async initializeModule(config?: any): Promise<void> {
     // No specific initialization required for this module
-    return Promise<any>.resolve();
+    return Promise.resolve();
   }
   
   /**
-   * Exchange authorization code for tokens
-   * @param request Authorization code exchange request
-   * @returns Token data
+   * Get authorization status for scopes
+   * @param scopes List of scopes to check authorization for
+   * @returns Authorization status for each scope
    */
-  public async exchangeAuthorizationCode(
-    request: AuthorizationCodeExchangeRequest
-  ): Promise<ApiResponse<TokenData>> {
-    if (!request.authorizationCode) {
-      throw AmazonErrorUtil.createError(
-        'Authorization code is required to exchange for tokens',
-        AmazonErrorCode.INVALID_INPUT
-      );
-    }
-    
-    if (!request.clientId) {
-      throw AmazonErrorUtil.createError(
-        'Client ID is required to exchange authorization code',
-        AmazonErrorCode.INVALID_INPUT
-      );
-    }
-    
-    if (!request.clientSecret) {
-      throw AmazonErrorUtil.createError(
-        'Client secret is required to exchange authorization code',
-        AmazonErrorCode.INVALID_INPUT
-      );
-    }
-    
-    if (!request.redirectUri) {
-      throw AmazonErrorUtil.createError(
-        'Redirect URI is required to exchange authorization code',
-        AmazonErrorCode.INVALID_INPUT
-      );
-    }
-    
+  public async getAuthorizationScopes(
+    scopes: string[]
+  ): Promise<GetAuthorizationScopesResponse> {
     try {
-      return await this.makeRequest<TokenData>({
-        method: 'POST',
-        path: '/token',
-        directUrl: true,
-        data: {
-          grant_type: 'authorization_code',
-          code: request.authorizationCode,
-          client_id: request.clientId,
-          client_secret: request.clientSecret,
-          redirect_uri: request.redirectUri
-        },
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
-      });
-    } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(
-        error,
-        `${this.moduleName}.exchangeAuthorizationCode`
-      );
-    }
-  }
-  
-  /**
-   * Refresh access token using refresh token
-   * @param request Refresh token request
-   * @returns New token data
-   */
-  public async refreshAccessToken(
-    request: RefreshTokenRequest
-  ): Promise<ApiResponse<TokenData>> {
-    if (!request.refreshToken) {
-      throw AmazonErrorUtil.createError(
-        'Refresh token is required to refresh access token',
-        AmazonErrorCode.INVALID_INPUT
-      );
-    }
-    
-    if (!request.clientId) {
-      throw AmazonErrorUtil.createError(
-        'Client ID is required to refresh access token',
-        AmazonErrorCode.INVALID_INPUT
-      );
-    }
-    
-    if (!request.clientSecret) {
-      throw AmazonErrorUtil.createError(
-        'Client secret is required to refresh access token',
-        AmazonErrorCode.INVALID_INPUT
-      );
-    }
-    
-    try {
-      return await this.makeRequest<TokenData>({
-        method: 'POST',
-        path: '/token',
-        directUrl: true,
-        data: {
-          grant_type: 'refresh_token',
-          refresh_token: request.refreshToken,
-          client_id: request.clientId,
-          client_secret: request.clientSecret
-        },
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
-      });
-    } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(
-        error,
-        `${this.moduleName}.refreshAccessToken`
-      );
-    }
-  }
-  
-  /**
-   * Get user permissions from access token
-   * @param accessToken Access token
-   * @returns User permissions
-   */
-  public async getUserPermissions(
-    accessToken: string
-  ): Promise<ApiResponse<UserPermissions>> {
-    if (!accessToken) {
-      throw AmazonErrorUtil.createError(
-        'Access token is required to get user permissions',
-        AmazonErrorCode.INVALID_INPUT
-      );
-    }
-    
-    try {
-      return await this.makeRequest<UserPermissions>({
+      if (!scopes || scopes.length === 0) {
+        throw AmazonErrorUtil.createError(
+          'At least one scope is required',
+          'INVALID_INPUT'
+        );
+      }
+
+      const response = await this.makeRequest<GetAuthorizationScopesResponse>({
         method: 'GET',
-        path: '/user/permissions',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
+        path: '/scopes',
+        params: {
+          scopes: scopes.join(',')
         }
       });
+      
+      return response.data;
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(
-        error,
-        `${this.moduleName}.getUserPermissions`
-      );
+      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getAuthorizationScopes`);
     }
   }
   
   /**
-   * Revoke a token
-   * @param token The token to revoke
-   * @param tokenType The type of token being revoked ('access_token' or 'refresh_token')
-   * @param clientId The client ID
-   * @param clientSecret The client secret
-   * @returns Void response indicating success
+   * Get authorization codes for a selling partner
+   * @param params Parameters to filter authorization codes
+   * @returns List of authorization codes matching the criteria
    */
-  public async revokeToken(
-    token: string,
-    tokenType: 'access_token' | 'refresh_token',
-    clientId: string,
-    clientSecret: string
-  ): Promise<ApiResponse<void>> {
-    if (!token) {
-      throw AmazonErrorUtil.createError(
-        'Token is required to revoke',
-        AmazonErrorCode.INVALID_INPUT
-      );
-    }
-    
-    if (!tokenType) {
-      throw AmazonErrorUtil.createError(
-        'Token type is required to revoke token',
-        AmazonErrorCode.INVALID_INPUT
-      );
-    }
-    
-    if (!clientId) {
-      throw AmazonErrorUtil.createError(
-        'Client ID is required to revoke token',
-        AmazonErrorCode.INVALID_INPUT
-      );
-    }
-    
-    if (!clientSecret) {
-      throw AmazonErrorUtil.createError(
-        'Client secret is required to revoke token',
-        AmazonErrorCode.INVALID_INPUT
-      );
-    }
-    
+  public async getAuthorizationCodes(
+    params: GetAuthorizationCodeParams = {}
+  ): Promise<PaginatedResponse<AuthorizationCode>> {
     try {
-      return await this.makeRequest<void>({
-        method: 'POST',
-        path: '/revoke',
-        directUrl: true,
-        data: {
-          token,
-          token_type_hint: tokenType,
-          client_id: clientId,
-          client_secret: clientSecret
-        },
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
+      const queryParams: Record<string, any> = {};
+      
+      if (params.developerId) {
+        queryParams.developerId = params.developerId;
+      }
+      
+      if (params.sellingPartnerId) {
+        queryParams.sellingPartnerId = params.sellingPartnerId;
+      }
+      
+      if (params.scopes && params.scopes.length > 0) {
+        queryParams.scopes = params.scopes.join(',');
+      }
+      
+      if (params.nextToken) {
+        queryParams.nextToken = params.nextToken;
+      }
+      
+      if (params.maxResults) {
+        queryParams.maxResults = params.maxResults;
+      }
+
+      const response = await this.makeRequest<{
+        authorizationCodes: AuthorizationCode[];
+        nextToken?: string;
+      }>({
+        method: 'GET',
+        path: '/authorizationCodes',
+        params: queryParams
       });
+      
+      return {
+        items: response.data.authorizationCodes || [],
+        nextToken: response.data.nextToken,
+        pageNumber: 1,
+        pageSize: (params.maxResults || 10).toString(),
+        hasMore: !!response.data.nextToken
+      };
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(
-        error,
-        `${this.moduleName}.revokeToken`
-      );
+      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getAuthorizationCodes`);
     }
   }
   
   /**
-   * Check if an access token is valid
-   * @param accessToken Access token to check
-   * @returns True if token is valid, false otherwise
+   * Request approval for authorization scopes from a selling partner
+   * @param params Parameters for the approval request
+   * @returns Response with approval URL and status
    */
-  public async isAccessTokenValid(
-    accessToken: string
+  public async requestAuthorizationApproval(
+    params: RequestAuthorizationApprovalParams
+  ): Promise<RequestAuthorizationApprovalResponse> {
+    try {
+      if (!params.scopes || params.scopes.length === 0) {
+        throw AmazonErrorUtil.createError(
+          'At least one scope is required',
+          'INVALID_INPUT'
+        );
+      }
+      
+      if (!params.sellingPartnerId) {
+        throw AmazonErrorUtil.createError(
+          'Selling partner ID is required',
+          'INVALID_INPUT'
+        );
+      }
+      
+      if (!params.developerId) {
+        throw AmazonErrorUtil.createError(
+          'Developer ID is required',
+          'INVALID_INPUT'
+        );
+      }
+
+      const data: Record<string, any> = {
+        scopes: params.scopes,
+        sellingPartnerId: params.sellingPartnerId,
+        developerId: params.developerId
+      };
+      
+      if (params.notes) {
+        data.notes = params.notes;
+      }
+      
+      if (params.redirectUri) {
+        data.redirectUri = params.redirectUri;
+      }
+
+      const response = await this.makeRequest<RequestAuthorizationApprovalResponse>({
+        method: 'POST',
+        path: '/authorizations/approvals',
+        data
+      });
+      
+      return response.data;
+    } catch (error) {
+      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.requestAuthorizationApproval`);
+    }
+  }
+  
+  /**
+   * Get configurations for available API scopes
+   * @returns List of scope configurations
+   */
+  public async getScopeConfigurations(): Promise<ScopeConfig[]> {
+    try {
+      const response = await this.makeRequest<{
+        scopeConfigurations: ScopeConfig[];
+      }>({
+        method: 'GET',
+        path: '/scopeConfigurations'
+      });
+      
+      return response.data.scopeConfigurations || [];
+    } catch (error) {
+      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getScopeConfigurations`);
+    }
+  }
+  
+  /**
+   * Check if the application is authorized for specific scopes
+   * @param scopes List of scopes to check
+   * @returns Boolean indicating if all scopes are authorized
+   */
+  public async checkScopesAuthorization(
+    scopes: string[]
   ): Promise<boolean> {
     try {
-      await this.getUserPermissions(accessToken);
-      return true;
-    } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      return false;
-    }
-  }
-  
-  /**
-   * Generate authorization URL for OAuth flow
-   * @param options Options for generating the authorization URL
-   * @returns Authorization URL
-   */
-  public generateAuthorizationUrl(
-    options: GenerateAuthorizationUrlOptions
-  ): string {
-    if (!options.clientId) {
-      throw AmazonErrorUtil.createError(
-        'Client ID is required to generate authorization URL',
-        AmazonErrorCode.INVALID_INPUT
-      );
-    }
-    
-    if (!options.redirectUri) {
-      throw AmazonErrorUtil.createError(
-        'Redirect URI is required to generate authorization URL',
-        AmazonErrorCode.INVALID_INPUT
-      );
-    }
-    
-    // Default scopes if not provided
-    const scopes = options.scopes || [
-      'sellingpartnerapi::notifications',
-      'sellingpartnerapi::orders',
-      'sellingpartnerapi::finances',
-      'sellingpartnerapi::listings',
-      'sellingpartnerapi::catalog',
-      'sellingpartnerapi::reports'
-    ];
-    
-    // Determine host based on environment
-    const host = options.environment === 'SANDBOX' 
-      ? 'https://sellercentral-sandbox.amazon.com' 
-      : 'https://sellercentral.amazon.com';
-    
-    // Build URL with query parameters
-    const url = new URL(`${host}/apps/authorize/consent`);
-    url.searchParams.append('application_id', options.clientId);
-    url.searchParams.append('redirect_uri', options.redirectUri);
-    url.searchParams.append('version', '2.0');
-    
-    // Add state if provided
-    if (options.state) {
-      url.searchParams.append('state', options.state);
-    }
-    
-    // Add scopes
-    if (scopes.length > 0) {
-      url.searchParams.append('scope', scopes.join(' '));
-    }
-    
-    // Enable delegated access if requested
-    if (options.enableDelegatedAccess) {
-      url.searchParams.append('delegated_access', 'true');
-    }
-    
-    return url.toString();
-  }
-  
-  /**
-   * Get audit log for a user's API access
-   * @param accessToken Access token for the user
-   * @param startDate Start date for the audit log (ISO8601 format)
-   * @param endDate End date for the audit log (ISO8601 format)
-   * @returns Audit log entries
-   */
-  public async getAuditLog(
-    accessToken: string,
-    startDate: string,
-    endDate: string
-  ): Promise<ApiResponse<{
-    entries: Array<{
-      timestamp: string;
-      userId: string;
-      action: string;
-      resource: string;
-      ipAddress: string;
-      userAgent: string;
-    }>;
-  }>> {
-    if (!accessToken) {
-      throw AmazonErrorUtil.createError(
-        'Access token is required to get audit log',
-        AmazonErrorCode.INVALID_INPUT
-      );
-    }
-    
-    try {
-      return await this.makeRequest<any>({
-        method: 'GET',
-        path: '/audit-log',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
-        },
-        params: {
-          startDate,
-          endDate
-        }
-      });
-    } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(
-        error,
-        `${this.moduleName}.getAuditLog`
-      );
-    }
-  }
-  
-  /**
-   * Manage token lifecycle, including refreshing when needed
-   * @param refreshToken Refresh token to use
-   * @param clientId Client ID
-   * @param clientSecret Client secret
-   * @param currentAccessToken Current access token (optional)
-   * @param tokenExpiry Token expiry timestamp (optional)
-   * @returns New token data
-   */
-  public async manageTokenLifecycle(
-    refreshToken: string,
-    clientId: string,
-    clientSecret: string,
-    currentAccessToken?: string,
-    tokenExpiry?: number
-  ): Promise<TokenData> {
-    // Check if current token is still valid
-    if (currentAccessToken && tokenExpiry) {
-      const currentTime = Math.floor(Date.now() / 1000);
-      const bufferTime = 300; // 5 minutes buffer
+      const authResponse = await this.getAuthorizationScopes(scopes);
       
-      // Token is still valid and not about to expire
-      if (tokenExpiry > currentTime + bufferTime) {
-        return {
-          access_token: currentAccessToken,
-          refresh_token: refreshToken,
-          token_type: 'bearer',
-          expires_in: tokenExpiry - currentTime
-        };
-      }
+      // Only return true if all requested scopes are authorized
+      return authResponse.scopesAuthorizations.every(
+        scopeAuth => scopeAuth.sellingPartnerAuthorized
+      );
+    } catch (error) {
+      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.checkScopesAuthorization`);
     }
-    
-    // Token needs to be refreshed
-    const response = await this.refreshAccessToken({
-      refreshToken,
-      clientId,
-      clientSecret
-    });
-    
-    return response.data;
   }
   
   /**
-   * Create a delegated seller access authorization
-   * @param accessToken Primary seller's access token
-   * @param delegatedSellerId The seller ID to delegate access to
-   * @param scopes List of scopes to delegate
-   * @returns Delegated access token data
+   * Get all authorization codes (handles pagination)
+   * @param params Parameters to filter authorization codes
+   * @param maxPages Maximum number of pages to retrieve (default: 10)
+   * @returns All authorization codes matching the criteria
    */
-  public async createDelegatedAccess(
-    accessToken: string,
-    delegatedSellerId: string,
-    scopes: AuthScope[]
-  ): Promise<ApiResponse<{
-    delegationId: string;
-    delegatedScopes: AuthScope[];
-    validUntil: string;
-  }>> {
-    if (!accessToken) {
-      throw AmazonErrorUtil.createError(
-        'Access token is required to create delegated access',
-        AmazonErrorCode.INVALID_INPUT
-      );
-    }
+  public async getAllAuthorizationCodes(
+    params: GetAuthorizationCodeParams = {},
+    maxPages: number = 10
+  ): Promise<AuthorizationCode[]> {
+    let currentPage = 1;
+    let nextToken: string | undefined = undefined;
+    const allCodes: AuthorizationCode[] = [];
     
-    if (!delegatedSellerId) {
-      throw AmazonErrorUtil.createError(
-        'Delegated seller ID is required to create delegated access',
-        AmazonErrorCode.INVALID_INPUT
-      );
-    }
-    
-    if (!scopes || scopes.length === 0) {
-      throw AmazonErrorUtil.createError(
-        'At least one scope is required to create delegated access',
-        AmazonErrorCode.INVALID_INPUT
-      );
-    }
-    
-    try {
-      return await this.makeRequest<any>({
-        method: 'POST',
-        path: '/delegations',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
-        },
-        data: {
-          delegatedSellerId,
-          scopes
-        }
+    do {
+      // Get a page of authorization codes
+      const response = await this.getAuthorizationCodes({
+        ...params,
+        nextToken
       });
-    } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(
-        error,
-        `${this.moduleName}.createDelegatedAccess`
-      );
-    }
+      
+      // Add codes to our collection
+      if (response.items && response.items.length > 0) {
+        allCodes.push(...response.items);
+      }
+      
+      // Get next token for pagination
+      nextToken = response.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the max pages or there are no more pages
+    } while (nextToken && currentPage <= maxPages);
+    
+    return allCodes;
   }
 }
+
+export default AuthorizationModule;

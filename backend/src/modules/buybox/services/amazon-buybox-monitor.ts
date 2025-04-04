@@ -66,10 +66,10 @@ export class AmazonBuyBoxMonitor extends BaseBuyBoxMonitor {
       let hasPricingOpportunity = false;
       
       // Find our own seller among competitors
-      const ourSellerData = competitors.find(comp => comp.isCurrentBuyBoxWinner);
+      const ourSellerData = competitors.find((comp: any) => comp.isCurrentBuyBoxWinner);
       
       // Find current Buy Box winner
-      const buyBoxWinner = competitors.find(comp => comp.isCurrentBuyBoxWinner);
+      const buyBoxWinner = competitors.find((comp: any) => comp.isCurrentBuyBoxWinner);
       
       if (buyBoxWinner) {
         buyBoxPrice = buyBoxWinner.price;
@@ -116,6 +116,7 @@ export class AmazonBuyBoxMonitor extends BaseBuyBoxMonitor {
       
       return snapshot;
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error(`Failed to check Buy Box status for ${marketplaceProductId}`, error);
       
       // Return a fallback snapshot with error status
@@ -188,7 +189,7 @@ export class AmazonBuyBoxMonitor extends BaseBuyBoxMonitor {
       
       // In a real implementation, we would parse API response data
       // const offers = await amazonAdapter.getProductOffers(marketplaceProductId);
-      // return offers.map(offer => ({
+      // return offers.map((offer: any) => ({
       //   name: offer.sellerName,
       //   isCurrentBuyBoxWinner: offer.isBuyBoxWinner,
       //   price: offer.price,
@@ -202,6 +203,7 @@ export class AmazonBuyBoxMonitor extends BaseBuyBoxMonitor {
       //   stockStatus: offer.stockStatus
       // }));
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error(`Failed to get competitors for ${marketplaceProductId}`, error);
       return [];
     }
@@ -229,8 +231,7 @@ export class AmazonBuyBoxMonitor extends BaseBuyBoxMonitor {
         }
         
         // Find next cheapest FBA competitor
-        const fbaCompetitors = snapshot.competitors.filter(
-          comp => comp.fulfillmentType === 'FBA' && comp.name !== 'Your Store'
+        const fbaCompetitors = snapshot.competitors.filter((comp: any) => comp.fulfillmentType === 'FBA' && comp.name !== 'Your Store'
         );
         
         if (fbaCompetitors.length > 0) {
@@ -259,12 +260,11 @@ export class AmazonBuyBoxMonitor extends BaseBuyBoxMonitor {
           snapshot.buyBoxPrice !== undefined) {
         
         // Check if we have FBA
-        const ourFulfillment = snapshot.competitors.find(
-          comp => comp.name === 'Your Store'
+        const ourFulfillment = snapshot.competitors.find((comp: any) => comp.name === 'Your Store'
         )?.fulfillmentType || 'FBM';
         
         // Find the Buy Box winner
-        const buyBoxWinner = snapshot.competitors.find(comp => comp.isCurrentBuyBoxWinner);
+        const buyBoxWinner = snapshot.competitors.find((comp: any) => comp.isCurrentBuyBoxWinner);
         
         if (buyBoxWinner) {
           // If Buy Box winner uses FBA and we don't, we need a bigger discount
@@ -289,6 +289,7 @@ export class AmazonBuyBoxMonitor extends BaseBuyBoxMonitor {
         reason: 'General pricing suggestion based on product base price.'
       };
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error(`Failed to calculate suggested price for ${product.sku}`, error);
       
       // Fallback suggestion
@@ -326,13 +327,13 @@ export class AmazonBuyBoxMonitor extends BaseBuyBoxMonitor {
       if (result.success) {
         return { success: true, message: 'Price updated successfully on Amazon' };
       } else {
-        const failureReason = result.data.failed.find(
-          f => f.sku === marketplaceProductId
+        const failureReason = result.data.failed.find((f: any) => f.sku === marketplaceProductId
         )?.reason || 'Unknown error';
         
         return { success: false, message: `Failed to update price: ${failureReason}` };
       }
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error(`Failed to update price for ${marketplaceProductId}`, error);
       return { 
         success: false, 

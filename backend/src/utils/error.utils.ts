@@ -629,7 +629,7 @@ export function wrapError(
     const validationErrors: Record<string, string[]> = {};
     
     // Extract validation error messages
-    Object.keys(error.errors).forEach(field => {
+    Object.keys(error.errors).forEach((field: any) => {
       const fieldError = error.errors[field];
       validationErrors[field] = [fieldError.message];
     });

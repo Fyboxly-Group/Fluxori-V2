@@ -12,7 +12,7 @@ describe('Activity Model', () => {
     testActivity = new Activity({
       description: 'User updated task status',
       entityType: 'task',
-      entityId: testTaskId,
+      entityId: new mongoose.Types.ObjectId( testTaskId),
       action: 'update',
       status: 'completed',
       userId: testUserId,
@@ -159,7 +159,7 @@ describe('Activity Model', () => {
       entityType: 'system',
       action: 'other',
       status: 'completed',
-      userId: testUserId,
+      userId: new mongoose.Types.ObjectId( testUserId),
     });
     
     // Should not throw error about missing entityId

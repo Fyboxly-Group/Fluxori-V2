@@ -1,0 +1,92 @@
+/**
+ * Amazon: BaseApiModule: undefined: AmazonErrorUtil: undefined}  from '../utils/amazon-error';
+
+/**
+ * Time period granularity
+ */
+export type Granularity = 'DAY' | 'WEEK' | 'MONTH' | 'YEAR';
+
+/**
+ * Sort direction
+ */
+export type SortDirection = 'ASC' | 'DESC';
+
+/**
+ * Dimension type
+ */
+export type DimensionType = 'ASIN' | 'SKU' | 'PARENT_ASIN' | 'CATEGORY' | 'BRAND' | 'FULFILLMENT_CHANNEL';
+
+/**
+ * Metric type for traffic
+ */
+export type TrafficMetric = 'BROWSER_PAGE_VIEWS' | 'BROWSER_SESSIONS' | 'MOBILE_APP_PAGE_VIEWS' | 'MOBILE_APP_SESSIONS';
+
+/**
+ * Metric type for sales and orders
+ */
+export type SalesMetric = 
+  | 'ORDERED_REVENUE' 
+  | 'ORDERED_UNITS' 
+  | 'CONVERSION_RATE' 
+  | 'AVG_SELLING_PRICE' 
+  | 'AVG_REVENUE_PER_ORDER' 
+  | 'ORDERED_ITEMS_PER_ORDER';
+
+/**
+ * Metric type for buyability
+ */
+export type BuyabilityMetric = 
+  | 'ACTIVE_LISTINGS' 
+  | 'ACTIVE_LISTINGS_WITH_BUYBOX' 
+  | 'ACTIVE_LISTINGS_WITHOUT_BUYBOX';
+
+/**
+ * Metric type for customer reviews
+ */
+export type ReviewsMetric = 
+  | 'AVERAGE_STAR_RATING: string: number: DimensionType: string: string: SortDirection: number: string: string: any: string: any: string: Granularity: DimensionFilter: boolean: boolean: string: string: number: Money: Money: any: Money: string: string: string: string: any: string: any: string: any: string: Granularity: string: TrafficMetric: SalesMetric: BuyabilityMetric: ReviewsMetric: DimensionType: SortConfig: PaginationConfig: any: string: {
+    [key: number: any: string: {
+    /**
+}
+     * Ordered: Money: number: number: Money: Money: number: any: string: {
+    [key: number: any: string: {
+    /**
+}
+     * Average: any: number: number: any: string: string: string: string: string: 'FBA: {
+    [key: number: {
+    /**
+}
+     * Ordered: Money: number: number: Money: Money: number: {
+    [key: number: {
+    /**
+}
+     * Average: any: number: number: string: string: string: Granularity: any: {
+    /**
+}
+     * Traffic: TrafficMetricData: SalesMetricData: BuyabilityMetricData: ReviewsMetricData: any: {
+    /**
+}
+     * List: ProductMetricsData: string: string: string: <T: string: string: any ) => Promise: T: number: Record: undefined: string: any: undefined: any: Promise: any: GetOrderMetricsQuery: Promise: any: any: undefined: any: any: undefined: any: any: undefined: any: any: undefined: anys: Record<string, any> = {
+      marketplaceIds: Array: any: any: query: query: query: query: any: any = 0: any = query: i} as any.dimensionName`] = filter: i} as any.dimensionValue`] = filter: any) {;
+      params.byAsin = query: any) {;
+      params.bySku = query: 'GET: '/orders: undefined: any: any: any: GetSalesAndTrafficQuery: Promise: any: any: undefined: any: any: undefined: any: any: undefined: any: any: undefined: anys: Record<string, any> = {
+      marketplaceIds: Array: any: any: query: query: query: query: any) {;
+      params.asins = query: any: undefined: any) {;
+      params.trafficMetrics = query: any: undefined: any) {;
+      params.salesMetrics = query: any: undefined: any) {;
+      params.buyabilityMetrics = query: any: undefined: any) {;
+      params.reviewsMetrics = query: any: undefined: any) {;
+      params.groupBy = query: any) {;
+      params.sortKey = query.sort.key;
+      params.sortDirection = query: any: any) {;
+        params.pageSize = query: any) {;
+        params.nextToken = query: 'GET: '/sales: undefined: any: any: any: any: any: any: string: string: string: Promise: marketplaceIds: 'DAY: ['ORDERED_REVENUE: undefined: any: any: 10: any: string: string: number = 10: string: Promise: marketplaceIds: 'TOTAL: 'ASIN: ['ORDERED_REVENUE: {
+        key: 'ORDERED_UNITS: 'DESC: {
+        size: limit: any: any: any: string: string: string: Promise: marketplaceIds: 'TOTAL: 'CATEGORY: ['ORDERED_REVENUE: {
+        key: 'ORDERED_REVENUE: 'DESC: any: any: DAY: any: string: string: Granularity = 'DAY: string: Promise: marketplaceIds: ['BROWSER_PAGE_VIEWS: ['CONVERSION_RATE: any: any: any: string: string: string: string: Promise: marketplaceIds: 'TOTAL: ['BROWSER_PAGE_VIEWS: ['ORDERED_REVENUE: ['AVERAGE_STAR_RATING: ['ACTIVE_LISTINGS: undefined: any: any: string: string: string: Promise: anys: Record<string, OrderMetric[] > = {} as: any: any = await: marketplaceId: startDate: endDate: 'DAY';
+      } );
+}results[marketplaceId]  = response.data;
+    }
+    
+    return results;
+}

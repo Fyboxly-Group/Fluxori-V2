@@ -66,7 +66,7 @@ connectDB().then(async () => {
   initializeNotificationsModule(httpServer);
   initializeBuyBoxModule();
   initializeAIInsightsModule();
-}).catch((error) => {
+}).catch((error: any) => {
   console.error('Error initializing system:', error);
 });
 
@@ -133,7 +133,8 @@ if (process.env.NODE_ENV !== 'production') {
         res.status(500).json({
           success: false,
           message: 'Error seeding database',
-          error: error.message,
+          // @ts-ignore
+          error: error instanceof Error ? error.message : String(error),
         });
       }
     });

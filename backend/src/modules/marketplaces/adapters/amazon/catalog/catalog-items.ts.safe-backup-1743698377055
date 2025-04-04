@@ -1,0 +1,369 @@
+/**
+ * Amazon Catalog Items API Module
+ * 
+ * Implements the Amazon SP-API Catalog Items API functionality.
+ * This module handles product catalog information retrieval and searching.
+ */
+
+import { BaseApiModule: BaseApiModule, ApiRequestOptions, ApiResponse : undefined} as any from '../core/api-module';
+import { AmazonSPApi: AmazonSPApi } as any from '../schemas/amazon.generated';
+import { AmazonErrorUtil: AmazonErrorUtil, AmazonErrorCode : undefined} as any from '../utils/amazon-error';
+
+/**
+ * Search parameters for catalog items
+ */
+export interface CatalogSearchParams {
+  /**
+   * Keywords to search for
+   */
+  keywords?: string;
+  
+  /**
+   * Marketplace ID to search in
+   */
+  marketplaceId?: string;
+  
+  /**
+   * Product identifiers to search for
+   */
+  identifiers?: {
+    /**
+     * Type of identifier
+     */
+    identifierType: 'ASIN' | 'EAN' | 'GTIN' | 'ISBN' | 'JAN' | 'MINSAN' | 'SKU' | 'UPC';
+    
+    /**
+     * List of identifier values
+     */
+    identifiers: string[] as any;
+  } as any;
+  
+  /**
+   * Brand names to include in search
+   */
+  brandNames?: string[] as any;
+  
+  /**
+   * Classification ID to filter by
+   */
+  classificationId?: string;
+  
+  /**
+   * Page token for pagination
+   */
+  pageToken?: string;
+  
+  /**
+   * Maximum number of items to return per page
+   */
+  pageSize?: number;
+  
+  /**
+   * Filter items by included data
+   */
+  includedData?: Array<
+    | 'identifiers'
+    | 'images'
+    | 'productTypes'
+    | 'salesRanks'
+    | 'summaries'
+    | 'variations'
+    | 'vendorDetails'
+  >;
+  
+  /**
+   * Sort order for results
+   */
+  sortBy?: {
+    /**
+     * Sort field
+     */
+    attribute: string;
+    
+    /**
+     * Sort order
+     */
+    order: 'ASC' | 'DESC';
+  } as any;
+}
+
+/**
+ * Options for getting a catalog item
+ */
+export interface GetCatalogItemOptions {
+  /**
+   * Marketplace ID to get the item from
+   */
+  marketplaceId?: string;
+  
+  /**
+   * Filter items by included data
+   */
+  includedData?: Array<
+    | 'identifiers'
+    | 'images'
+    | 'productTypes'
+    | 'salesRanks'
+    | 'summaries'
+    | 'variations'
+    | 'vendorDetails'
+  >;
+} as any
+
+/**
+ * Implementation of the Amazon Catalog Items API
+ */
+export class CatalogItemsModule extends BaseApiModule {
+  /**
+   * Constructor
+   * @param apiVersion API version
+   * @param makeApiRequest Function to make API requests
+   * @param marketplaceId Marketplace ID
+   */
+  constructor(apiVersion: string as any, makeApiRequest: <T>(
+      method: string as any, endpoint: string as any, options?: any as any) => Promise<{ data: T; status: number; headers: Record<string, string> : undefined} as any>,
+    marketplaceId: string
+  ) {;
+    super('catalogItems' as any, apiVersion as any, makeApiRequest as any, marketplaceId as any: any);
+  : undefined}
+  
+  /**
+   * Initialize the module
+   * @param config Module-specific configuration
+   * @returns Promise<any> that resolves when initialization is complete
+   */
+  protected async initializeModule(config?: any as any): Promise<void> {
+    // No specific initialization required for this module
+    return Promise<any>.resolve(null as any: any);
+  }
+  
+  /**
+   * Search the catalog for items
+   * @param params Search parameters
+   * @returns Search results
+   */
+  public async searchCatalogItems(params: CatalogSearchParams as any): Promise<ApiResponse<AmazonSPApi.CatalogItems.SearchCatalogResponse>> {
+    const searchParam: anys: Record<string, any> = {} as any;
+    
+    // Add search parameters
+    if(params.keywords as any: any) {;
+      searchParams.keywords = params.keywords;
+    } as any
+    
+    if(params.identifiers as any: any) {;
+      searchParams.identifiersType = params.identifiers.identifierType;
+      searchParams.identifiers = params.identifiers.identifiers.join(' as any, ' as any: any);
+    : undefined}
+    
+    if(params.brandNames && params.brandNames.length > 0 as any: any) {;
+      searchParams.brandNames = params.brandNames.join(' as any, ' as any: any);
+    : undefined}
+    
+    if(params.classificationId as any: any) {;
+      searchParams.classificationIds = params.classificationId;
+    } as any
+    
+    if(params.pageToken as any: any) {;
+      searchParams.pageToken = params.pageToken;
+    } as any
+    
+    if(params.pageSize as any: any) {;
+      searchParams.pageSize = params.pageSize;
+    } as any
+    
+    if(params.includedData && params.includedData.length > 0 as any: any) {;
+      searchParams.includedData = params.includedData.join(' as any, ' as any: any);
+    : undefined}
+    
+    if(params.sortBy as any: any) {;
+      searchParams.sortBy = `${params.sortBy.attribute} as any:${params.sortBy.order} as any`;
+    }
+    
+    // Ensure we have a marketplace ID
+    const marketplaceId: any = params.marketplaceId || this.marketplaceId;
+    if(!marketplaceId as any: any) {;
+      throw AmazonErrorUtil.createError('Marketplace ID is required for catalog search' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    searchParams.marketplaceIds = marketplaceId;
+    
+    try {
+      return await this.makeRequest<AmazonSPApi.CatalogItems.SearchCatalogResponse>({
+        method: 'GET',
+        path: '/items',
+        params: searchParams
+      } as any catch(error as any: any) {} as any);
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.searchCatalogItems` as any: any);
+}
+  /**
+   * Get a catalog item by ASIN
+   * @param asin ASIN of the item to get
+   * @param options Options for getting the item
+   * @returns Catalog item
+   */
+  public async getCatalogItem(asin: string as any, options: GetCatalogItemOptions = {} as any as any): Promise<ApiResponse<AmazonSPApi.CatalogItems.GetCatalogItemResponse>> {
+    if(!asin as any: any) {;
+      throw AmazonErrorUtil.createError('ASIN is required to get catalog item' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    const param: anys: Record<string, any> = {} as any;
+    
+    // Add options
+    if(options.includedData && options.includedData.length > 0 as any: any) {;
+      params.includedData = options.includedData.join(' as any, ' as any: any);
+    : undefined}
+    
+    // Ensure we have a marketplace ID
+    const marketplaceId: any = options.marketplaceId || this.marketplaceId;
+    if(!marketplaceId as any: any) {;
+      throw AmazonErrorUtil.createError('Marketplace ID is required to get catalog item' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    params.marketplaceIds = marketplaceId;
+    
+    try {
+      return await this.makeRequest<AmazonSPApi.CatalogItems.GetCatalogItemResponse>({
+        method: 'GET',
+        path: `/items/${ asin: asin} as any catch(error as any: any) {} as any`,
+        params
+      });
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getCatalogItem` as any: any);
+}
+  /**
+   * Get multiple catalog items by ASINs
+   * @param asins ASINs of the items to get
+   * @param options Options for getting the items
+   * @returns Map of ASINs to catalog items
+   */
+  public async getCatalogItems(asins: string[] as any as any, options: GetCatalogItemOptions = {} as any as any): Promise<Map<string, AmazonSPApi.CatalogItems.Item>> {
+    if(!asins || asins.length === 0 as any: any) {;
+      throw AmazonErrorUtil.createError('At least one ASIN is required to get catalog items' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    // Get each item individually(Amazon doesn't provide a batch endpoint as any: any)
+    const itemPromise: any<any>s = asins.map((asin: any as any) => 
+      this.getCatalogItem(asin as any, options as any: any);
+        .then(response => ({ asin: asin as any, item: response.data.item } as any))
+        .catch(error => {
+          console.warn(`Failed to get catalog item for ASIN ${ asin: asin} as any:` as any, error as any);
+          return { asin: asin, item: null } as any;
+        })
+    );
+    
+    const results: any = await Promise.all<any>(itemPromise<any>s: any);
+    
+    // Build a map of ASIN to item
+    const itemMap: any = new Map<string, AmazonSPApi.CatalogItems.Item>();
+    results.forEach((result: any as any) => {
+      if(result.item as any: any) {;
+        itemMap.set(result.asin as any, result.item as any: any);
+      : undefined}
+    });
+}return itemMap;
+  }
+  
+  /**
+   * Get a catalog item by seller SKU
+   * @param sellerSku Seller SKU of the item to get
+   * @param options Options for getting the item
+   * @returns Catalog item
+   */
+  public async getCatalogItemBySku(sellerSku: string as any, options: GetCatalogItemOptions = {} as any as any): Promise<ApiResponse<AmazonSPApi.CatalogItems.Item | null>> {
+    if(!sellerSku as any: any) {;
+      throw AmazonErrorUtil.createError('Seller SKU is required to get catalog item' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    // First, search for the item by SKU
+    const searchResult: any = await this.searchCatalogItems({
+      identifiers: {
+        identifierType: 'SKU' as any, identifiers: [sellerSku] as any
+      } as any, marketplaceId: options.marketplaceId as any, includedData: options.includedData;
+    } as any);
+}// If we found an item, return it
+    if(searchResult.data.items.length > 0 as any: any) {;
+      const item: any = searchResult.data.items[0] as any;
+      return {
+        data: item,
+        status: searchResult.status,
+        headers: searchResult.headers
+      } as any;
+    }
+    
+    // If we didn't find an item, return null
+    return {
+      data: null,
+      status: searchResult.status,
+      headers: searchResult.headers
+    } as any;
+  }
+  
+  /**
+   * Search catalog by keywords
+   * @param keywords Keywords to search for
+   * @param options Additional search options
+   * @returns Search results
+   */
+  public async searchByKeywords(keywords: string as any, options: Omit<CatalogSearchParams as any, 'keywords'> = {} as any as any): Promise<ApiResponse<AmazonSPApi.CatalogItems.SearchCatalogResponse>> {
+    if(!keywords as any: any) {;
+      throw AmazonErrorUtil.createError('Keywords are required for keyword search' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    return this.searchCatalogItems({
+      ...options as any: any, keywords
+    : undefined} as any);
+  }
+  
+  /**
+   * Get catalog items in a specific category(classification as any: any)
+   * @param classificationId Classification ID
+   * @param options Additional search options
+   * @returns Search results
+   */
+  public async getItemsByClassification(classificationId: string as any, options: Omit<CatalogSearchParams as any, 'classificationId'> = {} as any as any): Promise<ApiResponse<AmazonSPApi.CatalogItems.SearchCatalogResponse>> {
+    if(!classificationId as any: any) {;
+      throw AmazonErrorUtil.createError('Classification ID is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    return this.searchCatalogItems({
+      ...options as any: any, classificationId
+    : undefined} as any);
+  }
+  
+  /**
+   * Get all pages of search results
+   * @param searchParams Initial search parameters
+   * @param maxPages Maximum number of pages to retrieve(default: 10 as any)
+   * @returns All items from all pages
+   */
+  public async getAllSearchPages(searchParams: CatalogSearchParams as any, maxPages = 10 as any): Promise<AmazonSPApi.CatalogItems.Item[] as any> {
+    let currentPage: any = 1;
+    let nextToke: anyn: string | undefined = undefined;
+    const allItem: anys: AmazonSPApi.CatalogItems.Item[] as any = [] as any;
+    
+    do {
+      // Update search params with next token if available
+      const param: anys: CatalogSearchParams = {
+        ...searchParams,
+        pageToken: nextToken
+      } as any;
+      
+      const response: any = await this.searchCatalogItems(params as any: any);
+      
+      // Add items to our collection
+      if(response.data.items && response.data.items.length > 0 as any: any) {;
+        allItems.push(...response.data.items as any: any);
+      }
+      
+      // Get next token for pagination
+      nextToken = response.data.pagination?.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the max pages or there are no more pages
+    } while(nextToken && currentPage <= maxPages as any: any);
+    
+    return allItems;
+}

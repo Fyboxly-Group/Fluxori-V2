@@ -51,7 +51,7 @@ class SecretManagerService {
       await this.storeInSecretManager(credentialId, credentials);
       return credentialId;
     } else {
-      // If not using Secret Manager, encrypt and return the encrypted string
+      // If not using Secret Manager, encrypt and return the encrypted string;
       return this.encryptCredentials(credentials);
     }
   }
@@ -124,6 +124,7 @@ class SecretManagerService {
         },
       });
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error('Error storing credentials in Secret Manager:', error);
       throw new Error('Failed to securely store credentials');
     }
@@ -156,6 +157,7 @@ class SecretManagerService {
       const credentials = JSON.parse(version.payload.data.toString()) as MarketplaceCredentials;
       return credentials;
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error('Error retrieving credentials from Secret Manager:', error);
       throw new Error('Failed to retrieve secure credentials');
     }
@@ -179,6 +181,7 @@ class SecretManagerService {
       // Delete the secret and all its versions
       await this.secretClient.deleteSecret({ name });
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error('Error deleting secret from Secret Manager:', error);
       throw new Error('Failed to delete secure credentials');
     }
@@ -237,6 +240,7 @@ class SecretManagerService {
       // Parse the JSON
       return JSON.parse(decrypted.toString('utf8'));
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error('Error decrypting credentials:', error);
       throw new Error('Failed to decrypt credentials');
     }

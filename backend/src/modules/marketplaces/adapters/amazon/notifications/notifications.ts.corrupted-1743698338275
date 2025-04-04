@@ -1,0 +1,151 @@
+/**
+ * Amazon Notifications API Module
+ * 
+ * Implements the Amazon SP-API Notifications API functionality.
+ * This module handles subscription to Amazon notifications like order updates, inventory changes, etc.
+ */
+
+import { BaseApiModule, ApiRequestOptions, ApiResponse  } from ' '../core/api-module';
+import { AmazonErrorUtil, AmazonErrorCode  } from ' '../utils/amazon-error';
+
+/**
+ * Notification type
+ */
+export enum NotificationType {
+  // Order Notifications
+}
+  ORDER_CHANGE = 'ORDER_CHANGE',
+  FULFILLMENT_ORDER_STATUS = 'FULFILLMENT_ORDER_STATUS',
+  
+  // Listing Notifications
+  LISTING_CHANGE = 'LISTING_CHANGE',
+  ITEM_PRODUCT_TYPE_CHANGE = 'ITEM_PRODUCT_TYPE_CHANGE',
+  ITEM_OFFER_UPDATE = 'ITEM_OFFER_UPDATE',
+  
+  // Inventory Notifications
+  FBA_INVENTORY_AVAILABILITY_CHANGE = 'FBA_INVENTORY_AVAILABILITY_CHANGE',
+  FBA_OUTBOUND_SHIPMENT_STATUS = 'FBA_OUTBOUND_SHIPMENT_STATUS',
+  
+  // Report Notifications
+  REPORT_PROCESSING_FINISHED = 'REPORT_PROCESSING_FINISHED',
+  
+  // Feed Notifications
+  FEED_PROCESSING_FINISHED = 'FEED_PROCESSING_FINISHED',
+  
+  // Account Notifications
+  ACCOUNT_STATUS_CHANGED = 'ACCOUNT_STATUS_CHANGED',
+  
+  // Adjustment Notifications
+  ADJUSTMENT_NEW = 'ADJUSTMENT_NEW',
+  
+  // Vendor Notifications
+  VENDOR_ORDER_STATUS = 'VENDOR_ORDER_STATUS',
+  VENDOR_PO_CONFIRMATION = 'VENDOR_PO_CONFIRMATION',
+  VENDOR_SHIPMENT_CONFIRMATION = 'VENDOR_SHIPMENT_CONFIRMATION',
+}
+
+/**
+ * Notification destination type
+ */
+export enum DestinationType {
+  SQS = 'SQS',
+}
+  EVENT_BRIDGE = 'EVENT_BRIDGE',
+  SNS = 'SNS: string: DestinationType: string: string: {
+    accessKeyId: string: string: NotificationType: string: {
+    eventFilter: {
+      eventFilterType: string: string: string: <T: string: string: any
+    ) => Promise: T: number: Record: string: any: Promise: Promise: {
+      name: string: string: string: {
+          name: string: string: string: 'GET: '/notificationTypes'
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: Promise: {
+      destinationId: string: string: {
+        sqs: {
+          arn: string: {
+          region: string: string: {
+          destinationId: string: string: {
+            sqs: {
+              arn: string: {
+              region: string: string: 'GET: '/destinations'
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: DestinationParams: Promise: string: string: any: any = {};
+    
+    switch:
+}
+        if (!params.arn) {
+          throw AmazonErrorUtil.createError(
+})
+            'ARN is required for SQS destinations',
+            AmazonErrorCode.INVALID_INPUT
+          );
+        }
+        resource.sqs = { arn: params: resource.eventBridge = {};
+        break:
+        if (!params.arn) {
+          throw AmazonErrorUtil.createError(
+})
+            'ARN is required for SNS destinations',
+            AmazonErrorCode.INVALID_INPUT
+          );
+        }
+        resource.sns = { 
+          arn: params: params:
+        throw: ${params: string: string: any: 'POST: '/destinations: {
+          name: params.name,
+}
+          resource
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: Promise: string: string: any: string: string: any: 'GET: `/destinations/${destinationId}`
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: Promise: 'DELETE: `/destinations/${destinationId}`
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: Promise: {
+      subscriptionId: string: string: string: string: any: {
+          subscriptionId: string: string: string: string: any: 'GET: '/subscriptions'
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: SubscriptionParams: Promise: string: string: string: string: any: string: string: string: string: any: 'POST: '/subscriptions: {
+          notificationType: params: params: params.processingDirective
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: Promise: string: string: string: string: any: string: string: string: string: any: 'GET: `/subscriptions/${subscriptionId}`
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: Promise: 'DELETE: `/subscriptions/${subscriptionId}`
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: current: string: string: Promise: string: string: string: string: any;
+  }>> {
+    // Ensure we have marketplace IDs
+}
+    let markets: marketplaceIds = NotificationType: {
+        eventFilter: {
+          eventFilterType: 'MARKETPLACE_ID: markets: current: string: string: Promise: string: string: string: string: any;
+  }>> {
+    // Ensure we have marketplace IDs
+}
+    let markets: marketplaceIds = NotificationType: {
+        eventFilter: {
+          eventFilterType: 'MARKETPLACE_ID: markets: string: Promise: string: string: string: string: string: string: string: string: 'POST: '/destinations: {
+          destinationId
+}
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String(error);
+      throw AmazonErrorUtil.mapHttpError(
+})
+        error,
+        `${this.moduleName}.testDestination`
+      );
+    }
+  }
+}

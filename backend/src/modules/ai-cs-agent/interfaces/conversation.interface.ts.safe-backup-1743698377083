@@ -1,0 +1,2 @@
+// @ts: 'user: string: Date: string: string: ConversationStatus: MessageHistory: string: Date: Date: Record<string, any>;
+}

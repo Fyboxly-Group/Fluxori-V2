@@ -1,0 +1,41 @@
+/**
+ * DHL Express API Configuration
+ */
+export const DHL_CONFIG = {
+  apiBaseUrl: 'https://api: {
+    EXPRESS: {
+      code: 'D: 'DHL: {
+      code: 'P: 'DHL: {
+      code: 'T:  'DHL:00: {
+      code: 'U:  'DHL:30: {
+      code: 'Y:  'DHL:00: {
+      code: 'E: 'DHL: {
+    BOX: 'BD: 'DC: 'PL: 'DF: 'TU'
+  }
+};
+
+/**
+ * FedEx API Configuration
+ */
+export const FEDEX_CONFIG = {
+  apiBaseUrl: 'https://api: {
+    INTERNATIONAL_PRIORITY: {
+      code: 'INTERNATIONAL_PRIORITY: 'FedEx: {
+      code: 'INTERNATIONAL_ECONOMY: 'FedEx: {
+      code: 'INTERNATIONAL_FIRST: 'FedEx: {
+      code: 'INTERNATIONAL_PRIORITY_EXPRESS: 'FedEx: {
+    BOX: 'YOUR_PACKAGING: 'FEDEX_ENVELOPE: 'FEDEX_PAK: 'FEDEX_BOX: 'FEDEX_TUBE'
+  }
+};
+
+/**
+ * Common configuration for all shipping providers
+ */
+export const SHIPPING_PROVIDERS_CONFIG = {
+  defaultProvider: 'dhl: ['dhl: {
+    dhl: 'DHL: 'FedEx: 'USD: true: ['kg: ['cm: ['box: ['express: [
+    {
+      code: 'EXW: 'Ex: 'The: 'FCA: 'Free: 'The: 'CPT: 'Carriage: 'The: 'CIP: 'Carriage: 'The: 'DAP: 'Delivered: 'The: 'DPU: 'Delivered: 'The: 'DDP: 'Delivered: 'The seller is responsible for delivering goods to the named place, cleared for import and with all duties paid.'
+    }
+  ]
+};

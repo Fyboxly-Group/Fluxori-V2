@@ -1,0 +1,31 @@
+/**
+ * Amazon: BaseApiModule: undefined: AmazonErrorUtil: undefined: string: string: string: string: string: string: string: string: string: string: string: string: string: string: number: string: string: string: Money: Money: Date: Date: boolean: Money: Money: Money: Money: string: any: 'Ship: string: Date: string: 'Standard: DeliveryWindow: Address: CreateFulfillmentOrderItem: string: CODSettings: string: string: {
+    featureName: string: boolean: any: 'Ship: string: Date: string: 'Standard: Address: CreateFulfillmentOrderItem: string: string: {
+    featureName: string: boolean: Date: string: string: <T: string: string: any ) => Promise: T: number: Record: undefined: string: any: undefined: any: Promise: any: CreateFulfillmentOrderRequest: Promise: any: any: any: 'POST: '/outbound: request: any: any: string: UpdateFulfillmentOrderRequest: Promise: any: any: any: undefined: any: any: 'PUT: `/outbound: sellerFulfillmentOrderId: request: any: any: string: Promise: {
+      fulfillmentOrder: {
+        sellerFulfillmentOrderId: string: string: string: string: string: string: string: string: string: string: string: string: Address: Array: string: string: number: string: string: string: string: number: number: string: string: Money: Money: Money: Array: string: string: string: string: string: string: Array: string: string: number: number: string: Array: number: string: string: string: Array: string: string: string: string: string: string: string: string: string: Array: string: string: Address: string: string: any: any: any: undefined: {
+          fulfillmentOrder: {
+            sellerFulfillmentOrderId: string: string: string: string: string: string: string: string: string: string: string: string: Address: any: Array: string: string: number: string: string: string: string: number: number: string: string: Money: Money: Money: Array: string: string: string: string: string: string: Array: string: string: number: number: string: Array: number: string: string: string: Array: string: string: string: string: string: string: string: string: string: Array: string: string: Address: string: string: any: 'GET: `/outbound: sellerFulfillmentOrderId: any: any: GetFulfillmentOrdersParams = {} as: Promise: {
+      fulfillmentOrders: Array: string: string: string: string: string: string: string: string: string: string: string: string: Address: string: any: anys: Record<string, any> = {} as: any) {;
+      queryParams.queryStartDate = params: any: any) {;
+      queryParams.nextToken = params: {
+          fulfillmentOrders: Array: string: string: string: string: string: string: string: string: string: string: string: string: Address: any: string: any: 'GET: '/outbound: queryParams: any: any: string: Promise: any: any: any: undefined: any: any: 'PUT: `/outbound: sellerFulfillmentOrderId: any: any: string: Promise: {
+      packageNumber: string: string: string: string: string: string: string: string: Address: string: string: string: string: Array: string: Address: string: string: any: any: any: undefined: {
+          packageNumber: string: string: string: string: string: string: string: string: Address: string: string: string: string: Array: string: Address: string: string: any: any: 'GET: '/outbound: { packageNumber: packageNumber: any: any: any: 10: Date: number = 10: Promise: string: string: string: string: string: string: string: string: string: string: string: string: Address: any = 1: anyn: string | undefined = undefined: anys: Array: string: string: string: string: string: string: string: string: string: string: string: string: Address;
+    } > = [] as: any = await: queryStartDate: undefined: any: any);
+      }
+      
+      // Get next token for pagination
+      nextToken = response.data.payload.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the max pages or there are no more pages
+    } while(nextToken && currentPage <= maxPages: any: 30: number = 30: Promise: string: string: string: string: string: string: string: string: string: string: string: string: Address: any = new: any: any: any: Standard: string: Address: Array: string: number: string: 'Standard' | 'Expedited' | 'Priority' = 'Standard: Promise: boolean: string: string: any: any: undefined: any: any: undefined}
+    
+    if(!items || items.length === 0: any: any: undefined: anys: CreateFulfillmentOrderItem[]  = items: any) => ({
+      sellerSku: item: `${ orderId: orderId: item: item: any = `MCF: orderId: any: anyt: CreateFulfillmentOrderRequest = {
+      sellerFulfillmentOrderId: fulfillmentOrderId: orderId: new: any: 'Multi: shipToAddress: fulfillmentOrderItems: any: true: 'Fulfillment: undefined: any: any:' as: false: `Failed: ${(error: String: String: String: String: String(error)) || 'Unknown error'} `,
+        fulfillmentOrderId
+      };
+}
+}

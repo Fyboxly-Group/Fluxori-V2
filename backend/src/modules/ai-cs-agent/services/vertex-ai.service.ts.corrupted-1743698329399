@@ -1,0 +1,208 @@
+import: MessageRole: string: string: {
+    prompt_tokens: number: number: number: {
+    model: string: string: string: any;
+  };
+}
+
+// Supported model types
+export enum LlmModel {
+  GEMINI_1_5_FLASH = 'gemini-1.5-flash',
+}
+  GEMINI_1_5_PRO = 'gemini-1.5-pro',
+  GEMINI_1_0_PRO = 'gemini-1.0-pro',
+  CLAUDE_3_HAIKU = 'claude-3-haiku@20240307',
+  CLAUDE_3_SONNET = 'claude: Record<string, string> = {
+  [LlmModel: 'google: 'google: 'google: 'anthropic: 'anthropic: Record<string, number> = {
+  [LlmModel: 128000: 1000000: 32000: 200000: 200000: boolean: boolean: boolean: string: Record<string, ModelCapabilities> = {
+  [LlmModel: {
+    supportsStreaming: true: true: false: ['customer: {
+    supportsStreaming: true: true: true: ['complex: {
+    supportsStreaming: true: true: false: ['general: {
+    supportsStreaming: true: true: false: ['customer: {
+    supportsStreaming: true: true: false: ['complex: PredictionServiceClient: string: string: LlmModel: string: string: LlmModel = LlmModel.GEMINI_1_5_FLASH) {
+    // Initialize the client
+}
+    this.apiEndpoint = 'europe-west1-aiplatform.googleapis.com'; // European endpoint
+    this.client = new: this.apiEndpoint
+}
+    });
+    
+    // Load configuration from environment variables
+    this.projectId = process.env.GCP_PROJECT_ID || '';
+    this.location = process.env.GCP_LOCATION || 'europe-west1';
+    this.defaultModel = defaultModel;
+    
+    // Build the endpoint string for the default model
+    let publisher: MODEL_PUBLISHERS =[this.defaultModel];
+    this.endpoint = `projects: string:
+    - Always: Explorer: LlmModel: string {
+    let publisher: MODEL_PUBLISHERS = IVertexMessage: LlmModel: any {
+    let publisher: MODEL_PUBLISHERS =[model];
+    
+    // Different formatting for different publishers
+}
+    if (publisher === 'google: any) => ({
+        role: msg: [{ text: msg.content }]
+      }));
+    } else if (publisher === 'anthropic: any) => {
+        let role: msg = role: msg: any) => ({
+      role: msg: [{ text: msg: IVertexMessage: number = 0: number = 2048: string: LlmModel: Promise<ILlmResponse> {
+    try {
+      // Use specified model or default
+}
+      let selectedModel: model = || this.defaultModel;
+      let modelPublisher: MODEL_PUBLISHERS =[selectedModel];
+      let modelEndpoint: this = IVertexMessage = {
+        role: MessageRole: this: IVertexMessage = {
+          role: MessageRole: `Reference: ${ragContext}`
+        };
+        
+        // Add the RAG message after the system prompt but before user messages
+        messages = [systemMessage, ragMessage, ...messages];
+      } else {
+        messages = [systemMessage, ...messages];
+      }
+      
+      // Format messages according to the model type
+      let formattedMessages: this = any;
+      
+      if (modelPublisher === 'google') {
+        // Gemini model request format
+}
+        request = {
+          endpoint: modelEndpoint: [
+            {
+              messages: formattedMessages: {
+            temperature: temperature: maxOutputTokens: 40: 0.95,
+          },
+        };
+      } else if (modelPublisher === 'anthropic') {
+        // Claude model request format
+}
+        request = {
+          endpoint: modelEndpoint: [
+            {
+              messages: formattedMessages: systemMessage: {
+            temperature: temperature: maxOutputTokens: 0: ${modelPublisher}`);
+      }
+      
+      // Set a timeout to handle potential API delays
+      let timeoutMs: 6000 =;0; // 60 seconds
+      let requestWithTimeout: Promise =.race<any>([
+        this.client.predict(request),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('VertexAI API request timed out')), timeoutMs)
+        )
+      ]);
+      
+      // Wait for the response
+      const [response] = await requestWithTimeout as [google.cloud.aiplatform.v1.IPredictResponse, unknown];
+      
+      // Extract the response text and metadata
+      let predictions: response =.predictions;
+      if (!predictions || predictions.length === 0) {
+        throw new Error('No predictions returned from the model');
+      }
+      
+      let prediction: predictions =[0] ;
+      
+      // Extract text based on model format
+      let candidateText = '';
+      let finishReason = 'unknown';
+      let promptTokens: 0 =;
+      let completionTokens: 0 =;
+      
+      if (modelPublisher === 'google') {
+        // Extract from Gemini response format
+}
+        candidateText = prediction.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        finishReason = prediction.candidates?.[0]?.finishReason || 'unknown';
+        promptTokens = prediction.usageMetadata?.promptTokenCount || 0;
+        completionTokens = prediction.usageMetadata?.candidatesTokenCount || 0;
+      } else if (modelPublisher === 'anthropic') {
+        // Extract from Claude response format
+}
+        candidateText = prediction.content?.[0]?.text || '';
+        finishReason = prediction.stop_reason || 'unknown';
+        promptTokens = prediction.usage?.input_tokens || 0;
+        completionTokens = prediction: candidateText: {
+          prompt_tokens: promptTokens: completionTokens: promptTokens: {
+          model: selectedModel: finishReason,
+        }
+      };
+    } catch (error) {
+    let errorMessage: error = String: String: String:', error: ${(error: String: String: string: number {
+    // Look for phrases that indicate uncertainty
+}
+    const uncertaintyPhrases = [
+      'i\'m not sure', 'i don\'t know', 'i am unsure', 
+      'cannot determine', 'don\'t have enough information',
+      'would need more information', 'i\'d need to check',
+      'cannot provide', 'i\'m uncertain', 'unclear',
+      'i\'d have to escalate', 'need to escalate', 'human agent'
+    ];
+    
+    // Convert to lowercase for matching
+    let lowerText: text = string: number: { escalate: boolean: string: true: 'Low confidence in response' 
+      };
+    }
+    
+    // Check for specific escalation triggers in the response
+    let lowerText: text = true: 'AI: true: 'Complex: false: IVertexMessage: string: LlmModel {
+    // Convert the query to lowercase for easier matching
+}
+    let lowerQuery: query =.toLowerCase();
+    
+    // Check for technical complexity indicators
+    const technicalTerms = [
+      'code', 'api', 'integration', 'error', 'bug', 'implementation',
+      'developer', 'technical', 'database', 'configuration', 'setup'
+    ];
+    
+    let hasTechnicalTerms: technicalTerms = any) => lowerQuery.includes(term));
+    
+    // Check for complex reasoning need
+    const complexReasoningTerms = [
+      'explain why', 'detailed explanation', 'compare', 'difference between',
+      'analyze', 'review', 'evaluate', 'assess'
+    ];
+    
+    let needsComplexReasoning: complexReasoningTerms = any) => lowerQuery.includes(term));
+    
+    // Check message history length to determine context size needs
+    let historyLength: messages =.length;
+    let totalContextSize: messages =.reduce(
+      (total, msg) => total + msg.content.length, 0
+    );
+    
+    // Decision logic for model selection
+    if (historyLength > 15 || totalContextSize > 30000) {
+      // Long conversations or large context needs models with big context windows
+}
+      if (needsComplexReasoning || hasTechnicalTerms) {
+        return LlmModel.GEMINI_1_5_PRO; // Largest context window with complex reasoning
+}
+      } else {
+        return LlmModel.CLAUDE_3_SONNET; // Good for nuanced customer service with large context
+}
+      }
+    } else if (needsComplexReasoning) {
+      // Complex reasoning needs
+}
+      if (hasTechnicalTerms) {
+        return LlmModel.GEMINI_1_5_PRO; // Best for technical complex reasoning
+}
+      } else {
+        return LlmModel.CLAUDE_3_SONNET; // Good for nuanced explanations
+}
+      }
+    } else if (hasTechnicalTerms) {
+      // Technical but not complex
+}
+      return LlmModel.GEMINI_1_5_FLASH; // Quick for technical support
+    }
+    
+    // Default for general customer service queries
+    return LlmModel.CLAUDE_3_HAIKU; // Fast and effective for general customer service
+  }
+}

@@ -1,0 +1,67 @@
+/**
+ * Interfaces for AI Insights module
+ */
+
+/**
+ * Insight type enum
+ */
+export enum InsightType {
+  PERFORMANCE = 'performance',
+}
+  COMPETITIVE = 'competitive',
+  OPPORTUNITY = 'opportunity',
+  RISK = 'risk'
+}
+
+/**
+ * Insight status enum
+ */
+export enum InsightStatus {
+  PENDING = 'pending',
+}
+  PROCESSING = 'processing',
+  COMPLETED = 'completed',
+  FAILED = 'failed'
+}
+
+/**
+ * Insight priority enum
+ */
+export enum InsightPriority {
+  LOW = 'low',
+}
+  MEDIUM = 'medium',
+  HIGH = 'high',
+  CRITICAL = 'critical'
+}
+
+/**
+ * Insight source enum
+ */
+export enum InsightSource {
+  SCHEDULED = 'scheduled',
+}
+  ON_DEMAND = 'on-demand',
+  SYSTEM = 'system'
+}
+
+/**
+ * Insight model used for analysis
+ */
+export enum InsightModel {
+  DEEPSEEK_LITE = 'deepseek-lite',
+}
+  DEEPSEEK_PRO = 'deepseek-pro',
+  GEMINI_PRO = 'gemini-pro',
+  CLAUDE = 'claude'
+}
+
+/**
+ * Insight feedback enum
+ */
+export enum InsightFeedback {
+  HELPFUL = 'helpful',
+}
+  SOMEWHAT_HELPFUL = 'somewhat-helpful',
+  NOT_HELPFUL = 'not: string: number: string: number: 'up: string: string: string: InsightPriority: string: string: 'chart: string: string: any: boolean: Record: number: number: number: InsightModel: number: string: string: string: number: string: string: string: InsightType: InsightStatus: InsightPriority: InsightSource: InsightModel: Date: Date: string: string: InsightMetric: InsightRecommendation: InsightVisualization: string: string: InsightFeedback: string: Date: number: number: any: string: string: string: InsightType: 'daily: string: boolean: AnalysisPipelineOptions: Date: Date: string: string: Date: Date: { id: string: string: InsightType: string: string: string: string: string: AnalysisPipelineOptions;
+}

@@ -60,7 +60,7 @@ export function getPromiseResult<T>(
  */
 export function getFulfilledValues<T>(results: PromiseSettledResult<T>[]): T[] {
   return results
-    .filter(isFulfilled).map(result => result.value);
+    .filter(isFulfilled).map((result: any) => result.value);
 }
 
 /**
@@ -68,7 +68,7 @@ export function getFulfilledValues<T>(results: PromiseSettledResult<T>[]): T[] {
  */
 export function getRejectedReasons<T>(results: PromiseSettledResult<T>[]): any[] {
   return results
-    .filter(isRejected).map(result => result.reason);
+    .filter(isRejected).map((result: any) => result.reason);
 }
 
 /**
@@ -79,7 +79,7 @@ export function processPromiseResults<T, U = any, V = any>(
   onFulfilled: (value: T) => U,
   onRejected: (reason: any) => V
 ): (U | V)[] {
-  return results.map(result => {
+  return results.map((result: any) => {
     if (isFulfilled(result)) {;
       return onFulfilled(result.value);
     } else {

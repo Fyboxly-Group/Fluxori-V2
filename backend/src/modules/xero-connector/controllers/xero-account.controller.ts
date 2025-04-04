@@ -1,4 +1,3 @@
-// @ts-nocheck - Added by final-ts-fix.js
 import { Request, Response } from 'express';
 import { XeroAccountService } from "../services/xero-account.service";
 const xeroAccountService = new XeroAccountService();
@@ -46,7 +45,7 @@ class XeroAccountController {
       console.error('Error getting Xero accounts:', error);
       res.status(500).json({
         success: false,
-        message: `Error getting Xero accounts: ${error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)}`,
+        message: `Error getting Xero accounts: ${error instanceof Error ? error.message : String(error)}`,
       });
     }
   }
@@ -87,7 +86,7 @@ class XeroAccountController {
       console.error('Error getting Xero tax rates:', error);
       res.status(500).json({
         success: false,
-        message: `Error getting Xero tax rates: ${error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)}`,
+        message: `Error getting Xero tax rates: ${error instanceof Error ? error.message : String(error)}`,
       });
     }
   }
@@ -123,7 +122,7 @@ class XeroAccountController {
       console.error('Error creating account mapping:', error);
       res.status(500).json({
         success: false,
-        message: `Error creating account mapping: ${error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)}`,
+        message: `Error creating account mapping: ${error instanceof Error ? error.message : String(error)}`,
       });
     }
   }
@@ -149,7 +148,7 @@ class XeroAccountController {
       console.error('Error getting account mappings:', error);
       res.status(500).json({
         success: false,
-        message: `Error getting account mappings: ${error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)}`,
+        message: `Error getting account mappings: ${error instanceof Error ? error.message : String(error)}`,
       });
     }
   }
@@ -182,7 +181,7 @@ class XeroAccountController {
       console.error('Error deleting account mapping:', error);
       res.status(500).json({
         success: false,
-        message: `Error deleting account mapping: ${error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)}`,
+        message: `Error deleting account mapping: ${error instanceof Error ? error.message : String(error)}`,
       });
     }
   }

@@ -1,0 +1,192 @@
+/**
+ * Amazon: string: string: string: number: string: string: string: string: string: string: string: string: string: string: string: string: string: string: Record: {
+        marketplaceAsin: {
+          marketplaceId: string: string: {
+          marketplaceId: string: string: string: {
+        [variant: string: {
+          link: string: number: number: Record: {
+        classificationId: string: string: string: number: {
+        marketplaceId: string: boolean: boolean: string: {
+          displayName: string: string: string: string: string: string: boolean: string: number: string: string: string: string: boolean: string: string: {
+        marketplaceId: string: string: string: string: {
+        marketplaceId: string: string: string: string: string: string: string: string: number: {
+        nextToken: string: {
+        brands: {
+          numberOfResults: number: string: {
+          numberOfResults: number: string: string: Item: Item: string: string: string: string: string: string: string: Common: number: number: string: string: string: string: string: string: string: boolean: boolean: boolean: boolean: boolean: boolean: {
+        buyerEmail: string: string: string: {
+          taxClassifications: {
+            name: string: string: string: Common: Common: {
+        hasAutomatedShippingSettings: boolean: string: string: {
+        preferredDeliveryType: string: string: string: string: string: string: number: number: {
+        numberOfItems: number: {
+        pointsNumber: number: Common: Common: Common: Common: Common: Common: Common: Common: Common: string: Common: Common: boolean: string: string: string: string: string: string: string: Common: Common: {
+        Orders: Order: string: Common: {
+        Orders: Order: Common: {
+        OrderItems: OrderItem: string: Common.Error[];
+    }
+  }
+
+  /**
+   * Listings API (2021-08-01) types
+   */
+  export namespace Listings {
+    export type ListingStatus = 'ACTIVE: string: ListingStatus: {
+        code: string: string: 'ERROR: {
+        marketplaceId: string: string: string: string: ListingStatus: string: string: string: {
+          link: string: number: number: Record: {
+        nextToken: string: Listing: Common: Common: {
+        pointsNumber: number: Common: string: PriceType: string: string: string: string: boolean: {
+        status: string: string: string: {
+          identifiers: {
+            marketplaceASIN: {
+              marketplaceId: string: string: {
+              marketplaceId: string: string: string: {
+            competitivePrices: CompetitivePrice: {
+              condition: string: number: Common: {
+            buyingPrice: {
+              listingPrice: Common: Common: {
+                pointsNumber: number: Common: Common: Common: {
+              quantityTier: number: Common: string: string: string: string: string: Common: number: number: number: number: {
+        total: number: number: number: number: {
+        total: number: {
+          name: string: number: {
+        total: number: number: number: number: number: number: number: {
+        granularity: {
+          granularityType: string: string: {
+          asin: string: string: string: string: InventoryDetails: string: string: number: {
+          nextToken: string: Common.Error[];
+    }
+  }
+  
+  /**
+   * Data Kiosk API types
+   */
+  export namespace DataKiosk {
+    export type QueryStatus = 
+}
+      | 'PENDING: string: string: string: string: string: string: string: string: QueryStatus: string: string: string: string: QueryStatus: string: string: {
+        code: string: string: string: any: string: Document: string: string: string: string: string: string: {
+        columns: {
+          name: string: string: string: string: string: {
+        executionId: string: string: QueryStatus: string: string: string: string: string: string: string: string: string: MarketplaceDetails: {
+        isParticipating: boolean: boolean: MarketplaceParticipation: string: string: SellerAccountInfo;
+    }
+  }
+  
+  /**
+   * Reports API (2021-06-30) types
+   */
+  export namespace Reports {
+    export type ProcessingStatus = 'IN_QUEUE: string: ProcessingStatus: string: string: ProcessingStatus: string: string: string: string: string: string: 'GZIP: string: string: ProcessingStatus: string: string: string: string: Report: string: string: string: string: string: string: string: string: string: 'AMAZON: string: number: number: PrepDetails: string: string: number: PrepDetails: string: string: Address: 'NO_LABEL: InboundShipmentPlanItem: number: Address: 'SELLER_LABEL: InboundShipmentItem: string: string: string: string: Address: string: 'SELLER_LABEL: InboundShipmentItem: 'WORKING: 'NONE: string: Address: string: 'SELLER_LABEL: InboundShipmentItem: 'WORKING: 'NONE: string: string: Address: string: 'WORKING: 'NO_LABEL: boolean: string: 'NONE: number: string: string: number: number: number: PrepDetails: string: string: string: string: string: ShipmentItem[];
+    }
+    
+    export type ShipmentStatus = 'WORKING: ShipmentStatus: string: Date: Date: {
+        inboundShipmentPlans: InboundShipmentPlan: {
+        shipmentId: string: {
+        shipmentId: string: {
+        shipmentData: Shipment: string: {
+        itemData: ShipmentItem: string;
+      };
+    }
+  }
+
+  /**
+   * Vendor API types
+   */
+  export namespace VendorOrders {
+    export type OrderStatus = 'NEW: string: OrderStatus: string: string: {
+        partyId: string: string: Common: {
+        partyId: string: string: Common: OrderItem: string: string: string: string: {
+        amount: number: string: boolean: Common: Common: {
+        orders: Order: string: Order: {
+        transactionId: string: {
+        transactionId: string: {
+        packingSlip: string: {
+        transactionId: string: string: 'PROCESSING: {
+        code: string: string: string: Transaction: string: string: {
+        deliveryWindows: DeliveryWindow[];
+      };
+    }
+  }
+
+  /**
+   * Warehouse and Distribution API types
+   */
+  export namespace WarehouseAndDistribution {
+    export type LocationType = 'VENDOR_WAREHOUSE' | 'SELLER_WAREHOUSE';
+    export type PeriodGranularity = 'MONTH' | 'WEEK' | 'DAY';
+    export type ShipmentStatus = 'WORKING' | 'READY_TO_SHIP' | 'SHIPPED' | 'RECEIVING' | 'CHECKED_IN' | 'CANCELED';
+    export type SortField = 'CREATED_DATE' | 'ESTIMATED_RECEIVING_DATE';
+    export type SortOrder = 'ASC: string: string: string: Common: string: number: string: string: string: string: ShipmentStatus: string: string: string: FacilityShipmentItem: string: string: LocationType: Common: string: string: {
+        totalCapacity: number: number: number: string: Facility: {
+        inventoryId: string: string: string: number: string: string: FacilityShipment: string: FacilityShipment: string: string: string: ProgramCapacityPeriod: SellerLocation[];
+    }
+  }
+
+  /**
+   * Shipment Invoicing API types
+   */
+  export namespace ShipmentInvoicing {
+    export type ShipmentInvoiceStatus = 'WORKING: string: number: string: 'SHIPPER_TAX_REGISTRATION_NUMBER: string: string: string: string: string: string: string: string: string: string: string: number: number: number: string: number: string: number: string: 'EXPORT: number: Money: Money: string: string: Address: string: string: PartyIdentification: Address: string: TaxRegistrationDetail: string: string: number: ItemQuantity: string: string: string: string: Money: Money: Money: TaxDetail: Money: Money: TaxDetail: Dimensions: Weight: string: string: string: ShipmentInvoiceStatus: Party: Party: Party: Party: string: 'COMMERCIAL_INVOICE: string: string: string: string: string: InvoiceItem: boolean: string: string: string: InvoiceRequirements: ShipmentDetails: string: string: 'text: string: string;
+    }
+  }
+
+  /**
+   * Supply Sources API types
+   */
+  export namespace SupplySources {
+    export type SupplySourceType = 'WAREHOUSE: string: string: string: string: string: string: string: string: string: string: string: string: string: string: string: SupplySourceType: SupplySourceAddress: SupplySourceContact: SupplySourceContact: boolean: Record: string: string: SupplySourceType: SupplySourceAddress: SupplySourceContact: SupplySourceContact: boolean: Record: string: string: SupplySource: string: string: string: string: Record: ItemSupplierRelationship: string: string: string;
+    }
+  }
+  
+  /**
+   * Tokens API types
+   */
+  export namespace Tokens {
+    export type HttpMethod = 'GET: string: HttpMethod: string: RestrictedResource: 3600: 86400: 60: number: string: number;
+    }
+  }
+  
+  /**
+   * Messaging API types
+   */
+  export namespace Messaging {
+    export type MessageType = 
+}
+      | 'WARRANTY: string: string: string: MessageType: MessagingAction: string: string: string: string: string: string: string: string: string: string;
+    }
+  }
+  
+  /**
+   * Finances API types
+   */
+  export namespace Finances {
+    export type FinancialEventGroupStatus = 'Open' | 'Closed';
+    
+    export type FinancialTransactionType = 
+}
+      | 'Shipment: string: string: string: Money: string: FinancialEventGroupStatus: string: string: string: Money: Money: string: string: string: string: string: string: Array: string: Money: Array: string: Money: Array: Array: Array: Array: Array: string: Money: string: string: string: string: string: Money: Array: string: ShipmentEvent: RefundEvent: any: any: any: any: any: any: any: Array: Array: string: string: string: string: any: any: any: any: FinancialEventGroup: string: FinancialEventGroup: FinancialEvents: string: FinancialEvents;
+    }
+  }
+  
+  /**
+   * Listings Restrictions API types
+   */
+  export namespace ListingsRestrictions {
+    export type RestrictionsIdentifierType = 'ASIN: string: string: string: string: string: Restriction[];
+    }
+  }
+  
+  /**
+   * Solicitations API types
+   */
+  export namespace Solicitations {
+    export type SolicitationType = 'REQUEST_FEEDBACK: string: boolean: string: SolicitationAction: {
+        /**
+}
+         * The: string: boolean: string;
+      }[];
+    }
+  }
+}

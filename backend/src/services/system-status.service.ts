@@ -10,7 +10,7 @@ export class SystemStatusService {
    * Initialize default system components
    * This should be called when the application starts
    */
-  static async initializeSystemComponents() {
+  static async initializeSystemComponents() : Promise<void> {
     const defaultComponents = [
       {
         name: 'API Service',
@@ -41,7 +41,7 @@ export class SystemStatusService {
 
     try {
       // Using bulkWrite with upsert to avoid duplicates
-      const operations = defaultComponents.map(component => ({
+      const operations = defaultComponents.map((component: any) => ({
         updateOne: {
           filter: { name: component.name },
           update: { 
@@ -57,6 +57,7 @@ export class SystemStatusService {
       await SystemStatus.bulkWrite(operations);
       console.log('System components initialized');
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error('Error initializing system components:', error);
     }
   }
@@ -70,7 +71,7 @@ export class SystemStatusService {
     description: string,
     metrics?: Record<string, any>,
     userId?: mongoose.Types.ObjectId
-  ) {
+  ) : Promise<void> {
     try {
       const component = await SystemStatus.findOne({ name });
       
@@ -108,15 +109,16 @@ export class SystemStatusService {
       
       return component;
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error(`Error updating component "${name}" status:`, error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 
   /**
    * Check database health
    */
-  static async checkDatabaseHealth() {
+  static async checkDatabaseHealth() : Promise<void> {
     const startTime = Date.now();
     
     try {
@@ -141,7 +143,7 @@ export class SystemStatusService {
     } catch (error) {
       console.error('Database health check failed:', error);
       
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : 'Unknown error';
       
       // Update status to degraded or outage
       await this.updateComponentStatus(
@@ -158,7 +160,7 @@ export class SystemStatusService {
   /**
    * Get all system component statuses
    */
-  static async getAllComponentStatus() {
+  static async getAllComponentStatus() : Promise<void> {
     return SystemStatus.find().sort({ name: 1 }).lean();
   }
 }

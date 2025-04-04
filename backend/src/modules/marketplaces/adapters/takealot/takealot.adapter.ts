@@ -1,4 +1,3 @@
-// @ts-nocheck - Disable TypeScript checking for this file due to complex axios typing issues
 import axios from 'axios';
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import { BaseMarketplaceAdapter } from '../common/base-marketplace-adapter';
@@ -19,7 +18,8 @@ import {
   ShippingStatus,
   MarketplaceCredentials,
   Address,
-  OrderItem
+  OrderItem,
+  MarketplaceError
 } from '../../models/marketplace.models';
 import { takealotConfig } from '../../config/takealot.config';
 
@@ -163,6 +163,15 @@ interface TakealotSalesResponse {
   sales: TakealotSale[];
 }
 
+interface TakealotMerchantWarehouse {
+  warehouse_id: number;
+  name: string;
+}
+
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+
+type RetryableErrorCodes = 408 | 423 | 425 | 429 | 500 | 502 | 503 | 504;
+
 /**
  * Takealot Marketplace Adapter Implementation
  * Implements Takealot Seller API v2.0 integration using the common marketplace adapter interface
@@ -175,24 +184,6 @@ export class TakealotAdapter extends BaseMarketplaceAdapter {
   private readonly apiBaseUrl: string;
   private readonly apiVersion: string;
   private apiClient: AxiosInstance;
-  
-  /**
-   * Helper method to safely extract error messages
-   */
-  private getErrorMessage(error: unknown): string {
-    if (error && typeof error === 'object') {
-      if ('response' in error && error.response) {
-        // It's likely an AxiosError with response
-        const axiosError = error as AxiosError;
-        const responseData = axiosError.response?.data as any;
-        return responseData?.message || axiosError.message || 'Unknown API error';
-      } else if ('message' in error) {
-        // It's a standard Error
-        return (error as Error).message;
-      }
-    }
-    return 'Unknown error';
-  }
   private retryDelayMs: number;
   private maxRetries: number;
   
@@ -200,10 +191,7 @@ export class TakealotAdapter extends BaseMarketplaceAdapter {
   private _rateLimitReset: number = 0; // Unix timestamp for internal use
 
   // Warehouse cache
-  private merchantWarehouses: Array<{
-    warehouse_id: number;
-    name: string;
-  }> = [];
+  private merchantWarehouses: TakealotMerchantWarehouse[] = [];
 
   /**
    * Constructor
@@ -228,29 +216,30 @@ export class TakealotAdapter extends BaseMarketplaceAdapter {
     });
     
     // Add request interceptor to add auth headers
-    this.apiClient.interceptors.request.use(async (config) => {
+    this.apiClient.interceptors.request.use(async (config: AxiosRequestConfig): Promise<AxiosRequestConfig> => {
       // Make sure the adapter is initialized
       this.ensureInitialized();
       
-      // @ts-ignore: Suppress all TypeScript errors related to config.headers
       // Add authentication headers
       if (!config.headers) {
         config.headers = {};
       }
       
-      config.headers['X-API-KEY'] = this.credentials?.apiKey || '';
+      if (this.credentials?.apiKey) {
+        config.headers['X-API-KEY'] = this.credentials.apiKey;
+      }
       
       return config;
     });
     
     // Add response interceptor to handle rate limits and update rate limit info
     this.apiClient.interceptors.response.use(
-      (response) => {
+      (response: AxiosResponse): AxiosResponse => {
         // Extract rate limit headers if present
         this.updateRateLimitInfo(response);
         return response;
       },
-      async (error: AxiosError) => {
+      async (error: AxiosError): Promise<AxiosResponse> => {
         // Extract rate limit headers even from error responses
         if (error.response) {
           this.updateRateLimitInfo(error.response);
@@ -274,6 +263,24 @@ export class TakealotAdapter extends BaseMarketplaceAdapter {
         return Promise.reject(error);
       }
     );
+  }
+
+  /**
+   * Helper method to safely extract error messages
+   */
+  private getErrorMessage(error: unknown): string {
+    if (error && typeof error === 'object') {
+      if ('response' in error && error.response) {
+        // It's likely an AxiosError with response
+        const axiosError = error as AxiosError;
+        const responseData = axiosError.response?.data as Record<string, any>;
+        return responseData?.message || axiosError.message || 'Unknown API error';
+      } else if ('message' in error) {
+        // It's a standard Error
+        return (error as Error).message;
+      }
+    }
+    return 'Unknown error';
   }
 
   /**
@@ -338,7 +345,7 @@ export class TakealotAdapter extends BaseMarketplaceAdapter {
       if (error && typeof error === 'object' && 'response' in error && error.response) {
         // It's likely an AxiosError with response data
         const axiosError = error as AxiosError;
-        const responseData = axiosError.response?.data as any;
+        const responseData = axiosError.response?.data as Record<string, any>;
         const errorMessage = axiosError.message || '';
         const responseStatus = axiosError.response?.status || '';
         message = `${message}: ${responseStatus} - ${responseData?.message || errorMessage}`;
@@ -447,17 +454,17 @@ export class TakealotAdapter extends BaseMarketplaceAdapter {
       
       // Takealot doesn't support bulk retrieval directly
       // We need to fetch each product individually
-      const productPromises = skus.map(sku => this.getProductBySku(sku));
+      const productPromises = skus.map((sku) => this.getProductBySku(sku));
       const productResults = await Promise.all(productPromises);
       
       // Filter successful results and extract products
       const products: MarketplaceProduct[] = productResults
-        .filter(result => result.success && result.data)
-        .map(result => result.data as MarketplaceProduct);
+        .filter((result) => result.success && result.data)
+        .map((result) => result.data as MarketplaceProduct);
       
       // Check if any SKUs are missing and log them
-      const foundSkus = products.map(p => p.sku);
-      const missingSkus = skus.filter(sku => !foundSkus.includes(sku));
+      const foundSkus = products.map((p) => p.sku);
+      const missingSkus = skus.filter((sku) => !foundSkus.includes(sku));
       
       if (missingSkus.length > 0) {
         console.warn(`Could not find ${missingSkus.length} products by SKU: ${missingSkus.join(', ')}`);
@@ -513,8 +520,8 @@ export class TakealotAdapter extends BaseMarketplaceAdapter {
       }
       
       // Convert Takealot offers to standardized products
-      const products = response.data.data.offers.map(
-        offer => this.mapTakealotOfferToProduct(offer)
+      const products = response.data.data.offers.map((offer) => 
+        this.mapTakealotOfferToProduct(offer)
       );
       
       // Extract pagination metadata
@@ -608,9 +615,10 @@ export class TakealotAdapter extends BaseMarketplaceAdapter {
             });
           }
         } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
           failed.push({
             sku: update.sku,
-            reason: error.message || 'Unknown error'
+            reason: errorMessage || 'Unknown error'
           });
         }
       }
@@ -679,7 +687,8 @@ export class TakealotAdapter extends BaseMarketplaceAdapter {
           }
         }
       } catch (error) {
-        console.error(`Error checking batch status: ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(`Error checking batch status: ${errorMessage}`);
       }
       
       retryCount++;
@@ -691,7 +700,7 @@ export class TakealotAdapter extends BaseMarketplaceAdapter {
     
     if (!batchResult) {
       // If we timed out waiting for batch to complete
-      updates.forEach(update => {
+      updates.forEach((update) => {
         failed.push({
           sku: update.sku,
           reason: 'Batch processing timed out'
@@ -706,7 +715,7 @@ export class TakealotAdapter extends BaseMarketplaceAdapter {
         if (!sku) continue;
         
         // Find the corresponding result
-        const result = batchResult.result.find(r => r.index === i);
+        const result = batchResult.result.find((r) => r.index === i);
         
         if (!result) {
           failed.push({
@@ -716,7 +725,7 @@ export class TakealotAdapter extends BaseMarketplaceAdapter {
         } else if (result.errors && result.errors.length > 0) {
           failed.push({
             sku,
-            reason: result.errors.map(e => e.message).join(', ')
+            reason: result.errors.map((e) => e.message).join(', ')
           });
         } else {
           successful.push(sku);
@@ -793,9 +802,10 @@ export class TakealotAdapter extends BaseMarketplaceAdapter {
             });
           }
         } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
           failed.push({
             sku: update.sku,
-            reason: error.message || 'Unknown error'
+            reason: errorMessage || 'Unknown error'
           });
         }
       }
@@ -871,7 +881,8 @@ export class TakealotAdapter extends BaseMarketplaceAdapter {
           }
         }
       } catch (error) {
-        console.error(`Error checking batch status: ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(`Error checking batch status: ${errorMessage}`);
       }
       
       retryCount++;
@@ -883,7 +894,7 @@ export class TakealotAdapter extends BaseMarketplaceAdapter {
     
     if (!batchResult) {
       // If we timed out waiting for batch to complete
-      updates.forEach(update => {
+      updates.forEach((update) => {
         failed.push({
           sku: update.sku,
           reason: 'Batch processing timed out'
@@ -898,7 +909,7 @@ export class TakealotAdapter extends BaseMarketplaceAdapter {
         if (!sku) continue;
         
         // Find the corresponding result
-        const result = batchResult.result.find(r => r.index === i);
+        const result = batchResult.result.find((r) => r.index === i);
         
         if (!result) {
           failed.push({
@@ -908,7 +919,7 @@ export class TakealotAdapter extends BaseMarketplaceAdapter {
         } else if (result.errors && result.errors.length > 0) {
           failed.push({
             sku,
-            reason: result.errors.map(e => e.message).join(', ')
+            reason: result.errors.map((e) => e.message).join(', ')
           });
         } else {
           successful.push(sku);
@@ -983,9 +994,10 @@ export class TakealotAdapter extends BaseMarketplaceAdapter {
             });
           }
         } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
           failed.push({
             sku: update.sku,
-            reason: error.message || 'Unknown error'
+            reason: errorMessage || 'Unknown error'
           });
         }
       }
@@ -1054,7 +1066,8 @@ export class TakealotAdapter extends BaseMarketplaceAdapter {
           }
         }
       } catch (error) {
-        console.error(`Error checking batch status: ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(`Error checking batch status: ${errorMessage}`);
       }
       
       retryCount++;
@@ -1066,7 +1079,7 @@ export class TakealotAdapter extends BaseMarketplaceAdapter {
     
     if (!batchResult) {
       // If we timed out waiting for batch to complete
-      updates.forEach(update => {
+      updates.forEach((update) => {
         failed.push({
           sku: update.sku,
           reason: 'Batch processing timed out'
@@ -1081,7 +1094,7 @@ export class TakealotAdapter extends BaseMarketplaceAdapter {
         if (!sku) continue;
         
         // Find the corresponding result
-        const result = batchResult.result.find(r => r.index === i);
+        const result = batchResult.result.find((r) => r.index === i);
         
         if (!result) {
           failed.push({
@@ -1091,7 +1104,7 @@ export class TakealotAdapter extends BaseMarketplaceAdapter {
         } else if (result.errors && result.errors.length > 0) {
           failed.push({
             sku,
-            reason: result.errors.map(e => e.message).join(', ')
+            reason: result.errors.map((e) => e.message).join(', ')
           });
         } else {
           successful.push(sku);
@@ -1143,8 +1156,8 @@ export class TakealotAdapter extends BaseMarketplaceAdapter {
       }
       
       // Convert Takealot orders to standardized format
-      const orders = response.data.sales.map(
-        sale => this.mapTakealotSaleToOrder(sale)
+      const orders = response.data.sales.map((sale) => 
+        this.mapTakealotSaleToOrder(sale)
       );
       
       // Extract pagination metadata
@@ -1346,10 +1359,10 @@ export class TakealotAdapter extends BaseMarketplaceAdapter {
         const offer = response.data.data.offers[0];
         
         // Extract unique warehouses
-        const warehouseMap = new Map<number, { warehouse_id: number; name: string }>();
+        const warehouseMap = new Map<number, TakealotMerchantWarehouse>();
         
         if (offer.leadtime_stock && offer.leadtime_stock.length > 0) {
-          offer.leadtime_stock.forEach(stock => {
+          offer.leadtime_stock.forEach((stock) => {
             if (stock.merchant_warehouse) {
               warehouseMap.set(
                 stock.merchant_warehouse.warehouse_id,
@@ -1388,9 +1401,9 @@ export class TakealotAdapter extends BaseMarketplaceAdapter {
    * Make an API request with retry logic
    */
   private async makeRequest<T>(
-    method: string,
+    method: HttpMethod,
     endpoint: string,
-    options: any = {},
+    options: Record<string, any> = {},
     retryCount: number = 0
   ): Promise<AxiosResponse<T>> {
     try {
@@ -1407,7 +1420,7 @@ export class TakealotAdapter extends BaseMarketplaceAdapter {
         retryCount >= this.maxRetries ||
         !this.isRetryableError(error)
       ) {
-        throw error;
+        throw error instanceof Error ? error : new Error(String(error));
       }
       
       // Exponential backoff with jitter
@@ -1427,29 +1440,31 @@ export class TakealotAdapter extends BaseMarketplaceAdapter {
   /**
    * Check if an error is retryable
    */
-  private isRetryableError(error: any): boolean {
-    // Network errors are generally retryable
-    if (!error.response) {
+  private isRetryableError(error: unknown): boolean {
+    // If it's not an AxiosError with a response, consider it a network error (retryable)
+    if (!error || typeof error !== 'object' || !('response' in error) || !error.response) {
       return true;
     }
+    
+    const axiosError = error as AxiosError;
     
     // 429 (Too Many Requests) is handled by the interceptor
     
     // Retry server errors (5xx)
-    if (error.response.status >= 500 && error.response.status < 600) {
+    if (axiosError.response.status >= 500 && axiosError.response.status < 600) {
       return true;
     }
     
     // Retry specific client errors
-    const retryableClientErrors = [408, 423, 425, 429];
-    return retryableClientErrors.includes(error.response.status);
+    const retryableClientErrors: RetryableErrorCodes[] = [408, 423, 425, 429];
+    return retryableClientErrors.includes(axiosError.response.status as RetryableErrorCodes);
   }
 
   /**
    * Sleep for a specified number of milliseconds
    */
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise<void>(resolve => setTimeout(resolve, ms));
   }
 
   /**
@@ -1706,5 +1721,40 @@ export class TakealotAdapter extends BaseMarketplaceAdapter {
       merchant_warehouse: this.merchantWarehouses[0],
       quantity_available: Math.max(0, Math.round(quantity))
     }];
+  }
+
+  /**
+   * Handle API errors in a unified way
+   */
+  private handleApiError(error: unknown, operation: string): MarketplaceError {
+    let errorMessage: string;
+    let errorCode: string = 'API_ERROR';
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      
+      // Check for axios errors
+      if ('isAxiosError' in error && (error as AxiosError).isAxiosError) {
+        const axiosError = error as AxiosError;
+        
+        // Extract data from response if available
+        if (axiosError.response?.data) {
+          const responseData = axiosError.response.data as Record<string, any>;
+          errorMessage = responseData.message || responseData.error || errorMessage;
+          errorCode = responseData.code || `HTTP_${axiosError.response.status}`;
+        } else if (axiosError.code) {
+          errorCode = axiosError.code;
+        }
+      }
+    } else {
+      errorMessage = String(error);
+    }
+    
+    return {
+      message: `Takealot ${operation} failed: ${errorMessage}`,
+      code: errorCode,
+      source: 'takealot',
+      operation
+    };
   }
 }

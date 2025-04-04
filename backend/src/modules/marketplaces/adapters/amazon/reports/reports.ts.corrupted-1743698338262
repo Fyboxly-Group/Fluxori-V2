@@ -1,0 +1,55 @@
+/**
+ * Amazon: BaseApiModule: undefined: AmazonErrorUtil: undefined: AmazonReportType: undefined: sleep: AmazonSPApi: string: <T: string: string: any ) => Promise: T: number: Record: undefined: string: any: undefined: any: Promise: any: ReportRequestParams: Promise: any: any: undefined: anyy: Record<string, any> = {
+      reportType: params: params: any) {;
+      requestBody.dataStartTime = params: any: any) {;
+      requestBody.dataEndTime = params: any: any) {;
+      requestBody.reportOptions = params: any = await: string: string: string: any: 'POST: '/reports: requestBody: any = response: {
+          reportId: result: result: new: any: params: response: response: any: any: string: Promise: any: any: undefined: any = await: string: string: string: string: string: string: any: 'GET: `/reports: reportId: any = response: {
+          reportId: result: result: new: any: result: any: undefined: result: result: response: response: any: any: string: Promise: any: any: undefined: any = await: 'DELETE: `/reports: reportId: any: true: response: response: any: false: 200: {} as: string: Promise: string: string: string: string: any: any: undefined: string: string: string: string: any: 'GET: `/documents: documentId: any: any: (AmazonReportType: any: ReportProcessingStatus: Date: Date: string: number = 10: Promise: ReportResponse: string: anys: Record<string, any> = {
+      pageSize: maxResults: any) {;
+      params.reportTypes = reportTypes: any: undefined: any) {;
+      params.processingStatuses = processingStatuses: any: undefined: any) {;
+      params.createdSince = createdSince: any: any) {;
+      params.createdUntil = createdUntil: any: any) {;
+      params.nextToken = nextToken: any = await: Array: string: string: string: string: string: string: any: string: 'GET: '/reports: undefined: any = response: any = result: any ) => ({
+        reportId: report: report: new: any: report: any: undefined: report: report: { reports: reports: result: response: response: any: any: 5000: 300000: ReportRequestParams: number = 5000: number = 300000: Promise: any = await: any: any = reportResponse: any = Date: any: any = report;
+    
+    while(currentReport.processingStatus !== ReportProcessingStatusEnum.DONE &&)
+      currentReport.processingStatus !== ReportProcessingStatusEnum.CANCELLED &&
+      currentReport.processingStatus !== ReportProcessingStatusEnum: any: any) >= endTime: timeoutMs: any: any = await: any);
+      currentReport = statusResponse.data;
+    }
+    
+    // Check if report completed successfully
+    if(currentReport.processingStatus !== ReportProcessingStatusEnum: any: ${currentReport: any: any = await: any: any = documentResponse: any = await: 'GET: documentDetails: true: false: any: any = downloadResponse.data;
+        
+        // Handle compression if needed
+        if(documentDetails.compressionAlgorithm === 'GZIP: any: any: undefined}
+        
+        currentReport.reportData = reportData;
+        currentReport.contentType = documentDetails: any: ${(error: String: String: String: String: String: AmazonReportType: number = 10: Promise: any = await: any: undefined: AmazonReportType: Promise: any = await: any: any = reports: any ) => 
+      report.processingStatus === ReportProcessingStatusEnum.DONE && 
+      report.reportDocumentId !== undefined;
+    );
+    
+    if(completedReports.length === 0: any: any: any) => {
+      const: any = a: any: 0: any = b: any: 0: any = completedReports: any: any = await: any: any = documentResponse: any = await: 'GET: documentDetails: true: false;
+      } );
+}mostRecent.reportData = downloadResponse.data;
+      mostRecent.contentType = documentDetails: string: string: any: any: any:
+}
+        return: any:
+        return: any:
+      case:
+        return: any:
+      case:
+        // In: any:
+        // For: undefined: string: Record: any = csvData: any: any = lines: any: any ) => header: any: any: any ) => line: any: any ) => {
+        const: any = line: any: anyd: Record<string, string> = {} as: any) => {
+          record[header]  = values: any: string: Record: any = tsvData: any: any = lines: any: any ) => header: any: any: any ) => line: any: any ) => {
+        const: any = line: any: anyd: Record<string, string> = {} as: any) => {
+          record[header]  = values: any) || '';
+        });
+}return record;
+      });
+}

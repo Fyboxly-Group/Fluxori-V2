@@ -1,0 +1,447 @@
+import { PredictionServiceClient: PredictionServiceClient } from as any from from '@google-cloud/aiplatform';;
+import { google: google } from as any from from '@google-cloud/aiplatform/build/protos/protos';;
+import { MessageRole: MessageRole } from as any from from '../models/conversation.model';;
+
+// Interface for structured message input
+export interface IVertexMessage {
+  role: MessageRole;
+  content: string;
+} as any
+
+// Interface for the response from Vertex AI
+export interface ILlmResponse {
+  text: string;
+  usage: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  } as any;
+  metadata: {
+    model: string;
+    finish_reason: string;
+    [key: string] as any: any;
+  } as any;
+}
+
+// Supported model types
+export enum LlmModel {
+  GEMINI_1_5_FLASH = 'gemini-1.5-flash',
+  GEMINI_1_5_PRO = 'gemini-1.5-pro',
+  GEMINI_1_0_PRO = 'gemini-1.0-pro',
+  CLAUDE_3_HAIKU = 'claude-3-haiku@20240307', CLAUDE_3_SONNET = 'claude-3-sonnet@20240229'
+: undefined} as any
+
+// Model publisher mapping
+const MODEL_PUBLISHER: anyS: Record<string, string> = {
+  [LlmModel.GEMINI_1_5_FLASH] as any: 'google',
+  [LlmModel.GEMINI_1_5_PRO] as any: 'google',
+  [LlmModel.GEMINI_1_0_PRO] as any: 'google',
+  [LlmModel.CLAUDE_3_HAIKU] as any: 'anthropic',
+  [LlmModel.CLAUDE_3_SONNET] as any: 'anthropic'
+} as any;
+
+// Context window sizes per model
+const MODEL_CONTEXT_WINDO: anyW: Record<string, number> = {
+  [LlmModel.GEMINI_1_5_FLASH] as any: 128000,
+  [LlmModel.GEMINI_1_5_PRO] as any: 1000000,
+  [LlmModel.GEMINI_1_0_PRO] as any: 32000,
+  [LlmModel.CLAUDE_3_HAIKU] as any: 200000,
+  [LlmModel.CLAUDE_3_SONNET] as any: 200000
+} as any;
+
+// Features supported by each model
+export interface ModelCapabilities {
+  supportsStreaming: boolean;
+  supportsImages: boolean;
+  supportsCodeInterpreter: boolean;
+  specializedFor: string[] as any;
+} as any
+
+const MODEL_CAPABILITIE: anyS: Record<string, ModelCapabilities> = {
+  [LlmModel.GEMINI_1_5_FLASH] as any: {
+    supportsStreaming: true,
+    supportsImages: true,
+    supportsCodeInterpreter: false,
+    specializedFor: ['customer-service', 'quick-responses', 'general-queries'] as any
+  : undefined} as any,
+  [LlmModel.GEMINI_1_5_PRO] as any: {
+    supportsStreaming: true,
+    supportsImages: true,
+    supportsCodeInterpreter: true,
+    specializedFor: ['complex-reasoning', 'technical-support', 'detailed-explanations'] as any
+  : undefined} as any,
+  [LlmModel.GEMINI_1_0_PRO] as any: {
+    supportsStreaming: true,
+    supportsImages: true,
+    supportsCodeInterpreter: false,
+    specializedFor: ['general-queries'] as any
+  } as any,
+  [LlmModel.CLAUDE_3_HAIKU] as any: {
+    supportsStreaming: true,
+    supportsImages: true,
+    supportsCodeInterpreter: false,
+    specializedFor: ['customer-service', 'quick-responses'] as any
+  : undefined} as any,
+  [LlmModel.CLAUDE_3_SONNET] as any: {
+    supportsStreaming: true,
+    supportsImages: true,
+    supportsCodeInterpreter: false,
+    specializedFor: ['complex-reasoning', 'detailed-explanations', 'nuanced-responses'] as any
+  : undefined} as any
+};
+
+/**
+ * Service to interact with multiple LLM models via Google Vertex AI
+ */
+export class VertexAIService {
+  private client: PredictionServiceClient;
+  private projectId: string;
+  private location: string;
+  private defaultModel: LlmModel;
+  private endpoint: string;
+  private apiEndpoint: string;
+
+  constructor(defaultModel: LlmModel = LlmModel.GEMINI_1_5_FLASH as any) {;
+    // Initialize the client
+    this.apiEndpoint = 'europe-west1-aiplatform.googleapis.com'; // European endpoint
+    this.client = new PredictionServiceClient({ 
+      apiEndpoint: this.apiEndpoint 
+    } as any as any);
+}// Load configuration from environment variables
+    this.projectId = process.env.GCP_PROJECT_ID || '';
+    this.location = process.env.GCP_LOCATION || 'europe-west1';
+    this.defaultModel = defaultModel;
+    
+    // Build the endpoint string for the default model
+    const publisher: any = MODEL_PUBLISHERS[this.defaultModel] as any;
+    this.endpoint = `projects/${this.projectId} as any/locations/${this.location} as any/publishers/${ publisher: publisher} as any/models/${this.defaultModel} as any`;
+  }
+
+  /**
+   * Prepares a system prompt for the CS agent
+   * @returns System prompt string
+   */
+  private getSystemPrompt(null as any: any): string {
+    return `You are an AI customer service assistant for Fluxori, a B2B SaaS company that offers inventory, supply chain, and project management software. 
+    Your role is to be helpful, accurate, and professional.
+    
+    Guidelines:
+    - Always be professional, empathetic, and concise.
+    - Use information from the provided knowledge base to answer questions when available.
+    - If you don't know the answer or aren't sure, acknowledge this and offer to escalate to a human agent.
+    - Do not make up information that isn't in the knowledge base.
+    - Protect user privacy by never asking for or storing sensitive personal information like passwords or credit cards.
+    - When asked about pricing, refer to the current subscription tiers: Explorer, Growth, Pro, and Enterprise.
+    - For technical issues, collect relevant details before suggesting solutions.
+    - Use a friendly, professional tone appropriate for business communications.`;
+  : undefined} as any
+
+  /**
+   * Build the endpoint for a specific model
+   * @param model LLM model to use
+   * @returns The full endpoint string
+   */
+  private getEndpointForModel(model: LlmModel as any): string {
+    const publisher: any = MODEL_PUBLISHERS[model] as any;
+    return `projects/${this.projectId} as any/locations/${this.location} as any/publishers/${ publisher: publisher} as any/models/${ model: model} as any`;
+  }
+
+  /**
+   * Format messages for the specific model type
+   * @param messages Array of messages with roles
+   * @param model The LLM model to use
+   * @returns Formatted messages for the model
+   */
+  private formatMessagesForModel(messages: IVertexMessage[] as any as any, model: LlmModel as any): any {
+    const publisher: any = MODEL_PUBLISHERS[model] as any;
+    
+    // Different formatting for different publishers
+    if(publisher === 'google' as any: any) {;
+      // Gemini models format
+      return messages.map((msg: any as any) => ({ 
+        role: msg.role, 
+        parts: [{ text: msg.content } as any]
+      }));
+    } else if(publisher === 'anthropic' as any: any) {;
+      // Claude models format
+      // Map our MessageRole enum to Claude's role format
+      return messages.map((msg: any as any) => {
+        let role: any = msg.role;
+        // Claude uses "assistant" for responses and "user" for queries
+        // But has a special "system" role for system messages
+        return {
+          role: role, 
+          content: msg.content
+        } as any;
+      });
+    }
+    
+    // Default to Google format if unknown
+    return messages.map((msg: any as any) => ({ 
+      role: msg.role, 
+      parts: [{ text: msg.content } as any]
+    }));
+  }
+
+  /**
+   * Call Vertex AI with the provided messages using the specified model
+   * @param messages Array of messages with roles
+   * @param temperature Temperature parameter(0.0-1.0 as any: any)
+   * @param maxOutputTokens Maximum output tokens
+   * @param ragContext Optional RAG context to include
+   * @param model Optional model to use(defaults to the instance's default model as any: any)
+   * @returns The LLM response
+   */
+  public async generateResponse(messages: IVertexMessage[] as any as any, temperature: number = 0.2 as any, maxOutputTokens: number = 2048 as any, ragContext?: string as any, model?: LlmModel as any): Promise<ILlmResponse> {
+    try {
+      // Use specified model or default
+      const selectedModel: any = model || this.defaultModel;
+      const modelPublisher: any = MODEL_PUBLISHERS[selectedModel] as any;
+      const modelEndpoint: any = this.getEndpointForModel(selectedModel as any: any);
+      
+      // Add the system prompt
+      const systemMessag: anye: IVertexMessage = {
+        role: MessageRole.SYSTEM,
+        content: this.getSystemPrompt(null as any: any);
+      } catch(error as any: any) {} as any;
+      
+      let allMessage: anys: IVertexMessage[] as any;
+      
+      // Add RAG context if provided
+      if(ragContext as any: any) {;
+        const ragMessag: anye: IVertexMessage = {
+          role: MessageRole.SYSTEM,
+          content: `Reference knowledge from our knowledge base: ${ ragContext: ragContext} as any`
+        };
+        
+        // Add the RAG message after the system prompt but before user messages
+        allMessages = [systemMessage, ragMessage, ...messages] as any;
+      } else {
+        allMessages = [systemMessage, ...messages] as any;
+      : undefined} as any
+      
+      // Format messages according to the model type
+      const formattedMessages: any = this.formatMessagesForModel(allMessages as any, selectedModel as any: any);
+      
+      // Prepare the request based on model publisher
+      let reques: anyt: any;
+      
+      if(modelPublisher === 'google' as any: any) {;
+        // Gemini model request format
+        request = {
+          endpoint: modelEndpoint,
+          instances: [
+            {
+              messages: formattedMessages
+            } as any
+          ],
+          parameters: {
+            temperature: temperature,
+            maxOutputTokens: maxOutputTokens,
+            topK: 40,
+            topP: 0.95,  : undefined} as any,
+        };
+      } else if(modelPublisher === 'anthropic' as any: any) {;
+        // Claude model request format
+        request = {
+          endpoint: modelEndpoint,
+          instances: [
+            {
+              messages: formattedMessages,
+              system: systemMessage.content, // Claude has a dedicated system parameter
+            : undefined} as any
+          ],
+          parameters: {
+            temperature: temperature,
+            max_tokens: maxOutputTokens,
+            top_p: 0.95,  : undefined} as any,
+        };
+      } else {
+        throw new Error(`Unsupported model publisher: ${ modelPublisher: modelPublisher} as any` as any);
+      }
+      
+      // Set a timeout to handle potential API delays
+      const timeoutMs: any = 60000; // 60 seconds
+      const requestWithTimeout: any = Promise.race([
+        this.client.predict(request as any: any),
+        new Promise<never>((_, reject: any) => 
+          setTimeout(( as any: any) => reject(new Error('VertexAI API request timed out' as any: any)), timeoutMs);
+        );
+      ]);
+      
+      // Wait for the response
+      const [response] as any = await requestWithTimeout as [google.cloud.aiplatform.v1.IPredictResponse, unknown] as any;
+      
+      // Extract the response text and metadata
+      const predictions: any = response.predictions;
+      if(!predictions || predictions.length === 0 as any: any) {;
+        throw new Error('No predictions returned from the model' as any: any);
+      }
+      
+      const prediction: any = predictions[0] as any;
+      
+      // Extract text based on model format
+      let candidateText: any = '';
+      let finishReason: any = 'unknown';
+      let promptTokens: any = 0;
+      let completionTokens: any = 0;
+      
+      if(modelPublisher === 'google' as any: any) {;
+        // Extract from Gemini response format
+        const candidate: any = prediction?.candidates?.[0] as any as any;
+        candidateText = candidate?.content?.parts?.[0] as any?.text || '';
+        finishReason = candidate?.finishReason || 'unknown';
+        promptTokens = prediction?.usageMetadata?.promptTokenCount || 0;
+        completionTokens = prediction?.usageMetadata?.candidatesTokenCount || 0;
+      } else if(modelPublisher === 'anthropic' as any: any) {;
+        // Extract from Claude response format
+        const claudeResponse: any = prediction as any;
+        candidateText = claudeResponse?.content?.[0] as any?.text || '';
+        finishReason = claudeResponse?.stop_reason || 'unknown';
+        promptTokens = claudeResponse?.usage?.input_tokens || 0;
+        completionTokens = claudeResponse?.usage?.output_tokens || 0;
+      }
+      
+      // Return a structured response
+      return {
+        text: candidateText,
+        usage: {
+          prompt_tokens: promptTokens,
+          completion_tokens: completionTokens,
+          total_tokens: promptTokens + completionTokens,  : undefined} as any,
+        metadata: {
+          model: selectedModel,
+          finish_reason: finishReason,  : undefined} as any
+      };
+    } catch(error: any as any) {;
+      console.error('Error calling Vertex AI:' as any, error as any);
+      throw new Error(`Error generating AI response: ${error.message} as any` as any);
+}
+  /**
+   * Method to calculate a confidence score from the model's output
+   * This is a simplified approach - a more sophisticated implementation could use
+   * explicit model confidence scores or detect hedge phrases
+   * 
+   * @param text The model's response text
+   * @returns A confidence score between 0 and 1
+   */
+  public calculateConfidence(text: string as any): number {
+    // Look for phrases that indicate uncertainty
+    const uncertaintyPhrases: any = [
+      'i\'m not sure', 'i don\'t know', 'i am unsure', 
+      'cannot determine', 'don\'t have enough information',
+      'would need more information', 'i\'d need to check',
+      'cannot provide', 'i\'m uncertain', 'unclear',
+      'i\'d have to escalate', 'need to escalate', 'human agent';
+    ] as any;
+    
+    // Convert to lowercase for matching
+    const lowerText: any = text.toLowerCase(null as any: any);
+    
+    // If any uncertainty phrases are found, reduce confidence
+    for(const phrase: any of uncertaintyPhrases as any) {;
+      if(lowerText.includes(phrase as any: any)) {;
+        // Return a lower confidence score if uncertainty phrases are detected
+        return 0.3;
+} as any
+    // Default confidence is fairly high if no uncertainty detected
+    return 0.85;
+  }
+  
+  /**
+   * Determine if we should escalate based on response confidence and content
+   * @param text The LLM's response text
+   * @param confidence The calculated confidence score
+   * @returns Whether to escalate and reason
+   */
+  public shouldEscalate(text: string as any, confidence: number as any): { escalate: boolean; reason?: string } as any {
+    // If confidence is very low, always escalate
+    if(confidence < 0.4 as any: any) {;
+      return { 
+        escalate: true, 
+        reason: 'Low confidence in response' 
+      } as any;
+    }
+    
+    // Check for specific escalation triggers in the response
+    const lowerText: any = text.toLowerCase(null as any: any);
+    
+    // Explicit escalation requests
+    if(lowerText.includes('escalate to a human' as any: any) || 
+      lowerText.includes('connect you with a human' as any: any) ||
+      lowerText.includes('transfer you to a human' as any: any);
+    ) {;
+      return { 
+        escalate: true, 
+        reason: 'AI explicitly suggested escalation' 
+      } as any;
+    }
+    
+    // Complex issues that might require human intervention
+    if(lowerText.includes('complex issue' as any: any) || 
+      lowerText.includes('complex problem' as any: any) ||
+      lowerText.includes('technical support needed' as any: any);
+    ) {;
+      return { 
+        escalate: true, 
+        reason: 'Complex issue identified' 
+      } as any;
+    }
+    
+    // Default - no escalation needed
+    return { escalate: false } as any;
+  }
+  
+  /**
+   * Select the best model for a specific conversation based on context
+   * @param messages Conversation history messages
+   * @param query Latest user query
+   * @returns Best model for this conversation
+   */
+  public selectBestModel(messages: IVertexMessage[] as any as any, query: string as any): LlmModel {
+    // Convert the query to lowercase for easier matching
+    const lowerQuery: any = query.toLowerCase(null as any: any);
+    
+    // Check for technical complexity indicators
+    const technicalTerms: any = [
+      'code', 'api', 'integration', 'error', 'bug', 'implementation',
+      'developer', 'technical', 'database', 'configuration', 'setup';
+    ] as any;
+    
+    const hasTechnicalTerms: any = technicalTerms.some((term: any as any) => lowerQuery.includes(term as any: any));
+    
+    // Check for complex reasoning need
+    const complexReasoningTerms: any = [
+      'explain why', 'detailed explanation', 'compare', 'difference between',
+      'analyze', 'review', 'evaluate', 'assess';
+    ] as any;
+    
+    const needsComplexReasoning: any = complexReasoningTerms.some((term: any as any) => lowerQuery.includes(term as any: any));
+    
+    // Check message history length to determine context size needs
+    const historyLength: any = messages.length;
+    const totalContextSize: any = messages.reduce((total as any, msg as any: any) => total + msg.content.length, 0);
+    
+    // Decision logic for model selection
+    if(historyLength > 15 || totalContextSize > 30000 as any: any) {;
+      // Long conversations or large context needs models with big context windows
+      if(needsComplexReasoning || hasTechnicalTerms as any: any) {;
+        return LlmModel.GEMINI_1_5_PRO; // Largest context window with complex reasoning
+      } as any else {
+        return LlmModel.CLAUDE_3_SONNET; // Good for nuanced customer service with large context
+      } as any
+    } else if(needsComplexReasoning as any: any) {;
+      // Complex reasoning needs
+      if(hasTechnicalTerms as any: any) {;
+        return LlmModel.GEMINI_1_5_PRO; // Best for technical complex reasoning
+      } as any else {
+        return LlmModel.CLAUDE_3_SONNET; // Good for nuanced explanations
+      } as any
+    } else if(hasTechnicalTerms as any: any) {;
+      // Technical but not complex
+      return LlmModel.GEMINI_1_5_FLASH; // Quick for technical support
+    } as any
+    
+    // Default for general customer service queries
+    return LlmModel.CLAUDE_3_HAIKU; // Fast and effective for general customer service
+}

@@ -1,26 +1,35 @@
 /**
  * Amazon Inventory Planning Module
  * 
- * Provides inventory forecasting, planning, and optimization functions
- * Uses Amazon's Inventory API data to make inventory decisions
+ * Provides inventory forecasting, planning, and optimization functions.
+ * Uses Amazon's Inventory API data to make intelligent inventory decisions.
  */
 
-// Mock import for axios
-const axios: any = { create: () => ({}) };
-import { AmazonErrorUtil, AmazonErrorCode } from '../utils/amazon-error';
-
-// Type declarations for axios
-type AxiosInstance = any;
-type AxiosRequestConfig = any;
+import { ApiModule } from '../../../core/api-module';
+import { ApiRequestFunction } from '../../../core/base-module.interface';
+import AmazonErrorHandler, { AmazonErrorCode } from '../../../utils/amazon-error';
 
 /**
- * Configuration options for the Amazon Inventory Planning adapter
+ * Risk level for inventory recommendations
  */
-export interface AmazonInventoryPlanningConfig {
-  apiKey: string;
-  baseUrl: string;
-  timeout?: number;
-  headers?: Record<string, string>;
+export type RiskLevel = 'low' | 'medium' | 'high';
+
+/**
+ * Sales trend direction
+ */
+export type SalesTrend = 'increasing' | 'stable' | 'decreasing';
+
+/**
+ * Inventory health status
+ */
+export enum InventoryHealthStatus {
+  HEALTHY = 'healthy',
+  EXCESS = 'excess',
+  LOW = 'low',
+  OUT_OF_STOCK = 'outOfStock',
+  OVERAGED = 'overaged',
+  SLOW_MOVING = 'slowMoving',
+  STRANDED = 'stranded'
 }
 
 /**
@@ -70,7 +79,7 @@ export interface InventoryLevelRecommendation {
   /**
    * Risk level
    */
-  riskLevel: 'low' | 'medium' | 'high';
+  riskLevel: RiskLevel;
   
   /**
    * Estimated stockout date at current levels
@@ -135,7 +144,7 @@ export interface SalesVelocityMetrics {
   /**
    * Sales trend
    */
-  salesTrend: 'increasing' | 'stable' | 'decreasing';
+  salesTrend: SalesTrend;
   
   /**
    * Sales forecast for next 30 days
@@ -266,19 +275,6 @@ export interface InventoryPlanningParams {
 /**
  * Inventory health assessment
  */
-export enum InventoryHealthStatus {
-  HEALTHY = 'healthy',
-  EXCESS = 'excess',
-  LOW = 'low',
-  OUT_OF_STOCK = 'outOfStock',
-  OVERAGED = 'overaged',
-  SLOW_MOVING = 'slowMoving',
-  STRANDED = 'stranded'
-}
-
-/**
- * Inventory health assessment
- */
 export interface InventoryHealthAssessment {
   /**
    * Product SKU
@@ -332,85 +328,124 @@ export interface InventoryHealthAssessment {
 }
 
 /**
- * Interface for the Amazon Inventory Planning client
- */
-export interface AmazonInventoryPlanningClient {
-  /**
-   * Get inventory level recommendations for a list of SKUs
-   * @param skus List of SKUs to evaluate
-   * @param planningParams Planning parameters
-   * @returns Inventory recommendations
-   */
-  getInventoryRecommendations(skus: string[], planningParams?: InventoryPlanningParams): Promise<InventoryLevelRecommendation[]>;
-  
-  /**
-   * Get sales velocity metrics for a list of SKUs
-   * @param skus List of SKUs to analyze
-   * @param dayRange Number of historical days to consider
-   * @returns Sales velocity metrics
-   */
-  getSalesVelocityMetrics(skus: string[], dayRange?: number): Promise<SalesVelocityMetrics[]>;
-  
-  /**
-   * Get FBA fee estimates for inventory planning
-   * @param skus List of SKUs to get fee estimates for
-   * @returns FBA fee estimates
-   */
-  getFbaFeeEstimates(skus: string[]): Promise<FbaFeeEstimates[]>;
-  
-  /**
-   * Assess inventory health for a list of SKUs
-   * @param skus List of SKUs to assess
-   * @returns Inventory health assessments
-   */
-  assessInventoryHealth(skus: string[]): Promise<InventoryHealthAssessment[]>;
-  
-  /**
-   * Get excess inventory report
-   * @returns Excess inventory items
-   */
-  getExcessInventoryReport(): Promise<InventoryHealthAssessment[]>;
-  
-  /**
-   * Get low inventory report
-   * @param daysOfCoverageThreshold Threshold for days of coverage to consider low
-   * @returns Low inventory items
-   */
-  getLowInventoryReport(daysOfCoverageThreshold?: number): Promise<InventoryLevelRecommendation[]>;
-  
-  /**
-   * Get optimal reorder plan based on constraints
-   * @param planningParams Planning parameters
-   * @returns Optimized reorder recommendations
-   */
-  getOptimalReorderPlan(planningParams: InventoryPlanningParams): Promise<InventoryLevelRecommendation[]>;
-}
-
-/**
  * Amazon inventory item with sales data
  */
 export interface AmazonInventoryItem {
+  /**
+   * Product SKU
+   */
   sku: string;
+  
+  /**
+   * ASIN if available
+   */
   asin?: string;
+  
+  /**
+   * Current inventory quantity
+   */
   quantity: number;
+  
+  /**
+   * Fulfillment channel
+   */
   fulfilledBy: 'AMAZON' | 'MERCHANT';
+  
+  /**
+   * Product name if available
+   */
   productName?: string;
+  
+  /**
+   * Daily sales history array
+   */
   dailySalesHistory?: number[];
+  
+  /**
+   * Reserved inventory quantity
+   */
   reservedQuantity?: number;
+  
+  /**
+   * Inbound inventory quantity
+   */
   inboundQuantity?: number;
+  
+  /**
+   * Product price
+   */
   price?: number;
+  
+  /**
+   * Product cost
+   */
   cost?: number;
+  
+  /**
+   * Product condition
+   */
   condition?: string;
+  
+  /**
+   * Age of inventory in days
+   */
   inventoryAge?: number;
 }
 
 /**
- * Implementation of the Amazon Inventory Planning client
+ * Options for the Inventory Planning module
+ */
+export interface InventoryPlanningModuleOptions {
+  /**
+   * Default planning parameters
+   */
+  defaultPlanningParams?: Partial<InventoryPlanningParams>;
+  
+  /**
+   * Custom data fetcher function
+   */
+  inventoryDataFetcher?: (skus: string[]) => Promise<AmazonInventoryItem[]>;
+  
+  /**
+   * Enable detailed debugging
+   */
+  enableDebug?: boolean;
+  
+  /**
+   * Threshold for days of coverage to consider low
+   */
+  lowInventoryThreshold?: number;
+  
+  /**
+   * Default currency code
+   */
+  defaultCurrencyCode?: string;
+}
+
+/**
+ * Implementation of the Amazon Inventory Planning Module
  * Provides inventory forecasting, planning, and optimization functions
  */
-export class AmazonInventoryPlanningClientImpl implements AmazonInventoryPlanningClient {
-  private readonly client: AxiosInstance;
-  private readonly config: AmazonInventoryPlanningConfig;
+export class InventoryPlanningModule extends ApiModule<InventoryPlanningModuleOptions> {
+  /**
+   * The unique identifier for this module
+   */
+  readonly moduleId: string = 'inventory-planning';
+  
+  /**
+   * The human-readable name of this module
+   */
+  readonly moduleName: string = 'Inventory Planning';
+  
+  /**
+   * The API version this module uses
+   */
+  readonly apiVersion: string;
+  
+  /**
+   * The base URL path for API requests
+   */
+  readonly basePath: string;
   
   /**
    * Default planning parameters
@@ -427,26 +462,81 @@ export class AmazonInventoryPlanningClientImpl implements AmazonInventoryPlannin
     maxBudget: Infinity,
     maxUnits: Infinity
   };
+
+  /**
+   * Function to get inventory data from Amazon
+   */
+  private readonly getInventoryData: (skus: string[]) => Promise<AmazonInventoryItem[]>;
   
   /**
    * Constructor
-   * @param getInventoryItems Function to get inventory items with sales data
+   * @param apiVersion API version
+   * @param apiRequest Function to make API requests
+   * @param marketplaceId Marketplace ID
+   * @param options Module-specific options
    */
-  constructor(private getInventoryItems: (skus: string[]) => Promise<AmazonInventoryItem[]>) {
-    this.config = {
-      apiKey: 'default-api-key',
-      baseUrl: 'https://api.amazon.com',
-      timeout: 10000
-    };
+  constructor(
+    apiVersion: string,
+    apiRequest: ApiRequestFunction,
+    marketplaceId: string,
+    options: InventoryPlanningModuleOptions = {}
+  ) {
+    super(apiRequest, marketplaceId, options);
+    this.apiVersion = apiVersion;
+    this.basePath = `/fba/inventory/${apiVersion}`;
     
-    this.client = axios.create({
-      baseURL: this.config.baseUrl,
-      timeout: this.config.timeout || 10000,
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': this.config.apiKey
+    // Merge provided planning params with defaults
+    if (options.defaultPlanningParams) {
+      this.defaultPlanningParams = {
+        ...this.defaultPlanningParams,
+        ...options.defaultPlanningParams
+      };
+    }
+    
+    // Set the inventory data fetcher
+    this.getInventoryData = options.inventoryDataFetcher || this.defaultInventoryDataFetcher;
+  }
+  
+  /**
+   * Default inventory data fetcher that uses the FBA Inventory API
+   * @param skus List of SKUs to fetch data for
+   * @returns Inventory items with sales data
+   */
+  private async defaultInventoryDataFetcher(skus: string[]): Promise<AmazonInventoryItem[]> {
+    try {
+      // Build API request parameters
+      const params: Record<string, any> = {
+        marketplaceId: this.marketplaceId
+      };
+      
+      // Add SKUs filter if provided
+      if (skus && skus.length > 0) {
+        params.sellerSkus = skus;
       }
-    });
+      
+      // Make API request to get inventory levels
+      const response = await this.request(
+        'inventory-summaries',
+        'GET',
+        params
+      );
+      
+      // Transform the response into our AmazonInventoryItem format
+      return (response.data.payload?.inventorySummaries || []).map((summary: any) => ({
+        sku: summary.sellerSku,
+        asin: summary.asin,
+        quantity: summary.totalQuantity || 0,
+        fulfilledBy: summary.fulfillmentChannel === 'AFN' ? 'AMAZON' : 'MERCHANT',
+        productName: summary.productName,
+        reservedQuantity: summary.reservedQuantity || 0,
+        inboundQuantity: summary.inboundQuantity || 0,
+        inventoryAge: summary.inventoryAge || 0,
+        // We'll set empty sales history, actual implementation would get this from another API
+        dailySalesHistory: []
+      }));
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.defaultInventoryDataFetcher`);
+    }
   }
   
   /**
@@ -455,16 +545,24 @@ export class AmazonInventoryPlanningClientImpl implements AmazonInventoryPlannin
    * @param planningParams Planning parameters
    * @returns Inventory recommendations
    */
-  async getInventoryRecommendations(skus: string[], planningParams?: InventoryPlanningParams): Promise<InventoryLevelRecommendation[]> {
+  public async getInventoryRecommendations(
+    skus: string[], 
+    planningParams?: InventoryPlanningParams
+  ): Promise<InventoryLevelRecommendation[]> {
     try {
       // Get inventory items with sales data
-      const inventoryItems = await this.getInventoryItems(skus);
+      const inventoryItems = await this.getInventoryData(skus);
       
       // Merge provided parameters with defaults
       const params = { ...this.defaultPlanningParams, ...planningParams };
       
+      // Log debug info if enabled
+      if (this.options.enableDebug) {
+        console.log(`[${this.moduleName}] Processing recommendations for ${inventoryItems.length} items with parameters:`, params);
+      }
+      
       // Calculate recommendations for each item
-      return inventoryItems.map((item) => {
+      return inventoryItems.map(item => {
         // Calculate average daily sales
         const salesHistory = item.dailySalesHistory || [];
         const averageDailySales = salesHistory.length > 0
@@ -480,7 +578,6 @@ export class AmazonInventoryPlanningClientImpl implements AmazonInventoryPlannin
           : (item.quantity > 0 ? 365 : 0); // If no sales, but have inventory, assume 1 year
         
         // Calculate recommended level
-        // Formula: (Average daily sales * (Target coverage + Lead time + Safety stock))
         const recommendedLevel = Math.ceil(
           adjustedDailySales * (params.targetDaysOfCoverage + params.leadTimeDays + params.safetyStockDays)
         );
@@ -503,7 +600,7 @@ export class AmazonInventoryPlanningClientImpl implements AmazonInventoryPlannin
           : 365; // If no sales, assume 1 year
         
         // Determine risk level
-        let riskLevel: 'low' | 'medium' | 'high';
+        let riskLevel: RiskLevel;
         if (daysOfCoverageAtCurrentLevel <= params.leadTimeDays) {
           riskLevel = 'high';
         } else if (daysOfCoverageAtCurrentLevel <= params.leadTimeDays + params.safetyStockDays) {
@@ -554,27 +651,30 @@ export class AmazonInventoryPlanningClientImpl implements AmazonInventoryPlannin
           recommendationReason
         };
       });
-    } catch (error: any) {
-      throw AmazonErrorUtil.createError(
-        `Failed to get inventory recommendations: ${(error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) || 'Unknown error'}`,
+    } catch (error) {
+      throw AmazonErrorHandler.createError(
+        `Failed to get inventory recommendations: ${error instanceof Error ? error.message : String(error)}`,
         AmazonErrorCode.SERVICE_UNAVAILABLE,
         error
       );
     }
   }
-
+  
   /**
    * Get sales velocity metrics for a list of SKUs
    * @param skus List of SKUs to analyze
    * @param dayRange Number of historical days to consider
    * @returns Sales velocity metrics
    */
-  async getSalesVelocityMetrics(skus: string[], dayRange = 90): Promise<SalesVelocityMetrics[]> {
+  public async getSalesVelocityMetrics(
+    skus: string[], 
+    dayRange: number = 90
+  ): Promise<SalesVelocityMetrics[]> {
     try {
       // Get inventory items with sales data
-      const inventoryItems = await this.getInventoryItems(skus);
+      const inventoryItems = await this.getInventoryData(skus);
       
-      return inventoryItems.map((item) => {
+      return inventoryItems.map(item => {
         const salesHistory = item.dailySalesHistory || [];
         
         // Ensure we have enough sales history
@@ -598,7 +698,7 @@ export class AmazonInventoryPlanningClientImpl implements AmazonInventoryPlannin
         const recentSales = this.sumLastNDays(paddedHistory, 15);
         const previousSales = this.sumLastNDays(paddedHistory.slice(15), 15);
         
-        let salesTrend: 'increasing' | 'stable' | 'decreasing';
+        let salesTrend: SalesTrend;
         const trendRatio = previousSales > 0 ? recentSales / previousSales : 1;
         
         if (trendRatio > 1.2) {
@@ -634,28 +734,28 @@ export class AmazonInventoryPlanningClientImpl implements AmazonInventoryPlannin
           seasonalityFactor
         };
       });
-    } catch (error: any) {
-      throw AmazonErrorUtil.createError(
-        `Failed to get sales velocity metrics: ${(error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) || 'Unknown error'}`,
+    } catch (error) {
+      throw AmazonErrorHandler.createError(
+        `Failed to get sales velocity metrics: ${error instanceof Error ? error.message : String(error)}`,
         AmazonErrorCode.SERVICE_UNAVAILABLE,
         error
       );
     }
   }
-
+  
   /**
    * Get FBA fee estimates for inventory planning
    * @param skus List of SKUs to get fee estimates for
    * @returns FBA fee estimates
    */
-  async getFbaFeeEstimates(skus: string[]): Promise<FbaFeeEstimates[]> {
+  public async getFbaFeeEstimates(skus: string[]): Promise<FbaFeeEstimates[]> {
     try {
       // Get inventory items with sales data
-      const inventoryItems = await this.getInventoryItems(skus);
+      const inventoryItems = await this.getInventoryData(skus);
       
       // In a real implementation, this would call the FBA Fee API
       // For this example, we'll calculate approximate fees
-      return inventoryItems.map((item) => {
+      return inventoryItems.map(item => {
         // Default values for demonstration - in real implementation, use Amazon's API
         const price = item.price || 20;
         
@@ -689,27 +789,27 @@ export class AmazonInventoryPlanningClientImpl implements AmazonInventoryPlannin
           estimatedStorageDays,
           totalFbaFeesPerUnit,
           referralFeePercent,
-          currencyCode: 'USD' // Default
+          currencyCode: this.options.defaultCurrencyCode || 'USD'
         };
       });
-    } catch (error: any) {
-      throw AmazonErrorUtil.createError(
-        `Failed to get FBA fee estimates: ${(error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) || 'Unknown error'}`,
+    } catch (error) {
+      throw AmazonErrorHandler.createError(
+        `Failed to get FBA fee estimates: ${error instanceof Error ? error.message : String(error)}`,
         AmazonErrorCode.SERVICE_UNAVAILABLE,
         error
       );
     }
   }
-
+  
   /**
    * Assess inventory health for a list of SKUs
    * @param skus List of SKUs to assess
    * @returns Inventory health assessments
    */
-  async assessInventoryHealth(skus: string[]): Promise<InventoryHealthAssessment[]> {
+  public async assessInventoryHealth(skus: string[]): Promise<InventoryHealthAssessment[]> {
     try {
       // Get inventory items with sales data
-      const inventoryItems = await this.getInventoryItems(skus);
+      const inventoryItems = await this.getInventoryData(skus);
       
       // Get sales velocity metrics
       const salesMetrics = await this.getSalesVelocityMetrics(skus);
@@ -785,97 +885,112 @@ export class AmazonInventoryPlanningClientImpl implements AmazonInventoryPlannin
           sellThroughRate
         };
       });
-    } catch (error: any) {
-      throw AmazonErrorUtil.createError(
-        `Failed to assess inventory health: ${(error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) || 'Unknown error'}`,
+    } catch (error) {
+      throw AmazonErrorHandler.createError(
+        `Failed to assess inventory health: ${error instanceof Error ? error.message : String(error)}`,
         AmazonErrorCode.SERVICE_UNAVAILABLE,
         error
       );
     }
   }
-
+  
   /**
    * Get excess inventory report
    * @returns Excess inventory items
    */
-  async getExcessInventoryReport(): Promise<InventoryHealthAssessment[]> {
+  public async getExcessInventoryReport(): Promise<InventoryHealthAssessment[]> {
     try {
       // Get all inventory items
-      const inventoryItems = await this.getInventoryItems([]);
+      const inventoryItems = await this.getInventoryData([]);
       
       // Assess health for all items
       const healthAssessments = await this.assessInventoryHealth(
-        inventoryItems.map((item) => item.sku)
+        inventoryItems.map(item => item.sku)
       );
       
       // Filter to excess items only
-      return healthAssessments.filter((item) => item.healthStatus === InventoryHealthStatus.EXCESS);
-    } catch (error: any) {
-      throw AmazonErrorUtil.createError(
-        `Failed to get excess inventory report: ${(error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) || 'Unknown error'}`,
+      return healthAssessments.filter(item => item.healthStatus === InventoryHealthStatus.EXCESS);
+    } catch (error) {
+      throw AmazonErrorHandler.createError(
+        `Failed to get excess inventory report: ${error instanceof Error ? error.message : String(error)}`,
         AmazonErrorCode.SERVICE_UNAVAILABLE,
         error
       );
     }
   }
-
+  
   /**
    * Get low inventory report
    * @param daysOfCoverageThreshold Threshold for days of coverage to consider low
    * @returns Low inventory items
    */
-  async getLowInventoryReport(daysOfCoverageThreshold = 14): Promise<InventoryLevelRecommendation[]> {
+  public async getLowInventoryReport(
+    daysOfCoverageThreshold: number = 14
+  ): Promise<InventoryLevelRecommendation[]> {
     try {
       // Get all inventory items
-      const inventoryItems = await this.getInventoryItems([]);
+      const inventoryItems = await this.getInventoryData([]);
       
       // Get recommendations for all items
       const recommendations = await this.getInventoryRecommendations(
-        inventoryItems.map((item) => item.sku)
+        inventoryItems.map(item => item.sku)
       );
       
       // Filter to low inventory items based on threshold
-      return recommendations.filter((item) => item.daysOfCoverageAtCurrentLevel < daysOfCoverageThreshold);
-    } catch (error: any) {
-      throw AmazonErrorUtil.createError(
-        `Failed to get low inventory report: ${(error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) || 'Unknown error'}`,
+      return recommendations.filter(item => 
+        item.daysOfCoverageAtCurrentLevel < daysOfCoverageThreshold
+      );
+    } catch (error) {
+      throw AmazonErrorHandler.createError(
+        `Failed to get low inventory report: ${error instanceof Error ? error.message : String(error)}`,
         AmazonErrorCode.SERVICE_UNAVAILABLE,
         error
       );
     }
   }
-
+  
   /**
    * Get optimal reorder plan based on constraints
    * @param planningParams Planning parameters
    * @returns Optimized reorder recommendations
    */
-  async getOptimalReorderPlan(planningParams: InventoryPlanningParams): Promise<InventoryLevelRecommendation[]> {
+  public async getOptimalReorderPlan(
+    planningParams: InventoryPlanningParams
+  ): Promise<InventoryLevelRecommendation[]> {
     try {
       // Get all inventory items
-      const inventoryItems = await this.getInventoryItems([]);
+      const inventoryItems = await this.getInventoryData([]);
       
       // Get basic recommendations
       const recommendations = await this.getInventoryRecommendations(
-        inventoryItems.map((item) => item.sku),
+        inventoryItems.map(item => item.sku),
         planningParams
       );
       
       // If we have budget constraints, optimize based on inventory value and priority
-      if (planningParams.applyBudgetConstraints && planningParams.maxBudget && planningParams.maxBudget < Infinity) {
-        return this.optimizeForBudget(recommendations, inventoryItems, planningParams.maxBudget, planningParams.maxUnits);
+      if (
+        planningParams.applyBudgetConstraints && 
+        planningParams.maxBudget && 
+        planningParams.maxBudget < Infinity
+      ) {
+        return this.optimizeForBudget(
+          recommendations, 
+          inventoryItems, 
+          planningParams.maxBudget, 
+          planningParams.maxUnits
+        );
       }
       
       return recommendations;
-    } catch (error: any) {
-      throw AmazonErrorUtil.createError(
-        `Failed to get optimal reorder plan: ${(error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) || 'Unknown error'}`,
+    } catch (error) {
+      throw AmazonErrorHandler.createError(
+        `Failed to get optimal reorder plan: ${error instanceof Error ? error.message : String(error)}`,
         AmazonErrorCode.SERVICE_UNAVAILABLE,
         error
       );
     }
   }
-
+  
   /**
    * Optimize inventory recommendations for budget constraints
    * @param recommendations Initial recommendations
@@ -899,7 +1014,7 @@ export class AmazonInventoryPlanningClientImpl implements AmazonInventoryPlannin
     // Prioritize by risk level and days of coverage
     const sortedRecommendations = [...recommendations].sort((a, b) => {
       // First by risk level (high > medium > low)
-      const riskOrder = { high: 0, medium: 1, low: 2 };
+      const riskOrder: Record<RiskLevel, number> = { high: 0, medium: 1, low: 2 };
       const riskCompare = riskOrder[a.riskLevel] - riskOrder[b.riskLevel];
       if (riskCompare !== 0) return riskCompare;
       
@@ -911,7 +1026,7 @@ export class AmazonInventoryPlanningClientImpl implements AmazonInventoryPlannin
     let remainingBudget = maxBudget;
     let remainingUnits = maxUnits;
     
-    const optimizedRecommendations = sortedRecommendations.map((recommendation) => {
+    const optimizedRecommendations = sortedRecommendations.map(recommendation => {
       const itemCost = skuToCost.get(recommendation.sku) || 10;
       const totalCost = itemCost * recommendation.reorderQuantity;
       const originalReorderQuantity = recommendation.reorderQuantity;

@@ -1,46 +1,44 @@
 /**
- * Factory for creating FBA inventory-related API modules
+ * Amazon FBA Inventory API Factory
+ * 
+ * Factory function for creating and registering an Amazon FBA Inventory API module.
  */
 
-import { FbaInventoryModule } from './fba-inventory';
+import { FBAInventoryModule, FBAInventoryModuleOptions } from './fba-inventory';
+import { ApiRequestFunction } from '../../core/base-module.interface';
 import { ModuleRegistry } from '../../core/module-registry';
-import { getDefaultModuleVersion } from '../../core/module-definitions';
+import { getModuleDefaultVersion } from '../../core/module-definitions';
 
 /**
- * Factory for creating FBA inventory-related API modules
+ * Creates and registers an FBA Inventory module
+ * 
+ * @param apiRequest API request function
+ * @param marketplaceId Marketplace ID
+ * @param registry Module registry for registration
+ * @param apiVersion Optional API version to use
+ * @param options Optional module-specific options
+ * @returns The created FBA Inventory module
  */
-export class FbaInventoryModuleFactory {
-  /**
-   * Create an FBA Inventory module and register it with the provided registry
-   * @param makeApiRequest Function to make API requests
-   * @param marketplaceId Marketplace ID
-   * @param registry Module registry to register with
-   * @param apiVersion Optional API version (uses default if not provided)
-   * @returns The created module
-   */
-  public static createFbaInventoryModule(
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string,
-    registry: ModuleRegistry,
-    apiVersion?: string
-  ): FbaInventoryModule {
-    // Use provided version or get the default
-    const version = apiVersion || getDefaultModuleVersion('fbaInventory') || '2022-05-01';
-    
-    // Create the module
-    const module = new FbaInventoryModule(
-      version,
-      makeApiRequest,
-      marketplaceId
-    );
-    
-    // Register the module
-    registry.registerModule(module);
-    
-    return module;
-  }
+export function createFBAInventoryModule(
+  apiRequest: ApiRequestFunction,
+  marketplaceId: string,
+  registry: ModuleRegistry,
+  apiVersion?: string,
+  options: FBAInventoryModuleOptions = {}
+): FBAInventoryModule {
+  // Use provided version or get the default
+  const version = apiVersion || getModuleDefaultVersion('fbaInventory') || 'v1';
+  
+  // Create the module
+  const module = new FBAInventoryModule(
+    version,
+    apiRequest,
+    marketplaceId,
+    options
+  );
+  
+  // Register the module
+  registry.registerModule(module.moduleId, module);
+  
+  return module;
 }

@@ -1,46 +1,40 @@
 /**
- * Factory for creating feeds-related API modules
+ * Factory for creating Feeds module
  */
-
-import { FeedsModule } from './feeds';
+import { ApiRequestFunction } from '../core/base-module.interface';
 import { ModuleRegistry } from '../core/module-registry';
-import { getDefaultModuleVersion } from '../core/module-definitions';
+import { getModuleDefaultVersion } from '../core/module-definitions';
+import { FeedsModule } from './feeds';
 
 /**
- * Factory for creating feeds-related API modules
+ * Create a Feeds module
+ * 
+ * @param apiRequest - Function to make Amazon API requests
+ * @param marketplaceId - Amazon marketplace ID
+ * @param registry - Module registry for Amazon modules
+ * @param apiVersion - Optional API version to use (defaults to latest)
+ * @returns FeedsModule instance
  */
-export class FeedsModuleFactory {
-  /**
-   * Create a Feeds module and register it with the provided registry
-   * @param makeApiRequest Function to make API requests
-   * @param marketplaceId Marketplace ID
-   * @param registry Module registry to register with
-   * @param apiVersion Optional API version (uses default if not provided)
-   * @returns The created module
-   */
-  public static createFeedsModule(
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string,
-    registry: ModuleRegistry,
-    apiVersion?: string
-  ): FeedsModule {
-    // Use provided version or get the default
-    const version = apiVersion || getDefaultModuleVersion('feeds') || '2021-06-30';
-    
-    // Create the module
-    const module = new FeedsModule(
-      version,
-      makeApiRequest,
-      marketplaceId
-    );
-    
-    // Register the module
-    registry.registerModule(module);
-    
-    return module;
-  }
+export function createFeedsModule(
+  apiRequest: ApiRequestFunction,
+  marketplaceId: string,
+  registry: ModuleRegistry,
+  apiVersion?: string
+): FeedsModule {
+  // Use provided version or get the default
+  const version = apiVersion || getModuleDefaultVersion('feeds') || '2021-06-30';
+  
+  // Create the module
+  const module = new FeedsModule(
+    version,
+    apiRequest,
+    marketplaceId
+  );
+  
+  // Register the module
+  registry.registerModule('feeds', module);
+  
+  return module;
 }
+
+export default createFeedsModule;

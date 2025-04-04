@@ -1,144 +1,123 @@
+import { injectable, inject } from 'inversify';
 import { IMarketplaceAdapter } from '../adapters/interfaces/marketplace-adapter.interface';
-import { MarketplaceCredentials } from '../models/marketplace.models';
+import { MarketplaceCredentials, ConnectionStatus } from '../models/marketplace.models';
+import { MarketplaceAdapterFactory } from '../adapters/marketplace-adapter.factory';
+import { LoggerService } from '../../../services/logger.service';
+import { Container } from 'inversify';
 
 /**
- * Factory service for creating and managing marketplace adapters
+ * Service for interacting with marketplace adapters
+ * Provides a unified interface for working with different marketplaces
  */
-export class MarketplaceAdapterFactory {
-  private static instance: MarketplaceAdapterFactory;
-  private adapterRegistry: Map<string, new () => IMarketplaceAdapter> = new Map();
-  private activeAdapters: Map<string, IMarketplaceAdapter> = new Map();
+@injectable()
+export class MarketplaceAdapterFactoryService {
+  private readonly adapterFactory: MarketplaceAdapterFactory;
 
   /**
-   * Private constructor to enforce singleton pattern
+   * Constructor
+   * @param container DI container for resolving dependencies
+   * @param logger Logger service for consistent logging
    */
-  private constructor() {}
-
-  /**
-   * Get the singleton instance
-   */
-  public static getInstance(): MarketplaceAdapterFactory {
-    if (!MarketplaceAdapterFactory.instance) {
-      MarketplaceAdapterFactory.instance = new MarketplaceAdapterFactory();
-    }
-    return MarketplaceAdapterFactory.instance;
+  constructor(
+    @inject('Container') private container: Container,
+    @inject('LoggerService') private logger: LoggerService
+  ) {
+    this.adapterFactory = MarketplaceAdapterFactory.getInstance(container, logger);
   }
 
   /**
-   * Register a marketplace adapter class
-   * @param marketplaceId - Unique identifier for the marketplace
-   * @param adapterClass - The adapter class to register
+   * Get an adapter for the specified marketplace
+   * @param marketplaceId Marketplace identifier (e.g., 'amazon', 'shopify')
+   * @param credentials Credentials for marketplace authentication
+   * @returns Initialized marketplace adapter
    */
-  public registerAdapter(marketplaceId: string, adapterClass: new () => IMarketplaceAdapter): void {
-    this.adapterRegistry.set(marketplaceId.toLowerCase(), adapterClass);
-  }
-
-  /**
-   * Create and initialize a marketplace adapter
-   * @param marketplaceId - Unique identifier for the marketplace
-   * @param credentials - Credentials for the marketplace
-   * @returns Initialized adapter instance
-   */
-  public async createAdapter(
+  public async getAdapter(
     marketplaceId: string,
     credentials: MarketplaceCredentials
   ): Promise<IMarketplaceAdapter> {
-    const normalizedId = marketplaceId.toLowerCase();
+    this.logger.info('Getting marketplace adapter', { 
+      marketplaceId,
+      sellerId: credentials.sellerId
+    });
     
-    // Check if adapter is registered
-    const AdapterClass = this.adapterRegistry.get(normalizedId);
-    if (!AdapterClass) {
-      throw new Error(`No adapter registered for marketplace: ${marketplaceId}`);
+    try {
+      return await this.adapterFactory.getAdapter(marketplaceId, credentials);
+    } catch (error) {
+      this.logger.error('Failed to get marketplace adapter', { 
+        marketplaceId,
+        error 
+      });
+      throw error;
     }
-    
-    // Create adapter instance
-    const adapter = new AdapterClass();
-    
-    // Initialize adapter with credentials
-    await adapter.initialize(credentials);
-    
-    // Store active adapter
-    this.activeAdapters.set(normalizedId, adapter);
-    
-    return adapter;
   }
 
   /**
-   * Get an active adapter by marketplace ID
-   * @param marketplaceId - Unique identifier for the marketplace
-   * @returns Active adapter instance
+   * Test connection to a marketplace without storing the adapter
+   * @param marketplaceId Marketplace identifier
+   * @param credentials Credentials for marketplace authentication
+   * @returns Connection status information
    */
-  public getAdapter(marketplaceId: string): IMarketplaceAdapter {
-    const normalizedId = marketplaceId.toLowerCase();
+  public async testConnection(
+    marketplaceId: string,
+    credentials: MarketplaceCredentials
+  ): Promise<ConnectionStatus> {
+    this.logger.info('Testing marketplace connection', { marketplaceId });
     
-    const adapter = this.activeAdapters.get(normalizedId);
-    
-    if (!adapter) {
-      throw new Error(`No active adapter found for marketplace: ${marketplaceId}. Call createAdapter() first.`);
+    try {
+      const adapter = await this.adapterFactory.getAdapter(marketplaceId, credentials);
+      const result = await adapter.testConnection();
+      
+      // Clear the adapter from cache to prevent storing test connections
+      this.adapterFactory.clearAdapterInstances(marketplaceId);
+      
+      return result;
+    } catch (error) {
+      this.logger.error('Failed to test marketplace connection', {
+        marketplaceId,
+        error
+      });
+      
+      return {
+        connected: false,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        lastChecked: new Date()
+      };
     }
-    
-    return adapter;
   }
 
   /**
-   * Check if an adapter is registered
-   * @param marketplaceId - Unique identifier for the marketplace
-   * @returns True if adapter is registered
+   * Get a list of supported marketplaces
+   * @returns Array of marketplace identifiers
    */
-  public hasAdapter(marketplaceId: string): boolean {
-    return this.adapterRegistry.has(marketplaceId.toLowerCase());
+  public getSupportedMarketplaces(): string[] {
+    return ['amazon', 'shopify', 'takealot'];
   }
 
   /**
-   * Check if an adapter is active (created and initialized)
-   * @param marketplaceId - Unique identifier for the marketplace
-   * @returns True if adapter is active
+   * Close an adapter and remove it from the factory cache
+   * @param marketplaceId Marketplace identifier
+   * @param credentials Credentials used with the adapter
    */
-  public isAdapterActive(marketplaceId: string): boolean {
-    return this.activeAdapters.has(marketplaceId.toLowerCase());
-  }
-
-  /**
-   * Get all registered marketplace IDs
-   * @returns Array of registered marketplace IDs
-   */
-  public getRegisteredMarketplaces(): string[] {
-    return Array.from(this.adapterRegistry.keys());
-  }
-
-  /**
-   * Get all active marketplace IDs
-   * @returns Array of active marketplace IDs
-   */
-  public getActiveMarketplaces(): string[] {
-    return Array.from(this.activeAdapters.keys());
-  }
-
-  /**
-   * Close and remove an active adapter
-   * @param marketplaceId - Unique identifier for the marketplace
-   * @returns True if adapter was closed successfully
-   */
-  public async closeAdapter(marketplaceId: string): Promise<boolean> {
-    const normalizedId = marketplaceId.toLowerCase();
-    
-    const adapter = this.activeAdapters.get(normalizedId);
-    
-    if (adapter) {
+  public async closeAdapter(
+    marketplaceId: string,
+    credentials: MarketplaceCredentials
+  ): Promise<void> {
+    try {
+      // Get the adapter first, so we can call close() on it
+      const adapter = await this.adapterFactory.getAdapter(marketplaceId, credentials);
+      
+      // Close the adapter to clean up resources
       await adapter.close();
-      this.activeAdapters.delete(normalizedId);
-      return true;
+      
+      // Clear it from the cache
+      this.adapterFactory.clearAdapterInstances(marketplaceId);
+      
+      this.logger.info('Closed marketplace adapter', { marketplaceId });
+    } catch (error) {
+      this.logger.error('Error closing marketplace adapter', {
+        marketplaceId,
+        error
+      });
     }
-    
-    return false;
-  }
-
-  /**
-   * Close all active adapters
-   */
-  public async closeAllAdapters(): Promise<void> {
-    const promises = Array.from(this.activeAdapters.values()).map(adapter => adapter.close());
-    await Promise.all(promises);
-    this.activeAdapters.clear();
   }
 }

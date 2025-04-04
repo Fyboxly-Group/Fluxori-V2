@@ -1,46 +1,41 @@
 /**
- * Factory for creating Merchant Fulfillment API module
+ * Amazon Merchant Fulfillment API Factory
+ * 
+ * Factory function for creating and registering an Amazon Merchant Fulfillment API module.
  */
 
 import { MerchantFulfillmentModule } from './merchant-fulfillment';
-import { ModuleRegistry } from '../../core/module-registry';
-import { getDefaultModuleVersion } from '../../core/module-definitions';
+import { ApiRequestFunction } from '../../../core/base-module.interface';
+import { ModuleRegistry } from '../../../core/module-registry';
+import { getModuleDefaultVersion } from '../../../core/module-definitions';
 
 /**
- * Factory for creating Merchant Fulfillment API module
+ * Creates and registers a Merchant Fulfillment module
+ * 
+ * @param apiRequest API request function
+ * @param marketplaceId Marketplace ID
+ * @param registry Module registry for registration
+ * @param apiVersion Optional API version to use
+ * @returns The created Merchant Fulfillment module
  */
-export class MerchantFulfillmentModuleFactory {
-  /**
-   * Create a Merchant Fulfillment module and register it with the provided registry
-   * @param makeApiRequest Function to make API requests
-   * @param marketplaceId Marketplace ID
-   * @param registry Module registry to register with
-   * @param apiVersion Optional API version (uses default if not provided)
-   * @returns The created module
-   */
-  public static createMerchantFulfillmentModule(
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string,
-    registry: ModuleRegistry,
-    apiVersion?: string
-  ): MerchantFulfillmentModule {
-    // Use provided version or get the default
-    const version = apiVersion || getDefaultModuleVersion('merchantFulfillment') || 'v0';
-    
-    // Create the module
-    const module = new MerchantFulfillmentModule(
-      version,
-      makeApiRequest,
-      marketplaceId
-    );
-    
-    // Register the module
-    registry.registerModule(module);
-    
-    return module;
-  }
+export function createMerchantFulfillmentModule(
+  apiRequest: ApiRequestFunction,
+  marketplaceId: string,
+  registry: ModuleRegistry,
+  apiVersion?: string
+): MerchantFulfillmentModule {
+  // Use provided version or get the default
+  const version = apiVersion || getModuleDefaultVersion('merchantFulfillment') || 'v0';
+  
+  // Create the module
+  const module = new MerchantFulfillmentModule(
+    version,
+    apiRequest,
+    marketplaceId
+  );
+  
+  // Register the module
+  registry.registerModule('merchantFulfillment', module);
+  
+  return module;
 }

@@ -1,0 +1,20 @@
+/**
+ * Factory: <T: string: string: any
+    ) => Promise: T: number: Record: string: ModuleRegistry: string: DataKioskModule {
+    // Use provided version or get the default
+}
+    let version: apiVersion = || getDefaultModuleVersion('dataKiosk') || '2023-11-15';
+    
+    // Create the module
+    let module: new = DataKioskModule(
+      version,)
+      makeApiRequest,
+      marketplaceId
+    );
+    
+    // Register the module
+    registry.registerModule(module);
+    
+    return module;
+  }
+}

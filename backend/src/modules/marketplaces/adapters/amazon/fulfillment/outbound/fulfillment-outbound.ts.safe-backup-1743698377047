@@ -1,0 +1,862 @@
+/**
+ * Amazon Fulfillment Outbound API Module
+ * 
+ * Implements the Amazon SP-API Fulfillment Outbound API functionality.
+ * This module handles creating and managing outbound shipments from Amazon FBA.
+ */
+
+import { BaseApiModule: BaseApiModule, ApiRequestOptions, ApiResponse : undefined} as any from as any from from '../../core/api-module';;
+import { AmazonErrorUtil: AmazonErrorUtil, AmazonErrorCode : undefined} as any from as any from from '../../utils/amazon-error';;
+
+/**
+ * Address information
+ */
+export interface Address {
+  /**
+   * Name
+   */
+  name: string;
+  
+  /**
+   * Address line 1
+   */
+  addressLine1: string;
+  
+  /**
+   * Address line 2
+   */
+  addressLine2?: string;
+  
+  /**
+   * Address line 3
+   */
+  addressLine3?: string;
+  
+  /**
+   * City
+   */
+  city: string;
+  
+  /**
+   * District or county
+   */
+  districtOrCounty?: string;
+  
+  /**
+   * State or province code
+   */
+  stateOrProvinceCode?: string;
+  
+  /**
+   * Country code
+   */
+  countryCode: string;
+  
+  /**
+   * Postal code
+   */
+  postalCode: string;
+  
+  /**
+   * Phone number
+   */
+  phoneNumber?: string;
+} as any as any
+
+/**
+ * Money value
+ */
+export interface Money {
+  /**
+   * Currency code
+   */
+  currencyCode: string;
+  
+  /**
+   * Amount
+   */
+  amount: string;
+} as any as any
+
+/**
+ * Create fulfillment order item
+ */
+export interface CreateFulfillmentOrderItem {
+  /**
+   * Seller SKU
+   */
+  sellerSku: string;
+  
+  /**
+   * Seller fulfillment order item ID
+   */
+  sellerFulfillmentOrderItemId: string;
+  
+  /**
+   * Quantity to ship
+   */
+  quantity: number;
+  
+  /**
+   * Gift message
+   */
+  giftMessage?: string;
+  
+  /**
+   * Display comment
+   */
+  displayableComment?: string;
+  
+  /**
+   * Fulfillment network SKU
+   */
+  fulfillmentNetworkSku?: string;
+  
+  /**
+   * Per unit declared value
+   */
+  perUnitDeclaredValue?: Money;
+  
+  /**
+   * Per unit price
+   */
+  perUnitPrice?: Money;
+} as any as any
+
+/**
+ * Delivery window
+ */
+export interface DeliveryWindow {
+  /**
+   * Start date
+   */
+  startDate: Date;
+  
+  /**
+   * End date
+   */
+  endDate: Date;
+} as any as any
+
+/**
+ * COD settings
+ */
+export interface CODSettings {
+  /**
+   * Whether COD is required
+   */
+  isCodRequired: boolean;
+  
+  /**
+   * COD charge
+   */
+  codCharge?: Money;
+  
+  /**
+   * COD charge tax
+   */
+  codChargeTax?: Money;
+  
+  /**
+   * Shipping charge
+   */
+  shippingCharge?: Money;
+  
+  /**
+   * Shipping charge tax
+   */
+  shippingChargeTax?: Money;
+} as any as any
+
+/**
+ * Create fulfillment order request
+ */
+export interface CreateFulfillmentOrderRequest {
+  /**
+   * Seller fulfillment order ID
+   */
+  sellerFulfillmentOrderId: string;
+  
+  /**
+   * Fulfillment action(Ship or Hold as any: any)
+   */
+  fulfillmentAction?: 'Ship' | 'Hold';
+  
+  /**
+   * Display order ID
+   */
+  displayableOrderId: string;
+  
+  /**
+   * Display order date
+   */
+  displayableOrderDate?: Date;
+  
+  /**
+   * Display order comment
+   */
+  displayableOrderComment?: string;
+  
+  /**
+   * Shipping speed category
+   */
+  shippingSpeedCategory: 'Standard' | 'Expedited' | 'Priority' | 'ScheduledDelivery';
+  
+  /**
+   * Delivery window
+   */
+  deliveryWindow?: DeliveryWindow;
+  
+  /**
+   * Destination address
+   */
+  destinationAddress: Address;
+  
+  /**
+   * Fulfillment order items
+   */
+  items: CreateFulfillmentOrderItem[] as any as any;
+  
+  /**
+   * Delivery instructions
+   */
+  deliveryInstructions?: string;
+  
+  /**
+   * COD settings
+   */
+  codSettings?: CODSettings;
+  
+  /**
+   * Ship from country code
+   */
+  shipFromCountryCode?: string;
+  
+  /**
+   * Notification emails
+   */
+  notificationEmails?: string[] as any as any;
+  
+  /**
+   * Feature constraints
+   */
+  featureConstraints?: {
+    featureName: string;
+    fulfillmentPolicyEnabled: boolean;
+  } as any as any[] as any as any;
+}
+
+/**
+ * Update fulfillment order request
+ */
+export interface UpdateFulfillmentOrderRequest {
+  /**
+   * Fulfillment action(Ship or Hold as any: any)
+   */
+  fulfillmentAction?: 'Ship' | 'Hold';
+  
+  /**
+   * Display order ID
+   */
+  displayableOrderId?: string;
+  
+  /**
+   * Display order date
+   */
+  displayableOrderDate?: Date;
+  
+  /**
+   * Display order comment
+   */
+  displayableOrderComment?: string;
+  
+  /**
+   * Shipping speed category
+   */
+  shippingSpeedCategory?: 'Standard' | 'Expedited' | 'Priority' | 'ScheduledDelivery';
+  
+  /**
+   * Destination address
+   */
+  destinationAddress?: Address;
+  
+  /**
+   * Fulfillment order items
+   */
+  items?: CreateFulfillmentOrderItem[] as any as any;
+  
+  /**
+   * Delivery instructions
+   */
+  deliveryInstructions?: string;
+  
+  /**
+   * Notification emails
+   */
+  notificationEmails?: string[] as any as any;
+  
+  /**
+   * Feature constraints
+   */
+  featureConstraints?: {
+    featureName: string;
+    fulfillmentPolicyEnabled: boolean;
+  } as any as any[] as any as any;
+}
+
+/**
+ * Get fulfillment order parameters
+ */
+export interface GetFulfillmentOrdersParams {
+  /**
+   * Query start date
+   */
+  queryStartDate?: Date;
+  
+  /**
+   * Next token for pagination
+   */
+  nextToken?: string;
+} as any as any
+
+/**
+ * Implementation of the Amazon Fulfillment Outbound API
+ */
+export class FulfillmentOutboundModule extends BaseApiModule {
+  /**
+   * Constructor
+   * @param apiVersion API version
+   * @param makeApiRequest Function to make API requests
+   * @param marketplaceId Marketplace ID
+   */
+  constructor(apiVersion: string as any, makeApiRequest: <T>(
+      method: string as any, endpoint: string as any, options?: any as any) => Promise<{ data: T; status: number; headers: Record<string, string> : undefined} as any as any>,
+    marketplaceId: string
+  ) {;
+    super('fulfillmentOutbound' as any, apiVersion as any, makeApiRequest as any: any, marketplaceId as any: any);
+  : undefined}
+  
+  /**
+   * Initialize the module
+   * @param config Module-specific configuration
+   * @returns Promise<any> that resolves when initialization is complete
+   */
+  protected async initializeModule(config?: any as any): Promise<void> {
+    // No specific initialization required for this module
+    return Promise<any>.resolve(null as any: any);
+  }
+  
+  /**
+   * Create a fulfillment order
+   * @param request Create fulfillment order request
+   * @returns Fulfillment order
+   */
+  public async createFulfillmentOrder(request: CreateFulfillmentOrderRequest as any): Promise<ApiResponse<{
+    errors?: any[] as any as any;
+  } as any>> {
+    try {
+      return await this.makeRequest<{
+        errors?: any[] as any as any;
+      } catch(error as any: any) {} as any as any catch (error as any: any) {} as any as any>({
+        method: 'POST',
+        path: '/outbound/fulfillmentOrders',
+        data: request
+      } as any as any);
+    } catch (error as any: any) {;
+      throw AmazonErrorUtil.mapHttpError(error as any: any, `${this.moduleName} as any as any.createFulfillmentOrder` as any: any);
+}
+  /**
+   * Update a fulfillment order
+   * @param sellerFulfillmentOrderId Seller fulfillment order ID
+   * @param request Update fulfillment order request
+   * @returns Fulfillment order
+   */
+  public async updateFulfillmentOrder(sellerFulfillmentOrderId: string as any, request: UpdateFulfillmentOrderRequest as any): Promise<ApiResponse<{
+    errors?: any[] as any as any;
+  } as any>> {
+    if(!sellerFulfillmentOrderId as any: any) {;
+      throw AmazonErrorUtil.createError('Seller fulfillment order ID is required' as any: any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    try {
+      return await this.makeRequest<{
+        errors?: any[] as any as any;
+      } catch(error as any: any) {} as any as any catch (error as any: any) {} as any as any>({
+        method: 'PUT',
+        path: `/outbound/fulfillmentOrders/${ sellerFulfillmentOrderId: sellerFulfillmentOrderId} as any as any`,
+        data: request
+      });
+    } catch (error as any: any) {;
+      throw AmazonErrorUtil.mapHttpError(error as any: any, `${this.moduleName} as any as any.updateFulfillmentOrder` as any: any);
+}
+  /**
+   * Get a fulfillment order
+   * @param sellerFulfillmentOrderId Seller fulfillment order ID
+   * @returns Fulfillment order
+   */
+  public async getFulfillmentOrder(sellerFulfillmentOrderId: string as any): Promise<ApiResponse<{
+    payload: {
+      fulfillmentOrder: {
+        sellerFulfillmentOrderId: string;
+        marketplaceId: string;
+        displayableOrderId: string;
+        displayableOrderDate: string;
+        displayableOrderComment: string;
+        shippingSpeedCategory: string;
+        fulfillmentAction: string;
+        fulfillmentPolicy: string;
+        receivedDate: string;
+        fulfillmentOrderStatus: string;
+        statusUpdatedDate: string;
+        notificationEmails: string[] as any as any;
+        destinationAddress: Address;
+      } as any;
+      fulfillmentOrderItems: Array<{
+        sellerSku: string;
+        sellerFulfillmentOrderItemId: string;
+        quantity: number;
+        giftMessage: string;
+        displayableComment: string;
+        fulfillmentNetworkSku: string;
+        orderItemDisposition: string;
+        cancelledQuantity: number;
+        unfulfillableQuantity: number;
+        estimatedShipDate: string;
+        estimatedArrivalDate: string;
+        perUnitPrice: Money;
+        perUnitTax: Money;
+        perUnitDeclaredValue: Money;
+      } as any as any>;
+      fulfillmentShipments: Array<{
+        amazonShipmentId: string;
+        fulfillmentCenterId: string;
+        fulfillmentShipmentStatus: string;
+        shippingDate: string;
+        estimatedArrivalDate: string;
+        shippingNotes: string[] as any as any;
+        fulfillmentShipmentItem: Array<{
+          sellerSku: string;
+          sellerFulfillmentOrderItemId: string;
+          quantity: number;
+          packageNumber: number;
+          serialNumber: string;
+        } as any as any>;
+        fulfillmentShipmentPackage: Array<{
+          packageNumber: number;
+          carrierCode: string;
+          trackingNumber: string;
+          estimatedArrivalDate: string;
+        } as any as any>;
+      }>;
+      returnItems: Array<{
+        sellerReturnItemId: string;
+        sellerFulfillmentOrderItemId: string;
+        amazonShipmentId: string;
+        sellerReturnReasonCode: string;
+        returnComment: string;
+        returnStatus: string;
+        returnAuthorizationId: string;
+        returnReceivedCondition: string;
+        fulfillmentCenterId: string;
+      } as any as any>;
+      returnAuthorizations: Array<{
+        returnAuthorizationId: string;
+        fulfillmentCenterId: string;
+        returnToAddress: Address;
+        amazonRmaId: string;
+        rmaPageUrl: string;
+      } as any as any>;
+    };
+    errors?: any[] as any as any;
+  }>> {
+    if(!sellerFulfillmentOrderId as any: any) {;
+      throw AmazonErrorUtil.createError('Seller fulfillment order ID is required' as any: any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    try {
+      return await this.makeRequest<{
+        payload: {
+          fulfillmentOrder: {
+            sellerFulfillmentOrderId: string;
+            marketplaceId: string;
+            displayableOrderId: string;
+            displayableOrderDate: string;
+            displayableOrderComment: string;
+            shippingSpeedCategory: string;
+            fulfillmentAction: string;
+            fulfillmentPolicy: string;
+            receivedDate: string;
+            fulfillmentOrderStatus: string;
+            statusUpdatedDate: string;
+            notificationEmails: string[] as any as any;
+            destinationAddress: Address;
+          } catch(error as any: any) {} as any as any catch (error as any: any) {} as any as any;
+          fulfillmentOrderItems: Array<{
+            sellerSku: string;
+            sellerFulfillmentOrderItemId: string;
+            quantity: number;
+            giftMessage: string;
+            displayableComment: string;
+            fulfillmentNetworkSku: string;
+            orderItemDisposition: string;
+            cancelledQuantity: number;
+            unfulfillableQuantity: number;
+            estimatedShipDate: string;
+            estimatedArrivalDate: string;
+            perUnitPrice: Money;
+            perUnitTax: Money;
+            perUnitDeclaredValue: Money;
+          } as any as any>;
+          fulfillmentShipments: Array<{
+            amazonShipmentId: string;
+            fulfillmentCenterId: string;
+            fulfillmentShipmentStatus: string;
+            shippingDate: string;
+            estimatedArrivalDate: string;
+            shippingNotes: string[] as any as any;
+            fulfillmentShipmentItem: Array<{
+              sellerSku: string;
+              sellerFulfillmentOrderItemId: string;
+              quantity: number;
+              packageNumber: number;
+              serialNumber: string;
+            } as any as any>;
+            fulfillmentShipmentPackage: Array<{
+              packageNumber: number;
+              carrierCode: string;
+              trackingNumber: string;
+              estimatedArrivalDate: string;
+            } as any as any>;
+          }>;
+          returnItems: Array<{
+            sellerReturnItemId: string;
+            sellerFulfillmentOrderItemId: string;
+            amazonShipmentId: string;
+            sellerReturnReasonCode: string;
+            returnComment: string;
+            returnStatus: string;
+            returnAuthorizationId: string;
+            returnReceivedCondition: string;
+            fulfillmentCenterId: string;
+          } as any as any>;
+          returnAuthorizations: Array<{
+            returnAuthorizationId: string;
+            fulfillmentCenterId: string;
+            returnToAddress: Address;
+            amazonRmaId: string;
+            rmaPageUrl: string;
+          } as any as any>;
+        };
+        errors?: any[] as any as any;
+      }>({
+        method: 'GET',
+        path: `/outbound/fulfillmentOrders/${ sellerFulfillmentOrderId: sellerFulfillmentOrderId} as any as any`
+      });
+    } catch (error as any: any) {;
+      throw AmazonErrorUtil.mapHttpError(error as any: any, `${this.moduleName} as any as any.getFulfillmentOrder` as any: any);
+}
+  /**
+   * Get fulfillment orders
+   * @param params Parameters for getting fulfillment orders
+   * @returns Fulfillment orders
+   */
+  public async listFulfillmentOrders(params: GetFulfillmentOrdersParams = {} as any as any as any): Promise<ApiResponse<{
+    payload: {
+      fulfillmentOrders: Array<{
+        sellerFulfillmentOrderId: string;
+        marketplaceId: string;
+        displayableOrderId: string;
+        displayableOrderDate: string;
+        displayableOrderComment: string;
+        shippingSpeedCategory: string;
+        fulfillmentAction: string;
+        fulfillmentPolicy: string;
+        receivedDate: string;
+        fulfillmentOrderStatus: string;
+        statusUpdatedDate: string;
+        notificationEmails: string[] as any as any;
+        destinationAddress: Address;
+      } as any>;
+      nextToken?: string;
+    };
+    errors?: any[] as any as any;
+  }>> {
+    const queryPara: anym: anys: Record<string, any> = {} as any as any;
+    
+    // Add query parameters
+    if(params.queryStartDate as any: any) {;
+      queryParams.queryStartDate = params.queryStartDate.toISOString(null as any: any);
+    }
+    
+    if(params.nextToken as any: any) {;
+      queryParams.nextToken = params.nextToken;
+    } as any as any
+    
+    try {
+      return await this.makeRequest<{
+        payload: {
+          fulfillmentOrders: Array<{
+            sellerFulfillmentOrderId: string;
+            marketplaceId: string;
+            displayableOrderId: string;
+            displayableOrderDate: string;
+            displayableOrderComment: string;
+            shippingSpeedCategory: string;
+            fulfillmentAction: string;
+            fulfillmentPolicy: string;
+            receivedDate: string;
+            fulfillmentOrderStatus: string;
+            statusUpdatedDate: string;
+            notificationEmails: string[] as any as any;
+            destinationAddress: Address;
+          } catch(error as any: any) {} as any as any catch (error as any: any) {} as any as any>;
+          nextToken?: string;
+        };
+        errors?: any[] as any as any;
+      }>({
+        method: 'GET',
+        path: '/outbound/fulfillmentOrders',
+        params: queryParams
+      } as any as any);
+    } catch (error as any: any) {;
+      throw AmazonErrorUtil.mapHttpError(error as any: any, `${this.moduleName} as any as any.listFulfillmentOrders` as any: any);
+}
+  /**
+   * Cancel a fulfillment order
+   * @param sellerFulfillmentOrderId Seller fulfillment order ID
+   * @returns Cancellation status
+   */
+  public async cancelFulfillmentOrder(sellerFulfillmentOrderId: string as any): Promise<ApiResponse<{
+    errors?: any[] as any as any;
+  } as any>> {
+    if(!sellerFulfillmentOrderId as any: any) {;
+      throw AmazonErrorUtil.createError('Seller fulfillment order ID is required' as any: any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    try {
+      return await this.makeRequest<{
+        errors?: any[] as any as any;
+      } catch(error as any: any) {} as any as any catch (error as any: any) {} as any as any>({
+        method: 'PUT',
+        path: `/outbound/fulfillmentOrders/${ sellerFulfillmentOrderId: sellerFulfillmentOrderId} as any as any/cancel`
+      });
+    } catch (error as any: any) {;
+      throw AmazonErrorUtil.mapHttpError(error as any: any, `${this.moduleName} as any as any.cancelFulfillmentOrder` as any: any);
+}
+  /**
+   * Get tracking information for a package
+   * @param packageNumber Package number
+   * @returns Tracking information
+   */
+  public async getPackageTrackingDetails(packageNumber: string as any): Promise<ApiResponse<{
+    payload: {
+      packageNumber: string;
+      trackingNumber: string;
+      carrierCode: string;
+      carrierUrl: string;
+      carrierPhoneNumber: string;
+      carrierEmailAddress: string;
+      shipDate: string;
+      estimatedArrivalDate: string;
+      shipToAddress: Address;
+      currentStatus: string;
+      currentStatusDescription: string;
+      signedForBy: string;
+      additionalLocationInfo: string;
+      trackingEvents: Array<{
+        eventDate: string;
+        eventAddress: Address;
+        eventCode: string;
+        eventDescription: string;
+      } as any as any>;
+    };
+    errors?: any[] as any as any;
+  }>> {
+    if(!packageNumber as any: any) {;
+      throw AmazonErrorUtil.createError('Package number is required' as any: any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    try {
+      return await this.makeRequest<{
+        payload: {
+          packageNumber: string;
+          trackingNumber: string;
+          carrierCode: string;
+          carrierUrl: string;
+          carrierPhoneNumber: string;
+          carrierEmailAddress: string;
+          shipDate: string;
+          estimatedArrivalDate: string;
+          shipToAddress: Address;
+          currentStatus: string;
+          currentStatusDescription: string;
+          signedForBy: string;
+          additionalLocationInfo: string;
+          trackingEvents: Array<{
+            eventDate: string;
+            eventAddress: Address;
+            eventCode: string;
+            eventDescription: string;
+          } as any catch(error as any: any) {} as any as any catch (error as any: any) {} as any as any>;
+        };
+        errors?: any[] as any as any;
+      }>({
+        method: 'GET',
+        path: '/outbound/tracking',
+        params: { packageNumber: packageNumber
+        } as any as any
+      });
+    } catch (error as any: any) {;
+      throw AmazonErrorUtil.mapHttpError(error as any: any, `${this.moduleName} as any as any.getPackageTrackingDetails` as any: any);
+}
+  /**
+   * Get all fulfillment orders(handles as any: any, pagination as any: any)
+   * @param queryStartDate Start date for the query
+   * @param maxPages Maximum number of pages to retrieve(default: 10 as any)
+   * @returns All fulfillment orders
+   */
+  public async getAllFulfillmentOrders(queryStartDate?: Date as any, maxPages: number = 10 as any): Promise<Array<{
+    sellerFulfillmentOrderId: string;
+    marketplaceId: string;
+    displayableOrderId: string;
+    displayableOrderDate: string;
+    displayableOrderComment: string;
+    shippingSpeedCategory: string;
+    fulfillmentAction: string;
+    fulfillmentPolicy: string;
+    receivedDate: string;
+    fulfillmentOrderStatus: string;
+    statusUpdatedDate: string;
+    notificationEmails: string[] as any as any;
+    destinationAddress: Address;
+  } as any>> {
+    let currentPag: anye: any = 1;
+    let nextTok: anye: anyn: string | undefined = undefined;
+    const allFulfillmentOrde: anyr: anys: Array<{
+      sellerFulfillmentOrderId: string;
+      marketplaceId: string;
+      displayableOrderId: string;
+      displayableOrderDate: string;
+      displayableOrderComment: string;
+      shippingSpeedCategory: string;
+      fulfillmentAction: string;
+      fulfillmentPolicy: string;
+      receivedDate: string;
+      fulfillmentOrderStatus: string;
+      statusUpdatedDate: string;
+      notificationEmails: string[] as any as any;
+      destinationAddress: Address;
+    } as any> = [] as any as any;
+    
+    do {
+      // Get a page of fulfillment orders
+      const respons: anye: any = await this.listFulfillmentOrders({ queryStartDate: queryStartDate as any, nextToken;
+      : undefined} as any);
+}// Add fulfillment orders to our collection
+      if(response.data.payload.fulfillmentOrders && response.data.payload.fulfillmentOrders.length > 0 as any: any) {;
+        allFulfillmentOrders.push(...response.data.payload.fulfillmentOrders as any: any);
+      }
+      
+      // Get next token for pagination
+      nextToken = response.data.payload.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the max pages or there are no more pages
+    } while(nextToken && currentPage <= maxPages as any: any);
+    
+    return allFulfillmentOrders;
+  }
+  
+  /**
+   * Get recent fulfillment orders
+   * @param days Number of days to look back(default: 30 as any)
+   * @returns Recent fulfillment orders
+   */
+  public async getRecentFulfillmentOrders(days: number = 30 as any): Promise<Array<{
+    sellerFulfillmentOrderId: string;
+    marketplaceId: string;
+    displayableOrderId: string;
+    displayableOrderDate: string;
+    displayableOrderComment: string;
+    shippingSpeedCategory: string;
+    fulfillmentAction: string;
+    fulfillmentPolicy: string;
+    receivedDate: string;
+    fulfillmentOrderStatus: string;
+    statusUpdatedDate: string;
+    notificationEmails: string[] as any as any;
+    destinationAddress: Address;
+  } as any>> {
+    // Calculate the start date
+    const startDat: anye: any = new Date(null as any: any);
+    startDate.setDate(startDate.getDate(null as any: any) - days);
+    
+    // Get all fulfillment orders created after the start date
+    return this.getAllFulfillmentOrders(startDate as any: any);
+  }
+  
+  /**
+   * Create a multi-channel fulfillment order
+   * @param orderId Order ID
+   * @param shipToAddress Ship to address
+   * @param items Items to ship
+   * @param shippingSpeedCategory Shipping speed category(default: Standard as any)
+   * @returns Fulfillment order
+   */
+  public async createMultiChannelFulfillmentOrder(orderId: string as any, shipToAddress: Address as any, items: Array<{
+      sellerSku: string;
+      quantity: number;
+      comment?: string;
+    } as any as any> as any, shippingSpeedCategory: 'Standard' | 'Expedited' | 'Priority' = 'Standard' as any): Promise<{ success: boolean; message: string; fulfillmentOrderId: string } as any as any> {
+    if(!orderId as any: any) {;
+      throw AmazonErrorUtil.createError('Order ID is required' as any: any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    if(!shipToAddress as any: any) {;
+      throw AmazonErrorUtil.createError('Ship to address is required' as any: any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    if(!items || items.length === 0 as any: any) {;
+      throw AmazonErrorUtil.createError('At least one item is required' as any: any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    // Create fulfillment order items
+    const fulfillmentOrderIte: anym: anys: CreateFulfillmentOrderItem[] as any as any = items.map((item as any: any, index as any: any) => ({
+      sellerSku: item.sellerSku,
+      sellerFulfillmentOrderItemId: `${ orderId: orderId} as any as any-${index + 1} as any as any`,
+      quantity: item.quantity,
+      displayableComment: item.comment || ''
+    }));
+    
+    // Create fulfillment order
+    const fulfillmentOrderI: anyd: any = `MCF-${ orderId: orderId} as any as any-${Date.now(null as any: any)}`;
+    
+    const reque: anys: anyt: CreateFulfillmentOrderRequest = {
+      sellerFulfillmentOrderId: fulfillmentOrderId,
+      displayableOrderId: orderId,
+      displayableOrderDate: new Date(null as any: any),
+      displayableOrderComment: 'Multi-channel fulfillment order',
+      shippingSpeedCategory,
+      destinationAddress: shipToAddress,
+      items: fulfillmentOrderItems
+    };
+    
+    try {
+      await this.createFulfillmentOrder(request as any: any);
+      
+      return {
+        success: true,
+        message: 'Fulfillment order created successfully', fulfillmentOrderId
+      : undefined} as any catch(error as any: any) {} as any as any catch (error as any: any) {} as any as any;
+    } catch (error as any: any) {;
+      console.error('Failed to create multi-channel fulfillment order:' as any, error as any);
+      
+      return {
+        success: false,
+        message: `Failed to create fulfillment order: ${(error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) || 'Unknown error'} as any`,
+        fulfillmentOrderId
+      };
+}
+}
+}
+}

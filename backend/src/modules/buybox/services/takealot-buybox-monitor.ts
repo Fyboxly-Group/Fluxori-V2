@@ -66,15 +66,14 @@ export class TakealotBuyBoxMonitor extends BaseBuyBoxMonitor {
       let hasPricingOpportunity = false;
       
       // Find current Buy Box winner
-      const buyBoxWinner = competitors.find(comp => comp.isCurrentBuyBoxWinner);
+      const buyBoxWinner = competitors.find((comp: any) => comp.isCurrentBuyBoxWinner);
       
       if (buyBoxWinner) {
         buyBoxPrice = buyBoxWinner.price;
         buyBoxPriceWithShipping = buyBoxWinner.priceWithShipping || buyBoxWinner.price;
         
         // On Takealot, isCurrentBuyBoxWinner for our seller indicates we have the Buy Box
-        const isOurSeller = competitors.find(
-          comp => comp.name === 'Your Store' && comp.isCurrentBuyBoxWinner
+        const isOurSeller = competitors.find((comp: any) => comp.name === 'Your Store' && comp.isCurrentBuyBoxWinner
         );
         
         if (isOurSeller) {
@@ -120,6 +119,7 @@ export class TakealotBuyBoxMonitor extends BaseBuyBoxMonitor {
       
       return snapshot;
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error(`Failed to check Buy Box status for ${marketplaceProductId}`, error);
       
       // Return a fallback snapshot with error status
@@ -188,7 +188,7 @@ export class TakealotBuyBoxMonitor extends BaseBuyBoxMonitor {
       
       // In a real implementation, we would parse API response data
       // const offers = await takealotAdapter.getProductOffers(marketplaceProductId);
-      // return offers.map(offer => ({
+      // return offers.map((offer: any) => ({
       //   name: offer.sellerName,
       //   isCurrentBuyBoxWinner: offer.isBuyBoxWinner,
       //   price: offer.price,
@@ -201,6 +201,7 @@ export class TakealotBuyBoxMonitor extends BaseBuyBoxMonitor {
       //   stockStatus: offer.stockStatus
       // }));
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error(`Failed to get competitors for ${marketplaceProductId}`, error);
       return [];
     }
@@ -228,8 +229,7 @@ export class TakealotBuyBoxMonitor extends BaseBuyBoxMonitor {
         }
         
         // Find competitors other than ourselves
-        const otherCompetitors = snapshot.competitors.filter(
-          comp => comp.name !== 'Your Store'
+        const otherCompetitors = snapshot.competitors.filter((comp: any) => comp.name !== 'Your Store'
         );
         
         if (otherCompetitors.length > 0) {
@@ -238,8 +238,7 @@ export class TakealotBuyBoxMonitor extends BaseBuyBoxMonitor {
           const nextCheapestPrice = otherCompetitors[0].price;
           
           // Check if official Takealot store is involved
-          const takealotStore = snapshot.competitors.find(
-            comp => comp.name === 'Takealot' || comp.isOfficialStore
+          const takealotStore = snapshot.competitors.find((comp: any) => comp.name === 'Takealot' || comp.isOfficialStore
           );
           
           // If Takealot is a competitor, we need to be more competitive
@@ -274,11 +273,11 @@ export class TakealotBuyBoxMonitor extends BaseBuyBoxMonitor {
           snapshot.buyBoxPrice !== undefined) {
         
         // Find our store's current price and lead time
-        const ourStore = snapshot.competitors.find(comp => comp.name === 'Your Store');
+        const ourStore = snapshot.competitors.find((comp: any) => comp.name === 'Your Store');
         const ourLeadTime = ourStore?.leadTime || 0;
         
         // Find the Buy Box winner
-        const buyBoxWinner = snapshot.competitors.find(comp => comp.isCurrentBuyBoxWinner);
+        const buyBoxWinner = snapshot.competitors.find((comp: any) => comp.isCurrentBuyBoxWinner);
         
         if (buyBoxWinner) {
           // On Takealot, lead time is very important
@@ -309,6 +308,7 @@ export class TakealotBuyBoxMonitor extends BaseBuyBoxMonitor {
         reason: 'General pricing suggestion based on product base price.'
       };
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error(`Failed to calculate suggested price for ${product.sku}`, error);
       
       // Fallback suggestion
@@ -346,13 +346,13 @@ export class TakealotBuyBoxMonitor extends BaseBuyBoxMonitor {
       if (result.success) {
         return { success: true, message: 'Price updated successfully on Takealot' };
       } else {
-        const failureReason = result.data.failed.find(
-          f => f.sku === marketplaceProductId
+        const failureReason = result.data.failed.find((f: any) => f.sku === marketplaceProductId
         )?.reason || 'Unknown error';
         
         return { success: false, message: `Failed to update price: ${failureReason}` };
       }
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error(`Failed to update price for ${marketplaceProductId}`, error);
       return { 
         success: false, 

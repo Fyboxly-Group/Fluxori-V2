@@ -1,92 +1,113 @@
 /**
- * Marketplace Adapter Interface
- * 
- * This interface defines the contract for all marketplace adapters.
+ * Base marketplace adapter interface
+ * Defines the common interface that all marketplace adapters must implement
  */
 
-export interface MarketplaceCredentials {
-  apiKey?: string;
-  apiSecret?: string;
-  accessToken?: string;
-  refreshToken?: string;
-  [key: string]: any;
-}
+import { MarketplaceCredentials } from './marketplace-credentials.interface';
+import { 
+  MarketplaceProduct,
+  MarketplaceOrder, 
+  MarketplaceOrderStatus, 
+  MarketplaceInventoryUpdate,
+  MarketplaceCatalogOptions,
+  MarketplaceOrderOptions,
+  MarketplaceProductOptions,
+  MarketplaceWebhookPayload
+} from '../types/marketplace.types';
 
-export interface MarketplaceProduct {
-  id: string;
-  title: string;
-  description?: string;
-  price: number;
-  inventory?: number;
-  images?: string[];
-  [key: string]: any;
-}
-
-export interface MarketplaceOrder {
-  id: string;
-  orderNumber: string;
-  customer: {
-    name: string;
-    email: string;
-    [key: string]: any;
-  };
-  items: {
-    productId: string;
-    quantity: number;
-    price: number;
-    [key: string]: any;
-  }[];
-  total: number;
-  status: string;
-  createdAt: Date;
-  [key: string]: any;
-}
-
-export interface MarketplaceAdapterInterface {
+/**
+ * Base marketplace adapter interface
+ */
+export interface IMarketplaceAdapter {
   /**
-   * Connect to the marketplace API
+   * The name of the marketplace (e.g., 'amazon', 'shopify')
    */
-  connect(credentials: MarketplaceCredentials): Promise<boolean>;
+  readonly marketplaceName: string;
   
   /**
-   * Get products from the marketplace
+   * The marketplace connection ID (used for authentication)
    */
-  getProducts(options?: any): Promise<MarketplaceProduct[]>;
+  readonly connectionId: string;
   
   /**
-   * Get a product by ID
+   * Gets the current marketplace credentials
    */
-  getProduct(id: string): Promise<MarketplaceProduct | null>;
+  getCredentials(): MarketplaceCredentials;
   
   /**
-   * Create a product in the marketplace
+   * Updates the marketplace credentials
    */
-  createProduct(product: Partial<MarketplaceProduct>): Promise<MarketplaceProduct>;
+  updateCredentials(credentials: MarketplaceCredentials): Promise<boolean>;
   
   /**
-   * Update a product in the marketplace
+   * Tests the connection to the marketplace
    */
-  updateProduct(id: string, updates: Partial<MarketplaceProduct>): Promise<MarketplaceProduct>;
+  testConnection(): Promise<boolean>;
   
   /**
-   * Delete a product from the marketplace
+   * Gets products from the marketplace
    */
-  deleteProduct(id: string): Promise<boolean>;
+  getProducts(options?: MarketplaceProductOptions): Promise<MarketplaceProduct[]>;
   
   /**
-   * Get orders from the marketplace
+   * Gets a specific product by ID
    */
-  getOrders(options?: any): Promise<MarketplaceOrder[]>;
+  getProductById(productId: string): Promise<MarketplaceProduct | null>;
   
   /**
-   * Get an order by ID
+   * Creates a new product on the marketplace
    */
-  getOrder(id: string): Promise<MarketplaceOrder | null>;
+  createProduct(product: MarketplaceProduct): Promise<MarketplaceProduct>;
   
   /**
-   * Update inventory for a product
+   * Updates an existing product on the marketplace
    */
-  updateInventory(productId: string, quantity: number): Promise<boolean>;
+  updateProduct(productId: string, product: Partial<MarketplaceProduct>): Promise<MarketplaceProduct>;
+  
+  /**
+   * Uploads product images to the marketplace
+   */
+  uploadProductImages(productId: string, imageUrls: string[]): Promise<string[]>;
+  
+  /**
+   * Deletes a product from the marketplace
+   */
+  deleteProduct(productId: string): Promise<boolean>;
+  
+  /**
+   * Gets orders from the marketplace
+   */
+  getOrders(options?: MarketplaceOrderOptions): Promise<MarketplaceOrder[]>;
+  
+  /**
+   * Gets a specific order by ID
+   */
+  getOrderById(orderId: string): Promise<MarketplaceOrder | null>;
+  
+  /**
+   * Updates an order's status on the marketplace
+   */
+  updateOrderStatus(orderId: string, status: MarketplaceOrderStatus): Promise<MarketplaceOrder>;
+  
+  /**
+   * Cancels an order on the marketplace
+   */
+  cancelOrder(orderId: string, reason?: string): Promise<boolean>;
+  
+  /**
+   * Updates inventory levels on the marketplace
+   */
+  updateInventory(updates: MarketplaceInventoryUpdate[]): Promise<boolean>;
+  
+  /**
+   * Handles a webhook payload from the marketplace
+   */
+  handleWebhook(payload: MarketplaceWebhookPayload): Promise<any>;
+  
+  /**
+   * Gets the marketplace catalog (categories, attributes, etc.)
+   */
+  getCatalog(options?: MarketplaceCatalogOptions): Promise<any>;
   
   /**
    * Fetch orders from the marketplace, designed for incremental updates
@@ -106,4 +127,185 @@ export interface MarketplaceAdapterInterface {
    * @returns Promise resolving to an array of marketplace products
    */
   fetchProducts(options: { lastSyncTimestamp?: Date; filter?: string; limit?: number }): Promise<MarketplaceProduct[]>;
+}
+
+/**
+ * Extended marketplace adapter interface with optional capabilities
+ */
+export interface IExtendedMarketplaceAdapter extends IMarketplaceAdapter {
+  /**
+   * Gets the pricing information for a specific product
+   */
+  getProductPricing?(productId: string): Promise<any>;
+  
+  /**
+   * Gets competitor pricing for a specific product
+   */
+  getCompetitorPricing?(productId: string): Promise<any[]>;
+  
+  /**
+   * Updates the pricing for a specific product
+   */
+  updateProductPricing?(productId: string, price: number, salePrice?: number): Promise<boolean>;
+  
+  /**
+   * Gets fulfillment options for a specific order
+   */
+  getFulfillmentOptions?(orderId: string): Promise<any[]>;
+  
+  /**
+   * Creates a fulfillment for a specific order
+   */
+  createFulfillment?(orderId: string, items: any[], trackingInfo?: any): Promise<any>;
+  
+  /**
+   * Gets a report from the marketplace
+   */
+  getReport?(reportType: string, startDate?: Date, endDate?: Date): Promise<any>;
+  
+  /**
+   * Gets advertising data for products
+   */
+  getAdvertisingData?(productIds: string[]): Promise<any>;
+  
+  /**
+   * Updates advertising settings for products
+   */
+  updateAdvertising?(productId: string, settings: any): Promise<any>;
+}
+
+/**
+ * Base abstract class that provides common functionality for marketplace adapters
+ */
+export abstract class BaseMarketplaceAdapter implements IMarketplaceAdapter {
+  private credentials: MarketplaceCredentials;
+  
+  constructor(
+    public readonly marketplaceName: string,
+    public readonly connectionId: string,
+    credentials: MarketplaceCredentials
+  ) {
+    this.credentials = credentials;
+  }
+  
+  /**
+   * Gets the current marketplace credentials
+   */
+  getCredentials(): MarketplaceCredentials {
+    return this.credentials;
+  }
+  
+  /**
+   * Updates the marketplace credentials
+   */
+  updateCredentials(credentials: MarketplaceCredentials): Promise<boolean> {
+    this.credentials = credentials;
+    return Promise.resolve(true);
+  }
+  
+  /**
+   * Tests the connection to the marketplace
+   * This method should be overridden by concrete implementations
+   */
+  abstract testConnection(): Promise<boolean>;
+  
+  /**
+   * Gets products from the marketplace
+   * This method should be overridden by concrete implementations
+   */
+  abstract getProducts(options?: MarketplaceProductOptions): Promise<MarketplaceProduct[]>;
+  
+  /**
+   * Gets a specific product by ID
+   * This method should be overridden by concrete implementations
+   */
+  abstract getProductById(productId: string): Promise<MarketplaceProduct | null>;
+  
+  /**
+   * Creates a new product on the marketplace
+   * This method should be overridden by concrete implementations
+   */
+  abstract createProduct(product: MarketplaceProduct): Promise<MarketplaceProduct>;
+  
+  /**
+   * Updates an existing product on the marketplace
+   * This method should be overridden by concrete implementations
+   */
+  abstract updateProduct(productId: string, product: Partial<MarketplaceProduct>): Promise<MarketplaceProduct>;
+  
+  /**
+   * Uploads product images to the marketplace
+   * This method should be overridden by concrete implementations
+   */
+  abstract uploadProductImages(productId: string, imageUrls: string[]): Promise<string[]>;
+  
+  /**
+   * Deletes a product from the marketplace
+   * This method should be overridden by concrete implementations
+   */
+  abstract deleteProduct(productId: string): Promise<boolean>;
+  
+  /**
+   * Gets orders from the marketplace
+   * This method should be overridden by concrete implementations
+   */
+  abstract getOrders(options?: MarketplaceOrderOptions): Promise<MarketplaceOrder[]>;
+  
+  /**
+   * Gets a specific order by ID
+   * This method should be overridden by concrete implementations
+   */
+  abstract getOrderById(orderId: string): Promise<MarketplaceOrder | null>;
+  
+  /**
+   * Updates an order's status on the marketplace
+   * This method should be overridden by concrete implementations
+   */
+  abstract updateOrderStatus(orderId: string, status: MarketplaceOrderStatus): Promise<MarketplaceOrder>;
+  
+  /**
+   * Cancels an order on the marketplace
+   * This method should be overridden by concrete implementations
+   */
+  abstract cancelOrder(orderId: string, reason?: string): Promise<boolean>;
+  
+  /**
+   * Updates inventory levels on the marketplace
+   * This method should be overridden by concrete implementations
+   */
+  abstract updateInventory(updates: MarketplaceInventoryUpdate[]): Promise<boolean>;
+  
+  /**
+   * Handles a webhook payload from the marketplace
+   * This method should be overridden by concrete implementations
+   */
+  abstract handleWebhook(payload: MarketplaceWebhookPayload): Promise<any>;
+  
+  /**
+   * Gets the marketplace catalog (categories, attributes, etc.)
+   * This method should be overridden by concrete implementations
+   */
+  abstract getCatalog(options?: MarketplaceCatalogOptions): Promise<any>;
+  
+  /**
+   * Fetch orders from the marketplace
+   * This method should be overridden by concrete implementations
+   */
+  abstract fetchOrders(options: { lastSyncTimestamp?: Date; limit?: number }): Promise<MarketplaceOrder[]>;
+  
+  /**
+   * Fetch products from the marketplace
+   * This method should be overridden by concrete implementations
+   */
+  abstract fetchProducts(options: { lastSyncTimestamp?: Date; filter?: string; limit?: number }): Promise<MarketplaceProduct[]>;
+  
+  /**
+   * Utility method to format error responses consistently
+   */
+  protected formatError(error: unknown, message = 'Marketplace operation failed'): Error {
+    if (error instanceof Error) {
+      return new Error(`${message}: ${error.message}`);
+    }
+    return new Error(`${message}: ${String(error)}`);
+  }
 }

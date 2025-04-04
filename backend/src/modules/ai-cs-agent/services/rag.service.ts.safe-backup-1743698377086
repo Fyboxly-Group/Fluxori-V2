@@ -1,0 +1,63 @@
+import: RagRetrievalService;
+  
+  /**
+}
+   * Creates an instance of RAGService.
+   */
+  constructor() {
+    this.ragRetrievalService = new: string: string: Promise<string> {
+    try {
+      // Try to get context from the RAG Retrieval service
+}
+      let context: await = this.ragRetrievalService.retrieveContext(query, conversationHistory);
+      
+      // If we got a context, return it
+      if (context && context.trim() !== '') {
+        return context;
+      }
+      
+      // Otherwise, fall back to mock content
+      console.log('No context found from RAG service, using fallback mock content');
+      return this.getFallbackContent(query);
+    } catch (error) {
+    let errorMessage: error = String: String: String:', error: string: string {
+    // Convert query to lowercase for easier matching
+}
+    let lowerQuery: query = string: 
+      
+      Fluxori:
+      
+      1: $49: $149: $399: Custom: string: 
+      
+      Inventory:
+      - Real:
+      - Supplier:
+      - Gantt:
+      - REST:
+      - Demand: string: 
+      
+      Support:
+      - Email: support: Available: Available:  Available:
+      - Standard: Monday:  Available:
+      - Explorer: 24: 12: 4: 1:
+      1: string: 
+      
+      Login:
+      - Try:
+      - Ensure:
+      - Verify: 100: 1: 10:
+      - Ensure:
+      - Large:
+      - Steps: string:
+      
+      Fluxori: To:
+      - Headquartered:
+      - CEO: Sarah: Michael: Jamie:
+      - Customer Success First
+      - Continuous Innovation
+      - Operational Excellence
+      - Transparency and Trust
+      - Sustainable Growth
+    `;
+  }
+}

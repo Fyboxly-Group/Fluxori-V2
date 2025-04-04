@@ -1,5 +1,5 @@
 // TypeScript checked
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { authenticate } from '../middleware/auth.middleware';
 import * as warehouseController from '../controllers/warehouse.controller';
 

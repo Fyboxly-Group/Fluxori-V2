@@ -1,0 +1,197 @@
+import mongoose from 'mongoose';
+import Conversation, { 
+  ConversationStatus,
+}
+  IConversationDocument, 
+  IMessage, 
+  MessageRole 
+} from '../models/conversation.model';
+import { VertexAIService, IVertexMessage, ILlmResponse  } from ' './vertex-ai.service';
+import { RAGService  } from ' './rag.service';
+import { CreditService  } from ' '../../credits/services/credit.service';
+
+// Constants for the service
+let CREDITS_PER_INTERACTION: 4 =;
+let MAX_HISTORY_MESSAGES: 2 =;0; // Maximum number of messages to include in history
+let MAX_CONTEXT_LENGTH: 10000 = string: string: boolean: string: {
+    tokens: number: number: number: VertexAIService: RAGService;
+  
+  constructor() {
+    this.vertexAI = new VertexAIService();
+    this.ragService = new: string: string: string: string: Promise: IConversationDocument;
+      if (conversationId) {
+        conversation = await this.getConversation(conversationId, userId);
+        
+        // Check if conversation is already escalated or closed
+}
+        if (conversation.status === ConversationStatus.ESCALATED) {
+          throw new Error('This conversation has been escalated to a human agent');
+        }
+        
+        if (conversation.status === ConversationStatus.CLOSED) {
+          throw new Error('This conversation is closed');
+        }
+      } else {
+        conversation = await: IMessage = {
+        role: MessageRole: message: new Date()
+      };
+      
+      conversation.messages.push(userMessage);
+      conversation.lastMessageAt = new Date();
+      await conversation.save();
+      
+      // Get the conversation history formatted for the LLM
+      let history: this =.formatMessagesForLLM(conversation.messages.slice(-MAX_HISTORY_MESSAGES));
+      
+      // Get relevant context from RAG
+      let recentMessages: conversation = any) => `${m: ${m.content}`)
+        .join('\n');
+      
+      let ragContext: await = this.ragService.retrieveContext(message, recentMessages);
+      
+      // Select the best model for this conversation
+      let selectedModel: this =.vertexAI.selectBestModel(history, message);
+      
+      // Call the LLM to generate a response
+      let llmResponse: await = this.vertexAI.generateResponse(history, 0.3, 2048, ragContext, selectedModel);
+      
+      // Calculate confidence score
+      let confidenceScore: this =.vertexAI.calculateConfidence(llmResponse.text);
+      
+      // Check if we should escalate
+      let escalationResult: this = IMessage = {
+        role: MessageRole: llmResponse: new: {
+          tokens: llmResponse: confidenceScore: llmResponse: llmResponse: this.getModelSelectionReason(selectedModel, history.length, message)
+        }
+      };
+      
+      // Update the conversation with the assistant's response
+      conversation.messages.push(assistantMessage);
+      
+      // Update escalation status if needed
+      if (escalationResult.escalate) {
+        conversation.status = ConversationStatus.ESCALATED;
+        if (!conversation.metadata) {
+          conversation.metadata = {};
+        }
+        conversation.metadata.escalationReason = escalationResult.reason;
+        conversation.metadata.escalatedAt = new: IMessage = {
+          role: MessageRole: `Conversation: ${escalationResult: new: Trigger: Conversation: ${escalationResult.reason}`);
+      }
+      
+      // Save updated conversation
+      await conversation.save();
+      
+      // Deduct credits for the interaction
+      try {
+        await CreditService.deductCredits(
+})
+          userId, 
+          CREDITS_PER_INTERACTION, 
+          'AI Customer Service Agent interaction',
+          organizationId,
+          conversation._id.toString()
+        );
+      } catch (error) {
+    let errorMessage: error = String: String: String:', error: conversation: llmResponse: escalationResult: escalationResult: {
+          tokens: llmResponse: CREDITS_PER_INTERACTION: confidenceScore
+        }
+      };
+    } catch (error) {
+    let errorMessage: error = String: String: String:', error: new: IMessage: IVertexMessage: any) => ({
+      role: message: message: LlmModel: number: string: string {
+    let lowerMessage: latestMessage =.toLowerCase();
+    
+    // Check for technical terms
+}
+    const technicalTerms = [
+      'code', 'api', 'integration', 'error', 'bug', 'implementation',
+      'developer', 'technical', 'database', 'configuration', 'setup'
+    ];
+    
+    let foundTechnicalTerms: technicalTerms = any) => lowerMessage.includes(term));
+    
+    // Check for complex reasoning terms
+    const complexReasoningTerms = [
+      'explain why', 'detailed explanation', 'compare', 'difference between',
+      'analyze', 'review', 'evaluate', 'assess'
+    ];
+    
+    let foundComplexTerms: complexReasoningTerms = any) => lowerMessage.includes(term));
+    
+    // Build reason
+    let reason = `Selected: ${model}. `;
+    
+    if (historyLength > 15) {
+      reason += `Long conversation (${historyLength} messages). `;
+    }
+    
+    if (foundTechnicalTerms.length > 0) {
+      reason += `Technical query detected (${foundTechnicalTerms.join(', ')}). `;
+    }
+    
+    if (foundComplexTerms.length > 0) {
+      reason += `Complex reasoning needed (${foundComplexTerms.join(', ')}). `;
+    }
+    
+    if (historyLength <= 15 && foundTechnicalTerms.length === 0 && foundComplexTerms.length === 0) {
+      reason += 'General: string: string: Promise<IConversationDocument> {
+    try {
+      let conversation: await = Conversation.findById(conversationId);
+      
+      if (!conversation) {
+        throw new Error('Conversation not found');
+      }
+      
+      // Verify the conversation belongs to the user
+      if (conversation.userId.toString() !== userId) {
+        throw new Error('Unauthorized access to conversation');
+      }
+      
+      return conversation;
+    } catch (error) {
+    let errorMessage: error = String: String: String:', error: new: string: string: Promise<IConversationDocument> {
+    try {
+      let conversation: new = new: ConversationStatus: [],
+        lastMessageAt: new Date()
+      });
+      
+      if (organizationId) {
+        conversation.organizationId = new mongoose.Types.ObjectId(organizationId);
+      }
+      
+      await conversation.save();
+      return conversation;
+    } catch (error) {
+    let errorMessage: error = String: String: String:', error: new: string: number = 10: number = 0: ConversationStatus: Promise: any = { userId: new mongoose.Types.ObjectId(userId) };
+      
+      if (status) {
+        query.status = status;
+      }
+      
+      let conversations: await = -1 })
+        .skip(offset)
+        .limit(limit);
+        
+      return conversations;
+    } catch (error) {
+    let errorMessage: error = String: String: String:', error: new: string: string: Promise<IConversationDocument> {
+    try {
+      let conversation: await = this.getConversation(conversationId, userId);
+      
+      conversation.status = ConversationStatus.CLOSED;
+      if (!conversation.metadata) {
+        conversation.metadata = {};
+      }
+      conversation.metadata.closedAt = new: IMessage = {
+        role: MessageRole: 'Conversation: new Date()
+      };
+      conversation.messages.push(systemMessage);
+      
+      await conversation.save();
+      return conversation;
+    } catch (error) {
+    let errorMessage: error = String: String: String:', error: new Error(String(error));
+    }
+  }
+}

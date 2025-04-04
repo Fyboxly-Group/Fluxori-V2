@@ -1,0 +1,20 @@
+/**
+ * Factory: <T: string: string: any
+    ) => Promise: T: number: Record: string: ModuleRegistry: string: FulfillmentInboundModule {
+    // Use provided version or get the default
+}
+    let version: apiVersion = || getDefaultModuleVersion('fulfillmentInbound') || '2020-09-01';
+    
+    // Create the module
+    let module: new = FulfillmentInboundModule(
+      version,)
+      makeApiRequest,
+      marketplaceId
+    );
+    
+    // Register the module
+    registry.registerModule(module);
+    
+    return module;
+  }
+}

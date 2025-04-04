@@ -2,92 +2,190 @@
  * Amazon Orders API Module
  * 
  * Implements the Amazon SP-API Orders API functionality.
- * This module handles order retrieval, management and processing.
+ * This module handles order retrieval, management, and fulfillment operations.
  */
 
-import { BaseApiModule, ApiRequestOptions, ApiResponse } from '../core/api-module';
-import { AmazonSPApi } from '../schemas/amazon.generated';
-import { AmazonErrorUtil, AmazonErrorCode } from '../utils/amazon-error';
-
-/**
- * Order status values
- */
-export type OrderStatus = 
-  | 'Pending'
-  | 'Unshipped'
-  | 'PartiallyShipped'
-  | 'Shipped'
-  | 'Canceled'
-  | 'Unfulfillable'
-  | 'InvoiceUnconfirmed'
-  | 'PendingAvailability';
+import { ApiModule, ApiRequestFunction, ApiResponse } from '../core/api-module';
+import { AmazonErrorHandler, AmazonErrorCode } from '../utils/amazon-error';
+import { BatchProcessor } from '../utils/batch-processor';
 
 /**
- * Fulfillment channel values
+ * Order status types
  */
-export type FulfillmentChannel = 'MFN' | 'AFN';
+export enum OrderStatus {
+  PENDING = 'Pending',
+  UNSHIPPED = 'Unshipped',
+  PARTIALLY_SHIPPED = 'PartiallyShipped',
+  SHIPPED = 'Shipped',
+  CANCELED = 'Canceled',
+  UNFULFILLABLE = 'Unfulfillable',
+  INVOICE_UNCONFIRMED = 'InvoiceUnconfirmed',
+  PENDING_AVAILABILITY = 'PendingAvailability'
+}
 
 /**
- * Payment method values
+ * Order fulfillment channel
  */
-export type PaymentMethod = 
-  | 'COD'
-  | 'CVS'
-  | 'Other';
+export enum FulfillmentChannel {
+  MFN = 'MFN', // Merchant Fulfilled Network (seller fulfilled)
+  AFN = 'AFN'  // Amazon Fulfilled Network (FBA)
+}
+
+/**
+ * Payment method for the order
+ */
+export enum PaymentMethod {
+  COD = 'COD',                     // Cash On Delivery
+  CVS = 'CVS',                     // Convenience Store
+  OTHER = 'Other'                  // Any other payment method
+}
+
+/**
+ * Order address details
+ */
+export interface Address {
+  /**
+   * Name of the person
+   */
+  name: string;
+  
+  /**
+   * First line of the address
+   */
+  addressLine1?: string;
+  
+  /**
+   * Second line of the address
+   */
+  addressLine2?: string;
+  
+  /**
+   * Third line of the address
+   */
+  addressLine3?: string;
+  
+  /**
+   * City of the address
+   */
+  city?: string;
+  
+  /**
+   * County of the address
+   */
+  county?: string;
+  
+  /**
+   * District of the address
+   */
+  district?: string;
+  
+  /**
+   * State or region of the address
+   */
+  stateOrRegion?: string;
+  
+  /**
+   * Municipality of the address
+   */
+  municipality?: string;
+  
+  /**
+   * Postal code of the address
+   */
+  postalCode?: string;
+  
+  /**
+   * Country code of the address (ISO 3166-1 alpha-2 format)
+   */
+  countryCode?: string;
+  
+  /**
+   * Phone number of the address
+   */
+  phone?: string;
+  
+  /**
+   * Address type
+   */
+  addressType?: string;
+}
+
+/**
+ * Money value with currency
+ */
+export interface Money {
+  /**
+   * Currency code (ISO 4217 format)
+   */
+  currencyCode: string;
+  
+  /**
+   * Monetary value
+   */
+  amount: string;
+}
+
+/**
+ * Tax collection model
+ */
+export enum TaxCollectionModel {
+  MARKETPLACE = 'MarketplaceFacilitator',
+  SELLER = 'Standard'
+}
 
 /**
  * Parameters for getting orders
  */
 export interface GetOrdersParams {
   /**
-   * Marketplace ID to get orders from
+   * Filter by created after timestamp (ISO 8601 format)
    */
-  marketplaceId?: string;
+  createdAfter?: string;
   
   /**
-   * Created after date
+   * Filter by created before timestamp (ISO 8601 format)
    */
-  createdAfter?: Date;
+  createdBefore?: string;
   
   /**
-   * Created before date
+   * Filter by last updated after timestamp (ISO 8601 format)
    */
-  createdBefore?: Date;
+  lastUpdatedAfter?: string;
   
   /**
-   * Last updated after date
+   * Filter by last updated before timestamp (ISO 8601 format)
    */
-  lastUpdatedAfter?: Date;
+  lastUpdatedBefore?: string;
   
   /**
-   * Last updated before date
-   */
-  lastUpdatedBefore?: Date;
-  
-  /**
-   * Order statuses to include
+   * Filter by order statuses
    */
   orderStatuses?: OrderStatus[];
   
   /**
-   * Fulfillment channels to include
+   * Filter by marketplace IDs
+   */
+  marketplaceIds?: string[];
+  
+  /**
+   * Filter by fulfillment channels
    */
   fulfillmentChannels?: FulfillmentChannel[];
   
   /**
-   * Payment methods to include
+   * Filter by payment methods
    */
   paymentMethods?: PaymentMethod[];
   
   /**
-   * Amazon order IDs to include
+   * Filter by buyer email
    */
-  amazonOrderIds?: string[];
+  buyerEmail?: string;
   
   /**
-   * Token for pagination
+   * Filter by seller order ID
    */
-  nextToken?: string;
+  sellerOrderId?: string;
   
   /**
    * Maximum number of results to return
@@ -95,342 +193,1174 @@ export interface GetOrdersParams {
   maxResultsPerPage?: number;
   
   /**
-   * Whether to return order items with orders
+   * For pagination - token to retrieve the next page of results
    */
-  includeOrderItems?: boolean;
+  nextToken?: string;
+  
+  /**
+   * Filter by Amazon order IDs
+   */
+  amazonOrderIds?: string[];
+  
+  /**
+   * Include additional data sets in the response
+   */
+  dataElements?: Array<'buyerInfo' | 'shippingAddress' | 'orderItems'>;
+}
+
+/**
+ * Order item input for creating shipment
+ */
+export interface OrderItemInput {
+  /**
+   * Order item ID
+   */
+  orderItemId: string;
+  
+  /**
+   * Quantity to ship
+   */
+  quantity: number;
+}
+
+/**
+ * Parameters for creating a shipment
+ */
+export interface CreateShipmentParams {
+  /**
+   * Amazon order ID
+   */
+  amazonOrderId: string;
+  
+  /**
+   * Items to include in the shipment
+   */
+  items: OrderItemInput[];
+  
+  /**
+   * Shipping service used
+   */
+  shippingServiceId: string;
+  
+  /**
+   * Tracking number(s) for the shipment
+   */
+  trackingNumber?: string;
+  
+  /**
+   * Tracking URL for the shipment
+   */
+  trackingUrl?: string;
+  
+  /**
+   * Multiple tracking numbers (if applicable)
+   */
+  trackingNumbers?: string[];
+  
+  /**
+   * Ship date (ISO 8601 format)
+   */
+  shipDate?: string;
+  
+  /**
+   * Shipping notes
+   */
+  shippingNote?: string;
+}
+
+/**
+ * Order item buy request
+ */
+export interface OrderItemBuyerInfo {
+  /**
+   * Order item ID
+   */
+  orderItemId: string;
+  
+  /**
+   * Buyer customization
+   */
+  buyerCustomization?: {
+    customizationLabel?: string;
+    customizationValue?: string;
+  };
+  
+  /**
+   * Gift wrap price
+   */
+  giftWrapPrice?: Money;
+  
+  /**
+   * Gift message text
+   */
+  giftMessageText?: string;
+  
+  /**
+   * Gift wrap level
+   */
+  giftWrapLevel?: string;
+}
+
+/**
+ * Product information for order item
+ */
+export interface ProductInfo {
+  /**
+   * Product name
+   */
+  productName?: string;
+  
+  /**
+   * Product codes
+   */
+  productCodes?: Array<{
+    /**
+     * Type of product code
+     */
+    productCodeType: 'ASIN' | 'ISBN' | 'UPC' | 'EAN' | 'GTIN' | 'GCID';
+    
+    /**
+     * Product code value
+     */
+    productCodeValue: string;
+  }>;
+  
+  /**
+   * Number of items
+   */
+  numberOfItems?: number;
+}
+
+/**
+ * Order item details
+ */
+export interface OrderItem {
+  /**
+   * ASIN of the item
+   */
+  ASIN: string;
+  
+  /**
+   * Seller SKU of the item
+   */
+  SellerSKU?: string;
+  
+  /**
+   * Order item ID
+   */
+  OrderItemId: string;
+  
+  /**
+   * Title of the item
+   */
+  Title?: string;
+  
+  /**
+   * Quantity ordered
+   */
+  QuantityOrdered: number;
+  
+  /**
+   * Quantity shipped
+   */
+  QuantityShipped?: number;
+  
+  /**
+   * Product information
+   */
+  ProductInfo?: ProductInfo;
+  
+  /**
+   * Item price
+   */
+  ItemPrice?: Money;
+  
+  /**
+   * Item tax
+   */
+  ItemTax?: Money;
+  
+  /**
+   * Shipping price
+   */
+  ShippingPrice?: Money;
+  
+  /**
+   * Shipping tax
+   */
+  ShippingTax?: Money;
+  
+  /**
+   * Shipping discount
+   */
+  ShippingDiscount?: Money;
+  
+  /**
+   * Shipping discount tax
+   */
+  ShippingDiscountTax?: Money;
+  
+  /**
+   * Promotion discount
+   */
+  PromotionDiscount?: Money;
+  
+  /**
+   * Promotion discount tax
+   */
+  PromotionDiscountTax?: Money;
+  
+  /**
+   * Condition note from the seller
+   */
+  ConditionNote?: string;
+  
+  /**
+   * Condition ID of the item
+   */
+  ConditionId?: string;
+  
+  /**
+   * Condition of the item
+   */
+  ConditionSubtypeId?: string;
+  
+  /**
+   * Schedule delivery start date
+   */
+  ScheduledDeliveryStartDate?: string;
+  
+  /**
+   * Schedule delivery end date
+   */
+  ScheduledDeliveryEndDate?: string;
+  
+  /**
+   * Buyer info
+   */
+  BuyerInfo?: OrderItemBuyerInfo;
+  
+  /**
+   * Tax collection for this item
+   */
+  TaxCollection?: {
+    /**
+     * Model of tax collection
+     */
+    Model: TaxCollectionModel;
+    
+    /**
+     * Party responsible for tax collection
+     */
+    ResponsibleParty: string;
+  };
+}
+
+/**
+ * Order details
+ */
+export interface Order {
+  /**
+   * Amazon-defined order identifier in 3-7-7 format
+   */
+  AmazonOrderId: string;
+  
+  /**
+   * Merchant-defined order identifier
+   */
+  SellerOrderId?: string;
+  
+  /**
+   * When the order was placed (ISO 8601 format)
+   */
+  PurchaseDate: string;
+  
+  /**
+   * When the order was last updated (ISO 8601 format)
+   */
+  LastUpdateDate: string;
+  
+  /**
+   * Current status of the order
+   */
+  OrderStatus: OrderStatus;
+  
+  /**
+   * How the order was fulfilled
+   */
+  FulfillmentChannel?: FulfillmentChannel;
+  
+  /**
+   * Channel where the order was placed
+   */
+  SalesChannel?: string;
+  
+  /**
+   * How the order was shipped
+   */
+  ShipServiceLevel?: string;
+  
+  /**
+   * Order price amount with currency code
+   */
+  OrderTotal?: Money;
+  
+  /**
+   * Number of items in the order
+   */
+  NumberOfItemsShipped?: number;
+  
+  /**
+   * Number of items not yet shipped
+   */
+  NumberOfItemsUnshipped?: number;
+  
+  /**
+   * Details about payment method
+   */
+  PaymentMethodDetails?: string[];
+  
+  /**
+   * Payment method used
+   */
+  PaymentMethod?: PaymentMethod;
+  
+  /**
+   * Marketplace where the order was placed
+   */
+  MarketplaceId?: string;
+  
+  /**
+   * Shipping address
+   */
+  ShippingAddress?: Address;
+  
+  /**
+   * Billing address
+   */
+  BillingAddress?: Address;
+  
+  /**
+   * Buyer information
+   */
+  BuyerInfo?: {
+    /**
+     * Email address of the buyer
+     */
+    BuyerEmail?: string;
+    
+    /**
+     * Name of the buyer
+     */
+    BuyerName?: string;
+    
+    /**
+     * County of the buyer
+     */
+    BuyerCounty?: string;
+    
+    /**
+     * Tax information of the buyer
+     */
+    BuyerTaxInfo?: {
+      /**
+       * Tax classification of the buyer
+       */
+      TaxClassifications?: Array<{
+        /**
+         * Type of tax classification
+         */
+        Name?: string;
+        
+        /**
+         * Value of tax classification
+         */
+        Value?: string;
+      }>;
+      
+      /**
+       * Type of tax information
+       */
+      CompanyLegalName?: string;
+      
+      /**
+       * Tax registration ID
+       */
+      TaxingRegion?: string;
+    };
+    
+    /**
+     * Purchase order number
+     */
+    PurchaseOrderNumber?: string;
+  };
+  
+  /**
+   * Whether the order is premium order
+   */
+  IsReplacementOrder?: boolean;
+  
+  /**
+   * Replaced order ID if this is a replacement
+   */
+  ReplacedOrderId?: string;
+  
+  /**
+   * Promise response date by which order must be shipped (ISO 8601 format)
+   */
+  PromiseResponseDueDate?: string;
+  
+  /**
+   * Promised delivery date (ISO 8601 format)
+   */
+  PromisedDeliveryDate?: string;
+  
+  /**
+   * Earliest delivery date (ISO 8601 format)
+   */
+  EarliestDeliveryDate?: string;
+  
+  /**
+   * Latest delivery date (ISO 8601 format)
+   */
+  LatestDeliveryDate?: string;
+  
+  /**
+   * Earliest ship date (ISO 8601 format)
+   */
+  EarliestShipDate?: string;
+  
+  /**
+   * Latest ship date (ISO 8601 format)
+   */
+  LatestShipDate?: string;
+  
+  /**
+   * Whether order is a business order
+   */
+  IsBusinessOrder?: boolean;
+  
+  /**
+   * Whether order is from Amazon Prime
+   */
+  IsPrime?: boolean;
+  
+  /**
+   * Whether order is a premium order
+   */
+  IsPremiumOrder?: boolean;
+  
+  /**
+   * Whether order was shipped globally
+   */
+  IsGlobalExpressEnabled?: boolean;
+  
+  /**
+   * Tax collection model
+   */
+  TaxCollection?: {
+    /**
+     * Model of tax collection
+     */
+    Model: TaxCollectionModel;
+    
+    /**
+     * Party responsible for tax collection
+     */
+    ResponsibleParty: string;
+  };
+}
+
+/**
+ * Namespace for Amazon SP-API Orders API response types
+ */
+export namespace AmazonSPApi {
+  /**
+   * Orders API namespace
+   */
+  export namespace Orders {
+    /**
+     * Response for get orders API
+     */
+    export interface GetOrdersResponse {
+      /**
+       * List of orders
+       */
+      Orders: Order[];
+      
+      /**
+       * Token for retrieving the next page of results
+       */
+      NextToken?: string;
+      
+      /**
+       * Time when the response was generated (ISO 8601 format)
+       */
+      LastUpdatedBefore?: string;
+      
+      /**
+       * Time the search criteria uses for selecting orders (ISO 8601 format)
+       */
+      CreatedBefore?: string;
+    }
+    
+    /**
+     * Response for get order API
+     */
+    export interface GetOrderResponse {
+      /**
+       * Order details
+       */
+      Order: Order;
+    }
+    
+    /**
+     * Response for get order items API
+     */
+    export interface GetOrderItemsResponse {
+      /**
+       * Order item details
+       */
+      OrderItems: OrderItem[];
+      
+      /**
+       * Amazon-defined order identifier
+       */
+      AmazonOrderId: string;
+      
+      /**
+       * Token for retrieving the next page of results
+       */
+      NextToken?: string;
+    }
+    
+    /**
+     * Response for create shipment API
+     */
+    export interface CreateShipmentResponse {
+      /**
+       * Shipment details
+       */
+      Shipment: {
+        /**
+         * Shipment ID
+         */
+        ShipmentId: string;
+        
+        /**
+         * Amazon order ID
+         */
+        AmazonOrderId: string;
+        
+        /**
+         * Shipping service ID
+         */
+        ShippingServiceId: string;
+        
+        /**
+         * Tracking information
+         */
+        TrackingInformation?: {
+          /**
+           * Tracking number
+           */
+          TrackingNumber?: string;
+          
+          /**
+           * Multiple tracking numbers if applicable
+           */
+          TrackingNumbers?: string[];
+          
+          /**
+           * URL for tracking the shipment
+           */
+          TrackingUrl?: string;
+        };
+        
+        /**
+         * Items included in this shipment
+         */
+        Items: Array<{
+          /**
+           * Order item ID
+           */
+          OrderItemId: string;
+          
+          /**
+           * Quantity shipped
+           */
+          Quantity: number;
+        }>;
+        
+        /**
+         * When the shipment was created (ISO 8601 format)
+         */
+        ShipDate?: string;
+        
+        /**
+         * Additional notes for the shipment
+         */
+        ShippingNote?: string;
+        
+        /**
+         * When the shipment was last updated (ISO 8601 format)
+         */
+        LastUpdatedDate?: string;
+      };
+    }
+  }
 }
 
 /**
  * Implementation of the Amazon Orders API
  */
-export class OrdersModule extends BaseApiModule {
+export class OrdersModule extends ApiModule {
+  /**
+   * Module identifier
+   */
+  readonly moduleId = 'orders';
+  
+  /**
+   * Human-readable module name
+   */
+  readonly moduleName = 'Orders API';
+  
+  /**
+   * API version for this module
+   */
+  readonly apiVersion: string;
+  
+  /**
+   * Base path for API requests
+   */
+  readonly basePath: string;
+  
+  /**
+   * Batch processor for handling multiple orders
+   */
+  private batchProcessor: BatchProcessor;
+
   /**
    * Constructor
    * @param apiVersion API version
-   * @param makeApiRequest Function to make API requests
+   * @param apiRequest Function to make API requests
    * @param marketplaceId Marketplace ID
    */
   constructor(
-    apiVersion: string,
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
+    apiVersion: string, 
+    apiRequest: ApiRequestFunction,
     marketplaceId: string
   ) {
-    super('orders', apiVersion, makeApiRequest, marketplaceId);
+    super(apiRequest, marketplaceId, {});
+    
+    this.apiVersion = apiVersion;
+    this.basePath = `/orders/${apiVersion}`;
+    this.batchProcessor = new BatchProcessor(20); // Process items in batches of 20
   }
-  
+
   /**
-   * Initialize the module
-   * @param config Module-specific configuration
-   * @returns Promise<any> that resolves when initialization is complete
+   * Get orders based on specified criteria
+   * @param params Parameters for filtering orders
+   * @returns List of orders matching the criteria
    */
-  protected async initializeModule(config?: any): Promise<void> {
-    // No specific initialization required for this module
-    return Promise<any>.resolve();
-  }
-  
-  /**
-   * Get orders from Amazon
-   * @param params Parameters for getting orders
-   * @returns Orders response
-   */
-  public async getOrders(
-    params: GetOrdersParams = {}
-  ): Promise<ApiResponse<AmazonSPApi.Orders.GetOrdersResponse>> {
-    const queryParams: Record<string, any> = {};
-    
-    // Add date filters
-    if (params.createdAfter) {
-      queryParams.CreatedAfter = params.createdAfter.toISOString();
-    }
-    
-    if (params.createdBefore) {
-      queryParams.CreatedBefore = params.createdBefore.toISOString();
-    }
-    
-    if (params.lastUpdatedAfter) {
-      queryParams.LastUpdatedAfter = params.lastUpdatedAfter.toISOString();
-    }
-    
-    if (params.lastUpdatedBefore) {
-      queryParams.LastUpdatedBefore = params.lastUpdatedBefore.toISOString();
-    }
-    
-    // Add filters
-    if (params.orderStatuses && params.orderStatuses.length > 0) {
-      queryParams.OrderStatuses = params.orderStatuses.join(',');
-    }
-    
-    if (params.fulfillmentChannels && params.fulfillmentChannels.length > 0) {
-      queryParams.FulfillmentChannels = params.fulfillmentChannels.join(',');
-    }
-    
-    if (params.paymentMethods && params.paymentMethods.length > 0) {
-      queryParams.PaymentMethods = params.paymentMethods.join(',');
-    }
-    
-    if (params.amazonOrderIds && params.amazonOrderIds.length > 0) {
-      queryParams.AmazonOrderIds = params.amazonOrderIds.join(',');
-    }
-    
-    // Add pagination
-    if (params.nextToken) {
-      queryParams.NextToken = params.nextToken;
-    }
-    
-    if (params.maxResultsPerPage) {
-      queryParams.MaxResultsPerPage = params.maxResultsPerPage;
-    }
-    
-    // Ensure we have a marketplace ID
-    const marketplaceId = params.marketplaceId || this.marketplaceId;
-    if (!marketplaceId) {
-      throw AmazonErrorUtil.createError(
-        'Marketplace ID is required to get orders',
-        AmazonErrorCode.INVALID_INPUT
-      );
-    }
-    
-    queryParams.MarketplaceIds = marketplaceId;
-    
+  public async getOrders(params: GetOrdersParams = {}): Promise<ApiResponse<AmazonSPApi.Orders.GetOrdersResponse>> {
     try {
-      // Get orders
-      const ordersResponse = await this.makeRequest<AmazonSPApi.Orders.GetOrdersResponse>({
-        method: 'GET',
-        path: '/orders',
-        params: queryParams
-      });
+      const queryParams: Record<string, any> = {
+        MarketplaceIds: params.marketplaceIds || [this.marketplaceId]
+      };
       
-      // If we need to include order items, get them for each order
-      if (params.includeOrderItems && ordersResponse.data.payload.Orders.length > 0) {
-        await this.addOrderItemsToOrders(ordersResponse.data.payload.Orders);
-      }
+      // Add optional parameters if provided
+      if (params.createdAfter) queryParams.CreatedAfter = params.createdAfter;
+      if (params.createdBefore) queryParams.CreatedBefore = params.createdBefore;
+      if (params.lastUpdatedAfter) queryParams.LastUpdatedAfter = params.lastUpdatedAfter;
+      if (params.lastUpdatedBefore) queryParams.LastUpdatedBefore = params.lastUpdatedBefore;
+      if (params.orderStatuses && params.orderStatuses.length > 0) queryParams.OrderStatuses = params.orderStatuses;
+      if (params.fulfillmentChannels && params.fulfillmentChannels.length > 0) queryParams.FulfillmentChannels = params.fulfillmentChannels;
+      if (params.paymentMethods && params.paymentMethods.length > 0) queryParams.PaymentMethods = params.paymentMethods;
+      if (params.buyerEmail) queryParams.BuyerEmail = params.buyerEmail;
+      if (params.sellerOrderId) queryParams.SellerOrderId = params.sellerOrderId;
+      if (params.maxResultsPerPage) queryParams.MaxResultsPerPage = params.maxResultsPerPage;
+      if (params.nextToken) queryParams.NextToken = params.nextToken;
+      if (params.amazonOrderIds && params.amazonOrderIds.length > 0) queryParams.AmazonOrderIds = params.amazonOrderIds;
       
-      return ordersResponse;
-    } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(
-        error,
-        `${this.moduleName}.getOrders`
+      return await this.request<AmazonSPApi.Orders.GetOrdersResponse>(
+        'orders',
+        'GET',
+        undefined,
+        { params: queryParams }
       );
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getOrders`);
     }
   }
   
   /**
-   * Get a single order by Amazon order ID
+   * Get a specific order by ID
    * @param orderId Amazon order ID
-   * @param includeOrderItems Whether to include order items
-   * @returns Order response
+   * @returns Order details
    */
-  public async getOrder(
-    orderId: string,
-    includeOrderItems: boolean = false
-  ): Promise<ApiResponse<AmazonSPApi.Orders.GetOrderResponse>> {
+  public async getOrder(orderId: string): Promise<ApiResponse<AmazonSPApi.Orders.GetOrderResponse>> {
     if (!orderId) {
-      throw AmazonErrorUtil.createError(
-        'Order ID is required to get order',
+      throw AmazonErrorHandler.createError(
+        'Order ID is required',
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     try {
-      const orderResponse = await this.makeRequest<AmazonSPApi.Orders.GetOrderResponse>({
-        method: 'GET',
-        path: `/orders/${orderId}`
-      });
-      
-      // If we need to include order items, get them for the order
-      if (includeOrderItems && orderResponse.data.payload.Orders.length > 0) {
-        await this.addOrderItemsToOrders(orderResponse.data.payload.Orders);
-      }
-      
-      return orderResponse;
-    } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(
-        error,
-        `${this.moduleName}.getOrder`
+      return await this.request<AmazonSPApi.Orders.GetOrderResponse>(
+        `orders/${orderId}`,
+        'GET'
       );
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getOrder`);
     }
   }
   
   /**
-   * Get order items for an order
+   * Get multiple orders by their IDs
+   * @param orderIds Array of Amazon order IDs
+   * @returns Map of order IDs to order details
+   */
+  public async getOrdersByIds(orderIds: string[]): Promise<Map<string, Order>> {
+    if (!orderIds || orderIds.length === 0) {
+      throw AmazonErrorHandler.createError(
+        'At least one Order ID is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    const result = new Map<string, Order>();
+    
+    // Process order IDs in batches to avoid hitting API limits
+    await this.batchProcessor.processBatch(orderIds, async (batchOrderIds) => {
+      try {
+        // First attempt to get orders in a batch
+        const ordersResponse = await this.getOrders({
+          amazonOrderIds: batchOrderIds
+        });
+        
+        // Process the response
+        if (ordersResponse.data.Orders) {
+          for (const order of ordersResponse.data.Orders) {
+            result.set(order.AmazonOrderId, order);
+          }
+        }
+        
+        // Check if any orders were not found in the batch response
+        const foundOrderIds = new Set(
+          (ordersResponse.data.Orders || []).map(order => order.AmazonOrderId)
+        );
+        
+        // For any orders not found in the batch, try to get them individually
+        const missingOrderIds = batchOrderIds.filter(id => !foundOrderIds.has(id));
+        
+        if (missingOrderIds.length > 0) {
+          // Use Promise.all for parallel processing but catch errors individually
+          await Promise.all(
+            missingOrderIds.map(async (orderId) => {
+              try {
+                const orderResponse = await this.getOrder(orderId);
+                if (orderResponse.data.Order) {
+                  result.set(orderId, orderResponse.data.Order);
+                }
+              } catch (error) {
+                // Log the error but continue processing
+                console.error(`Error getting order ${orderId}:`, error);
+              }
+            })
+          );
+        }
+      } catch (error) {
+        console.error('Error processing batch of orders:', error);
+        // Continue with other batches despite errors
+      }
+    });
+    
+    return result;
+  }
+  
+  /**
+   * Get items for a specific order
    * @param orderId Amazon order ID
-   * @returns Order items response
+   * @param nextToken Token for retrieving the next page of results
+   * @returns Order items
    */
   public async getOrderItems(
-    orderId: string
+    orderId: string, 
+    nextToken?: string
   ): Promise<ApiResponse<AmazonSPApi.Orders.GetOrderItemsResponse>> {
     if (!orderId) {
-      throw AmazonErrorUtil.createError(
-        'Order ID is required to get order items',
+      throw AmazonErrorHandler.createError(
+        'Order ID is required',
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
     try {
-      return await this.makeRequest<AmazonSPApi.Orders.GetOrderItemsResponse>({
-        method: 'GET',
-        path: `/orders/${orderId}/orderItems`
-      });
-    } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(
-        error,
-        `${this.moduleName}.getOrderItems`
+      const queryParams: Record<string, any> = {};
+      if (nextToken) queryParams.NextToken = nextToken;
+      
+      return await this.request<AmazonSPApi.Orders.GetOrderItemsResponse>(
+        `orders/${orderId}/orderItems`,
+        'GET',
+        undefined,
+        { params: queryParams }
       );
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getOrderItems`);
     }
   }
   
   /**
-   * Get all pages of order items for an order
+   * Get all items for a specific order (handles pagination automatically)
    * @param orderId Amazon order ID
    * @returns All order items
    */
-  public async getAllOrderItems(
-    orderId: string
-  ): Promise<AmazonSPApi.Orders.OrderItem[]> {
+  public async getAllOrderItems(orderId: string): Promise<OrderItem[]> {
     if (!orderId) {
-      throw AmazonErrorUtil.createError(
-        'Order ID is required to get order items',
+      throw AmazonErrorHandler.createError(
+        'Order ID is required',
         AmazonErrorCode.INVALID_INPUT
       );
     }
     
-    let allItems: AmazonSPApi.Orders.OrderItem[] = [];
-    let nextToken: string | undefined = undefined;
+    const allItems: OrderItem[] = [];
+    let nextToken: string | undefined;
     
-    do {
-      // Build the params with the next token if we have one
-      const params: Record<string, any> = {};
-      if (nextToken) {
-        params.NextToken = nextToken;
-      }
+    try {
+      do {
+        const response = await this.getOrderItems(orderId, nextToken);
+        
+        if (response.data.OrderItems) {
+          allItems.push(...response.data.OrderItems);
+        }
+        
+        nextToken = response.data.NextToken;
+      } while (nextToken);
       
-      // Get a page of order items
-      const response = await this.makeRequest<AmazonSPApi.Orders.GetOrderItemsResponse>({
-        method: 'GET',
-        path: `/orders/${orderId}/orderItems`,
-        params
-      });
-      
-      // Add the items to our collection
-      allItems = [...allItems, ...response.data.payload.OrderItems];
-      
-      // Get the next token for pagination
-      nextToken = response.data.payload.NextToken;
-      
-      // Continue until we have no more pages
-    } while (nextToken);
-    
-    return allItems;
+      return allItems;
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getAllOrderItems`);
+    }
   }
   
   /**
-   * Get all orders that match the given parameters (handles pagination)
-   * @param params Parameters for getting orders
-   * @param maxPages Maximum number of pages to retrieve (default: 10)
-   * @returns All orders that match the parameters
+   * Get all items for multiple orders
+   * @param orderIds Amazon order IDs
+   * @returns Map of order IDs to their order items
    */
-  public async getAllOrders(
-    params: GetOrdersParams = {},
-    maxPages: number = 10
-  ): Promise<AmazonSPApi.Orders.Order[]> {
-    let currentPage = 1;
-    let nextToken: string | undefined = undefined;
-    const allOrders: AmazonSPApi.Orders.Order[] = [];
-    
-    do {
-      // Update params with next token if available
-      const pageParams: GetOrdersParams = {
-        ...params,
-        nextToken
-      };
-      
-      const response = await this.getOrders(pageParams);
-      
-      // Add orders to our collection
-      if (response.data.payload.Orders && response.data.payload.Orders.length > 0) {
-        allOrders.push(...response.data.payload.Orders);
-      }
-      
-      // Get next token for pagination
-      nextToken = response.data.payload.NextToken;
-      currentPage++;
-      
-      // Stop if we've reached the max pages or there are no more pages
-    } while (nextToken && currentPage <= maxPages);
-    
-    return allOrders;
-  }
-  
-  /**
-   * Get recent orders
-   * @param days Number of days to look back (default: 7)
-   * @param includeOrderItems Whether to include order items (default: false)
-   * @returns Recent orders
-   */
-  public async getRecentOrders(
-    days: number = 7,
-    includeOrderItems: boolean = false
-  ): Promise<AmazonSPApi.Orders.Order[]> {
-    // Calculate the start date
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-    
-    // Get all orders created after the start date
-    return this.getAllOrders({
-      createdAfter: startDate,
-      includeOrderItems
-    });
-  }
-  
-  /**
-   * Get orders updated since a specified date
-   * @param updatedSince Date to get updates since
-   * @param includeOrderItems Whether to include order items (default: false)
-   * @returns Orders updated since the specified date
-   */
-  public async getOrdersUpdatedSince(
-    updatedSince: Date,
-    includeOrderItems: boolean = false
-  ): Promise<AmazonSPApi.Orders.Order[]> {
-    return this.getAllOrders({
-      lastUpdatedAfter: updatedSince,
-      includeOrderItems
-    });
-  }
-  
-  /**
-   * Add order items to each order in a list
-   * @param orders Orders to add items to
-   */
-  private async addOrderItemsToOrders(
-    orders: AmazonSPApi.Orders.Order[]
-  ): Promise<void> {
-    // Add a property to hold order items
-    for (const order of orders) {
-      (order as any).OrderItems = [];
+  public async getItemsForOrders(orderIds: string[]): Promise<Map<string, OrderItem[]>> {
+    if (!orderIds || orderIds.length === 0) {
+      throw AmazonErrorHandler.createError(
+        'At least one Order ID is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
     }
     
-    // Get order items for each order in parallel
-    await Promise.all<any>(
-      orders.map(async (order: any) => {
-        try {
-          const items = await this.getAllOrderItems(order.amazonOrderId);
-          (order as any).OrderItems = items;
-        } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-          console.warn(
-            `Failed to get order items for order ${order.amazonOrderId}:`,
-            error
-          );
-        }
-      })
-    );
+    const result = new Map<string, OrderItem[]>();
+    
+    // Process order IDs in batches to avoid hitting API limits
+    await this.batchProcessor.processBatch(orderIds, async (batchOrderIds) => {
+      // Use Promise.all for parallel processing but catch errors individually
+      await Promise.all(
+        batchOrderIds.map(async (orderId) => {
+          try {
+            const items = await this.getAllOrderItems(orderId);
+            result.set(orderId, items);
+          } catch (error) {
+            // Log the error but continue processing
+            console.error(`Error getting items for order ${orderId}:`, error);
+          }
+        })
+      );
+    });
+    
+    return result;
+  }
+  
+  /**
+   * Create a shipment for a specific order
+   * @param params Shipment creation parameters
+   * @returns Shipment details
+   */
+  public async createShipment(
+    params: CreateShipmentParams
+  ): Promise<ApiResponse<AmazonSPApi.Orders.CreateShipmentResponse>> {
+    if (!params.amazonOrderId) {
+      throw AmazonErrorHandler.createError(
+        'Amazon Order ID is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    if (!params.items || params.items.length === 0) {
+      throw AmazonErrorHandler.createError(
+        'At least one order item is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    if (!params.shippingServiceId) {
+      throw AmazonErrorHandler.createError(
+        'Shipping service ID is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    try {
+      const requestBody = {
+        marketplaceId: this.marketplaceId,
+        amazonOrderId: params.amazonOrderId,
+        itemList: params.items.map(item => ({
+          orderItemId: item.orderItemId,
+          quantity: item.quantity
+        })),
+        shippingServiceId: params.shippingServiceId
+      };
+      
+      // Add optional fields if provided
+      if (params.trackingNumber) requestBody['trackingNumber'] = params.trackingNumber;
+      if (params.trackingUrl) requestBody['trackingUrl'] = params.trackingUrl;
+      if (params.trackingNumbers) requestBody['trackingNumbers'] = params.trackingNumbers;
+      if (params.shipDate) requestBody['shipDate'] = params.shipDate;
+      if (params.shippingNote) requestBody['shippingNote'] = params.shippingNote;
+      
+      return await this.request<AmazonSPApi.Orders.CreateShipmentResponse>(
+        'shipment',
+        'POST',
+        requestBody
+      );
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.createShipment`);
+    }
+  }
+  
+  /**
+   * Get recent orders (orders updated within the last 24 hours)
+   * @param maxResults Maximum number of results to return
+   * @returns Recent orders
+   */
+  public async getRecentOrders(maxResults = 100): Promise<Order[]> {
+    // Calculate timestamp for 24 hours ago
+    const twentyFourHoursAgo = new Date();
+    twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+    
+    try {
+      const response = await this.getOrders({
+        lastUpdatedAfter: twentyFourHoursAgo.toISOString(),
+        maxResultsPerPage: maxResults,
+        marketplaceIds: [this.marketplaceId]
+      });
+      
+      return response.data.Orders || [];
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getRecentOrders`);
+    }
+  }
+  
+  /**
+   * Get orders by date range
+   * @param startDate Start date (ISO 8601 format)
+   * @param endDate End date (ISO 8601 format)
+   * @param maxResults Maximum number of results to return
+   * @returns Orders within the specified date range
+   */
+  public async getOrdersByDateRange(
+    startDate: string,
+    endDate: string,
+    maxResults = 100
+  ): Promise<Order[]> {
+    if (!startDate || !endDate) {
+      throw AmazonErrorHandler.createError(
+        'Start date and end date are required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    try {
+      const response = await this.getOrders({
+        createdAfter: startDate,
+        createdBefore: endDate,
+        maxResultsPerPage: maxResults,
+        marketplaceIds: [this.marketplaceId]
+      });
+      
+      return response.data.Orders || [];
+    } catch (error) {
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getOrdersByDateRange`);
+    }
   }
 }
+
+/**
+ * Order utility functions
+ */
+export const OrderUtils = {
+  /**
+   * Calculate total order value
+   * @param order Order object
+   * @returns Total value including taxes and shipping
+   */
+  calculateTotalValue(order: Order): number {
+    if (order.OrderTotal) {
+      return parseFloat(order.OrderTotal.amount);
+    }
+    return 0;
+  },
+  
+  /**
+   * Calculate total order items (shipped and unshipped)
+   * @param order Order object
+   * @returns Total number of items
+   */
+  calculateTotalItems(order: Order): number {
+    return (order.NumberOfItemsShipped || 0) + (order.NumberOfItemsUnshipped || 0);
+  },
+  
+  /**
+   * Format order status for display
+   * @param status Order status enum value
+   * @returns Human-readable status
+   */
+  formatStatus(status: OrderStatus): string {
+    switch (status) {
+      case OrderStatus.PENDING:
+        return 'Pending';
+      case OrderStatus.UNSHIPPED:
+        return 'Awaiting Shipment';
+      case OrderStatus.PARTIALLY_SHIPPED:
+        return 'Partially Shipped';
+      case OrderStatus.SHIPPED:
+        return 'Shipped';
+      case OrderStatus.CANCELED:
+        return 'Canceled';
+      case OrderStatus.UNFULFILLABLE:
+        return 'Cannot Fulfill';
+      case OrderStatus.INVOICE_UNCONFIRMED:
+        return 'Invoice Pending';
+      case OrderStatus.PENDING_AVAILABILITY:
+        return 'Awaiting Stock';
+      default:
+        return status;
+    }
+  },
+  
+  /**
+   * Format fulfillment channel for display
+   * @param channel Fulfillment channel enum value
+   * @returns Human-readable channel
+   */
+  formatFulfillmentChannel(channel: FulfillmentChannel): string {
+    switch (channel) {
+      case FulfillmentChannel.MFN:
+        return 'Seller Fulfilled';
+      case FulfillmentChannel.AFN:
+        return 'Amazon Fulfilled (FBA)';
+      default:
+        return channel;
+    }
+  },
+  
+  /**
+   * Group orders by status
+   * @param orders List of orders
+   * @returns Map of status to orders
+   */
+  groupByStatus(orders: Order[]): Map<OrderStatus, Order[]> {
+    const result = new Map<OrderStatus, Order[]>();
+    
+    for (const order of orders) {
+      const status = order.OrderStatus;
+      if (!result.has(status)) {
+        result.set(status, []);
+      }
+      result.get(status)?.push(order);
+    }
+    
+    return result;
+  },
+  
+  /**
+   * Group orders by marketplace
+   * @param orders List of orders
+   * @returns Map of marketplace ID to orders
+   */
+  groupByMarketplace(orders: Order[]): Map<string, Order[]> {
+    const result = new Map<string, Order[]>();
+    
+    for (const order of orders) {
+      if (!order.MarketplaceId) continue;
+      
+      const marketplaceId = order.MarketplaceId;
+      if (!result.has(marketplaceId)) {
+        result.set(marketplaceId, []);
+      }
+      result.get(marketplaceId)?.push(order);
+    }
+    
+    return result;
+  },
+  
+  /**
+   * Format currency for display
+   * @param amount Amount as string
+   * @param currencyCode Currency code
+   * @returns Formatted currency string
+   */
+  formatCurrency(amount: string, currencyCode: string): string {
+    const numericAmount = parseFloat(amount);
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currencyCode
+    }).format(numericAmount);
+  },
+  
+  /**
+   * Format address for display
+   * @param address Address object
+   * @returns Formatted address string
+   */
+  formatAddress(address: Address): string {
+    if (!address) return '';
+    
+    const parts = [
+      address.name,
+      address.addressLine1,
+      address.addressLine2,
+      address.addressLine3,
+      [address.city, address.stateOrRegion, address.postalCode].filter(Boolean).join(', '),
+      address.countryCode
+    ].filter(Boolean);
+    
+    return parts.join('\n');
+  },
+  
+  /**
+   * Check if order is fulfilled by Amazon
+   * @param order Order object
+   * @returns True if FBA, false otherwise
+   */
+  isFBA(order: Order): boolean {
+    return order.FulfillmentChannel === FulfillmentChannel.AFN;
+  },
+  
+  /**
+   * Check if order is overdue for shipment
+   * @param order Order object
+   * @returns True if overdue, false otherwise
+   */
+  isOverdueForShipment(order: Order): boolean {
+    if (order.OrderStatus !== OrderStatus.UNSHIPPED || !order.LatestShipDate) {
+      return false;
+    }
+    
+    const latestShipDate = new Date(order.LatestShipDate);
+    const now = new Date();
+    
+    return latestShipDate < now;
+  }
+};
+
+// Default export
+export default OrderUtils;

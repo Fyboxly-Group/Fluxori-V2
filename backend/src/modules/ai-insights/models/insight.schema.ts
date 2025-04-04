@@ -1,173 +1,157 @@
 /**
- * Firestore schema definitions for AI Insights models
+ * Insight Schemas for Firestore
+ * 
+ * Defines schemas and converters for Firestore collections
  */
-
-import { Timestamp } from 'firebase-admin/firestore';
 import { 
+  Timestamp, 
+  DocumentData, 
+  QueryDocumentSnapshot,
+  SnapshotOptions
+} from 'firebase-admin/firestore';
+import { 
+  IInsight, 
   InsightType, 
   InsightStatus, 
   InsightPriority, 
-  InsightSource,
+  InsightSource, 
   InsightModel,
-  InsightFeedback,
   InsightMetric,
   InsightRecommendation,
   InsightVisualization,
-  AnalysisPipelineOptions,
-  Insight,
-  ScheduledInsightJob
+  InsightFeedback,
+  IScheduledInsightJob,
+  AnalysisPipelineOptions
 } from '../interfaces/insight.interface';
 
 /**
- * Firestore schema for insight metrics
+ * Insight schema for Firestore
  */
-export interface InsightMetricSchema {
-  name: string;
-  value: number;
-  unit?: string;
-  change?: number;
-  changeDirection?: 'up' | 'down' | 'stable';
-  description?: string;
-}
-
-/**
- * Firestore schema for insight recommendations
- */
-export interface InsightRecommendationSchema {
-  title: string;
-  description: string;
-  priority: InsightPriority;
-  potentialImpact?: string;
-  actionItems?: string[];
-}
-
-/**
- * Firestore schema for insight visualizations
- */
-export interface InsightVisualizationSchema {
-  type: 'chart' | 'table' | 'indicator' | 'comparison';
-  title: string;
-  description?: string;
-  data: any; // Visualization-specific data
-}
-
-/**
- * Firestore schema for analysis pipeline options
- */
-export interface AnalysisPipelineOptionsSchema {
-  useRag: boolean;
-  ragFilter?: Record<string, any>;
-  contextWindowSize?: number;
-  maxTokens?: number;
-  temperature?: number;
-  model?: InsightModel;
-  timeframeInDays?: number;
-  includeMarketplaces?: string[];
-  includeSKUs?: string[];
-  includeCategories?: string[];
-  compareWithTimeframe?: number;
-}
-
-/**
- * Firestore schema for insights
- */
-export interface InsightSchema {
-  id: string;
-  title: string;
-  summary: string;
-  type: InsightType;
-  status: InsightStatus;
-  priority: InsightPriority;
-  source: InsightSource;
-  model: InsightModel;
+export interface InsightSchema extends Omit<IInsight, 'createdAt' | 'updatedAt' | 'feedback'> {
   createdAt: Timestamp;
   updatedAt: Timestamp;
-  userId: string;
-  organizationId: string;
-  metrics: InsightMetricSchema[];
-  recommendations: InsightRecommendationSchema[];
-  visualizations?: InsightVisualizationSchema[];
-  relatedEntityIds?: string[]; // IDs of related products, marketplaces, etc.
-  relatedEntityType?: string;  // Type of related entities (product, marketplace, etc.)
-  feedback?: InsightFeedback;
-  feedbackComments?: string;
-  feedbackTimestamp?: Timestamp;
-  creditCost: number;
-  analysisTimeMs?: number;
-  rawAnalysisData?: any;
+  feedback?: {
+    value: InsightFeedback;
+    comment?: string;
+    submittedAt: Timestamp;
+  };
 }
 
 /**
- * Firestore schema for scheduled insight jobs
+ * Scheduled Insight Job schema for Firestore
  */
-export interface ScheduledInsightJobSchema {
-  id: string;
-  name: string;
-  description?: string;
-  type: InsightType;
-  frequency: 'daily' | 'weekly' | 'monthly' | 'custom';
-  cronExpression?: string;
-  isActive: boolean;
-  options: AnalysisPipelineOptionsSchema;
-  lastRun?: Timestamp;
-  nextRun?: Timestamp;
-  userId: string;
-  organizationId: string;
+export interface ScheduledInsightJobSchema extends Omit<IScheduledInsightJob, 'createdAt' | 'updatedAt' | 'nextRunTime' | 'lastRunTime'> {
   createdAt: Timestamp;
   updatedAt: Timestamp;
-  targetEntities?: { id: string, type: string }[];
+  nextRunTime: Timestamp;
+  lastRunTime?: Timestamp;
 }
 
 /**
- * Convert Firestore insight schema to interface
+ * Converter for Insight documents in Firestore
  */
-export function convertSchemaToInsight(schema: InsightSchema): Insight {
-  return {
-    ...schema,
-    createdAt: schema.createdAt.toDate(),
-    updatedAt: schema.updatedAt.toDate(),
-    feedbackTimestamp: schema.feedbackTimestamp ? schema.feedbackTimestamp.toDate() : undefined
-  };
-}
+export const insightConverter = {
+  toFirestore(insight: IInsight): DocumentData {
+    const { createdAt, updatedAt, feedback, ...data } = insight;
+    
+    const firestoreData: any = {
+      ...data,
+      createdAt: createdAt instanceof Date ? Timestamp.fromDate(createdAt) : createdAt,
+      updatedAt: updatedAt instanceof Date ? Timestamp.fromDate(updatedAt) : updatedAt
+    };
+    
+    if (feedback) {
+      firestoreData.feedback = {
+        ...feedback,
+        submittedAt: feedback.submittedAt instanceof Date 
+          ? Timestamp.fromDate(feedback.submittedAt) 
+          : feedback.submittedAt
+      };
+    }
+    
+    return firestoreData;
+  },
+  
+  fromFirestore(
+    snapshot: QueryDocumentSnapshot<DocumentData>,
+    options?: SnapshotOptions
+  ): IInsight {
+    const data = snapshot.data(options);
+    const insight: IInsight = {
+      id: snapshot.id,
+      organizationId: data.organizationId,
+      userId: data.userId,
+      type: data.type as InsightType,
+      title: data.title,
+      summary: data.summary,
+      content: data.content,
+      status: data.status as InsightStatus,
+      priority: data.priority as InsightPriority,
+      source: data.source as InsightSource,
+      model: data.model as InsightModel,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+      metrics: data.metrics as InsightMetric[],
+      recommendations: data.recommendations as InsightRecommendation[],
+      visualizations: data.visualizations as InsightVisualization[],
+      category: data.category,
+      tags: data.tags,
+      feedback: data.feedback ? {
+        value: data.feedback.value as InsightFeedback,
+        comment: data.feedback.comment,
+        submittedAt: data.feedback.submittedAt
+      } : undefined,
+      creditsUsed: data.creditsUsed,
+      tokenCount: data.tokenCount,
+      metadata: data.metadata || {}
+    };
+    
+    return insight;
+  }
+};
 
 /**
- * Convert interface to Firestore insight schema
+ * Converter for Scheduled Insight Job documents in Firestore
  */
-export function convertInsightToSchema(insight: Insight): InsightSchema {
-  return {
-    ...insight,
-    createdAt: Timestamp.fromDate(insight.createdAt instanceof Date ? insight.createdAt : new Date(insight.createdAt)),
-    updatedAt: Timestamp.fromDate(insight.updatedAt instanceof Date ? insight.updatedAt : new Date(insight.updatedAt)),
-    feedbackTimestamp: insight.feedbackTimestamp 
-      ? Timestamp.fromDate(insight.feedbackTimestamp instanceof Date 
-        ? insight.feedbackTimestamp 
-        : new Date(insight.feedbackTimestamp)) 
-      : undefined
-  };
-}
-
-/**
- * Convert Firestore scheduled job schema to interface
- */
-export function convertSchemaToScheduledJob(schema: ScheduledInsightJobSchema): ScheduledInsightJob {
-  return {
-    ...schema,
-    createdAt: schema.createdAt.toDate(),
-    updatedAt: schema.updatedAt.toDate(),
-    lastRun: schema.lastRun ? schema.lastRun.toDate() : undefined,
-    nextRun: schema.nextRun ? schema.nextRun.toDate() : undefined
-  };
-}
-
-/**
- * Convert interface to Firestore scheduled job schema
- */
-export function convertScheduledJobToSchema(job: ScheduledInsightJob): ScheduledInsightJobSchema {
-  return {
-    ...job,
-    createdAt: Timestamp.fromDate(job.createdAt instanceof Date ? job.createdAt : new Date(job.createdAt)),
-    updatedAt: Timestamp.fromDate(job.updatedAt instanceof Date ? job.updatedAt : new Date(job.updatedAt)),
-    lastRun: job.lastRun ? Timestamp.fromDate(job.lastRun instanceof Date ? job.lastRun : new Date(job.lastRun)) : undefined,
-    nextRun: job.nextRun ? Timestamp.fromDate(job.nextRun instanceof Date ? job.nextRun : new Date(job.nextRun)) : undefined
-  };
-}
+export const scheduledInsightJobConverter = {
+  toFirestore(job: IScheduledInsightJob): DocumentData {
+    const { createdAt, updatedAt, nextRunTime, lastRunTime, ...data } = job;
+    
+    return {
+      ...data,
+      createdAt: createdAt instanceof Date ? Timestamp.fromDate(createdAt) : createdAt,
+      updatedAt: updatedAt instanceof Date ? Timestamp.fromDate(updatedAt) : updatedAt,
+      nextRunTime: nextRunTime instanceof Date ? Timestamp.fromDate(nextRunTime) : nextRunTime,
+      lastRunTime: lastRunTime instanceof Date ? Timestamp.fromDate(lastRunTime) : lastRunTime
+    };
+  },
+  
+  fromFirestore(
+    snapshot: QueryDocumentSnapshot<DocumentData>,
+    options?: SnapshotOptions
+  ): IScheduledInsightJob {
+    const data = snapshot.data(options);
+    const job: IScheduledInsightJob = {
+      id: snapshot.id,
+      organizationId: data.organizationId,
+      userId: data.userId,
+      name: data.name,
+      description: data.description,
+      insightType: data.insightType as InsightType,
+      frequency: data.frequency as 'daily' | 'weekly' | 'monthly',
+      dayOfWeek: data.dayOfWeek,
+      dayOfMonth: data.dayOfMonth,
+      isActive: data.isActive,
+      pipelineOptions: data.pipelineOptions as AnalysisPipelineOptions,
+      nextRunTime: data.nextRunTime,
+      lastRunTime: data.lastRunTime,
+      createdBy: data.createdBy,
+      updatedBy: data.updatedBy,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+      lastInsightId: data.lastInsightId
+    };
+    
+    return job;
+  }
+};

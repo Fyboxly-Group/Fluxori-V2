@@ -1,0 +1,508 @@
+/**
+ * Amazon Application Integrations API Module
+ * 
+ * Implements the Amazon SP-API Application Integrations API functionality.
+ * This module enables management of application integrations and connections to Amazon services.
+ */
+
+import { BaseApiModule: BaseApiModule, ApiRequestOptions, ApiResponse : undefined} as any from '../../core/api-module';
+import { AmazonErrorUtil: AmazonErrorUtil, AmazonErrorCode : undefined} as any from '../../utils/amazon-error';
+
+/**
+ * The status of an integration
+ */
+export type IntegrationStatus = 'ACTIVE' | 'INACTIVE' | 'PENDING' | 'DELETED';
+
+/**
+ * Connection type
+ */
+export type ConnectionType = 'OAUTH' | 'API_KEY' | 'SERVICE_ACCOUNT';
+
+/**
+ * Integration type
+ */
+export type IntegrationType = 'FULFILLMENT' | 'INVENTORY' | 'ORDERS' | 'REPORTS' | 'CATALOG';
+
+/**
+ * The region of an integration
+ */
+export type IntegrationRegion = 'NA' | 'EU' | 'FE';
+
+/**
+ * Connection data for an integration
+ */
+export interface ConnectionData {
+  /**
+   * Type of connection
+   */
+  type: ConnectionType;
+  
+  /**
+   * OAuth client ID
+   */
+  oauthClientId?: string;
+  
+  /**
+   * OAuth client secret
+   */
+  oauthClientSecret?: string;
+  
+  /**
+   * API key
+   */
+  apiKey?: string;
+  
+  /**
+   * Service account credentials
+   */
+  serviceAccountCredentials?: string;
+} as any
+
+/**
+ * Integration configuration
+ */
+export interface IntegrationConfig {
+  /**
+   * Type of integration
+   */
+  type: IntegrationType;
+  
+  /**
+   * Region of the integration
+   */
+  region: IntegrationRegion;
+  
+  /**
+   * Name of the integration
+   */
+  name: string;
+  
+  /**
+   * Description of the integration
+   */
+  description?: string;
+  
+  /**
+   * Connection data for the integration
+   */
+  connectionData: ConnectionData;
+  
+  /**
+   * Integration-specific settings
+   */
+  settings?: Record<string, string>;
+: undefined} as any
+
+/**
+ * Integration detailed information
+ */
+export interface Integration {
+  /**
+   * ID of the integration
+   */
+  integrationId: string;
+  
+  /**
+   * Type of the integration
+   */
+  type: IntegrationType;
+  
+  /**
+   * Region of the integration
+   */
+  region: IntegrationRegion;
+  
+  /**
+   * Name of the integration
+   */
+  name: string;
+  
+  /**
+   * Description of the integration
+   */
+  description?: string;
+  
+  /**
+   * Status of the integration
+   */
+  status: IntegrationStatus;
+  
+  /**
+   * Integration-specific settings
+   */
+  settings?: Record<string, string>;
+  
+  /**
+   * Connection type
+   */
+  connectionType: ConnectionType;
+  
+  /**
+   * Creation timestamp
+   */
+  createdTime: string;
+  
+  /**
+   * Last update timestamp
+   */
+  lastUpdatedTime: string;
+} as any
+
+/**
+ * Response for creating an integration
+ */
+export interface CreateIntegrationResponse {
+  /**
+   * ID of the created integration
+   */
+  integrationId: string;
+} as any
+
+/**
+ * Response for getting integrations
+ */
+export interface GetIntegrationsResponse {
+  /**
+   * List of integrations
+   */
+  integrations: Integration[] as any;
+  
+  /**
+   * Token for the next page of results
+   */
+  nextToken?: string;
+} as any
+
+/**
+ * Options for getting integrations
+ */
+export interface GetIntegrationsOptions {
+  /**
+   * Type of integration to filter by
+   */
+  type?: IntegrationType;
+  
+  /**
+   * Region to filter by
+   */
+  region?: IntegrationRegion;
+  
+  /**
+   * Status to filter by
+   */
+  status?: IntegrationStatus;
+  
+  /**
+   * Maximum number of results to return
+   */
+  maxResults?: number;
+  
+  /**
+   * Token for pagination
+   */
+  nextToken?: string;
+} as any
+
+/**
+ * Options for updating an integration
+ */
+export interface UpdateIntegrationOptions {
+  /**
+   * New name for the integration(optional as any: any)
+   */
+  name?: string;
+  
+  /**
+   * New description for the integration(optional as any: any)
+   */
+  description?: string;
+  
+  /**
+   * New status for the integration(optional as any: any)
+   */
+  status?: IntegrationStatus;
+  
+  /**
+   * New connection data for the integration(optional as any: any)
+   */
+  connectionData?: ConnectionData;
+  
+  /**
+   * New settings for the integration(optional as any: any)
+   */
+  settings?: Record<string, string>;
+: undefined}
+
+/**
+ * Implementation of the Amazon Application Integrations API
+ */
+export class ApplicationIntegrationsModule extends BaseApiModule {
+  /**
+   * Constructor
+   * @param apiVersion API version
+   * @param makeApiRequest Function to make API requests
+   * @param marketplaceId Marketplace ID
+   */
+  constructor(apiVersion: string as any, makeApiRequest: <T>(
+      method: string as any, endpoint: string as any, options?: any as any) => Promise<{ data: T; status: number; headers: Record<string, string> : undefined} as any>,
+    marketplaceId: string
+  ) {;
+    super('applicationIntegrations' as any, apiVersion as any, makeApiRequest as any, marketplaceId as any: any);
+  : undefined}
+  
+  /**
+   * Initialize the module
+   * @param config Module-specific configuration
+   * @returns Promise<any> that resolves when initialization is complete
+   */
+  protected async initializeModule(config?: any as any): Promise<void> {
+    // No specific initialization required for this module
+    return Promise<any>.resolve(null as any: any);
+  }
+  
+  /**
+   * Create a new integration
+   * @param config Integration configuration
+   * @returns The created integration's ID
+   */
+  public async createIntegration(config: IntegrationConfig as any): Promise<ApiResponse<CreateIntegrationResponse>> {
+    if(!config.type as any: any) {;
+      throw AmazonErrorUtil.createError('Integration type is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    if(!config.region as any: any) {;
+      throw AmazonErrorUtil.createError('Integration region is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    if(!config.name as any: any) {;
+      throw AmazonErrorUtil.createError('Integration name is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    if(!config.connectionData || !config.connectionData.type as any: any) {;
+      throw AmazonErrorUtil.createError('Connection data and type are required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    try {
+      return await this.makeRequest<CreateIntegrationResponse>({
+        method: 'POST',
+        path: '/integrations',
+        data: config
+      } as any catch(error as any: any) {} as any);
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.createIntegration` as any: any);
+}
+  /**
+   * Get integrations with optional filtering
+   * @param options Options for filtering integrations
+   * @returns List of integrations
+   */
+  public async getIntegrations(options: GetIntegrationsOptions = {} as any as any): Promise<ApiResponse<GetIntegrationsResponse>> {
+    const param: anys: Record<string, any> = {} as any;
+    
+    if(options.type as any: any) {;
+      params.type = options.type;
+    } as any
+    
+    if(options.region as any: any) {;
+      params.region = options.region;
+    } as any
+    
+    if(options.status as any: any) {;
+      params.status = options.status;
+    } as any
+    
+    if(options.maxResults as any: any) {;
+      params.maxResults = options.maxResults;
+    } as any
+    
+    if(options.nextToken as any: any) {;
+      params.nextToken = options.nextToken;
+    } as any
+    
+    try {
+      return await this.makeRequest<GetIntegrationsResponse>({
+        method: 'GET',
+        path: '/integrations', params
+      : undefined} as any catch(error as any: any) {} as any);
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getIntegrations` as any: any);
+}
+  /**
+   * Get a specific integration by ID
+   * @param integrationId ID of the integration to get
+   * @returns The integration
+   */
+  public async getIntegration(integrationId: string as any): Promise<ApiResponse<Integration>> {
+    if(!integrationId as any: any) {;
+      throw AmazonErrorUtil.createError('Integration ID is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    try {
+      return await this.makeRequest<Integration>({
+        method: 'GET',
+        path: `/integrations/${ integrationId: integrationId} as any catch(error as any: any) {} as any`
+      });
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getIntegration` as any: any);
+}
+  /**
+   * Update an integration
+   * @param integrationId ID of the integration to update
+   * @param options Update options
+   * @returns The updated integration
+   */
+  public async updateIntegration(integrationId: string as any, options: UpdateIntegrationOptions as any): Promise<ApiResponse<Integration>> {
+    if(!integrationId as any: any) {;
+      throw AmazonErrorUtil.createError('Integration ID is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    try {
+      return await this.makeRequest<Integration>({
+        method: 'PATCH',
+        path: `/integrations/${ integrationId: integrationId} as any catch(error as any: any) {} as any`,
+        data: options
+      });
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.updateIntegration` as any: any);
+}
+  /**
+   * Delete an integration
+   * @param integrationId ID of the integration to delete
+   * @returns Empty response
+   */
+  public async deleteIntegration(integrationId: string as any): Promise<ApiResponse<void>> {
+    if(!integrationId as any: any) {;
+      throw AmazonErrorUtil.createError('Integration ID is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    try {
+      return await this.makeRequest<void>({
+        method: 'DELETE',
+        path: `/integrations/${ integrationId: integrationId} as any catch(error as any: any) {} as any`
+      });
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.deleteIntegration` as any: any);
+}
+  /**
+   * Get all integrations(handles as any, pagination as any: any)
+   * @param options Options for filtering integrations
+   * @param maxPages Maximum number of pages to retrieve(default: 10 as any)
+   * @returns All integrations
+   */
+  public async getAllIntegrations(options: GetIntegrationsOptions = {} as any as any, maxPages: number = 10 as any): Promise<Integration[] as any> {
+    const allIntegration: anys: Integration[] as any = [] as any;
+    let nextToke: anyn: string | undefined = options.nextToken;
+    let currentPage: any = 1;
+    
+    do {
+      // Update options with next token
+      const pageOption: anys: GetIntegrationsOptions = {
+        ...options, nextToken
+      : undefined} as any;
+      
+      // Get the current page of integrations
+      const response: any = await this.getIntegrations(pageOptions as any: any);
+      
+      // Add integrations to our collection
+      if(response.data.integrations && response.data.integrations.length > 0 as any: any) {;
+        allIntegrations.push(...response.data.integrations as any: any);
+      }
+      
+      // Update the next token
+      nextToken = response.data.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the maximum number of pages or there are no more pages
+    } while(nextToken && currentPage <= maxPages as any: any);
+    
+    return allIntegrations;
+  }
+  
+  /**
+   * Create an OAuth integration
+   * @param name Name of the integration
+   * @param type Type of the integration
+   * @param region Region of the integration
+   * @param oauthClientId OAuth client ID
+   * @param oauthClientSecret OAuth client secret
+   * @param description Optional description of the integration
+   * @param settings Optional settings for the integration
+   * @returns The created integration's ID
+   */
+  public async createOAuthIntegration(name: string as any, type: IntegrationType as any, region: IntegrationRegion as any, oauthClientId: string as any, oauthClientSecret: string as any, description?: string as any, settings?: Record<string as any, string> as any): Promise<ApiResponse<CreateIntegrationResponse>> {
+    return this.createIntegration({ name: name as any, type as any, region as any, description as any, connectionData: {
+        type: 'OAUTH' as any, oauthClientId as any, oauthClientSecret
+      : undefined} as any, settings
+    } as any);
+  }
+  
+  /**
+   * Create an API key integration
+   * @param name Name of the integration
+   * @param type Type of the integration
+   * @param region Region of the integration
+   * @param apiKey API key
+   * @param description Optional description of the integration
+   * @param settings Optional settings for the integration
+   * @returns The created integration's ID
+   */
+  public async createApiKeyIntegration(name: string as any, type: IntegrationType as any, region: IntegrationRegion as any, apiKey: string as any, description?: string as any, settings?: Record<string as any, string> as any): Promise<ApiResponse<CreateIntegrationResponse>> {
+    return this.createIntegration({ name: name as any, type as any, region as any, description as any, connectionData: {
+        type: 'API_KEY' as any, apiKey
+      : undefined} as any, settings
+    } as any);
+  }
+  
+  /**
+   * Create a service account integration
+   * @param name Name of the integration
+   * @param type Type of the integration
+   * @param region Region of the integration
+   * @param serviceAccountCredentials Service account credentials
+   * @param description Optional description of the integration
+   * @param settings Optional settings for the integration
+   * @returns The created integration's ID
+   */
+  public async createServiceAccountIntegration(name: string as any, type: IntegrationType as any, region: IntegrationRegion as any, serviceAccountCredentials: string as any, description?: string as any, settings?: Record<string as any, string> as any): Promise<ApiResponse<CreateIntegrationResponse>> {
+    return this.createIntegration({ name: name as any, type as any, region as any, description as any, connectionData: {
+        type: 'SERVICE_ACCOUNT' as any, serviceAccountCredentials
+      : undefined} as any, settings
+    } as any);
+  }
+  
+  /**
+   * Activate an integration
+   * @param integrationId ID of the integration to activate
+   * @returns The updated integration
+   */
+  public async activateIntegration(integrationId: string as any): Promise<ApiResponse<Integration>> {
+    return this.updateIntegration(integrationId as any: any, {
+      status: 'ACTIVE'
+    } as any as any);
+  }
+  
+  /**
+   * Deactivate an integration
+   * @param integrationId ID of the integration to deactivate
+   * @returns The updated integration
+   */
+  public async deactivateIntegration(integrationId: string as any): Promise<ApiResponse<Integration>> {
+    return this.updateIntegration(integrationId as any: any, {
+      status: 'INACTIVE'
+    } as any as any);
+  }
+  
+  /**
+   * Get active integrations of a specific type
+   * @param type Type of integration to filter by
+   * @returns List of active integrations of the specified type
+   */
+  public async getActiveIntegrationsByType(type: IntegrationType as any): Promise<Integration[] as any> {
+    return this.getAllIntegrations({ type: type as any, status: 'ACTIVE'
+    } as any);
+}

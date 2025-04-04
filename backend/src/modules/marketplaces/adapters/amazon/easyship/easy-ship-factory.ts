@@ -1,46 +1,41 @@
 /**
- * Factory for creating Easy Ship API module
+ * Amazon Easy Ship Module Factory
+ * 
+ * Creates and registers the Amazon SP-API Easy Ship module.
  */
 
-import { EasyShipModule } from './easy-ship';
+import { ApiRequestFunction } from '../core/api-module';
 import { ModuleRegistry } from '../core/module-registry';
-import { getDefaultModuleVersion } from '../core/module-definitions';
+import { getModuleDefaultVersion } from '../core/registry-helper';
+import { EasyShipModule } from './easy-ship';
 
 /**
- * Factory for creating Easy Ship API module
+ * Creates and registers an Easy Ship module
+ * 
+ * @param apiRequest Function to make API requests
+ * @param marketplaceId Marketplace ID
+ * @param registry Module registry to register the module with
+ * @param apiVersion Optional API version override
+ * @returns The created Easy Ship module instance
  */
-export class EasyShipModuleFactory {
-  /**
-   * Create an Easy Ship module and register it with the provided registry
-   * @param makeApiRequest Function to make API requests
-   * @param marketplaceId Marketplace ID
-   * @param registry Module registry to register with
-   * @param apiVersion Optional API version (uses default if not provided)
-   * @returns The created module
-   */
-  public static createEasyShipModule(
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string,
-    registry: ModuleRegistry,
-    apiVersion?: string
-  ): EasyShipModule {
-    // Use provided version or get the default
-    const version = apiVersion || getDefaultModuleVersion('easyShip') || '2022-03-23';
-    
-    // Create the module
-    const module = new EasyShipModule(
-      version,
-      makeApiRequest,
-      marketplaceId
-    );
-    
-    // Register the module
-    registry.registerModule(module);
-    
-    return module;
-  }
+export function createEasyShipModule(
+  apiRequest: ApiRequestFunction,
+  marketplaceId: string,
+  registry: ModuleRegistry,
+  apiVersion?: string
+): EasyShipModule {
+  // Use provided version or get the default
+  const version = apiVersion || getModuleDefaultVersion('easyShip') || '2022-03-23';
+  
+  // Create the module
+  const module = new EasyShipModule(
+    version,
+    apiRequest,
+    marketplaceId
+  );
+  
+  // Register the module
+  registry.registerModule('easyShip', module);
+  
+  return module;
 }

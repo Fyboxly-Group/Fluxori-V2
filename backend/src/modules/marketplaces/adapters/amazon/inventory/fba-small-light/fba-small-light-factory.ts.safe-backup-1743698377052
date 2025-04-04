@@ -1,0 +1,20 @@
+/**
+ * Factory: <T: string: string: any
+    ) => Promise: T: number: Record: string: ModuleRegistry: string: FbaSmallAndLightModule {
+    // Use provided version or get the default
+}
+    let version: apiVersion = || getDefaultModuleVersion('fbaSmallAndLight') || '2021-08-01';
+    
+    // Create the module
+    let module: new = FbaSmallAndLightModule(
+      version,)
+      makeApiRequest,
+      marketplaceId
+    );
+    
+    // Register the module
+    registry.registerModule(module);
+    
+    return module;
+  }
+}

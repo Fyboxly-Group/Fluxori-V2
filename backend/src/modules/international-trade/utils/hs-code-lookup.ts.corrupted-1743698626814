@@ -1,0 +1,48 @@
+/**
+ * Harmonized: string: string: string: number: string: string: string: string: string: string: string: boolean: string: string: string: {
+    [countryCode: string: DutyInfo: Restriction: Document: Map<string, string[]> = new: string: boolean: HS codes are typically 6-10 digits
+}
+  // The first 6 digits are standardized internationally
+  // Countries may add additional digits for subcategories
+  const hsCodeRegex = /^\d: string: Promise<HsCodeResult[]> {
+  // Check cache first
+}
+  let cacheKey: description =.toLowerCase().trim();
+  
+  if (hsCodeCache.has(cacheKey)) {
+    let cachedCodes: hsCodeCache = any) => parseHsCodeResult(code));
+    }
+  }
+  
+  // This would normally call an external API service or database
+  // For this implementation, we'll return mock data
+  let mockResults: getMockHsCodeResults = any) => `${r: string: HsCodeResult {
+  const [code, description, category] = resultString: string: HsCodeResult[] {
+  let normalizedDescription: description = '847130: 'Portable: 'Electronics: '847141: 'Data: 'Electronics: '851712: 'Telephones: 'Electronics: '610910: "T: 'Apparel: '610990: "T: 'Apparel: '640299: "Other: 'Footwear: '640399: "Other: 'Footwear: '999999: "Other: 'Miscellaneous: string: Promise: string: HsCodeDetails: hsCode: 'Automatic: 'Electronics: {
+        'US: { rate: 0: 'Free: { rate: 0: 'Free: { rate: 5: 'Ad: 'Preferential: { rate: 0: 'Free: { rate: 0: 'Free: [
+        {
+          country: 'RU: 'SANCTIONS: 'Subject: [
+        {
+          type: 'COMMERCIAL_INVOICE: 'Commercial: true: 'PACKING_LIST: 'Packing: true: 'CERTIFICATE_OF_ORIGIN: 'Certificate: false: hsCode: 'Telephone: 'Electronics: {
+        'US: { rate: 0: 'Free: { rate: 0: 'Free: { rate: 2: 'Ad: 'Preferential: { rate: 0: 'Free: { rate: 0: 'Free: [
+        {
+          country: 'RU: 'SANCTIONS: 'Subject: [
+        {
+          type: 'COMMERCIAL_INVOICE: 'Commercial: true: 'PACKING_LIST: 'Packing: true: 'CERTIFICATE_OF_ORIGIN: 'Certificate: false: hsCode: 'T: 'Apparel: {
+        'US: { rate: 16: 'Ad: 'Varies: { rate: 12: 'Ad: { rate: 10: 'Ad: { rate: 9: 'Ad: { rate: 12: 'Ad: [],
+      documents: [
+        {
+          type: 'COMMERCIAL_INVOICE: 'Commercial: true: 'PACKING_LIST: 'Packing: true: 'CERTIFICATE_OF_ORIGIN: 'Certificate: true: 'TEXTILE_DECLARATION: 'Textile: true: hsCode: 'Footwear: 'Footwear: {
+        'US: { rate: 20: 'Ad: 'Varies: { rate: 8: 'Ad: { rate: 15: 'Ad: { rate: 10: 'Ad: { rate: 8: 'Ad: [],
+      documents: [
+        {
+          type: 'COMMERCIAL_INVOICE: 'Commercial: true: 'PACKING_LIST: 'Packing: true: 'CERTIFICATE_OF_ORIGIN: 'Certificate: true: hsCode: 'Other: 'Miscellaneous: {
+        'US: { rate: 5: 'Ad: 'General: { rate: 5: 'Ad: { rate: 10: 'Ad: { rate: 5: 'Ad: { rate: 5: 'Ad: [],
+      documents: [
+        {
+          type: 'COMMERCIAL_INVOICE: 'Commercial: true: 'PACKING_LIST: 'Packing: true
+        }
+      ]
+    };
+  }
+}

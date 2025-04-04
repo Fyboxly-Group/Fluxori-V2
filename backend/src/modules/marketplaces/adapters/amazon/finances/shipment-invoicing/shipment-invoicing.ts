@@ -7,7 +7,7 @@
  */
 
 import { BaseApiModule, ApiRequestOptions, ApiResponse } from '../../core/api-module';
-import { AmazonErrorUtil, AmazonErrorCode } from '../../utils/amazon-error';
+import { AmazonErrorHandler, AmazonErrorCode } from '../../utils/amazon-error';
 import { AmazonSPApi } from '../../schemas/amazon.generated';
 
 /**
@@ -68,12 +68,37 @@ export type GetShipmentDetailsResponse = AmazonSPApi.ShipmentInvoicing.GetShipme
 /**
  * Submit Invoice Request
  */
-export type SubmitInvoiceRequest = AmazonSPApi.ShipmentInvoicing.SubmitInvoiceRequest;
+export interface SubmitInvoiceRequest {
+  /**
+   * Content of the invoice in JSON format
+   */
+  invoiceContent: string;
+  
+  /**
+   * Marketplace ID
+   */
+  marketplaceId?: string;
+  
+  /**
+   * Content type of invoice content
+   */
+  contentType?: string;
+}
 
 /**
  * Get Shipment Invoice Status Request
  */
-export type GetShipmentInvoiceStatusRequest = AmazonSPApi.ShipmentInvoicing.GetShipmentInvoiceStatusRequest;
+export interface GetShipmentInvoiceStatusRequest {
+  /**
+   * Shipment ID
+   */
+  shipmentId: string;
+  
+  /**
+   * Marketplace ID
+   */
+  marketplaceId?: string;
+}
 
 /**
  * Party information for invoice
@@ -91,12 +116,12 @@ export class ShipmentInvoicingModule extends BaseApiModule {
    * @param marketplaceId Marketplace ID
    */
   constructor(
-    apiVersion: string,
+    apiVersion: string, 
     makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
+      method: string, 
+      endpoint: string, 
+      options?: ApiRequestOptions
+    ) => Promise<ApiResponse<T>>,
     marketplaceId: string
   ) {
     super('shipmentInvoicing', apiVersion, makeApiRequest, marketplaceId);
@@ -105,11 +130,11 @@ export class ShipmentInvoicingModule extends BaseApiModule {
   /**
    * Initialize the module
    * @param config Module-specific configuration
-   * @returns Promise<any> that resolves when initialization is complete
+   * @returns Promise that resolves when initialization is complete
    */
-  protected async initializeModule(config?: any): Promise<void> {
+  protected async initializeModule(config?: Record<string, unknown>): Promise<void> {
     // No specific initialization required for this module
-    return Promise<any>.resolve();
+    return Promise.resolve();
   }
   
   /**
@@ -119,14 +144,17 @@ export class ShipmentInvoicingModule extends BaseApiModule {
    * @returns Shipment details
    */
   public async getShipmentDetails(
-    shipmentId: string,
+    shipmentId: string, 
     marketplaceId?: string
   ): Promise<ApiResponse<GetShipmentDetailsResponse>> {
     if (!shipmentId) {
-      throw AmazonErrorUtil.createError('Shipment ID is required to get shipment details', AmazonErrorCode.INVALID_INPUT);
+      throw AmazonErrorHandler.createError(
+        'Shipment ID is required to get shipment details', 
+        AmazonErrorCode.INVALID_INPUT
+      );
     }
     
-    const params: Record<string, any> = {
+    const params: Record<string, string> = {
       marketplaceId: marketplaceId || this.marketplaceId
     };
     
@@ -137,8 +165,7 @@ export class ShipmentInvoicingModule extends BaseApiModule {
         params
       });
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getShipmentDetails`);
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getShipmentDetails`);
     }
   }
 
@@ -149,11 +176,17 @@ export class ShipmentInvoicingModule extends BaseApiModule {
    */
   public async submitInvoice(request: SubmitInvoiceRequest): Promise<ApiResponse<void>> {
     if (!request.invoiceContent) {
-      throw AmazonErrorUtil.createError('Invoice content is required to submit invoice', AmazonErrorCode.INVALID_INPUT);
+      throw AmazonErrorHandler.createError(
+        'Invoice content is required to submit invoice', 
+        AmazonErrorCode.INVALID_INPUT
+      );
     }
     
     if (!request.marketplaceId && !this.marketplaceId) {
-      throw AmazonErrorUtil.createError('Marketplace ID is required to submit invoice', AmazonErrorCode.INVALID_INPUT);
+      throw AmazonErrorHandler.createError(
+        'Marketplace ID is required to submit invoice', 
+        AmazonErrorCode.INVALID_INPUT
+      );
     }
     
     try {
@@ -171,8 +204,7 @@ export class ShipmentInvoicingModule extends BaseApiModule {
         }
       });
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.submitInvoice`);
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.submitInvoice`);
     }
   }
 
@@ -185,11 +217,17 @@ export class ShipmentInvoicingModule extends BaseApiModule {
     request: GetShipmentInvoiceStatusRequest
   ): Promise<ApiResponse<ShipmentInvoice>> {
     if (!request.shipmentId) {
-      throw AmazonErrorUtil.createError('Shipment ID is required to get invoice status', AmazonErrorCode.INVALID_INPUT);
+      throw AmazonErrorHandler.createError(
+        'Shipment ID is required to get invoice status', 
+        AmazonErrorCode.INVALID_INPUT
+      );
     }
     
     if (!request.marketplaceId && !this.marketplaceId) {
-      throw AmazonErrorUtil.createError('Marketplace ID is required to get invoice status', AmazonErrorCode.INVALID_INPUT);
+      throw AmazonErrorHandler.createError(
+        'Marketplace ID is required to get invoice status', 
+        AmazonErrorCode.INVALID_INPUT
+      );
     }
     
     try {
@@ -201,8 +239,7 @@ export class ShipmentInvoicingModule extends BaseApiModule {
         }
       });
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getInvoiceStatus`);
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getInvoiceStatus`);
     }
   }
 
@@ -331,7 +368,7 @@ export class ShipmentInvoicingModule extends BaseApiModule {
       }
       
       // Prepare invoice items
-      const invoiceItems: InvoiceItem[] = orderItems.map((item: any) => ({
+      const invoiceItems: InvoiceItem[] = orderItems.map(item => ({
         orderItemId: item.orderItemId,
         title: item.title,
         quantity: {
@@ -340,11 +377,11 @@ export class ShipmentInvoicingModule extends BaseApiModule {
         },
         unitPrice: {
           currencyCode: item.currencyCode,
-          amount: item.unitPrice
+          amount: item.unitPrice.toString()
         },
         itemPrice: {
           currencyCode: item.currencyCode,
-          amount: item.quantity * item.unitPrice
+          amount: (item.quantity * item.unitPrice).toString()
         },
         hsCode: item.hsCode,
         countryOfOrigin: item.countryOfOrigin
@@ -378,11 +415,16 @@ export class ShipmentInvoicingModule extends BaseApiModule {
       };
       
       // Submit the invoice
-      await this.createAndSubmitCommercialInvoice(shipmentId, shipFromParty, shipToParty, invoiceItems, marketplaceId);
+      await this.createAndSubmitCommercialInvoice(
+        shipmentId,
+        shipFromParty,
+        shipToParty,
+        invoiceItems,
+        marketplaceId
+      );
       
       return true;
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error('Failed to process international shipment invoice:', error);
       return false;
     }

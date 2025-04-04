@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Router } from 'express';
 import {
   getBusinessOverview,
   getProjectPerformance,
@@ -10,7 +10,11 @@ import {
 } from '../controllers/analytics.controller';
 import { authenticate, authorize } from '../middleware/auth.middleware';
 
-const router = express.Router();
+/**
+ * Analytics Router
+ * Provides endpoints for retrieving various analytics and metrics
+ */
+const router: Router = express.Router();
 
 // Apply authentication to all analytics routes
 router.use(authenticate);

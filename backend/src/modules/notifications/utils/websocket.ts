@@ -83,7 +83,7 @@ export class NotificationWebSocketManager {
     });
     
     // Handle connections
-    this.io.on('connection', (socket) => {
+    this.io.on('connection', (socket: any) => {
       const userId = socket.data.user?.id || socket.data.user?._id;
       const organizationId = socket.data.user?.organizationId;
       
@@ -103,7 +103,7 @@ export class NotificationWebSocketManager {
       });
       
       // Handle acknowledgment events
-      socket.on('notification_ack', (notificationId) => {
+      socket.on('notification_ack', (notificationId: any) => {
         // Update last activity
         const client = this.clients.get(socket.id);
         if (client) {

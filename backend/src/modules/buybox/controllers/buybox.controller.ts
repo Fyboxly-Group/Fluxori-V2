@@ -6,22 +6,44 @@
 import { Request, Response } from 'express';
 import { injectable, inject } from 'inversify';
 import { Logger } from 'winston';
-import { BuyBoxMonitoringService } from '../services/buybox-monitoring.service';
-import { BuyBoxHistoryRepository } from '../repositories/buybox-history.repository';
-import { BuyBoxMonitorFactory } from '../factories/buybox-monitor.factory';
+import { 
+  BuyBoxMonitoringService, 
+  IBuyBoxMonitoringService 
+} from '../services/buybox-monitoring.service';
+import { 
+  BuyBoxHistoryRepository, 
+  IBuyBoxHistoryRepository 
+} from '../repositories/buybox-history.repository';
+import { 
+  BuyBoxMonitorFactory 
+} from '../factories/buybox-monitor.factory';
+
+/**
+ * Interface for BuyBox controller
+ */
+export interface IBuyBoxController {
+  initializeMonitoring(req: Request, res: Response): Promise<void>;
+  stopMonitoring(req: Request, res: Response): Promise<void>;
+  initializeMonitoringForMarketplace(req: Request, res: Response): Promise<void>;
+  checkBuyBoxStatus(req: Request, res: Response): Promise<void>;
+  getBuyBoxHistory(req: Request, res: Response): Promise<void>;
+  getBuyBoxHistoriesByMarketplace(req: Request, res: Response): Promise<void>;
+  applyRepricingRules(req: Request, res: Response): Promise<void>;
+  executeRuleManually(req: Request, res: Response): Promise<void>;
+}
 
 /**
  * Buy Box controller
  */
 @injectable()
-export class BuyBoxController {
+export class BuyBoxController implements IBuyBoxController {
   /**
    * Constructor
    */
   constructor(
     @inject('Logger') private logger: Logger,
-    @inject(BuyBoxMonitoringService) private buyBoxMonitoringService: BuyBoxMonitoringService,
-    @inject(BuyBoxHistoryRepository) private buyBoxHistoryRepository: BuyBoxHistoryRepository,
+    @inject(BuyBoxMonitoringService) private buyBoxMonitoringService: IBuyBoxMonitoringService,
+    @inject(BuyBoxHistoryRepository) private buyBoxHistoryRepository: IBuyBoxHistoryRepository,
     @inject(BuyBoxMonitorFactory) private buyBoxMonitorFactory: BuyBoxMonitorFactory
   ) {}
   
@@ -71,7 +93,7 @@ export class BuyBoxController {
       
       res.status(500).json({
         success: false,
-        message: `Error initializing Buy Box monitoring: ${(error as Error).message}`
+        message: `Error initializing Buy Box monitoring: ${error instanceof Error ? error.message : String(error)}`
       });
     }
   }
@@ -113,7 +135,7 @@ export class BuyBoxController {
       
       res.status(500).json({
         success: false,
-        message: `Error stopping Buy Box monitoring: ${(error as Error).message}`
+        message: `Error stopping Buy Box monitoring: ${error instanceof Error ? error.message : String(error)}`
       });
     }
   }
@@ -162,7 +184,7 @@ export class BuyBoxController {
       
       res.status(500).json({
         success: false,
-        message: `Error initializing Buy Box monitoring: ${(error as Error).message}`
+        message: `Error initializing Buy Box monitoring: ${error instanceof Error ? error.message : String(error)}`
       });
     }
   }
@@ -202,7 +224,7 @@ export class BuyBoxController {
       
       res.status(500).json({
         success: false,
-        message: `Error checking Buy Box status: ${(error as Error).message}`
+        message: `Error checking Buy Box status: ${error instanceof Error ? error.message : String(error)}`
       });
     }
   }
@@ -246,7 +268,7 @@ export class BuyBoxController {
       
       res.status(500).json({
         success: false,
-        message: `Error getting Buy Box history: ${(error as Error).message}`
+        message: `Error getting Buy Box history: ${error instanceof Error ? error.message : String(error)}`
       });
     }
   }
@@ -282,7 +304,7 @@ export class BuyBoxController {
       
       res.status(500).json({
         success: false,
-        message: `Error getting Buy Box histories: ${(error as Error).message}`
+        message: `Error getting Buy Box histories: ${error instanceof Error ? error.message : String(error)}`
       });
     }
   }
@@ -308,7 +330,43 @@ export class BuyBoxController {
       
       res.status(500).json({
         success: false,
-        message: `Error applying repricing rules: ${(error as Error).message}`
+        message: `Error applying repricing rules: ${error instanceof Error ? error.message : String(error)}`
+      });
+    }
+  }
+  
+  /**
+   * Execute a specific rule manually
+   * @param req Express request
+   * @param res Express response
+   */
+  async executeRuleManually(req: Request, res: Response): Promise<void> {
+    try {
+      const { ruleId } = req.params;
+      
+      // Validate required fields
+      if (!ruleId) {
+        res.status(400).json({
+          success: false,
+          message: 'Missing required parameter: ruleId'
+        });
+        return;
+      }
+      
+      // Execute rule
+      const result = await this.buyBoxMonitoringService.executeRuleManually(ruleId);
+      
+      res.status(200).json({
+        success: result.success,
+        message: result.message,
+        updates: result.updates
+      });
+    } catch (error) {
+      this.logger.error(`Failed to execute rule manually`, error);
+      
+      res.status(500).json({
+        success: false,
+        message: `Error executing rule: ${error instanceof Error ? error.message : String(error)}`
       });
     }
   }

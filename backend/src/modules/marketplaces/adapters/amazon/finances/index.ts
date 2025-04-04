@@ -1,9 +1,16 @@
 /**
  * Amazon Finances API Modules
- * Exports all finances-related modules and interfaces
+ * Exports all finances-related modules, factories, and interfaces
  */
 
+// Main Finances module
 export * from './finances';
 export * from './finances-factory';
-export * from './invoices';
-export * from './shipment-invoicing';
+
+// Invoices submodule
+export * from './invoices/invoices';
+export * from './invoices/invoices-factory';
+
+// Shipment Invoicing submodule
+export * from './shipment-invoicing/shipment-invoicing';
+export * from './shipment-invoicing/shipment-invoicing-factory';

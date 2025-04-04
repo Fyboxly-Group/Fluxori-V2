@@ -1,6 +1,9 @@
 /**
  * Interfaces for AI Insights module
+ * 
+ * Defines type definitions for the AI Insights feature
  */
+import { Timestamp } from 'firebase-admin/firestore';
 
 /**
  * Insight type enum
@@ -57,118 +60,368 @@ export enum InsightModel {
 export enum InsightFeedback {
   HELPFUL = 'helpful',
   SOMEWHAT_HELPFUL = 'somewhat-helpful',
-  NOT_HELPFUL = 'not-helpful'
+  NOT_HELPFUL = 'not-helpful',
+  INCORRECT = 'incorrect'
 }
 
 /**
- * Insight metric interface
+ * Frequency for scheduled insights
+ */
+export enum InsightFrequency {
+  DAILY = 'daily',
+  WEEKLY = 'weekly',
+  MONTHLY = 'monthly'
+}
+
+/**
+ * Interface for insight metric
  */
 export interface InsightMetric {
   name: string;
   value: number;
-  unit?: string;
+  previousValue?: number;
   change?: number;
-  changeDirection?: 'up' | 'down' | 'stable';
+  changeDirection?: 'up' | 'down' | 'unchanged';
+  unit?: string;
   description?: string;
 }
 
 /**
- * Insight recommendation interface
+ * Interface for insight recommendation
  */
 export interface InsightRecommendation {
   title: string;
   description: string;
   priority: InsightPriority;
-  potentialImpact?: string;
-  actionItems?: string[];
+  actionable: boolean;
+  actionLink?: string;
+  actionText?: string;
 }
 
 /**
- * Insight visualization interface
+ * Interface for insight visualization
  */
 export interface InsightVisualization {
-  type: 'chart' | 'table' | 'indicator' | 'comparison';
+  type: 'chart' | 'table' | 'card' | 'custom';
   title: string;
-  description?: string;
-  data: any; // Visualization-specific data
+  data: any;
+  showOnDashboard: boolean;
+  config?: Record<string, any>;
 }
 
 /**
- * Analysis pipeline options interface
+ * Interface for analysis pipeline options
  */
 export interface AnalysisPipelineOptions {
-  useRag: boolean;
-  ragFilter?: Record<string, any>;
-  contextWindowSize?: number;
+  timeRangeInDays: number;
+  compareWithPrevious: boolean;
+  includePredictions: boolean;
+  predictionDays?: number;
+  modelToUse: InsightModel;
   maxTokens?: number;
-  temperature?: number;
-  model?: InsightModel;
-  timeframeInDays?: number;
-  includeMarketplaces?: string[];
-  includeSKUs?: string[];
-  includeCategories?: string[];
-  compareWithTimeframe?: number;
+  includeRecommendations: boolean;
+  includeVisualizations: boolean;
+  dataPoints?: number;
+  drillDownEnabled?: boolean;
+  customPrompt?: string;
+  customParams?: Record<string, any>;
 }
 
 /**
- * Base insight interface
+ * Base interface for insight
  */
-export interface Insight {
+export interface IInsight {
   id: string;
+  organizationId: string;
+  userId: string;
+  type: InsightType;
   title: string;
   summary: string;
-  type: InsightType;
+  content: string;
   status: InsightStatus;
   priority: InsightPriority;
   source: InsightSource;
   model: InsightModel;
-  createdAt: Date;
-  updatedAt: Date;
-  userId: string;
-  organizationId: string;
-  metrics: InsightMetric[];
-  recommendations: InsightRecommendation[];
+  createdAt: Timestamp | Date;
+  updatedAt: Timestamp | Date;
+  metrics?: InsightMetric[];
+  recommendations?: InsightRecommendation[];
   visualizations?: InsightVisualization[];
-  relatedEntityIds?: string[]; // IDs of related products, marketplaces, etc.
-  relatedEntityType?: string;  // Type of related entities (product, marketplace, etc.)
-  feedback?: InsightFeedback;
-  feedbackComments?: string;
-  feedbackTimestamp?: Date;
-  creditCost: number;
-  analysisTimeMs?: number;
-  rawAnalysisData?: any;
+  category?: string;
+  tags?: string[];
+  feedback?: {
+    value: InsightFeedback;
+    comment?: string;
+    submittedAt: Timestamp | Date;
+  };
+  creditsUsed: number;
+  tokenCount: number;
+  metadata: Record<string, any>;
 }
 
 /**
  * Interface for scheduled insight job
  */
-export interface ScheduledInsightJob {
+export interface IScheduledInsightJob {
   id: string;
+  organizationId: string;
+  userId: string;
   name: string;
   description?: string;
-  type: InsightType;
-  frequency: 'daily' | 'weekly' | 'monthly' | 'custom';
-  cronExpression?: string;
+  insightType: InsightType;
+  frequency: 'daily' | 'weekly' | 'monthly';
+  dayOfWeek?: number; // 0-6, Sunday is 0
+  dayOfMonth?: number; // 1-31
   isActive: boolean;
-  options: AnalysisPipelineOptions;
-  lastRun?: Date;
-  nextRun?: Date;
-  userId: string;
-  organizationId: string;
-  createdAt: Date;
-  updatedAt: Date;
-  targetEntities?: { id: string, type: string }[];
+  pipelineOptions: AnalysisPipelineOptions;
+  nextRunTime: Timestamp | Date;
+  lastRunTime?: Timestamp | Date;
+  createdBy: string;
+  updatedBy?: string;
+  createdAt: Timestamp | Date;
+  updatedAt: Timestamp | Date;
+  lastInsightId?: string;
 }
 
 /**
- * Interface for on-demand insight request
+ * Interface for insight repository
  */
-export interface OnDemandInsightRequest {
-  type: InsightType;
-  userId: string;
-  organizationId: string;
-  targetEntityIds?: string[];
-  targetEntityType?: string;
-  customPrompt?: string;
-  options: AnalysisPipelineOptions;
+export interface IInsightRepository {
+  /**
+   * Create a new insight
+   */
+  create(insight: Omit<IInsight, 'id' | 'createdAt' | 'updatedAt'>): Promise<IInsight>;
+  
+  /**
+   * Get an insight by ID
+   */
+  getById(id: string): Promise<IInsight | null>;
+  
+  /**
+   * Update an insight
+   */
+  update(id: string, data: Partial<IInsight>): Promise<IInsight | null>;
+  
+  /**
+   * Delete an insight
+   */
+  delete(id: string): Promise<boolean>;
+  
+  /**
+   * Get insights by organization ID
+   */
+  getByOrganization(
+    organizationId: string, 
+    limit?: number, 
+    startAfter?: any
+  ): Promise<{
+    insights: IInsight[];
+    lastDoc: any;
+  }>;
+  
+  /**
+   * Get insights by user ID
+   */
+  getByUser(
+    userId: string, 
+    limit?: number, 
+    startAfter?: any
+  ): Promise<{
+    insights: IInsight[];
+    lastDoc: any;
+  }>;
+  
+  /**
+   * Get insights by type
+   */
+  getByType(
+    organizationId: string,
+    type: InsightType, 
+    limit?: number, 
+    startAfter?: any
+  ): Promise<{
+    insights: IInsight[];
+    lastDoc: any;
+  }>;
+  
+  /**
+   * Record feedback for an insight
+   */
+  recordFeedback(
+    id: string, 
+    feedback: InsightFeedback, 
+    comment?: string
+  ): Promise<IInsight | null>;
+}
+
+/**
+ * Interface for scheduled job repository
+ */
+export interface IScheduledJobRepository {
+  /**
+   * Create a new scheduled job
+   */
+  create(job: Omit<IScheduledInsightJob, 'id' | 'createdAt' | 'updatedAt'>): Promise<IScheduledInsightJob>;
+  
+  /**
+   * Get a scheduled job by ID
+   */
+  getById(id: string): Promise<IScheduledInsightJob | null>;
+  
+  /**
+   * Update a scheduled job
+   */
+  update(id: string, data: Partial<IScheduledInsightJob>): Promise<IScheduledInsightJob | null>;
+  
+  /**
+   * Delete a scheduled job
+   */
+  delete(id: string): Promise<boolean>;
+  
+  /**
+   * Get scheduled jobs by organization ID
+   */
+  getByOrganization(organizationId: string): Promise<IScheduledInsightJob[]>;
+  
+  /**
+   * Get scheduled jobs that need to run
+   */
+  getDueJobs(): Promise<IScheduledInsightJob[]>;
+  
+  /**
+   * Update next run time for a job
+   */
+  updateNextRunTime(id: string, nextRunTime: Date): Promise<IScheduledInsightJob | null>;
+}
+
+/**
+ * Interface for insight generation service
+ */
+export interface IInsightGenerationService {
+  /**
+   * Generate an insight
+   */
+  generateInsight(
+    options: {
+      organizationId: string;
+      userId: string;
+      type: InsightType;
+      pipelineOptions: AnalysisPipelineOptions;
+      jobId?: string;
+    }
+  ): Promise<IInsight>;
+  
+  /**
+   * Generate on-demand insight
+   */
+  generateOnDemandInsight(
+    userId: string,
+    organizationId: string,
+    type: InsightType,
+    options?: Partial<AnalysisPipelineOptions>
+  ): Promise<IInsight>;
+}
+
+/**
+ * Interface for insight data service
+ */
+export interface IInsightDataService {
+  /**
+   * Get data for insight generation
+   */
+  getInsightData(
+    organizationId: string,
+    type: InsightType,
+    timeRangeInDays: number,
+    compareWithPrevious: boolean
+  ): Promise<Record<string, any>>;
+  
+  /**
+   * Get performance data
+   */
+  getPerformanceData(
+    organizationId: string,
+    timeRangeInDays: number,
+    compareWithPrevious: boolean
+  ): Promise<Record<string, any>>;
+  
+  /**
+   * Get competitive data
+   */
+  getCompetitiveData(
+    organizationId: string,
+    timeRangeInDays: number,
+    compareWithPrevious: boolean
+  ): Promise<Record<string, any>>;
+  
+  /**
+   * Get opportunity data
+   */
+  getOpportunityData(
+    organizationId: string,
+    timeRangeInDays: number,
+    compareWithPrevious: boolean
+  ): Promise<Record<string, any>>;
+  
+  /**
+   * Get risk data
+   */
+  getRiskData(
+    organizationId: string,
+    timeRangeInDays: number,
+    compareWithPrevious: boolean
+  ): Promise<Record<string, any>>;
+}
+
+/**
+ * Interface for LLM service
+ */
+export interface ILlmService {
+  /**
+   * Generate insight content using LLM
+   */
+  generateInsightContent(
+    data: Record<string, any>,
+    type: InsightType,
+    options: AnalysisPipelineOptions
+  ): Promise<{
+    title: string;
+    summary: string;
+    content: string;
+    metrics: InsightMetric[];
+    recommendations: InsightRecommendation[];
+    visualizations?: InsightVisualization[];
+    tokenCount: number;
+  }>;
+}
+
+/**
+ * Interface for insight scheduler service
+ */
+export interface IInsightSchedulerService {
+  /**
+   * Create a new scheduled job
+   */
+  createScheduledJob(
+    job: Omit<IScheduledInsightJob, 'id' | 'createdAt' | 'updatedAt' | 'nextRunTime'>
+  ): Promise<IScheduledInsightJob>;
+  
+  /**
+   * Run due jobs
+   */
+  runDueJobs(): Promise<number>;
+  
+  /**
+   * Run a specific job
+   */
+  runJob(jobId: string): Promise<IInsight | null>;
+  
+  /**
+   * Calculate next run time for a job
+   */
+  calculateNextRunTime(
+    frequency: 'daily' | 'weekly' | 'monthly',
+    dayOfWeek?: number,
+    dayOfMonth?: number
+  ): Date;
 }

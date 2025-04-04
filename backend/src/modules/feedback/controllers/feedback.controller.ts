@@ -13,6 +13,16 @@ import {
 } from '../../../models/feedback.model';
 import { admin } from '../../../config/firestore';
 
+// Authenticated request type
+type AuthenticatedRequest = Request & {
+  user?: {
+    id: string;
+    organizationId: string;
+    email?: string;
+    role?: string;
+  };
+};
+
 export class FeedbackController {
   private feedbackService: FeedbackService;
   
@@ -24,7 +34,7 @@ export class FeedbackController {
    * Create new feedback
    * @route POST /api/feedback
    */
-  async submitFeedback(req: Request, res: Response, next: NextFunction) {
+  async submitFeedback(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       const { 
         title, 
@@ -89,7 +99,7 @@ export class FeedbackController {
           
           // Create a unique filename
           const timestamp = Date.now();
-          const filename = `feedback/${req.user.id}/${timestamp}.${fileExtension}`;
+          const filename = `feedback/${req.user?.id}/${timestamp}.${fileExtension}`;
           
           // Upload to Firebase Storage
           const bucket = admin.storage().bucket();
@@ -114,10 +124,10 @@ export class FeedbackController {
       
       // Create feedback object
       const feedback = {
-        userId: req.user.id,
-        userEmail: req.user.email,
-        userName: req.user.name,
-        organizationId: req.user.organizationId,
+        userId: req.user?.id,
+        userEmail: req.user?.email,
+        userName: req.user?.name,
+        organizationId: req.user?.organizationId,
         title,
         description,
         type: type as FeedbackType,
@@ -146,9 +156,9 @@ export class FeedbackController {
    * Get user's feedback history
    * @route GET /api/feedback/user
    */
-  async getUserFeedback(req: Request, res: Response, next: NextFunction) {
+  async getUserFeedback(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
-      const userId = req.user.id;
+      const userId = req.user?.id;
       const feedback = await this.feedbackService.getUserFeedback(userId);
       
       return res.status(200).json({
@@ -164,10 +174,10 @@ export class FeedbackController {
    * Get all feedback (admin only)
    * @route GET /api/feedback/admin
    */
-  async getAllFeedback(req: Request, res: Response, next: NextFunction) {
+  async getAllFeedback(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       // Check if user is admin
-      if (!req.user.isAdmin) {
+      if (!req.user?.isAdmin) {
         return res.status(403).json({
           success: false,
           message: 'Unauthorized: Admin access required'
@@ -192,12 +202,12 @@ export class FeedbackController {
    * Get organization feedback (admin or organization manager)
    * @route GET /api/feedback/organization/:organizationId
    */
-  async getOrganizationFeedback(req: Request, res: Response, next: NextFunction) {
+  async getOrganizationFeedback(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       const { organizationId } = req.params;
       
       // Check if user is admin or belongs to the organization
-      if (!req.user.isAdmin && req.user.organizationId !== organizationId) {
+      if (!req.user?.isAdmin && req.user?.organizationId !== organizationId) {
         return res.status(403).json({
           success: false,
           message: 'Unauthorized: Not allowed to access this organization data'
@@ -219,7 +229,7 @@ export class FeedbackController {
    * Get feedback by ID
    * @route GET /api/feedback/:id
    */
-  async getFeedbackById(req: Request, res: Response, next: NextFunction) {
+  async getFeedbackById(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       const { id } = req.params;
       const feedback = await this.feedbackService.getFeedbackById(id);
@@ -232,7 +242,7 @@ export class FeedbackController {
       }
       
       // Check if user is authorized to view this feedback
-      if (!req.user.isAdmin && req.user.id !== feedback.userId && req.user.organizationId !== feedback.organizationId) {
+      if (!req.user?.isAdmin && req.user?.id !== feedback.userId && req.user?.organizationId !== feedback.organizationId) {
         return res.status(403).json({
           success: false,
           message: 'Unauthorized: Not allowed to access this feedback'
@@ -252,13 +262,13 @@ export class FeedbackController {
    * Update feedback (admin only)
    * @route PATCH /api/feedback/:id
    */
-  async updateFeedback(req: Request, res: Response, next: NextFunction) {
+  async updateFeedback(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       const { id } = req.params;
       const { status, adminResponse } = req.body;
       
       // Check if user is admin
-      if (!req.user.isAdmin) {
+      if (!req.user?.isAdmin) {
         return res.status(403).json({
           success: false,
           message: 'Unauthorized: Admin access required'
@@ -266,7 +276,14 @@ export class FeedbackController {
       }
       
       // Build update object
-      const updates: any = {};
+      const updates: {
+        status?: FeedbackStatus;
+        adminResponse?: {
+          message: string;
+          respondedBy: string;
+          respondedAt: any; // Using any for Timestamp type for now
+        };
+      } = {};
       
       if (status) {
         // Validate status value
@@ -282,7 +299,7 @@ export class FeedbackController {
       if (adminResponse) {
         updates.adminResponse = {
           message: adminResponse,
-          respondedBy: req.user.id,
+          respondedBy: req.user?.id,
           respondedAt: Timestamp.now()
         };
       }
@@ -303,12 +320,12 @@ export class FeedbackController {
    * Delete feedback (admin only)
    * @route DELETE /api/feedback/:id
    */
-  async deleteFeedback(req: Request, res: Response, next: NextFunction) {
+  async deleteFeedback(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       const { id } = req.params;
       
       // Check if user is admin
-      if (!req.user.isAdmin) {
+      if (!req.user?.isAdmin) {
         return res.status(403).json({
           success: false,
           message: 'Unauthorized: Admin access required'
@@ -330,10 +347,10 @@ export class FeedbackController {
    * Get feedback analytics (admin only)
    * @route GET /api/feedback/analytics
    */
-  async getFeedbackAnalytics(req: Request, res: Response, next: NextFunction) {
+  async getFeedbackAnalytics(req: Request, res: Response, next: NextFunction) : Promise<void> {
     try {
       // Check if user is admin
-      if (!req.user.isAdmin) {
+      if (!req.user?.isAdmin) {
         return res.status(403).json({
           success: false,
           message: 'Unauthorized: Admin access required'

@@ -6,7 +6,7 @@
  */
 
 import { BaseApiModule, ApiRequestOptions, ApiResponse } from '../core/api-module';
-import { AmazonErrorUtil, AmazonErrorCode } from '../utils/amazon-error';
+import { AmazonErrorHandler, AmazonErrorCode } from '../utils/amazon-error';
 import { AmazonSPApi } from '../schemas/amazon.generated';
 
 /**
@@ -90,12 +90,12 @@ export class FinancesModule extends BaseApiModule {
    * @param marketplaceId Marketplace ID
    */
   constructor(
-    apiVersion: string,
+    apiVersion: string, 
     makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
+      method: string, 
+      endpoint: string, 
+      options?: ApiRequestOptions
+    ) => Promise<ApiResponse<T>>,
     marketplaceId: string
   ) {
     super('finances', apiVersion, makeApiRequest, marketplaceId);
@@ -104,11 +104,11 @@ export class FinancesModule extends BaseApiModule {
   /**
    * Initialize the module
    * @param config Module-specific configuration
-   * @returns Promise<any> that resolves when initialization is complete
+   * @returns Promise that resolves when initialization is complete
    */
-  protected async initializeModule(config?: any): Promise<void> {
+  protected async initializeModule(config?: Record<string, unknown>): Promise<void> {
     // No specific initialization required for this module
-    return Promise<any>.resolve();
+    return Promise.resolve();
   }
   
   /**
@@ -119,10 +119,10 @@ export class FinancesModule extends BaseApiModule {
   public async listFinancialEventGroups(
     params: ListFinancialEventGroupsParams = {}
   ): Promise<ApiResponse<AmazonSPApi.Finances.ListFinancialEventGroupsResponse>> {
-    const queryParams: Record<string, any> = {};
+    const queryParams: Record<string, string> = {};
     
     if (params.maxResultsPerPage) {
-      queryParams.MaxResultsPerPage = params.maxResultsPerPage;
+      queryParams.MaxResultsPerPage = params.maxResultsPerPage.toString();
     }
     
     if (params.nextToken) {
@@ -144,8 +144,7 @@ export class FinancesModule extends BaseApiModule {
         params: queryParams
       });
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.listFinancialEventGroups`);
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.listFinancialEventGroups`);
     }
   }
 
@@ -154,14 +153,9 @@ export class FinancesModule extends BaseApiModule {
    * @param eventGroupId Financial event group ID
    * @returns Financial event group
    */
-  public async getFinancialEventGroup(
-    eventGroupId: string
-  ): Promise<ApiResponse<AmazonSPApi.Finances.GetFinancialEventGroupResponse>> {
+  public async getFinancialEventGroup(eventGroupId: string): Promise<ApiResponse<AmazonSPApi.Finances.GetFinancialEventGroupResponse>> {
     if (!eventGroupId) {
-      throw AmazonErrorUtil.createError(
-        'Financial event group ID is required',
-        AmazonErrorCode.INVALID_INPUT
-      );
+      throw AmazonErrorHandler.createError('Financial event group ID is required', AmazonErrorCode.INVALID_INPUT);
     }
     
     try {
@@ -170,8 +164,7 @@ export class FinancesModule extends BaseApiModule {
         path: `/financialEventGroups/${eventGroupId}`
       });
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getFinancialEventGroup`);
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getFinancialEventGroup`);
     }
   }
 
@@ -183,10 +176,10 @@ export class FinancesModule extends BaseApiModule {
   public async listFinancialEvents(
     params: ListFinancialEventsParams = {}
   ): Promise<ApiResponse<AmazonSPApi.Finances.ListFinancialEventsResponse>> {
-    const queryParams: Record<string, any> = {};
+    const queryParams: Record<string, string> = {};
     
     if (params.maxResultsPerPage) {
-      queryParams.MaxResultsPerPage = params.maxResultsPerPage;
+      queryParams.MaxResultsPerPage = params.maxResultsPerPage.toString();
     }
     
     if (params.nextToken) {
@@ -216,8 +209,7 @@ export class FinancesModule extends BaseApiModule {
         params: queryParams
       });
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.listFinancialEvents`);
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.listFinancialEvents`);
     }
   }
 
@@ -226,14 +218,9 @@ export class FinancesModule extends BaseApiModule {
    * @param orderId Amazon order ID
    * @returns Financial events for the order
    */
-  public async getFinancialEventsForOrder(
-    orderId: string
-  ): Promise<ApiResponse<AmazonSPApi.Finances.GetFinancialEventsForOrderResponse>> {
+  public async getFinancialEventsForOrder(orderId: string): Promise<ApiResponse<AmazonSPApi.Finances.GetFinancialEventsForOrderResponse>> {
     if (!orderId) {
-      throw AmazonErrorUtil.createError(
-        'Order ID is required',
-        AmazonErrorCode.INVALID_INPUT
-      );
+      throw AmazonErrorHandler.createError('Order ID is required', AmazonErrorCode.INVALID_INPUT);
     }
     
     try {
@@ -242,8 +229,7 @@ export class FinancesModule extends BaseApiModule {
         path: `/orders/${orderId}/financialEvents`
       });
     } catch (error) {
-    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
-      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getFinancialEventsForOrder`);
+      throw AmazonErrorHandler.mapHttpError(error, `${this.moduleName}.getFinancialEventsForOrder`);
     }
   }
 
@@ -254,8 +240,8 @@ export class FinancesModule extends BaseApiModule {
    * @returns All financial event groups
    */
   public async getAllFinancialEventGroups(
-    params: Omit<ListFinancialEventGroupsParams, 'nextToken'> = {},
-    maxPages: number = 10
+    params: Omit<ListFinancialEventGroupsParams, 'nextToken'> = {}, 
+    maxPages = 10
   ): Promise<FinancialEventGroup[]> {
     let currentPage = 1;
     let nextToken: string | undefined = undefined;
@@ -292,8 +278,8 @@ export class FinancesModule extends BaseApiModule {
    * @returns All financial events
    */
   public async getAllFinancialEvents(
-    params: Omit<ListFinancialEventsParams, 'nextToken'> = {},
-    maxPages: number = 10
+    params: Omit<ListFinancialEventsParams, 'nextToken'> = {}, 
+    maxPages = 10
   ): Promise<FinancialEvents> {
     let currentPage = 1;
     let nextToken: string | undefined = undefined;
@@ -325,12 +311,17 @@ export class FinancesModule extends BaseApiModule {
       const events = response.data.financialEvents;
       
       // Merge all event lists
-      for (const listKey of Object.keys(allEvents)) {
-        if (events[listKey as keyof typeof events] && Array.isArray(events[listKey as keyof typeof events])) {
-          (allEvents[listKey as keyof typeof allEvents] as any[]).push(...(events[listKey as keyof typeof events] as any[]));
+      if (events) {
+        for (const listKey of Object.keys(allEvents)) {
+          const sourceList = events[listKey as keyof typeof events];
+          const targetList = allEvents[listKey as keyof typeof allEvents];
+          
+          if (sourceList && Array.isArray(sourceList) && Array.isArray(targetList)) {
+            targetList.push(...sourceList);
+          }
         }
       }
-
+      
       // Get next token for pagination
       nextToken = response.data.nextToken;
       currentPage++;
@@ -346,7 +337,7 @@ export class FinancesModule extends BaseApiModule {
    * @param days Number of days to look back (default: 30)
    * @returns Recent financial event groups
    */
-  public async getRecentFinancialEventGroups(days: number = 30): Promise<FinancialEventGroup[]> {
+  public async getRecentFinancialEventGroups(days = 30): Promise<FinancialEventGroup[]> {
     // Calculate the start date
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
@@ -362,7 +353,7 @@ export class FinancesModule extends BaseApiModule {
    * @param days Number of days to look back (default: 30)
    * @returns Recent financial events
    */
-  public async getRecentFinancialEvents(days: number = 30): Promise<FinancialEvents> {
+  public async getRecentFinancialEvents(days = 30): Promise<FinancialEvents> {
     // Calculate the start date
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
@@ -378,7 +369,7 @@ export class FinancesModule extends BaseApiModule {
    * @param days Number of days to look back (default: 90)
    * @returns Settlement summary
    */
-  public async getSettlementSummary(days: number = 90): Promise<{
+  public async getSettlementSummary(days = 90): Promise<{
     settlementCount: number;
     totalAmount: number;
     currency: string;
@@ -396,30 +387,30 @@ export class FinancesModule extends BaseApiModule {
     const eventGroups = await this.getRecentFinancialEventGroups(days);
     
     // Filter closed settlement groups
-    const settlements = eventGroups.filter((group: any) => 
-      group.financialEventGroupStatus === 'Closed' &&
-      group.financialEventGroupType === 'Settlement');
+    const settlements = eventGroups.filter(group => 
+      group.FinancialEventGroupStatus === 'Closed' &&
+      group.FinancialEventGroupType === 'Settlement');
     
     // Build settlement summary
     let totalAmount = 0;
-    const currency = settlements[0]?.originalTotal?.currencyCode || 'USD';
+    const currency = settlements[0]?.OriginalTotal?.CurrencyCode || 'USD';
     
-    const settlementGroups = settlements.map((settlement: any) => {
-      const amount = parseFloat(settlement.originalTotal?.amount || '0');
+    const settlementGroups = settlements.map(settlement => {
+      const amount = parseFloat(settlement.OriginalTotal?.Amount || '0');
       totalAmount += amount;
       
       return {
-        settlementId: settlement.financialEventGroupId,
-        startDate: new Date(settlement.startDate),
-        endDate: new Date(settlement.endDate),
-        depositDate: new Date(settlement.fundTransferDate || settlement.endDate),
+        settlementId: settlement.FinancialEventGroupId,
+        startDate: new Date(settlement.StartDate),
+        endDate: new Date(settlement.EndDate),
+        depositDate: new Date(settlement.FundTransferDate || settlement.EndDate),
         totalAmount: amount,
-        currency: settlement.originalTotal?.currencyCode || 'USD',
-        transactionCount: settlement.fundTransferStatus === 'COMPLETED' ? 
-          parseInt(settlement.transactionCount || '0') : 0
+        currency: settlement.OriginalTotal?.CurrencyCode || 'USD',
+        transactionCount: settlement.FundTransferStatus === 'COMPLETED' ? 
+          parseInt(settlement.TransactionCount || '0') : 0
       };
     });
-
+    
     return {
       settlementCount: settlements.length,
       totalAmount,
@@ -435,7 +426,7 @@ export class FinancesModule extends BaseApiModule {
    * @returns Fee summary
    */
   public async getFeeSummary(
-    startDate: Date,
+    startDate: Date, 
     endDate: Date = new Date()
   ): Promise<{
     totalFees: number;
@@ -447,7 +438,7 @@ export class FinancesModule extends BaseApiModule {
       postedAfter: startDate,
       postedBefore: endDate
     });
-
+    
     // Extract all fee events
     const feeEvents = events.serviceFeeEventList || [];
     
@@ -457,10 +448,10 @@ export class FinancesModule extends BaseApiModule {
     let currency = 'USD';
     
     for (const feeEvent of feeEvents) {
-      if (feeEvent.feeList && Array.isArray(feeEvent.feeList)) {
-        for (const fee of feeEvent.feeList) {
-          const feeType = fee.feeType || 'Unknown';
-          const amount = parseFloat(fee.feeAmount?.amount || '0');
+      if (feeEvent.FeeList && Array.isArray(feeEvent.FeeList)) {
+        for (const fee of feeEvent.FeeList) {
+          const feeType = fee.FeeType || 'Unknown';
+          const amount = parseFloat(fee.FeeAmount?.Amount || '0');
           
           if (!feeBreakdown[feeType]) {
             feeBreakdown[feeType] = 0;
@@ -470,13 +461,13 @@ export class FinancesModule extends BaseApiModule {
           totalFees += amount;
           
           // Use the currency from the first fee amount
-          if (!currency && fee.feeAmount?.currencyCode) {
-            currency = fee.feeAmount.currencyCode;
+          if (!currency && fee.FeeAmount?.CurrencyCode) {
+            currency = fee.FeeAmount.CurrencyCode;
           }
         }
       }
     }
-
+    
     return {
       totalFees,
       feeBreakdown,
@@ -491,7 +482,7 @@ export class FinancesModule extends BaseApiModule {
    * @returns Refund summary
    */
   public async getRefundSummary(
-    startDate: Date,
+    startDate: Date, 
     endDate: Date = new Date()
   ): Promise<{
     totalRefunds: number;
@@ -507,7 +498,7 @@ export class FinancesModule extends BaseApiModule {
       postedAfter: startDate,
       postedBefore: endDate
     });
-
+    
     // Extract all refund events
     const refundEvents = events.refundEventList || [];
     
@@ -522,8 +513,8 @@ export class FinancesModule extends BaseApiModule {
     let currency = 'USD';
     
     for (const refundEvent of refundEvents) {
-      const refundAmount = parseFloat(refundEvent.refundAmount?.amount || '0');
-      const reason = refundEvent.refundType || 'Unknown';
+      const refundAmount = parseFloat(refundEvent.RefundAmount?.Amount || '0');
+      const reason = refundEvent.RefundType || 'Unknown';
       
       if (!refundsByReason[reason]) {
         refundsByReason[reason] = {
@@ -539,11 +530,11 @@ export class FinancesModule extends BaseApiModule {
       refundCount += 1;
       
       // Use the currency from the first refund amount
-      if (!currency && refundEvent.refundAmount?.currencyCode) {
-        currency = refundEvent.refundAmount.currencyCode;
+      if (!currency && refundEvent.RefundAmount?.CurrencyCode) {
+        currency = refundEvent.RefundAmount.CurrencyCode;
       }
     }
-
+    
     return {
       totalRefunds,
       refundCount,

@@ -1,0 +1,177 @@
+/**
+ * Product Sync Configuration Model (Firestore)
+ */
+import { Timestamp } from 'firebase-admin/firestore';
+import { productSyncConfigCollection } from '../../../config/firestore';
+
+/**
+ * Sync direction enum
+ */
+export enum SyncDirection {
+  TO_MARKETPLACE = 'to_marketplace', // Fluxori -> Marketplace
+  FROM_MARKETPLACE = 'from_marketplace', // Marketplace -> Fluxori
+  BIDIRECTIONAL = 'bidirectional', // Both directions
+  NONE = 'none' // No sync
+}
+
+/**
+ * Product sync configuration interface
+ */
+export interface IProductSyncConfig {
+  userId: string;
+  organizationId: string;
+  marketplaceId: string;
+  // Whether to create new products based on marketplace data
+  createProducts: boolean;
+  // Stock sync configuration
+  stockSync: {
+    direction: SyncDirection;
+    // Optional warehouse mapping (marketplace to Fluxori warehouse)
+    warehouseMapping?: Record<string, string>;
+  };
+  // Price sync configuration
+  priceSync: {
+    direction: SyncDirection;
+  };
+  // Product data sync configuration (title, description, etc.)
+  productDataSync: {
+    direction: SyncDirection;
+    // Specific fields to sync (empty means all)
+    fields?: string[];
+  };
+  // Whether to log conflicts between Fluxori and marketplace data
+  logConflicts: boolean;
+  createdAt: Date | Timestamp;
+  updatedAt: Date | Timestamp;
+}
+
+/**
+ * Interface for Firestore document with ID
+ */
+export interface IProductSyncConfigWithId extends IProductSyncConfig {
+  id: string;
+}
+
+/**
+ * Converter for Firestore
+ */
+export const productSyncConfigConverter = {
+  toFirestore(config: IProductSyncConfig): FirebaseFirestore.DocumentData {
+    // Ensure timestamps are correct
+    const now = Timestamp.now();
+    
+    return {
+      userId: config.userId,
+      organizationId: config.organizationId,
+      marketplaceId: config.marketplaceId,
+      createProducts: typeof config.createProducts === 'boolean' ? config.createProducts : true,
+      stockSync: {
+        direction: config.stockSync?.direction || SyncDirection.FROM_MARKETPLACE,
+        warehouseMapping: config.stockSync?.warehouseMapping || {}
+      },
+      priceSync: {
+        direction: config.priceSync?.direction || SyncDirection.NONE
+      },
+      productDataSync: {
+        direction: config.productDataSync?.direction || SyncDirection.NONE,
+        fields: config.productDataSync?.fields || []
+      },
+      logConflicts: typeof config.logConflicts === 'boolean' ? config.logConflicts : true,
+      createdAt: config.createdAt instanceof Date 
+        ? Timestamp.fromDate(config.createdAt) 
+        : config.createdAt || now,
+      updatedAt: now
+    };
+  },
+  
+  fromFirestore(snapshot: FirebaseFirestore.QueryDocumentSnapshot): IProductSyncConfigWithId {
+    const data = snapshot.data();
+    return {
+      id: snapshot.id,
+      userId: data.userId,
+      organizationId: data.organizationId,
+      marketplaceId: data.marketplaceId,
+      createProducts: data.createProducts,
+      stockSync: data.stockSync,
+      priceSync: data.priceSync,
+      productDataSync: data.productDataSync,
+      logConflicts: data.logConflicts,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt
+    } as IProductSyncConfigWithId;
+  }
+};
+
+// Apply the converter to the collection
+const ProductSyncConfigCollectionWithConverter = 
+  productSyncConfigCollection.withConverter(productSyncConfigConverter);
+
+/**
+ * Helper functions for ProductSyncConfig operations
+ */
+export const ProductSyncConfig = {
+  /**
+   * Create a new product sync configuration
+   */
+  async create(config: IProductSyncConfig): Promise<IProductSyncConfigWithId> {
+    const docRef = await ProductSyncConfigCollectionWithConverter.add(config);
+    const snapshot = await docRef.get();
+    return snapshot.data() as IProductSyncConfigWithId;
+  },
+
+  /**
+   * Get a product sync configuration by ID
+   */
+  async findById(id: string): Promise<IProductSyncConfigWithId | null> {
+    const snapshot = await ProductSyncConfigCollectionWithConverter.doc(id).get();
+    return snapshot.exists ? snapshot.data() as IProductSyncConfigWithId : null;
+  },
+
+  /**
+   * Find product sync configuration by user, organization and marketplace IDs
+   */
+  async findByUserOrgMarketplace(
+    userId: string, 
+    organizationId: string, 
+    marketplaceId: string
+  ): Promise<IProductSyncConfigWithId | null> {
+    const snapshot = await ProductSyncConfigCollectionWithConverter
+      .where('userId', '==', userId)
+      .where('organizationId', '==', organizationId)
+      .where('marketplaceId', '==', marketplaceId)
+      .limit(1)
+      .get();
+    
+    return snapshot.empty ? null : snapshot.docs[0].data() as IProductSyncConfigWithId;
+  },
+
+  /**
+   * Find product sync configurations by marketplace ID
+   */
+  async findByMarketplaceId(marketplaceId: string): Promise<IProductSyncConfigWithId[]> {
+    const snapshot = await ProductSyncConfigCollectionWithConverter
+      .where('marketplaceId', '==', marketplaceId)
+      .get();
+    return snapshot.docs.map((doc: any) => doc.data() as IProductSyncConfigWithId);
+  },
+
+  /**
+   * Update a product sync configuration
+   */
+  async update(id: string, configData: Partial<IProductSyncConfig>): Promise<void> {
+    const now = Timestamp.now();
+    await ProductSyncConfigCollectionWithConverter.doc(id).update({
+      ...configData,
+      updatedAt: now
+    });
+  },
+
+  /**
+   * Delete a product sync configuration
+   */
+  async delete(id: string): Promise<void> {
+    await ProductSyncConfigCollectionWithConverter.doc(id).delete();
+  }
+};
+
+export default ProductSyncConfig;

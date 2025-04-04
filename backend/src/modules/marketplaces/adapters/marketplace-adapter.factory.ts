@@ -1,17 +1,18 @@
-// @ts-nocheck - Added by final-ts-fix.js
-// Fixed by typescript-migration-tool.js
+import { injectable, inject, Container } from 'inversify';
 import { IMarketplaceAdapter } from './interfaces/marketplace-adapter.interface';
 import { MarketplaceCredentials } from '../models/marketplace.models';
 import { ApiError } from '../../../middleware/error.middleware';
+import { LoggerService } from '../../../services/logger.service';
 
 // Import the actual adapter implementations
 import { TakealotAdapter } from './takealot/takealot-adapter';
-import { AmazonAdapter } from './amazon/amazon-adapter';
+import { AmazonAdapter } from './amazon/amazon.adapter';
 import { ShopifyAdapter } from './shopify/shopify-adapter';
 
 /**
  * Factory for creating marketplace adapter instances based on marketplace ID
  */
+@injectable()
 export class MarketplaceAdapterFactory {
   // Singleton pattern
   private static instance: MarketplaceAdapterFactory;
@@ -19,15 +20,36 @@ export class MarketplaceAdapterFactory {
   // Map to store adapter instances by identifier with credentials hash
   private adapterInstances: Map<string, IMarketplaceAdapter> = new Map();
 
-  // Private constructor to prevent direct instantiation
-  private constructor() {}
+  // DI container for resolving dependencies
+  private container: Container;
+
+  // Logger service
+  private logger: LoggerService;
+
+  /**
+   * Constructor with dependency injection
+   * @param container DI container for resolving adapter dependencies
+   * @param logger Logger service
+   */
+  constructor(
+    @inject('Container') container: Container,
+    @inject('LoggerService') logger: LoggerService
+  ) {
+    this.container = container;
+    this.logger = logger;
+  }
 
   /**
    * Get the singleton instance of the factory
+   * @param container DI container for resolving dependencies
+   * @param logger Logger service
    */
-  public static getInstance(): MarketplaceAdapterFactory {
+  public static getInstance(container?: Container, logger?: LoggerService): MarketplaceAdapterFactory {
     if (!MarketplaceAdapterFactory.instance) {
-      MarketplaceAdapterFactory.instance = new MarketplaceAdapterFactory();
+      if (!container || !logger) {
+        throw new Error('Container and logger must be provided to initialize MarketplaceAdapterFactory');
+      }
+      MarketplaceAdapterFactory.instance = new MarketplaceAdapterFactory(container, logger);
     }
     return MarketplaceAdapterFactory.instance;
   }
@@ -70,21 +92,46 @@ export class MarketplaceAdapterFactory {
   private createAdapter(marketplaceId: string): IMarketplaceAdapter {
     const normalizedId = marketplaceId.toLowerCase();
     
+    this.logger.debug('Creating marketplace adapter', { 
+      marketplaceId: normalizedId 
+    });
+    
     // Create adapter based on marketplace ID prefix
     if (normalizedId === 'takealot') {
-      return new TakealotAdapter();
+      // Use container to resolve Takealot adapter with proper dependency injection
+      try {
+        const adapter = this.container.get<TakealotAdapter>(TakealotAdapter);
+        return adapter;
+      } catch (error) {
+        this.logger.error('Failed to create Takealot adapter', { error });
+        throw new ApiError(500, 'Failed to create Takealot adapter');
+      }
     } 
     
     if (normalizedId.startsWith('amazon')) {
-      const adapter = new AmazonAdapter();
-      return adapter;
+      // Use container to resolve Amazon adapter with proper dependency injection
+      try {
+        const adapter = this.container.get<AmazonAdapter>(AmazonAdapter);
+        return adapter;
+      } catch (error) {
+        this.logger.error('Failed to create Amazon adapter', { error });
+        throw new ApiError(500, 'Failed to create Amazon adapter');
+      }
     }
     
     if (normalizedId.startsWith('shopify')) {
-      return new ShopifyAdapter();
+      // Use container to resolve Shopify adapter with proper dependency injection
+      try {
+        const adapter = this.container.get<ShopifyAdapter>(ShopifyAdapter);
+        return adapter;
+      } catch (error) {
+        this.logger.error('Failed to create Shopify adapter', { error });
+        throw new ApiError(500, 'Failed to create Shopify adapter');
+      }
     }
     
     // If no adapter matches, throw an error
+    this.logger.error('Unsupported marketplace', { marketplaceId });
     throw new ApiError(404, `Marketplace ${marketplaceId} is not supported`);
   }
 
@@ -130,14 +177,14 @@ export class MarketplaceAdapterFactory {
       const keysToRemove: string[] = [];
       
       // Use Array.from to convert keys iterator to array
-      Array.from(this.adapterInstances.keys()).forEach(key => {
+      Array.from(this.adapterInstances.keys()).forEach((key: any) => {
         if (key.startsWith(prefix + '_')) {
           keysToRemove.push(key);
         }
       });
       
       // Remove each identified key
-      keysToRemove.forEach(key => {
+      keysToRemove.forEach((key: any) => {
         this.adapterInstances.delete(key);
       });
     } else {

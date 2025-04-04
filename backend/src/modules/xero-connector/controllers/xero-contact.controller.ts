@@ -1,4 +1,3 @@
-// @ts-nocheck - Added by final-ts-fix.js
 import { Request, Response } from 'express';
 import { XeroContactService } from "../services/xero-contact.service";
 const xeroContactService = new XeroContactService();
@@ -48,7 +47,7 @@ class XeroContactController {
       console.error('Error getting Xero contacts:', error);
       res.status(500).json({
         success: false,
-        message: `Error getting Xero contacts: ${error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)}`,
+        message: `Error getting Xero contacts: ${error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)) : String(error)}`,
       });
     }
   }
@@ -98,7 +97,7 @@ class XeroContactController {
       console.error('Error getting Xero contact:', error);
       res.status(500).json({
         success: false,
-        message: `Error getting Xero contact: ${error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)}`,
+        message: `Error getting Xero contact: ${error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)) : String(error)}`,
       });
     }
   }
@@ -137,7 +136,7 @@ class XeroContactController {
       console.error('Error creating Xero contact:', error);
       res.status(500).json({
         success: false,
-        message: `Error creating Xero contact: ${error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)}`,
+        message: `Error creating Xero contact: ${error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)) : String(error)}`,
       });
     }
   }
@@ -177,7 +176,7 @@ class XeroContactController {
       console.error('Error updating Xero contact:', error);
       res.status(500).json({
         success: false,
-        message: `Error updating Xero contact: ${error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)}`,
+        message: `Error updating Xero contact: ${error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)) : String(error)}`,
       });
     }
   }
@@ -226,7 +225,7 @@ class XeroContactController {
       console.error('Error syncing customer to Xero:', error);
       res.status(500).json({
         success: false,
-        message: `Error syncing customer to Xero: ${error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)}`,
+        message: `Error syncing customer to Xero: ${error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)) : String(error)}`,
       });
     }
   }

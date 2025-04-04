@@ -50,7 +50,7 @@ export class RepricingEngineService {
       // Group rules by organization for credit checks
       const rulesByOrg: Record<string, RepricingRule[]> = {};
       
-      rules.forEach(rule => {
+      rules.forEach((rule: any) => {
         if (!rulesByOrg[rule.orgId]) {
           rulesByOrg[rule.orgId] = [];
         }
@@ -64,8 +64,9 @@ export class RepricingEngineService {
       
       this.logger.info('Completed scheduled repricing rule execution');
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error('Error executing scheduled repricing rules', { error });
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -109,8 +110,9 @@ export class RepricingEngineService {
         );
       }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error(`Error processing rules for organization ${orgId}`, { error });
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 
@@ -156,8 +158,9 @@ export class RepricingEngineService {
         await this.processMarketplaceRules(rule, marketplaceId, histories, repricedProducts);
       }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error(`Error executing repricing rule ${rule.id}`, { error });
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -236,12 +239,12 @@ export class RepricingEngineService {
         for (const event of repricingEvents) {
           if (result.success) {
             // Check if this SKU was successful
-            const wasSuccessful = !result.data?.failed.some(f => f.sku === event.sku);
+            const wasSuccessful = !result.data?.failed.some((f: any) => f.sku === event.sku);
             event.success = wasSuccessful;
             
             if (!wasSuccessful) {
               // Find the failure reason
-              const failureData = result.data?.failed.find(f => f.sku === event.sku);
+              const failureData = result.data?.failed.find((f: any) => f.sku === event.sku);
               event.errorMessage = failureData?.reason || 'Unknown error';
             }
           } else {
@@ -254,8 +257,9 @@ export class RepricingEngineService {
         }
       }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error(`Error processing marketplace ${marketplaceId} for rule`, { error });
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -711,7 +715,7 @@ export class RepricingEngineService {
       return histories;
     }
     
-    return histories.filter(history => {
+    return histories.filter((history: any) => {
       // Filter by SKUs if provided
       if (rule.productFilter.skus?.length) {
         if (!rule.productFilter.skus.includes(history.sku)) {
@@ -757,6 +761,7 @@ export class RepricingEngineService {
     try {
       return await this.marketplaceAdapterFactory.getAdapter(marketplaceId, userId, orgId);
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error(`Failed to get marketplace adapter for ${marketplaceId}`, { error });
       return null;
     }
@@ -791,7 +796,7 @@ export class RepricingEngineService {
       // Execute the rule
       await this.executeRule(rule, buyBoxHistories, repricedProducts);
       
-      // Update the rule's last run time
+      // Update the rule's last run time and next run time
       await this.ruleRepository.updateRuleExecutionTimes(
         rule.id,
         Timestamp.now(),
@@ -807,10 +812,11 @@ export class RepricingEngineService {
         updates: repricedProducts.size
       };
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       this.logger.error(`Error manually executing rule ${ruleId}`, { error });
       return {
         success: false,
-        message: `Error executing rule: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: `Error executing rule: ${error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : 'Unknown error'}`,
         updates: 0
       };
     }

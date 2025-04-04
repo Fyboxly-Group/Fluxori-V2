@@ -99,8 +99,9 @@ export class InventoryReorderCheckService {
         ...(errors.length > 0 && { errors })
       };
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error('Error in inventory reorder check:', error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -153,8 +154,7 @@ export class InventoryReorderCheckService {
           
           // If no active alert exists, create one
           if (!existingAlert) {
-            const warehouseStock = item.warehouseStock?.find(
-              ws => ws.warehouseId.toString() === warehouseId.toString()
+            const warehouseStock = item.warehouseStock?.find((ws: any) => ws.warehouseId.toString() === warehouseId.toString()
             );
             
             const currentStock = warehouseStock?.quantity || 0;
@@ -201,8 +201,9 @@ export class InventoryReorderCheckService {
         ...(errors.length > 0 && { errors })
       };
     } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
       console.error('Error in warehouse inventory check:', error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 }

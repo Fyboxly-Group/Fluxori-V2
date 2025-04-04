@@ -1,7 +1,55 @@
 /**
  * Application configuration constants and settings
  */
-export default {
+export interface AppConfig {
+  // Server configuration
+  port: string | number;
+  nodeEnv: string;
+
+  // MongoDB configuration
+  mongoUri: string;
+  
+  // JWT configuration
+  jwtSecret: string;
+  jwtExpiresIn: string;
+  
+  // Storage configuration
+  storageProvider: string;
+  storageBaseUrl: string;
+  localStoragePath: string;
+  
+  // Email configuration
+  emailFrom: string;
+  smtpHost?: string;
+  smtpPort?: string;
+  smtpUser?: string;
+  smtpPass?: string;
+  
+  // Logging configuration
+  logging: {
+    level: string;
+  };
+  
+  // Environment
+  env: string;
+  
+  // Development flag
+  isDev?: boolean;
+  
+  // API rate limiting
+  rateLimit: {
+    windowMs: number;
+    max: number;
+  };
+  
+  // CORS settings
+  corsOrigin: string;
+  
+  // API version
+  apiVersion: string;
+}
+
+const config: AppConfig = {
   // Server configuration
   port: process.env.PORT || 5000,
   nodeEnv: process.env.NODE_ENV || 'development',
@@ -26,7 +74,15 @@ export default {
   smtpPass: process.env.SMTP_PASS,
   
   // Logging configuration
-  logLevel: process.env.LOG_LEVEL || 'info',
+  logging: {
+    level: process.env.LOG_LEVEL || 'info'
+  },
+  
+  // Environment - ensure it matches nodeEnv for backwards compatibility
+  env: process.env.NODE_ENV || 'development',
+  
+  // Development flag
+  isDev: (process.env.NODE_ENV || 'development') === 'development',
   
   // API rate limiting
   rateLimit: {
@@ -40,3 +96,5 @@ export default {
   // API version
   apiVersion: 'v1'
 };
+
+export default config;

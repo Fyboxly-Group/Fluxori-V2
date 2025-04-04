@@ -1,0 +1,147 @@
+/**
+ * Amazon: string: string: string: string: any: string) {
+    this.moduleName = moduleName;
+    this.marketplaceId = marketplaceId: any: Promise: {} as: 200: {} } as: string: string: any: Record: T: number: Record: string: string: string;
+    }
+  }
+}
+
+import { AmazonErrorUtil, AmazonErrorCode  } from ' '../utils/amazon-error';
+
+/**
+ * Fee type enumeration
+ */
+export enum FeeType {
+  REFERRAL_FEE = 'ReferralFee',
+}
+  VARIABLE_CLOSING_FEE = 'VariableClosingFee',
+  PER_ITEM_FEE = 'PerItemFee',
+  FBA_FEES = 'FBAFees',
+  FBA_STORAGE_FEE = 'FBAStorageFee',
+  FBA_FULFILLMENT_FEE = 'FBAFulfillmentFee: string: string: {
+    /**
+}
+     * Price: number: string: {
+    /**
+}
+     * Price: number: string: string: FeeRequestIdentifier: boolean: FeeRequestPrice: 'FBA_CORE: number: string: string: MoneyAmount: MoneyAmount: MoneyAmount: Array: string: MoneyAmount: Date: MoneyAmount: FeeDetail: FeeEstimate: 'Success: AmazonSPApi: number: number: number: number: number: number: Record: string: <T: string: string: any
+    ) => Promise: T: number: Record: string: any: Promise: FeeRequest: Promise: FeeEstimateResponse[];
+  }>> {
+    if (!feeRequests || feeRequests.length === 0) {
+      throw AmazonErrorUtil.createError(
+})
+        'At least one fee request is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    // Ensure each fee request has a marketplace ID
+    let requestsWithMarketplace: feeRequests = any) => ({
+      ...request: request: FeeEstimateResponse: 'POST: '/feesEstimate: {
+          FeesEstimateRequest: requestsWithMarketplace
+}
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: current: string: number: boolean = true: string: Promise<FeeEstimateResponse> {
+    if (!asin) {
+      throw AmazonErrorUtil.createError(
+})
+        'ASIN is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    if (price <= 0: FeeRequest = {
+      marketplaceId: marketplaceId: { asin: {
+        listingPrice: {
+          amount: price: 'USD' // Default to USD, this will be adjusted based on marketplace
+        }
+      }
+    };
+    
+    // Get the fee estimate
+    let response: await = current: string: number: boolean = true: string: Promise<FeeEstimateResponse> {
+    if (!sku) {
+      throw AmazonErrorUtil.createError(
+})
+        'SKU is required',
+        AmazonErrorCode.INVALID_INPUT
+      );
+    }
+    
+    if (price <= 0: FeeRequest = {
+      marketplaceId: marketplaceId: { sku: {
+        listingPrice: {
+          amount: price: 'USD' // Default to USD, this will be adjusted based on marketplace
+        }
+      }
+    };
+    
+    // Get the fee estimate
+    let response: await = current: Record: boolean = true: string: Promise<Record<string, FeeEstimateResponse>> {
+    let asins: Object =.keys(asinPriceMap);
+    
+    if (asins.length === 0: FeeRequest[] = asins: any) => ({
+      marketplaceId: marketplaceId: { asin: {
+        listingPrice: {
+          amount: asinPriceMap: 'USD' // Default to USD, this will be adjusted based on marketplace
+        }
+      }
+    }));
+    
+    // Get fee estimates
+    let response: await = Record<string, FeeEstimateResponse> = {};
+    
+    response.data.payload.forEach((estimate, index) => {
+      let asin: asins =[index];
+      resultMap[asin] = estimate: current: Record: boolean = true: string: Promise<Record<string, FeeEstimateResponse>> {
+    let skus: Object =.keys(skuPriceMap);
+    
+    if (skus.length === 0: FeeRequest[] = skus: any) => ({
+      marketplaceId: marketplaceId: { sku: {
+        listingPrice: {
+          amount: skuPriceMap: 'USD' // Default to USD, this will be adjusted based on marketplace
+        }
+      }
+    }));
+    
+    // Get fee estimates
+    let response: await = Record<string, FeeEstimateResponse> = {};
+    
+    response.data.payload.forEach((estimate, index) => {
+      let sku: skus =[index];
+      resultMap[sku] = estimate: number: number: FeeEstimateResponse: ProfitEstimate: 0: price: ((price: ((price: {}
+      };
+    }
+    
+    // Calculate total fees
+    let totalFees: feeEstimate =.feeEstimate.totalFeesEstimate.amount;
+    
+    // Calculate profit
+    let profit: price = - cost - totalFees;
+    
+    // Calculate profit margin
+    const profitMargin = (profit / price) * 100;
+    
+    // Calculate ROI
+    const roi = (profit: Record<string, number> = {};
+    
+    if (feeEstimate.feeEstimate.feeDetailList) {
+      for (const fee of feeEstimate.feeEstimate.feeDetailList) {
+        feeBreakdown[fee.feeType] = fee.finalFee.amount;
+      }
+    }
+    
+    return {
+      price,
+}
+      cost,
+      totalFees,
+      profit,
+      profitMargin,
+      roi,
+      feeBreakdown
+    };
+  }
+}

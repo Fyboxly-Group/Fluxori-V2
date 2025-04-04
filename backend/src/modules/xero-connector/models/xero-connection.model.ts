@@ -1,7 +1,7 @@
 /**
  * Xero Connection Model (Firestore)
  */
-import { Timestamp } from 'firebase-admin/firestore';
+import { Timestamp, DocumentData, QueryDocumentSnapshot } from 'firebase-admin/firestore';
 import { xeroConnectionsCollection } from '../../../config/firestore';
 import * as crypto from 'crypto';
 
@@ -64,7 +64,7 @@ const decryptValue = (value: string): string => {
  * Converter for Firestore
  */
 export const xeroConnectionConverter = {
-  toFirestore(connection: IXeroConnection): FirebaseFirestore.DocumentData {
+  toFirestore(connection: IXeroConnection): DocumentData {
     // Ensure timestamps are correct
     const now = Timestamp.now();
     
@@ -90,7 +90,7 @@ export const xeroConnectionConverter = {
     };
   },
   
-  fromFirestore(snapshot: FirebaseFirestore.QueryDocumentSnapshot): IXeroConnectionWithId {
+  fromFirestore(snapshot: QueryDocumentSnapshot): IXeroConnectionWithId {
     const data = snapshot.data();
     return {
       id: snapshot.id,
@@ -100,13 +100,13 @@ export const xeroConnectionConverter = {
       tenantName: data.tenantName,
       refreshToken: decryptValue(data.refreshToken),
       tokenSetExpiresAt: data.tokenSetExpiresAt,
-      status: data.status,
+      status: data.status as XeroConnectionStatus,
       lastSyncedAt: data.lastSyncedAt,
       lastError: data.lastError,
       additionalData: data.additionalData,
       createdAt: data.createdAt,
       updatedAt: data.updatedAt
-    } as IXeroConnectionWithId;
+    };
   }
 };
 
@@ -124,7 +124,11 @@ export const XeroConnection = {
   async create(connection: IXeroConnection): Promise<IXeroConnectionWithId> {
     const docRef = await XeroConnectionsCollectionWithConverter.add(connection);
     const snapshot = await docRef.get();
-    return snapshot.data() as IXeroConnectionWithId;
+    const data = snapshot.data();
+    if (!data) {
+      throw new Error('Failed to create Xero connection');
+    }
+    return data;
   },
 
   /**
@@ -154,7 +158,7 @@ export const XeroConnection = {
     const snapshot = await XeroConnectionsCollectionWithConverter
       .where('userId', '==', userId)
       .get();
-    return snapshot.docs.map(doc => doc.data() as IXeroConnectionWithId);
+    return snapshot.docs.map((doc) => doc.data() as IXeroConnectionWithId);
   },
 
   /**
@@ -164,7 +168,7 @@ export const XeroConnection = {
     const snapshot = await XeroConnectionsCollectionWithConverter
       .where('organizationId', '==', organizationId)
       .get();
-    return snapshot.docs.map(doc => doc.data() as IXeroConnectionWithId);
+    return snapshot.docs.map((doc) => doc.data() as IXeroConnectionWithId);
   },
 
   /**
@@ -173,13 +177,16 @@ export const XeroConnection = {
   async update(id: string, connectionData: Partial<IXeroConnection>): Promise<void> {
     const now = Timestamp.now();
     
+    // Create a copy to avoid modifying the original
+    const dataToUpdate: Record<string, any> = { ...connectionData };
+    
     // Need to handle the refreshToken specially for encryption
-    if (connectionData.refreshToken) {
-      connectionData.refreshToken = encryptValue(connectionData.refreshToken);
+    if (dataToUpdate.refreshToken) {
+      dataToUpdate.refreshToken = encryptValue(dataToUpdate.refreshToken);
     }
     
     await XeroConnectionsCollectionWithConverter.doc(id).update({
-      ...connectionData,
+      ...dataToUpdate,
       updatedAt: now
     });
   },

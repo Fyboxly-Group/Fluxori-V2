@@ -1,34 +1,50 @@
 import mongoose, { Document, Model, Schema } from 'mongoose';
 
 /**
- * Resource type definitions
+ * Type definitions for EntityName 
  */
-export type ResourceStatus = 'active' | 'inactive' | 'archived';
+export type EntityNameStatus = 'active' | 'inactive' | 'archived';
 
 /**
- * Resource interface defining the shape of the data
+ * EntityName interface defining the shape of the data
  */
-export interface IResource {
+export interface IEntityName {
   name: string;
   description?: string;
-  status: ResourceStatus;
-  // Add specific resource fields here
+  status: EntityNameStatus;
+  // Add specific EntityName fields here
   
-  // Common fields
+  // Common fields for all entities
+  organizationId: mongoose.Types.ObjectId;
   createdBy: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
+  metadata?: Record<string, any>;
 }
 
 /**
- * Document interface for Mongoose
+ * Document interface with instance methods
  */
-export interface IResourceDocument extends IResource, Document {}
+export interface IEntityNameDocument extends IEntityName, Document {
+  // Document methods
+  isActive(): boolean;
+  toPublicJSON(): Record<string, any>;
+}
+
+/**
+ * Model interface with static methods
+ */
+export interface IEntityNameModel extends Model<IEntityNameDocument> {
+  // Static methods
+  findActive(organizationId: string): Promise<IEntityNameDocument[]>;
+  findByOrganization(organizationId: string): Promise<IEntityNameDocument[]>;
+  createWithDefaults(data: Partial<IEntityName>, userId: string, organizationId: string): Promise<IEntityNameDocument>;
+}
 
 /**
  * Mongoose schema definition
  */
-const resourceSchema = new Schema<IResourceDocument>(
+const entityNameSchema = new Schema<IEntityNameDocument>(
   {
     name: {
       type: String,
@@ -47,10 +63,20 @@ const resourceSchema = new Schema<IResourceDocument>(
     // Add schema fields for specific resource properties here
     
     // Common fields
+    organizationId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Organization',
+      required: true,
+      index: true,
+    },
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
+    },
+    metadata: {
+      type: Schema.Types.Mixed,
+      default: {},
     },
   },
   {
@@ -61,31 +87,75 @@ const resourceSchema = new Schema<IResourceDocument>(
 /**
  * Indexes for efficient querying
  */
-resourceSchema.index({ name: 1 });
-resourceSchema.index({ status: 1 });
-resourceSchema.index({ createdAt: -1 });
+entityNameSchema.index({ name: 1, organizationId: 1 }, { unique: true });
+entityNameSchema.index({ status: 1 });
+entityNameSchema.index({ createdAt: -1 });
 
 /**
  * Instance methods
  */
-resourceSchema.methods.isActive = function(this: IResourceDocument): boolean {
+entityNameSchema.methods.isActive = function(this: IEntityNameDocument): boolean {
   return this.status === 'active';
+};
+
+entityNameSchema.methods.toPublicJSON = function(this: IEntityNameDocument): Record<string, any> {
+  const obj = this.toObject();
+  return {
+    id: obj._id.toString(),
+    name: obj.name,
+    description: obj.description,
+    status: obj.status,
+    createdAt: obj.createdAt,
+    updatedAt: obj.updatedAt,
+    metadata: obj.metadata || {},
+    // Add entity-specific properties here
+  };
 };
 
 /**
  * Static methods
  */
-interface ResourceModel extends Model<IResourceDocument> {
-  findActive(): Promise<IResourceDocument[]>;
-}
+entityNameSchema.statics.findActive = function(
+  this: IEntityNameModel,
+  organizationId: string
+): Promise<IEntityNameDocument[]> {
+  return this.find({ 
+    organizationId: new mongoose.Types.ObjectId(organizationId),
+    status: 'active' 
+  });
+};
 
-resourceSchema.statics.findActive = function(this: Model<IResourceDocument>): Promise<IResourceDocument[]> {
-  return this.find({ status: 'active' });
+entityNameSchema.statics.findByOrganization = function(
+  this: IEntityNameModel,
+  organizationId: string
+): Promise<IEntityNameDocument[]> {
+  return this.find({ 
+    organizationId: new mongoose.Types.ObjectId(organizationId)
+  });
+};
+
+entityNameSchema.statics.createWithDefaults = async function(
+  this: IEntityNameModel,
+  data: Partial<IEntityName>,
+  userId: string,
+  organizationId: string
+): Promise<IEntityNameDocument> {
+  const entity = new this({
+    ...data,
+    createdBy: new mongoose.Types.ObjectId(userId),
+    organizationId: new mongoose.Types.ObjectId(organizationId),
+    status: data.status || 'active',
+  });
+  
+  return entity.save();
 };
 
 /**
  * Create and export the model
  */
-const Resource = mongoose.model<IResourceDocument, ResourceModel>('Resource', resourceSchema);
+const EntityName = mongoose.model<IEntityNameDocument, IEntityNameModel>(
+  'EntityName', 
+  entityNameSchema
+);
 
-export default Resource;
+export default EntityName;

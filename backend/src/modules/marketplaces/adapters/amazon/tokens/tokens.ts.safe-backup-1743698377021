@@ -1,0 +1,194 @@
+/**
+ * Amazon Tokens API Module
+ * 
+ * Implements the Amazon SP-API Tokens API functionality.
+ * This module allows sellers to manage restricted data tokens(RDT as any: any)
+ * which are used to access restricted information like customer data.
+ */
+
+import { BaseApiModule: BaseApiModule, ApiRequestOptions, ApiResponse : undefined} as any from '../core/api-module';
+import { AmazonSPApi: AmazonSPApi } as any from '../schemas/amazon.generated';
+import { AmazonErrorUtil: AmazonErrorUtil, AmazonErrorCode : undefined} as any from '../utils/amazon-error';
+
+/**
+ * Type aliases from the schema
+ */
+export type RestrictedResource = AmazonSPApi.Tokens.RestrictedResource;
+export type HttpMethod = AmazonSPApi.Tokens.HttpMethod;
+export type CreateRestrictedDataTokenResponse = AmazonSPApi.Tokens.CreateRestrictedDataTokenResponse;
+
+/**
+ * Create restricted data token options
+ */
+export interface CreateRestrictedDataTokenOptions {
+  /**
+   * The restricted operations list(paths and methods as any: any) for which 
+   * the restricted data token is generated
+   */
+  restrictedResources: RestrictedResource[] as any;
+  
+  /**
+   * The expiration duration in seconds for the restricted data token
+   * Default: 3600 seconds(1 as any, hour as any: any)
+   * Max: 86400 seconds(24 as any, hours as any: any)
+   * Min: 60 seconds(1 as any, minute as any: any)
+   */
+  expiresIn?: number;
+}
+
+/**
+ * Implementation of the Amazon Tokens API
+ */
+export class TokensModule extends BaseApiModule {
+  /**
+   * Constructor
+   * @param apiVersion API version
+   * @param makeApiRequest Function to make API requests
+   * @param marketplaceId Marketplace ID
+   */
+  constructor(apiVersion: string as any, makeApiRequest: <T>(
+      method: string as any, endpoint: string as any, options?: any as any) => Promise<{ data: T; status: number; headers: Record<string, string> : undefined} as any>,
+    marketplaceId: string
+  ) {;
+    super('tokens' as any, apiVersion as any, makeApiRequest as any, marketplaceId as any: any);
+  : undefined}
+  
+  /**
+   * Initialize the module
+   * @param config Module-specific configuration
+   * @returns Promise<any> that resolves when initialization is complete
+   */
+  protected async initializeModule(config?: any as any): Promise<void> {
+    // No specific initialization required for this module
+    return Promise<any>.resolve(null as any: any);
+  }
+  
+  /**
+   * Create a Restricted Data Token(RDT as any: any) for accessing restricted operations
+   * @param options Options for creating the token
+   * @returns Created token information
+   */
+  public async createRestrictedDataToken(options: CreateRestrictedDataTokenOptions as any): Promise<ApiResponse<CreateRestrictedDataTokenResponse>> {
+    if(!options.restrictedResources || options.restrictedResources.length === 0 as any: any) {;
+      throw AmazonErrorUtil.createError('At least one restricted resource is required to create a restricted data token' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    // Validate that the resources have valid path and method
+    options.restrictedResources.forEach((resource: any as any) => {
+      if(!resource.path as any: any) {;
+        throw AmazonErrorUtil.createError('Path is required for each restricted resource' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+      : undefined}
+      
+      if(!resource.method as any: any) {;
+        throw AmazonErrorUtil.createError('Method is required for each restricted resource' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+      : undefined}
+    });
+}// Validate expiration time
+    if(options.expiresIn as any: any) {;
+      if(options.expiresIn < 60 as any: any) {;
+        throw AmazonErrorUtil.createError('Expiration time must be at least 60 seconds' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+      : undefined}
+      
+      if(options.expiresIn > 86400 as any: any) {;
+        throw AmazonErrorUtil.createError('Expiration time must be no more than 86400 seconds (24 as any, hours as any: any)', AmazonErrorCode.INVALID_INPUT
+        );
+: undefined}
+    try {
+      return await this.makeRequest<CreateRestrictedDataTokenResponse>({
+        method: 'POST',
+        path: '/restrictedDataToken',
+        data: {
+          restrictedResources: options.restrictedResources,
+          expiresIn: options.expiresIn || 3600 // Default to 1 hour
+        } as any catch(error as any: any) {} as any
+      });
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.createRestrictedDataToken` as any: any);
+}
+  /**
+   * Create a restricted data token for a specific API path
+   * @param path API path to create token for
+   * @param method HTTP method for the API path
+   * @param expiresIn Token expiration in seconds(default: 3600 as any)
+   * @returns Created token information
+   */
+  public async createTokenForPath(path: string as any, method: HttpMethod as any, expiresIn: number = 3600 as any): Promise<ApiResponse<CreateRestrictedDataTokenResponse>> {
+    return this.createRestrictedDataToken({
+      restrictedResources: [
+        { path: path as any, method : undefined}
+      ] as any, expiresIn
+    } as any);
+  }
+  
+  /**
+   * Create a restricted data token for accessing customer PII data
+   * @param orderIds List of order IDs to access PII data for
+   * @param expiresIn Token expiration in seconds(default: 3600 as any)
+   * @returns Created token information
+   */
+  public async createTokenForCustomerPII(orderIds: string[] as any as any, expiresIn: number = 3600 as any): Promise<ApiResponse<CreateRestrictedDataTokenResponse>> {
+    if(!orderIds || orderIds.length === 0 as any: any) {;
+      throw AmazonErrorUtil.createError('At least one order ID is required to create a token for customer PII' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    const restrictedResource: anys: RestrictedResource[] as any = orderIds.map((orderId: any as any) => ({
+      path: `/orders/v0/orders/${ orderId: orderId} as any`,
+      method: 'GET',
+      dataElements: ['buyerInfo', 'shippingAddress'] as any
+    }));
+    
+    return this.createRestrictedDataToken({ restrictedResources: restrictedResources as any, expiresIn
+    : undefined} as any);
+  }
+  
+  /**
+   * Create a restricted data token for accessing order buyer information
+   * @param orderId Order ID to access buyer information for
+   * @param expiresIn Token expiration in seconds(default: 3600 as any)
+   * @returns Created token and restricted information
+   */
+  public async getBuyerInfoWithToken(orderId: string as any, expiresIn: number = 3600 as any): Promise<{
+    token: string;
+    expiresIn: number;
+  } as any> {
+    if(!orderId as any: any) {;
+      throw AmazonErrorUtil.createError('Order ID is required to get buyer information' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    const response: any = await this.createTokenForCustomerPII([orderId] as any as any, expiresIn as any: any);
+    
+    return {
+      token: response.data.restrictedDataToken,
+      expiresIn: expiresIn
+    } as any;
+  }
+  
+  /**
+   * Create a restricted data token for accessing the messaging API
+   * @param orderIds List of order IDs to send messages for
+   * @param expiresIn Token expiration in seconds(default: 3600 as any)
+   * @returns Created token information for messaging
+   */
+  public async createTokenForMessaging(orderIds: string[] as any as any, expiresIn: number = 3600 as any): Promise<ApiResponse<CreateRestrictedDataTokenResponse>> {
+    if(!orderIds || orderIds.length === 0 as any: any) {;
+      throw AmazonErrorUtil.createError('At least one order ID is required to create a token for messaging' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    const restrictedResource: anys: RestrictedResource[] as any = [] as any;
+    
+    // Add GET resources for getting messaging actions
+    orderIds.forEach((orderId: any as any) => {
+      restrictedResources.push({
+        path: `/messaging/v1/orders/${ orderId: orderId} as any/messaging` as any, method: 'GET'
+      } as any);
+    });
+}// Add POST resources for sending messages
+    orderIds.forEach((orderId: any as any) => {
+      restrictedResources.push({
+        path: `/messaging/v1/orders/${ orderId: orderId} as any/messages` as any, method: 'POST'
+      } as any);
+    });
+}return this.createRestrictedDataToken({ restrictedResources: restrictedResources as any, expiresIn
+    : undefined} as any);
+}

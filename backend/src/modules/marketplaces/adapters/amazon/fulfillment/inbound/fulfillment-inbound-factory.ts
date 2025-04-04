@@ -1,46 +1,44 @@
 /**
- * Factory for creating fulfillment inbound-related API modules
+ * Amazon Fulfillment Inbound Module Factory
+ * 
+ * Factory function for creating and registering Fulfillment Inbound API module instances.
  */
 
-import { FulfillmentInboundModule } from './fulfillment-inbound';
+import { ApiRequestFunction } from '../../core/base-module.interface';
 import { ModuleRegistry } from '../../core/module-registry';
-import { getDefaultModuleVersion } from '../../core/module-definitions';
+import { getModuleDefaultVersion } from '../../core/module-definitions';
+import { FulfillmentInboundModule, FulfillmentInboundModuleOptions } from './fulfillment-inbound';
 
 /**
- * Factory for creating fulfillment inbound-related API modules
+ * Creates and registers a Fulfillment Inbound module instance
+ * 
+ * @param apiVersion Optional API version (defaults to latest version if not specified)
+ * @param makeApiRequest Function to make API requests
+ * @param marketplaceId Marketplace ID
+ * @param registry Module registry to register the module with
+ * @param options Module-specific options
+ * @returns The created Fulfillment Inbound module instance
  */
-export class FulfillmentInboundModuleFactory {
-  /**
-   * Create a Fulfillment Inbound module and register it with the provided registry
-   * @param makeApiRequest Function to make API requests
-   * @param marketplaceId Marketplace ID
-   * @param registry Module registry to register with
-   * @param apiVersion Optional API version (uses default if not provided)
-   * @returns The created module
-   */
-  public static createFulfillmentInboundModule(
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string,
-    registry: ModuleRegistry,
-    apiVersion?: string
-  ): FulfillmentInboundModule {
-    // Use provided version or get the default
-    const version = apiVersion || getDefaultModuleVersion('fulfillmentInbound') || '2020-09-01';
-    
-    // Create the module
-    const module = new FulfillmentInboundModule(
-      version,
-      makeApiRequest,
-      marketplaceId
-    );
-    
-    // Register the module
-    registry.registerModule(module);
-    
-    return module;
-  }
+export function createFulfillmentInboundModule(
+  apiVersion: string | undefined,
+  makeApiRequest: ApiRequestFunction,
+  marketplaceId: string,
+  registry: ModuleRegistry,
+  options: FulfillmentInboundModuleOptions = {}
+): FulfillmentInboundModule {
+  // Use provided version or get the default
+  const version = apiVersion || getModuleDefaultVersion('fulfillmentInbound') || '2020-10-01';
+  
+  // Create the module
+  const module = new FulfillmentInboundModule(
+    version,
+    makeApiRequest,
+    marketplaceId,
+    options
+  );
+  
+  // Register the module
+  registry.registerModule(module.moduleId, module);
+  
+  return module;
 }

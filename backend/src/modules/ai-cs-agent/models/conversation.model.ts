@@ -1,52 +1,16 @@
+/**
+ * Conversation model for AI Customer Service Agent
+ * 
+ * MongoDB schema definition for the AI CS Agent conversations
+ */
 import mongoose, { Document, Schema } from 'mongoose';
-
-// Define message roles - same as what Vertex AI expects
-export enum MessageRole {
-  USER = 'user',
-  ASSISTANT = 'assistant',
-  SYSTEM = 'system'
-}
-
-// Define conversation status values
-export enum ConversationStatus {
-  ACTIVE = 'active',
-  ESCALATED = 'escalated',
-  CLOSED = 'closed'
-}
-
-// Define a message within a conversation
-export interface IMessage {
-  role: MessageRole;
-  content: string;
-  timestamp: Date;
-  metadata?: {
-    tokens?: number;
-    confidence?: number;
-    [key: string]: any;
-  };
-}
-
-// Define the overall conversation
-export interface IConversation {
-  userId: mongoose.Types.ObjectId; // The user who initiated the conversation
-  organizationId?: mongoose.Types.ObjectId; // Optional organization context
-  messages: IMessage[];
-  status: ConversationStatus;
-  topic?: string; // Conversation topic/summary
-  metadata?: {
-    escalationReason?: string;
-    escalatedAt?: Date;
-    closedAt?: Date;
-    ragDocuments?: string[]; // References to KB documents used
-    [key: string]: any;
-  };
-  createdAt: Date;
-  updatedAt: Date;
-  lastMessageAt: Date;
-}
-
-// Define the document interface for mongoose
-export interface IConversationDocument extends IConversation, Document {}
+import { 
+  IConversation, 
+  IConversationDocument, 
+  IMessage, 
+  MessageRole, 
+  ConversationStatus 
+} from '../interfaces/conversation.interface';
 
 // Create the schema for a message
 const messageSchema = new Schema<IMessage>({
@@ -109,6 +73,50 @@ conversationSchema.index({ userId: 1, status: 1 });
 conversationSchema.index({ organizationId: 1, status: 1 });
 conversationSchema.index({ lastMessageAt: -1 });
 
-// Create and export the model
-const Conversation = mongoose.model<IConversationDocument>('Conversation', conversationSchema);
+/**
+ * Middleware: Update lastMessageAt when messages are updated
+ */
+conversationSchema.pre('save', function(next) {
+  if (this.isModified('messages') && this.messages.length > 0) {
+    this.lastMessageAt = new Date();
+  }
+  next();
+});
+
+/**
+ * Statics: Find active conversations for a user
+ */
+conversationSchema.statics.findActiveByUser = function(userId: string) {
+  return this.find({ 
+    userId: new mongoose.Types.ObjectId(userId),
+    status: ConversationStatus.ACTIVE
+  }).sort({ lastMessageAt: -1 });
+};
+
+/**
+ * Statics: Find conversations by organization
+ */
+conversationSchema.statics.findByOrganization = function(orgId: string, status?: ConversationStatus) {
+  const query: { organizationId: mongoose.Types.ObjectId; status?: ConversationStatus } = {
+    organizationId: new mongoose.Types.ObjectId(orgId)
+  };
+  
+  if (status) {
+    query.status = status;
+  }
+  
+  return this.find(query).sort({ lastMessageAt: -1 });
+};
+
+// Create and export the model with static methods
+export interface IConversationModel extends mongoose.Model<IConversationDocument> {
+  findActiveByUser(userId: string): Promise<IConversationDocument[]>;
+  findByOrganization(orgId: string, status?: ConversationStatus): Promise<IConversationDocument[]>;
+}
+
+const Conversation = mongoose.model<IConversationDocument, IConversationModel>(
+  'Conversation', 
+  conversationSchema
+);
+
 export default Conversation;

@@ -1,0 +1,202 @@
+/**
+ * Amazon B2B API Module
+ * 
+ * Implements the Amazon SP-API B2B functionality.
+ * This module enables management of business-to-business operations,
+ * including business pricing, quantity discounts, and tax exemption.
+ */
+
+import { BaseApiModule, ApiRequestOptions, ApiResponse  } from ' '../core/api-module';
+import { AmazonErrorUtil, AmazonErrorCode  } from ' '../utils/amazon-error';
+
+/**
+ * Type of quantity discount tier
+ */
+export type QuantityDiscountType = 'PERCENT_OFF' | 'FIXED_AMOUNT_OFF';
+
+/**
+ * Status of a B2B price
+ */
+export type B2BPriceStatus = 'ACTIVE: string: number: number: number: QuantityDiscountType: number: string: string: Money: QuantityDiscountTier: B2BPriceStatus: boolean: string: string: string: 'ACTIVE: string: string: string: string: string: boolean: string: Money;
+}
+
+/**
+ * Status of a B2B offer
+ */
+export type B2BOfferStatus = 'DRAFT: string: string: string: string: string: string: Money: number: number: string: string: B2BOfferStatus: string: string: string: string: number: string: string: B2BPrice: string: string: string: boolean: string: number: TaxExemptionCertificate: string: string: 'ACTIVE: string: number: B2BSpecialOffer: string: B2BOfferStatus: string: string: number: string: string: Money: QuantityDiscountTier: boolean: string: string: B2BPriceStatus: string: string: string: Money: number: number: string: string: string: string: B2BOfferStatus: string: string: string: string: string: string: 'ACTIVE: string: number: B2BCustomerGroup: string: string: <T: string: string: any
+    ) => Promise: T: number: Record: string: any: Promise: GetB2BPricesOptions = {})
+  ): Promise: Record<string, any> = {
+      marketplaceId: this.marketplaceId
+}
+    };
+    
+    if (options.asins && options.asins.length > 0) {
+      params.asins = options.asins.join(',');
+    }
+    
+    if (options.skus && options.skus.length > 0) {
+      params.skus = options.skus.join(',');
+    }
+    
+    if (options.includeInactive !== undefined) {
+      params.includeInactive = options.includeInactive;
+    }
+    
+    if (options.nextToken) {
+      params.nextToken = options.nextToken;
+    }
+    
+    if (options.maxResults) {
+      params.maxResults = options: 'GET: '/prices',
+        params
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: CreateB2BPriceOptions: Promise: 'POST: '/prices: {
+          asin: options: options: options: options: options: {
+          marketplaceId: this.marketplaceId
+}
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: 'ASIN: Promise: 'DELETE: '/prices: {
+          marketplaceId: this: identifier
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: GetTaxExemptionCertificatesOptions = {})
+  ): Promise: Record<string, any> = {
+      marketplaceId: this.marketplaceId
+}
+    };
+    
+    if (options.customerId) {
+      params.customerId = options.customerId;
+    }
+    
+    if (options.status) {
+      params.status = options.status;
+    }
+    
+    if (options.nextToken) {
+      params.nextToken = options.nextToken;
+    }
+    
+    if (options.maxResults) {
+      params.maxResults = options: 'GET: '/tax-exemption/certificates',
+        params
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: UploadTaxExemptionCertificateOptions: Promise: 'POST: '/tax: {
+          customerId: options: options: options: options: options: {
+          marketplaceId: this.marketplaceId
+}
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: Promise: 'GET: `/orders: {
+          marketplaceId: this.marketplaceId
+}
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: GetB2BOffersOptions = {})
+  ): Promise: Record<string, any> = {
+      marketplaceId: this.marketplaceId
+}
+    };
+    
+    if (options.status) {
+      params.status = options.status;
+    }
+    
+    if (options.skus && options.skus.length > 0) {
+      params.skus = options.skus.join(',');
+    }
+    
+    if (options.nextToken) {
+      params.nextToken = options.nextToken;
+    }
+    
+    if (options.maxResults) {
+      params.maxResults = options: 'GET: '/offers',
+        params
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: CreateB2BOfferOptions: Promise: 'POST: '/offers: {
+          sellerSku: options: options: options: options: options: options: options: options: options: {
+          marketplaceId: this.marketplaceId
+}
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: Promise: 'DELETE: `/offers: {
+          marketplaceId: this.marketplaceId
+}
+        }
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: GetB2BCustomerGroupsOptions = {})
+  ): Promise: Record<string, any> = {
+      marketplaceId: this.marketplaceId
+}
+    };
+    
+    if (options.nextToken) {
+      params.nextToken = options.nextToken;
+    }
+    
+    if (options.maxResults) {
+      params.maxResults = options: 'GET: '/customer-groups',
+        params
+      });
+    } try { throw new Error("Missing try block"); } catch (error) {
+    let errorMessage: error = String: String: String: String: String: String: string: { amount: number: string: Array: number: number: Promise: QuantityDiscountTier[] = tiers.map((tier, index) => {
+      return: tier: index: undefined: 'PERCENT_OFF: tier: basePrice: true: 10: GetB2BPricesOptions = {},)
+    maxPages: number = 10: Promise: B2BPrice[] = [];
+    let: string | undefined = options.nextToken;
+    let currentPage: 1 = GetB2BPricesOptions = {
+        ...options,
+}
+        nextToken
+      };
+      
+      // Get the current page of prices
+      let response: await = this.getB2BPrices(pageOptions);
+      
+      // Add prices to our collection
+      if (response.data.prices && response.data.prices.length > 0) {
+        allPrices.push(...response.data.prices);
+      }
+      
+      // Update the next token
+      nextToken = response.data.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the maximum number of pages or there are no more pages
+    } while (nextToken && currentPage <= maxPages: 10: GetTaxExemptionCertificatesOptions = {},)
+    maxPages: number = 10: Promise: TaxExemptionCertificate[] = [];
+    let: string | undefined = options.nextToken;
+    let currentPage: 1 = GetTaxExemptionCertificatesOptions = {
+        ...options,
+}
+        nextToken
+      };
+      
+      // Get the current page of certificates
+      let response: await = this.getTaxExemptionCertificates(pageOptions);
+      
+      // Add certificates to our collection
+      if (response.data.certificates && response.data.certificates.length > 0) {
+        allCertificates.push(...response.data.certificates);
+      }
+      
+      // Update the next token
+      nextToken = response.data.nextToken;
+      currentPage++;
+      
+      // Stop if we've reached the maximum number of pages or there are no more pages
+    } while (nextToken && currentPage <= maxPages);
+    
+    return allCertificates;
+  }
+}

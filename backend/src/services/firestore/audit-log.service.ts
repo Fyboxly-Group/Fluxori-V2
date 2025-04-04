@@ -130,7 +130,7 @@ export class AuditLogService {
     }
     
     const snapshot = await query.get();
-    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    return snapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
   }
   
   /**
@@ -173,7 +173,7 @@ export class AuditLogService {
     }
     
     const snapshot = await query.get();
-    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    return snapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
   }
   
   /**
@@ -218,7 +218,7 @@ export class AuditLogService {
     }
     
     const snapshot = await query.get();
-    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    return snapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
   }
   
   /**
@@ -263,7 +263,7 @@ export class AuditLogService {
     }
     
     const snapshot = await query.get();
-    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    return snapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
   }
   
   /**
@@ -289,6 +289,6 @@ export class AuditLogService {
     }
     
     const snapshot = await query.get();
-    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    return snapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
   }
 }

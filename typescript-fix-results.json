@@ -1,0 +1,45 @@
+{
+  "initialErrorCount": 2275,
+  "finalErrorCount": 2275,
+  "totalFixed": 0,
+  "successRate": "0.00%",
+  "scriptResults": [
+    {
+      "before": 2275,
+      "after": 2275,
+      "fixed": 0,
+      "error": "Command failed: node /home/tarquin_stapa/Fluxori-V2/scripts/fix-instantiation-property-access.js"
+    },
+    {
+      "before": 2275,
+      "after": 2275,
+      "fixed": 0
+    },
+    {
+      "before": 2275,
+      "after": 2275,
+      "fixed": 0,
+      "error": "Command failed: node /home/tarquin_stapa/Fluxori-V2/scripts/fix-remaining-typescript-errors.js"
+    },
+    {
+      "before": 2275,
+      "after": 2275,
+      "fixed": 0
+    },
+    {
+      "before": 2275,
+      "after": 2275,
+      "fixed": 0
+    },
+    {
+      "before": 2275,
+      "after": 2275,
+      "fixed": 0
+    },
+    {
+      "before": 2275,
+      "after": 2275,
+      "fixed": 0
+    }
+  ]
+}

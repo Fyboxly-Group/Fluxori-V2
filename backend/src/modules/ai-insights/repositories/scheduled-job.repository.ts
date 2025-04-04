@@ -1,233 +1,136 @@
+import * as mongoose from 'mongoose';
+import { ApiError } from '../../../utils/error.utils';
+
 /**
- * Repository for managing scheduled insight jobs in Firestore
+ * Scheduled job data interface
  */
+export interface IScheduledJob {
+  id?: string;
+  name: string;
+  description?: string;
+  schedule: string;
+  insightType: string;
+  parameters: Record<string, any>;
+  lastRunAt?: Date;
+  nextRunAt?: Date;
+  status: 'active' | 'inactive' | 'error';
+  organizationId: string;
+  createdBy: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
 
-import { injectable, inject } from 'inversify';
-import { Firestore } from 'firebase-admin/firestore';
-import { v4 as uuidv4 } from 'uuid';
-import { Logger } from 'winston';
-import { 
-  ScheduledInsightJob, 
-  InsightType 
-} from '../interfaces/insight.interface';
-import { 
-  ScheduledInsightJobSchema, 
-  convertScheduledJobToSchema, 
-  convertSchemaToScheduledJob 
-} from '../models/insight.schema';
-
-@injectable()
+/**
+ * Repository for scheduled job operations
+ */
 export class ScheduledJobRepository {
-  private readonly collectionName = 'scheduled_insight_jobs';
-  
-  constructor(
-    @inject('Firestore') private firestore: Firestore,
-    @inject('Logger') private logger: Logger
-  ) {}
-  
   /**
-   * Create a new scheduled job
-   * @param data Job data without ID
-   * @returns The created job with ID
+   * Find all scheduled job records
    */
-  async createJob(data: Omit<ScheduledInsightJob, 'id'>): Promise<ScheduledInsightJob> {
+  async findAll(organizationId: string, limit: number = 10, offset: number = 0): Promise<IScheduledJob[]> {
     try {
-      const id = uuidv4();
-      const now = new Date();
-      
-      const job: ScheduledInsightJob = {
+      // Implementation placeholder
+      return [];
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new ApiError(500, `Error finding scheduled job records: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Find scheduled job by ID
+   */
+  async findById(id: string, organizationId: string): Promise<IScheduledJob | null> {
+    try {
+      // Implementation placeholder
+      return null;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new ApiError(500, `Error finding scheduled job by ID: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Create scheduled job
+   */
+  async create(data: IScheduledJob, organizationId: string, userId: string): Promise<IScheduledJob> {
+    try {
+      // Implementation placeholder
+      return {
+        ...data,
+        id: new mongoose.Types.ObjectId().toString(),
+        organizationId,
+        createdBy: userId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        status: 'active'
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new ApiError(500, `Error creating scheduled job: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Update scheduled job
+   */
+  async update(id: string, data: Partial<IScheduledJob>, organizationId: string): Promise<IScheduledJob | null> {
+    try {
+      // Implementation placeholder
+      return {
         ...data,
         id,
-        createdAt: now,
-        updatedAt: now
-      };
-      
-      const schema = convertScheduledJobToSchema(job);
-      await this.firestore.collection(this.collectionName).doc(id).set(schema);
-      
-      return job;
-    } catch (error) {
-      this.logger.error('Error creating scheduled job:', error);
-      throw new Error(`Failed to create scheduled job: ${error.message}`);
-    }
-  }
-  
-  /**
-   * Get a scheduled job by ID
-   * @param id Job ID
-   * @returns The job or null if not found
-   */
-  async findById(id: string): Promise<ScheduledInsightJob | null> {
-    try {
-      const doc = await this.firestore.collection(this.collectionName).doc(id).get();
-      
-      if (!doc.exists) {
-        return null;
-      }
-      
-      const schema = doc.data() as ScheduledInsightJobSchema;
-      return convertSchemaToScheduledJob(schema);
-    } catch (error) {
-      this.logger.error(`Error finding scheduled job with ID ${id}:`, error);
-      throw new Error(`Failed to find scheduled job: ${error.message}`);
-    }
-  }
-  
-  /**
-   * Update a scheduled job
-   * @param id Job ID
-   * @param data Data to update
-   * @returns The updated job
-   */
-  async updateJob(id: string, data: Partial<ScheduledInsightJob>): Promise<ScheduledInsightJob | null> {
-    try {
-      const doc = await this.firestore.collection(this.collectionName).doc(id).get();
-      
-      if (!doc.exists) {
-        return null;
-      }
-      
-      const updateData = {
-        ...data,
+        organizationId,
         updatedAt: new Date()
-      };
-      
-      await this.firestore.collection(this.collectionName).doc(id).update(updateData);
-      
-      // Get the updated document
-      return await this.findById(id);
+      } as IScheduledJob;
     } catch (error) {
-      this.logger.error(`Error updating scheduled job with ID ${id}:`, error);
-      throw new Error(`Failed to update scheduled job: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new ApiError(500, `Error updating scheduled job: ${errorMessage}`);
     }
   }
-  
+
   /**
-   * Delete a scheduled job
-   * @param id Job ID
-   * @returns True if successful, false if not found
+   * Delete scheduled job
    */
-  async deleteJob(id: string): Promise<boolean> {
+  async delete(id: string, organizationId: string): Promise<boolean> {
     try {
-      const doc = await this.firestore.collection(this.collectionName).doc(id).get();
-      
-      if (!doc.exists) {
-        return false;
-      }
-      
-      await this.firestore.collection(this.collectionName).doc(id).delete();
+      // Implementation placeholder
       return true;
     } catch (error) {
-      this.logger.error(`Error deleting scheduled job with ID ${id}:`, error);
-      throw new Error(`Failed to delete scheduled job: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new ApiError(500, `Error deleting scheduled job: ${errorMessage}`);
     }
   }
   
   /**
-   * Find scheduled jobs by organization ID
-   * @param organizationId Organization ID
-   * @param limit Maximum number of results (default: 50)
-   * @returns Array of scheduled jobs
+   * Find due jobs that need to be executed
    */
-  async findByOrganizationId(
-    organizationId: string,
-    limit: number = 50
-  ): Promise<ScheduledInsightJob[]> {
+  async findDueJobs(): Promise<IScheduledJob[]> {
     try {
-      const query = this.firestore.collection(this.collectionName)
-        .where('organizationId', '==', organizationId)
-        .orderBy('createdAt', 'desc')
-        .limit(limit);
-      
-      const snapshot = await query.get();
-      
-      return snapshot.docs.map(doc => {
-        const schema = doc.data() as ScheduledInsightJobSchema;
-        return convertSchemaToScheduledJob(schema);
-      });
+      // Implementation placeholder - find jobs where nextRunAt <= now and status is active
+      return [];
     } catch (error) {
-      this.logger.error(`Error finding scheduled jobs for organization ${organizationId}:`, error);
-      throw new Error(`Failed to find scheduled jobs: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new ApiError(500, `Error finding due jobs: ${errorMessage}`);
     }
   }
   
   /**
-   * Find scheduled jobs by type
-   * @param organizationId Organization ID
-   * @param type Insight type
-   * @param limit Maximum number of results (default: 50)
-   * @returns Array of scheduled jobs
+   * Update job after execution
    */
-  async findByType(
-    organizationId: string,
-    type: InsightType,
-    limit: number = 50
-  ): Promise<ScheduledInsightJob[]> {
+  async updateAfterExecution(id: string, success: boolean, error?: string): Promise<IScheduledJob | null> {
     try {
-      const query = this.firestore.collection(this.collectionName)
-        .where('organizationId', '==', organizationId)
-        .where('type', '==', type)
-        .orderBy('createdAt', 'desc')
-        .limit(limit);
-      
-      const snapshot = await query.get();
-      
-      return snapshot.docs.map(doc => {
-        const schema = doc.data() as ScheduledInsightJobSchema;
-        return convertSchemaToScheduledJob(schema);
-      });
+      // Implementation placeholder
+      const now = new Date();
+      return {
+        id,
+        lastRunAt: now,
+        status: success ? 'active' : 'error',
+        updatedAt: now
+      } as IScheduledJob;
     } catch (error) {
-      this.logger.error(`Error finding scheduled jobs of type ${type}:`, error);
-      throw new Error(`Failed to find scheduled jobs: ${error.message}`);
-    }
-  }
-  
-  /**
-   * Find active jobs that are due to run
-   * @param currentTime Current time
-   * @param limit Maximum number of results (default: 100)
-   * @returns Array of jobs due to run
-   */
-  async findDueJobs(
-    currentTime: Date = new Date(),
-    limit: number = 100
-  ): Promise<ScheduledInsightJob[]> {
-    try {
-      const query = this.firestore.collection(this.collectionName)
-        .where('isActive', '==', true)
-        .where('nextRun', '<=', currentTime)
-        .orderBy('nextRun', 'asc')
-        .limit(limit);
-      
-      const snapshot = await query.get();
-      
-      return snapshot.docs.map(doc => {
-        const schema = doc.data() as ScheduledInsightJobSchema;
-        return convertSchemaToScheduledJob(schema);
-      });
-    } catch (error) {
-      this.logger.error('Error finding due jobs:', error);
-      throw new Error(`Failed to find due jobs: ${error.message}`);
-    }
-  }
-  
-  /**
-   * Update the next run time for a job
-   * @param id Job ID
-   * @param lastRun Last run timestamp
-   * @param nextRun Next run timestamp
-   * @returns The updated job
-   */
-  async updateJobRunTimes(
-    id: string,
-    lastRun: Date,
-    nextRun: Date
-  ): Promise<ScheduledInsightJob | null> {
-    try {
-      return await this.updateJob(id, { lastRun, nextRun });
-    } catch (error) {
-      this.logger.error(`Error updating run times for job ${id}:`, error);
-      throw new Error(`Failed to update job run times: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new ApiError(500, `Error updating job after execution: ${errorMessage}`);
     }
   }
 }

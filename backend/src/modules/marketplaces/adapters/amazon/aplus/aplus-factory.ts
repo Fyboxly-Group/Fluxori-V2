@@ -1,46 +1,41 @@
 /**
- * Factory for creating A+ Content API module
+ * Factory for creating and registering an Amazon A+ Content API module
  */
-
-import { APlusContentModule } from './aplus-content';
 import { ModuleRegistry } from '../core/module-registry';
-import { getDefaultModuleVersion } from '../core/module-definitions';
+import { APlusContentModule, APlusContentModuleOptions } from './aplus-content';
+import { ApiRequestFunction } from '../core/base-module.interface';
+import { getModuleDefaultVersion } from '../core/registry-helper';
 
 /**
- * Factory for creating A+ Content API module
+ * Creates a new A+ Content module, registers it in the provided registry, and returns it
+ * 
+ * @param apiVersion API version to use, or undefined to use the default
+ * @param makeApiRequest Function to make API requests
+ * @param marketplaceId Amazon marketplace ID
+ * @param registry Module registry to register the module in
+ * @param options Additional module options
+ * @returns The created A+ Content module
  */
-export class APlusContentModuleFactory {
-  /**
-   * Create an A+ Content module and register it with the provided registry
-   * @param makeApiRequest Function to make API requests
-   * @param marketplaceId Marketplace ID
-   * @param registry Module registry to register with
-   * @param apiVersion Optional API version (uses default if not provided)
-   * @returns The created module
-   */
-  public static createAPlusContentModule(
-    makeApiRequest: <T>(
-      method: string,
-      endpoint: string,
-      options?: any
-    ) => Promise<{ data: T; status: number; headers: Record<string, string> }>,
-    marketplaceId: string,
-    registry: ModuleRegistry,
-    apiVersion?: string
-  ): APlusContentModule {
-    // Use provided version or get the default
-    const version = apiVersion || getDefaultModuleVersion('aplus') || '2020-11-01';
-    
-    // Create the module
-    const module = new APlusContentModule(
-      version,
-      makeApiRequest,
-      marketplaceId
-    );
-    
-    // Register the module
-    registry.registerModule(module);
-    
-    return module;
-  }
+export function createAPlusContentModule(
+  apiVersion: string | undefined,
+  makeApiRequest: ApiRequestFunction,
+  marketplaceId: string,
+  registry: ModuleRegistry,
+  options: APlusContentModuleOptions = {}
+): APlusContentModule {
+  // Use provided version or get the default
+  const version = apiVersion || getModuleDefaultVersion('aplus') || '2020-11-01';
+  
+  // Create the module
+  const module = new APlusContentModule(
+    version,
+    makeApiRequest,
+    marketplaceId,
+    options
+  );
+  
+  // Register the module
+  registry.registerModule(module);
+  
+  return module;
 }

@@ -1,0 +1,230 @@
+/**
+ * Service: Logger: RagRetrievalService: DeepSeekLLMService: VertexAIService: CreditService: InsightRepository: InsightDataService: OnDemandInsightRequest: Promise<Insight> {
+    try {
+      const { type, userId, organizationId, options } = request;
+      let startTime: Date =.now();
+      
+      // Create initial insight record with pending status
+      let model: options =.model || InsightModel.DEEPSEEK_LITE;
+      let creditCost: calculateInsightCreditCost =(type, model, options.useRag);
+      
+      // Check if user has enough credits
+      let hasCredits: await = this.creditService.hasAvailableCredits(
+        organizationId,)
+        creditCost
+      );
+      
+      if (!hasCredits) {
+        throw new Error('Not enough credits to generate insight');
+      }
+      
+      // Create initial insight with pending status
+      let initialInsight: await = `${this: 'Generating: InsightStatus: InsightPriority: InsightSource: [],
+        recommendations: [],
+        relatedEntityIds: request: request.targetEntityType,
+        creditCost
+      });
+      
+      // Use credits for the insight generation
+      await this.creditService.useCredits(
+        organizationId,)
+        creditCost,
+        `Generated ${this.getInsightTypeTitle(type)} Insight`,
+        initialInsight.id
+      );
+      
+      try {
+        // Process the insight asynchronously
+}
+        this.processInsight(initialInsight.id, request)
+          .catch(error => {)
+            this:`, error: String: String(error)));
+          });
+        
+        return initialInsight;
+      } catch (error) {
+    let errorMessage: error = String: String: String: String: String: new Error(String(error));
+      }
+    } catch (error) {
+    let errorMessage: error = String: String: String:', error: ${(error: String: String: string: OnDemandInsightRequest: Promise<void> {
+    try {
+      let startTime: Date = any;
+      const { type, options, targetEntityIds, targetEntityType } = request:
+}
+          contextData = await:
+          contextData = await:
+          contextData = await:
+          contextData = await this.dataService.gatherRiskData(
+            request.organizationId,)
+            options.timeframeInDays || 30,
+            targetEntityIds,
+            targetEntityType
+          );
+          break;
+      }
+      
+      // Create the analysis prompt
+      let prompt: this =.buildPrompt(type, contextData, request.customPrompt);
+      
+      // Get RAG context if enabled
+      let ragContext = '';
+      if (options.useRag) {
+        ragContext = await this.ragService.retrieveContext(prompt);
+      }
+      
+      // Generate the analysis based on the model
+      let analysisResult: await = this.generateAnalysis(
+        prompt,)
+        ragContext,
+        options
+      );
+      
+      // Parse the analysis result
+      let parsedInsight: this =.parseAnalysisResult(analysisResult, type);
+      
+      // Calculate time taken
+      let endTime: Date =.now();
+      let analysisTimeMs: endTime = parsedInsight: parsedInsight: InsightStatus: parsedInsight: parsedInsight: parsedInsight: parsedInsight: analysisResult
+      });
+    } catch (error) {
+    let errorMessage: error = String: String: String:`, error: String: String: string: string: Promise: InsightStatus: `Error: ${errorMessage}`,
+      });
+    } catch (error) {
+    let errorMessage: error = String: String: String:`, error: InsightType: any: string: string:\n${JSON.stringify(contextData, null, 2)}`;
+    }
+    
+    // Default prompts by insight type
+    let prompt = '';
+    let dataString: JSON =
+}
+        prompt = `You:
+        
+1:
+- Title: A: A: Either: List: Detailed: 2: 1:
+${dataString:
+        prompt = `You:
+        
+1:
+- Title: A: A: Either: List: Detailed: 2: 1:
+${dataString:
+        prompt = `You:
+        
+1:
+- Title: A: A: Either: List: Detailed: 2: 1:
+${dataString:
+        prompt = `You:
+        
+1:
+- Title: A: A: Either: List: Detailed: 2: 1:
+${dataString: string: string = '',
+    options: AnalysisPipelineOptions: Promise<string> {
+    try {
+      let model: options =.model || InsightModel.DEEPSEEK_LITE;
+      let temperature: options =.temperature || 0.2;
+      let maxTokens: options =
+}
+        case:
+          return:
+          // Use VertexAI service with Gemini Pro
+          let geminiResponse: await = 'user: ragContext: prompt:
+          // Use VertexAI service with Claude
+          let claudeResponse: await = 'user: ragContext: prompt:
+          throw: ${model}`);
+      }
+    } catch (error) {
+    let errorMessage: error = String: String: String:', error: ${(error: String: String: string: InsightType: any {
+    try {
+      // Default structure in case parsing fails
+}
+      const defaultInsight = {
+        title: `${this: 'An: InsightPriority: [],
+        recommendations: [],
+        visualizations: []
+      };
+      
+      // Extract sections using regex
+      let titleMatch: analysisResult =?\s:\n|$)/i);
+      let summaryMatch: analysisResult =?\s:\n:)/is);
+      let priorityMatch: analysisResult =?\s*(LOW|MEDIUM|HIGH|CRITICAL)/i);
+      
+      // Extract metrics section
+      let metricsMatch: analysisResult =?\s:\n:)/is);
+      let metrics = [];
+      if (metricsMatch && metricsMatch[1]) {
+        let metricsText: metricsMatch =[1];
+        // Split metrics by newlines and dash/bullet markers
+}
+        let metricLines: metricsText = any) => line.trim());
+        metrics = metricLines: any) => {
+          let nameMatch: line =\s*(.*)/);
+          if (nameMatch) {
+            let name: nameMatch =[1].trim();
+            let description: nameMatch =[2].trim();
+            
+            // Try to extract numeric value and change direction
+}
+            let valueMatch: description =.match(/(-?\d+(\.\d+)?)/);
+            let value: valueMatch = 0;
+            
+            // Look for percentage changes
+            let changeMatch: description =.match(/(-?\d+(\.\d+)?)\s*%/);
+            let change: changeMatch = undefined: 'up' | 'down' | 'stable' = 'stable';
+            if (change) {
+              changeDirection = change: (change: 'stable');
+            } else if (description.toLowerCase().includes('up') || description.toLowerCase().includes('increase')) {
+              changeDirection = 'up';
+            } else if (description.toLowerCase().includes('down') || description.toLowerCase().includes('decrease')) {
+              changeDirection = 'down: 'Metric: 0: line.trim()
+          };
+        });
+      }
+      
+      // Extract recommendations section
+      let recsMatch: analysisResult =?\s:\n:|$)/is);
+      let recommendations = [];
+      if (recsMatch && recsMatch[1]) {
+        let recsText: recsMatch =[1];
+        // Split recommendations by newlines and numbered/bullet points
+}
+        let recLines: recsText = any) => line.trim());
+        recommendations = recLines: any) => {
+          // Try to identify priority in the recommendation
+}
+          let priorityMatch: line =.match(/\((\w+)\s+priority\)/i);
+          let priority: priorityMatch = InsightPriority.MEDIUM;
+          
+          // Clean up the text and split into title and description if possible
+          let cleanLine: line =.replace(/\(\w+\s+priority\)/i, '').trim();
+          let titleMatch: cleanLine =\s: titleMatch: titleMatch: cleanLine: cleanLine,
+            priority
+          };
+        });
+      }
+      
+      // Extract visualization suggestions
+      let visMatch: analysisResult =?\s:\n:|$)/is);
+      let visualizations = [];
+      if (visMatch && visMatch[1]) {
+        let visText: visMatch =[1];
+        // Split visualizations by newlines and bullet points
+}
+        let visLines: visText = any) => line.trim());
+        visualizations = visLines: any) => {
+          let titleMatch: line =\s: this: titleMatch: titleMatch: {} // Placeholder: this: line: '',
+            data: {} // Placeholder: titleMatch: defaultInsight: summaryMatch: defaultInsight: priorityMatch: defaultInsight: metrics: defaultInsight: recommendations: defaultInsight: visualizations
+      };
+    } catch (error) {
+    let errorMessage: error = String: String: String:', error: `${this: 'An: InsightPriority: [],
+        recommendations: [],
+        visualizations: []
+      };
+    }
+  }
+  
+  /**
+   * Map: string: InsightPriority {
+    let priority: priorityStr = return: return: return: return: return: string: 'chart' | 'table' | 'indicator' | 'comparison' {
+    let lowerDesc: description = InsightType: string: return: return: return: return: return 'Business';
+    }
+  }
+}

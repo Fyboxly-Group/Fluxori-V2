@@ -7,20 +7,53 @@ import {
   RepricingRule, 
   RepricingStrategy 
 } from '../../../models/firestore/buybox.schema';
-import { RepricingRuleRepository } from '../repositories/repricing-rule.repository';
-import { RepricingEventRepository } from '../repositories/repricing-event.repository';
-import { RepricingEngineService } from '../services/repricing-engine.service';
-import { CreditService } from '../../credits/services/credit.service';
+import { 
+  RepricingRuleRepository, 
+  IRepricingRuleRepository 
+} from '../repositories/repricing-rule.repository';
+import { 
+  RepricingEventRepository,
+  IRepricingEventRepository 
+} from '../repositories/repricing-event.repository';
+import { 
+  RepricingEngineService,
+  IRepricingEngineService
+} from '../services/repricing-engine.service';
+import { 
+  CreditService,
+  ICreditService 
+} from '../../credits/services/credit.service';
 import { RULE_CREATION_CREDIT_COST } from '../constants/credit-costs';
+import { IRuleExecutionResult } from '../services/buybox-monitoring.service';
 
+/**
+ * Interface for Repricing Controller
+ */
+export interface IRepricingController {
+  getRules(req: Request, res: Response): Promise<void>;
+  getRuleById: any[];
+  createRule: any[];
+  updateRule: any[];
+  deleteRule: any[];
+  executeRule: any[];
+  getRuleEvents: any[];
+  getProductEvents: any[];
+  getMarketplaceEvents: any[];
+  getRecentEvents: any[];
+  getEventsByDateRange: any[];
+}
+
+/**
+ * Controller for managing repricing rules and events
+ */
 @injectable()
-export class RepricingController {
+export class RepricingController implements IRepricingController {
   constructor(
     @inject('Logger') private logger: Logger,
-    @inject(RepricingRuleRepository) private ruleRepository: RepricingRuleRepository,
-    @inject(RepricingEventRepository) private eventRepository: RepricingEventRepository,
-    @inject(RepricingEngineService) private repricingEngine: RepricingEngineService,
-    @inject(CreditService) private creditService: CreditService
+    @inject(RepricingRuleRepository) private ruleRepository: IRepricingRuleRepository,
+    @inject(RepricingEventRepository) private eventRepository: IRepricingEventRepository,
+    @inject(RepricingEngineService) private repricingEngine: IRepricingEngineService,
+    @inject(CreditService) private creditService: ICreditService
   ) {}
   
   /**
@@ -68,7 +101,7 @@ export class RepricingController {
       this.logger.error('Error getting rules', { error });
       res.status(500).json({
         success: false,
-        message: 'Failed to retrieve rules'
+        message: `Failed to retrieve rules: ${error instanceof Error ? error.message : String(error)}`
       });
     }
   };
@@ -115,7 +148,7 @@ export class RepricingController {
         this.logger.error(`Error getting rule by ID ${req.params.id}`, { error });
         res.status(500).json({
           success: false,
-          message: 'Failed to retrieve rule'
+          message: `Failed to retrieve rule: ${error instanceof Error ? error.message : String(error)}`
         });
       }
     }
@@ -192,7 +225,7 @@ export class RepricingController {
         this.logger.error('Error creating rule', { error });
         res.status(500).json({
           success: false,
-          message: 'Failed to create rule'
+          message: `Failed to create rule: ${error instanceof Error ? error.message : String(error)}`
         });
       }
     }
@@ -260,7 +293,7 @@ export class RepricingController {
         this.logger.error(`Error updating rule ${req.params.id}`, { error });
         res.status(500).json({
           success: false,
-          message: 'Failed to update rule'
+          message: `Failed to update rule: ${error instanceof Error ? error.message : String(error)}`
         });
       }
     }
@@ -312,7 +345,7 @@ export class RepricingController {
         this.logger.error(`Error deleting rule ${req.params.id}`, { error });
         res.status(500).json({
           success: false,
-          message: 'Failed to delete rule'
+          message: `Failed to delete rule: ${error instanceof Error ? error.message : String(error)}`
         });
       }
     }
@@ -354,7 +387,7 @@ export class RepricingController {
         }
         
         // Execute the rule
-        const result = await this.repricingEngine.executeRuleManually(ruleId);
+        const result: IRuleExecutionResult = await this.repricingEngine.executeRuleManually(ruleId);
         
         res.json({
           success: result.success,
@@ -367,7 +400,7 @@ export class RepricingController {
         this.logger.error(`Error executing rule ${req.params.id}`, { error });
         res.status(500).json({
           success: false,
-          message: 'Failed to execute rule'
+          message: `Failed to execute rule: ${error instanceof Error ? error.message : String(error)}`
         });
       }
     }
@@ -427,7 +460,7 @@ export class RepricingController {
         this.logger.error(`Error getting events for rule ${req.params.id}`, { error });
         res.status(500).json({
           success: false,
-          message: 'Failed to retrieve events'
+          message: `Failed to retrieve events: ${error instanceof Error ? error.message : String(error)}`
         });
       }
     }
@@ -461,7 +494,7 @@ export class RepricingController {
         this.logger.error(`Error getting events for product ${req.params.id}`, { error });
         res.status(500).json({
           success: false,
-          message: 'Failed to retrieve events'
+          message: `Failed to retrieve events: ${error instanceof Error ? error.message : String(error)}`
         });
       }
     }
@@ -495,7 +528,7 @@ export class RepricingController {
         this.logger.error(`Error getting events for marketplace ${req.params.id}`, { error });
         res.status(500).json({
           success: false,
-          message: 'Failed to retrieve events'
+          message: `Failed to retrieve events: ${error instanceof Error ? error.message : String(error)}`
         });
       }
     }
@@ -527,7 +560,7 @@ export class RepricingController {
         this.logger.error('Error getting recent events', { error });
         res.status(500).json({
           success: false,
-          message: 'Failed to retrieve events'
+          message: `Failed to retrieve events: ${error instanceof Error ? error.message : String(error)}`
         });
       }
     }
@@ -567,7 +600,7 @@ export class RepricingController {
         this.logger.error('Error getting events by date range', { error });
         res.status(500).json({
           success: false,
-          message: 'Failed to retrieve events'
+          message: `Failed to retrieve events: ${error instanceof Error ? error.message : String(error)}`
         });
       }
     }

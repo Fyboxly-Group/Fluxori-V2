@@ -1,131 +1,232 @@
 import { Request, Response, NextFunction } from 'express';
 import { StatusCodes } from 'http-status-codes';
+import * as mongoose from 'mongoose';
+import { ApiError } from '../../middleware/error.middleware';
+import EntityName, { IEntityName, IEntityNameDocument } from '../models/entityName.model';
+import { injectable, inject } from 'inversify';
+import { TYPES } from '../../config/inversify.types';
+import { IEntityNameService } from '../services/entityName.service';
 
 /**
- * Template for a controller with TypeScript typing
- * Replace ResourceName with the actual resource name (e.g., User, Project, etc.)
+ * Base request with authentication
  */
+interface AuthenticatedRequest extends Request {
+  user?: {
+    id: string;
+    organizationId: string;
+    email?: string;
+    role?: string;
+  };
+}
 
 /**
- * Get all resources
- * @route GET /api/resource
+ * API response interface for type safety
  */
-export const getAll = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    // Implementation goes here
-    // e.g., const resources = await ResourceModel.find({});
-    
-    res.status(StatusCodes.OK).json({
-      success: true,
-      data: []
-    });
-  } catch (error) {
-    next(error);
+interface ApiResponse<T = unknown> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  error?: {
+    code: string;
+    message: string;
+    details?: unknown;
+  };
+}
+
+/**
+ * EntityName controller interface
+ */
+export interface IEntityNameController {
+  getAll(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void>;
+  getById(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void>;
+  create(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void>;
+  update(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void>;
+  delete(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void>;
+}
+
+/**
+ * EntityName controller implementation
+ */
+@injectable()
+export class EntityNameController implements IEntityNameController {
+  constructor(
+    @inject(TYPES.EntityNameService) private entityNameService: IEntityNameService
+  ) {}
+
+  /**
+   * Get all entityNames with pagination and filtering
+   * 
+   * @route GET /api/entityName
+   * @param req Request object with query parameters
+   * @param res Response object
+   * @param next Next function
+   */
+  async getAll(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        throw new ApiError(StatusCodes.UNAUTHORIZED, 'Authentication required');
+      }
+
+      const { organizationId } = req.user;
+      
+      const options = {
+        limit: req.query.limit ? parseInt(req.query.limit as string, 10) : 10,
+        page: req.query.page ? parseInt(req.query.page as string, 10) : 1,
+        status: req.query.status as string,
+        sortBy: req.query.sortBy as string || 'createdAt',
+        sortOrder: (req.query.sortOrder as 'asc' | 'desc') || 'desc',
+        search: req.query.search as string
+      };
+
+      const result = await this.entityNameService.getAll(organizationId, options);
+
+      res.status(StatusCodes.OK).json({
+        success: true,
+        data: result.items,
+        meta: {
+          total: result.total,
+          page: result.page,
+          limit: result.limit,
+          pages: Math.ceil(result.total / result.limit)
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
   }
-};
 
-/**
- * Get resource by ID
- * @route GET /api/resource/:id
- */
-export const getById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const { id } = req.params;
-    
-    // Implementation goes here
-    // e.g., const resource = await ResourceModel.findById(id);
-    
-    // if (!resource) {
-    //   return res.status(StatusCodes.NOT_FOUND).json({
-    //     success: false,
-    //     message: 'Resource not found'
-    //   });
-    // }
-    
-    res.status(StatusCodes.OK).json({
-      success: true,
-      data: { id }
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  /**
+   * Get entityName by ID
+   * 
+   * @route GET /api/entityName/:id
+   * @param req Request object with id parameter
+   * @param res Response object
+   * @param next Next function
+   */
+  async getById(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        throw new ApiError(StatusCodes.UNAUTHORIZED, 'Authentication required');
+      }
 
-/**
- * Create new resource
- * @route POST /api/resource
- */
-export const create = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const resourceData = req.body;
-    
-    // Implementation goes here
-    // e.g., const newResource = await ResourceModel.create(resourceData);
-    
-    res.status(StatusCodes.CREATED).json({
-      success: true,
-      data: resourceData
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+      const { id } = req.params;
+      const { organizationId } = req.user;
 
-/**
- * Update resource
- * @route PUT /api/resource/:id
- */
-export const update = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const { id } = req.params;
-    const updateData = req.body;
-    
-    // Implementation goes here
-    // e.g., const updatedResource = await ResourceModel.findByIdAndUpdate(
-    //   id,
-    //   updateData,
-    //   { new: true, runValidators: true }
-    // );
-    
-    // if (!updatedResource) {
-    //   return res.status(StatusCodes.NOT_FOUND).json({
-    //     success: false,
-    //     message: 'Resource not found'
-    //   });
-    // }
-    
-    res.status(StatusCodes.OK).json({
-      success: true,
-      data: { id, ...updateData }
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid ID format');
+      }
 
-/**
- * Delete resource
- * @route DELETE /api/resource/:id
- */
-export const remove = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const { id } = req.params;
-    
-    // Implementation goes here
-    // e.g., const deletedResource = await ResourceModel.findByIdAndDelete(id);
-    
-    // if (!deletedResource) {
-    //   return res.status(StatusCodes.NOT_FOUND).json({
-    //     success: false,
-    //     message: 'Resource not found'
-    //   });
-    // }
-    
-    res.status(StatusCodes.OK).json({
-      success: true,
-      message: 'Resource deleted successfully'
-    });
-  } catch (error) {
-    next(error);
+      const entityName = await this.entityNameService.getById(id, organizationId);
+
+      res.status(StatusCodes.OK).json({
+        success: true,
+        data: entityName
+      });
+    } catch (error) {
+      next(error);
+    }
   }
-};
+
+  /**
+   * Create a new entityName
+   * 
+   * @route POST /api/entityName
+   * @param req Request object with entityName data
+   * @param res Response object
+   * @param next Next function
+   */
+  async create(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        throw new ApiError(StatusCodes.UNAUTHORIZED, 'Authentication required');
+      }
+
+      const { id: userId, organizationId } = req.user;
+      const entityNameData: Partial<IEntityName> = req.body;
+
+      const createdEntityName = await this.entityNameService.create(
+        entityNameData,
+        userId,
+        organizationId
+      );
+
+      res.status(StatusCodes.CREATED).json({
+        success: true,
+        message: 'EntityName created successfully',
+        data: createdEntityName
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Update an existing entityName
+   * 
+   * @route PUT /api/entityName/:id
+   * @param req Request object with id parameter and update data
+   * @param res Response object
+   * @param next Next function
+   */
+  async update(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        throw new ApiError(StatusCodes.UNAUTHORIZED, 'Authentication required');
+      }
+
+      const { id } = req.params;
+      const { organizationId } = req.user;
+      const updateData: Partial<IEntityName> = req.body;
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid ID format');
+      }
+
+      const updatedEntityName = await this.entityNameService.update(
+        id,
+        updateData,
+        organizationId
+      );
+
+      res.status(StatusCodes.OK).json({
+        success: true,
+        message: 'EntityName updated successfully',
+        data: updatedEntityName
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Delete an entityName
+   * 
+   * @route DELETE /api/entityName/:id
+   * @param req Request object with id parameter
+   * @param res Response object
+   * @param next Next function
+   */
+  async delete(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        throw new ApiError(StatusCodes.UNAUTHORIZED, 'Authentication required');
+      }
+
+      const { id } = req.params;
+      const { organizationId } = req.user;
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid ID format');
+      }
+
+      const deleted = await this.entityNameService.delete(id, organizationId);
+
+      res.status(StatusCodes.OK).json({
+        success: true,
+        message: 'EntityName deleted successfully'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+}

@@ -4,6 +4,16 @@ import InventoryAlert from '../models/inventory-alert.model';
 import { ApiError } from '../middleware/error.middleware';
 import { ActivityService } from '../services/activity.service';
 
+// Authenticated request type
+type AuthenticatedRequest = Request & {
+  user?: {
+    id: string;
+    organizationId: string;
+    email?: string;
+    role?: string;
+  };
+};
+
 /**
  * @desc    Get all inventory alerts
  * @route   GET /api/inventory-alerts
@@ -38,7 +48,7 @@ export const getInventoryAlerts = async (req: Request, res: Response, next: Next
     
     if (assignedTo) {
       if (assignedTo === 'me' && req.user) {
-        query.assignedTo = req.user._id;
+        query.assignedTo = (req.user as any)._id;
       } else if (assignedTo === 'unassigned') {
         query.assignedTo = { $exists: false };
       } else if (assignedTo !== 'all') {
@@ -81,6 +91,7 @@ export const getInventoryAlerts = async (req: Request, res: Response, next: Next
       data: alerts,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -92,7 +103,7 @@ export const getInventoryAlerts = async (req: Request, res: Response, next: Next
  */
 export const getInventoryAlertById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const alertId = req.params.id;
+    const alertId = req.params.id as any;
     
     if (!mongoose.Types.ObjectId.isValid(alertId)) {
       throw new ApiError(400, 'Invalid alert ID');
@@ -121,6 +132,7 @@ export const getInventoryAlertById = async (req: Request, res: Response, next: N
       data: alert,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -181,11 +193,11 @@ export const createInventoryAlert = async (req: Request, res: Response, next: Ne
       await ActivityService.logActivity({
         description: `Inventory alert "${alertType}" created for item "${itemName}" (${itemSku})`,
         entityType: 'user',
-        entityId: req.user._id,
+        entityId: (req.user as any)._id,
         action: 'create',
         status: 'completed',
-        userId: req.user._id,
-        metadata: { alertId: alert._id, itemId: item },
+        userId: (req.user as any)._id,
+        metadata: { alertId: (alert as any)._id, itemId: item },
       });
     }
     
@@ -194,6 +206,7 @@ export const createInventoryAlert = async (req: Request, res: Response, next: Ne
       data: alert,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -205,7 +218,7 @@ export const createInventoryAlert = async (req: Request, res: Response, next: Ne
  */
 export const updateInventoryAlert = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const alertId = req.params.id;
+    const alertId = req.params.id as any;
     
     if (!mongoose.Types.ObjectId.isValid(alertId)) {
       throw new ApiError(400, 'Invalid alert ID');
@@ -240,11 +253,11 @@ export const updateInventoryAlert = async (req: Request, res: Response, next: Ne
       await ActivityService.logActivity({
         description: `Inventory alert for "${alert.itemName}" (${alert.itemSku}) updated`,
         entityType: 'user',
-        entityId: req.user._id,
+        entityId: (req.user as any)._id,
         action: 'update',
         status: 'completed',
-        userId: req.user._id,
-        metadata: { alertId: alert._id, updates },
+        userId: (req.user as any)._id,
+        metadata: { alertId: (alert as any)._id, updates },
       });
     }
     
@@ -253,6 +266,7 @@ export const updateInventoryAlert = async (req: Request, res: Response, next: Ne
       data: alert,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -264,7 +278,7 @@ export const updateInventoryAlert = async (req: Request, res: Response, next: Ne
  */
 export const deleteInventoryAlert = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const alertId = req.params.id;
+    const alertId = req.params.id as any;
     
     if (!mongoose.Types.ObjectId.isValid(alertId)) {
       throw new ApiError(400, 'Invalid alert ID');
@@ -290,10 +304,10 @@ export const deleteInventoryAlert = async (req: Request, res: Response, next: Ne
       await ActivityService.logActivity({
         description: `Inventory alert "${alertType}" for "${itemName}" (${itemSku}) deleted`,
         entityType: 'user',
-        entityId: req.user._id,
+        entityId: (req.user as any)._id,
         action: 'delete',
         status: 'completed',
-        userId: req.user._id,
+        userId: (req.user as any)._id,
         metadata: { alertId },
       });
     }
@@ -303,6 +317,7 @@ export const deleteInventoryAlert = async (req: Request, res: Response, next: Ne
       message: 'Alert deleted successfully',
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -314,7 +329,7 @@ export const deleteInventoryAlert = async (req: Request, res: Response, next: Ne
  */
 export const assignInventoryAlert = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const alertId = req.params.id;
+    const alertId = req.params.id as any;
     
     if (!mongoose.Types.ObjectId.isValid(alertId)) {
       throw new ApiError(400, 'Invalid alert ID');
@@ -347,10 +362,10 @@ export const assignInventoryAlert = async (req: Request, res: Response, next: Ne
       await ActivityService.logActivity({
         description: `Inventory alert for "${alert.itemName}" (${alert.itemSku}) assigned`,
         entityType: 'user',
-        entityId: req.user._id,
+        entityId: (req.user as any)._id,
         action: 'update',
         status: 'completed',
-        userId: req.user._id,
+        userId: (req.user as any)._id,
         metadata: { alertId, assignedTo: userId },
       });
     }
@@ -360,6 +375,7 @@ export const assignInventoryAlert = async (req: Request, res: Response, next: Ne
       data: alert,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -371,7 +387,7 @@ export const assignInventoryAlert = async (req: Request, res: Response, next: Ne
  */
 export const resolveInventoryAlert = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const alertId = req.params.id;
+    const alertId = req.params.id as any;
     
     if (!mongoose.Types.ObjectId.isValid(alertId)) {
       throw new ApiError(400, 'Invalid alert ID');
@@ -410,10 +426,10 @@ export const resolveInventoryAlert = async (req: Request, res: Response, next: N
       await ActivityService.logActivity({
         description: `Inventory alert for "${alert.itemName}" (${alert.itemSku}) resolved`,
         entityType: 'user',
-        entityId: req.user._id,
+        entityId: (req.user as any)._id,
         action: 'update',
         status: 'completed',
-        userId: req.user._id,
+        userId: (req.user as any)._id,
         metadata: { 
           alertId, 
           resolutionNotes,
@@ -428,6 +444,7 @@ export const resolveInventoryAlert = async (req: Request, res: Response, next: N
       data: alert,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -467,16 +484,17 @@ export const getAlertStats = async (req: Request, res: Response, next: NextFunct
         activeAlerts,
         resolvedAlerts,
         alertsByType: alertsByType.reduce((acc: Record<string, number>, curr) => {
-          acc[curr._id] = curr.count;
+          acc[(curr as any)._id] = curr.count;
           return acc;
         }, {}),
         alertsByPriority: alertsByPriority.reduce((acc: Record<string, number>, curr) => {
-          acc[curr._id] = curr.count;
+          acc[(curr as any)._id] = curr.count;
           return acc;
         }, {}),
       },
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };

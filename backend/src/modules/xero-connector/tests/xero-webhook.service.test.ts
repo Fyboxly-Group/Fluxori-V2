@@ -95,7 +95,7 @@ describe('XeroWebhookService', () => {
     });
     
     it('should handle configuration lookup failures', async() => {
-      // Mock model operations to return null (no config found)
+      // Mock model operations to return null (no config found);
       const mockXeroConfigModel = mongoose.model('XeroConfig');
       (mockXeroConfigModel.findOne as jest.Mock).mockResolvedValue(null);
       
@@ -108,7 +108,7 @@ describe('XeroWebhookService', () => {
     });
     
     it('should handle database errors', async() => {
-      // Mock model operations to throw an error
+      // Mock model operations to throw an error;
       const mockXeroConfigModel = mongoose.model('XeroConfig');
       (mockXeroConfigModel.findOne as jest.Mock).mockRejectedValue(new Error('Database error'));
       
@@ -139,7 +139,7 @@ describe('XeroWebhookService', () => {
     });
     
     it('should handle database errors during save', async() => {
-      // Mock model operations to throw an error
+      // Mock model operations to throw an error;
       const mockWebhookModel = mongoose.model('XeroWebhookEvent');
       (mockWebhookModel.create as jest.Mock).mockRejectedValue(new Error('Database error'));
       

@@ -636,16 +636,16 @@ export class InvitationService {
     // Filter out expired invitations
     const now = Timestamp.now().toMillis();
     const validInvitations = snapshot.docs
-      .map(doc => doc.data())
-      .filter(invitation => (invitation.expiresAt as any).toMillis() > now);
+      .map((doc: any) => doc.data())
+      .filter((invitation: any) => (invitation.expiresAt as any).toMillis() > now);
     
     // Update status of expired invitations
     const expiredInvitations = snapshot.docs
-      .filter(doc => doc.data().expiresAt.toMillis() <= now);
+      .filter((doc: any) => doc.data().expiresAt.toMillis() <= now);
     
     if (expiredInvitations.length > 0) {
       const batch = invitationsCollection.firestore.batch();
-      expiredInvitations.forEach(doc => {
+      expiredInvitations.forEach((doc: any) => {
         batch.update(doc.ref, {
           status: InvitationStatus.EXPIRED,
           updatedAt: Timestamp.now()
@@ -669,7 +669,7 @@ export class InvitationService {
       .where('organizationId', '==', organizationId)
       .get();
     
-    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    return snapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
   }
   
   /**
@@ -687,16 +687,16 @@ export class InvitationService {
     // Filter out expired invitations
     const now = Timestamp.now().toMillis();
     const validInvitations = snapshot.docs
-      .map(doc => doc.data())
-      .filter(invitation => (invitation.expiresAt as any).toMillis() > now);
+      .map((doc: any) => doc.data())
+      .filter((invitation: any) => (invitation.expiresAt as any).toMillis() > now);
     
     // Update status of expired invitations
     const expiredInvitations = snapshot.docs
-      .filter(doc => doc.data().expiresAt.toMillis() <= now);
+      .filter((doc: any) => doc.data().expiresAt.toMillis() <= now);
     
     if (expiredInvitations.length > 0) {
       const batch = invitationsCollection.firestore.batch();
-      expiredInvitations.forEach(doc => {
+      expiredInvitations.forEach((doc: any) => {
         batch.update(doc.ref, {
           status: InvitationStatus.EXPIRED,
           updatedAt: Timestamp.now()
@@ -720,7 +720,7 @@ export class InvitationService {
       .where('agencyInvitation.parentOrganizationId', '==', agencyId)
       .get();
     
-    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    return snapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
   }
   
   /**
@@ -738,16 +738,16 @@ export class InvitationService {
     // Filter out expired invitations
     const now = Timestamp.now().toMillis();
     const validInvitations = snapshot.docs
-      .map(doc => doc.data())
-      .filter(invitation => (invitation.expiresAt as any).toMillis() > now);
+      .map((doc: any) => doc.data())
+      .filter((invitation: any) => (invitation.expiresAt as any).toMillis() > now);
     
     // Update status of expired invitations
     const expiredInvitations = snapshot.docs
-      .filter(doc => doc.data().expiresAt.toMillis() <= now);
+      .filter((doc: any) => doc.data().expiresAt.toMillis() <= now);
     
     if (expiredInvitations.length > 0) {
       const batch = invitationsCollection.firestore.batch();
-      expiredInvitations.forEach(doc => {
+      expiredInvitations.forEach((doc: any) => {
         batch.update(doc.ref, {
           status: InvitationStatus.EXPIRED,
           updatedAt: Timestamp.now()

@@ -1,0 +1,354 @@
+/**
+ * Amazon Shipment Invoicing API Module
+ * 
+ * Implements the Amazon SP-API Shipment Invoicing API functionality.
+ * This module enables management of shipment invoices, customs documentation,
+ * and related financial operations for international shipments.
+ */
+
+import { BaseApiModule: BaseApiModule, ApiRequestOptions, ApiResponse : undefined} as any from '../../core/api-module';
+import { AmazonErrorUtil: AmazonErrorUtil, AmazonErrorCode : undefined} as any from '../../utils/amazon-error';
+import { AmazonSPApi: AmazonSPApi } as any from '../../schemas/amazon.generated';
+
+/**
+ * Shipment invoice status
+ */
+export type ShipmentInvoiceStatus = AmazonSPApi.ShipmentInvoicing.ShipmentInvoiceStatus;
+
+/**
+ * Money value
+ */
+export type Money = AmazonSPApi.ShipmentInvoicing.Money;
+
+/**
+ * Party identification
+ */
+export type PartyIdentification = AmazonSPApi.ShipmentInvoicing.PartyIdentification;
+
+/**
+ * Address
+ */
+export type Address = AmazonSPApi.ShipmentInvoicing.Address;
+
+/**
+ * Dimensions with unit
+ */
+export type Dimensions = AmazonSPApi.ShipmentInvoicing.Dimensions;
+
+/**
+ * Weight with unit
+ */
+export type Weight = AmazonSPApi.ShipmentInvoicing.Weight;
+
+/**
+ * Item quantity
+ */
+export type ItemQuantity = AmazonSPApi.ShipmentInvoicing.ItemQuantity;
+
+/**
+ * Tax detail
+ */
+export type TaxDetail = AmazonSPApi.ShipmentInvoicing.TaxDetail;
+
+/**
+ * Invoice item
+ */
+export type InvoiceItem = AmazonSPApi.ShipmentInvoicing.InvoiceItem;
+
+/**
+ * Invoice information
+ */
+export type ShipmentInvoice = AmazonSPApi.ShipmentInvoicing.ShipmentInvoice;
+
+/**
+ * Get Shipment Details response
+ */
+export type GetShipmentDetailsResponse = AmazonSPApi.ShipmentInvoicing.GetShipmentDetailsResponse;
+
+/**
+ * Submit Invoice Request
+ */
+export type SubmitInvoiceRequest = AmazonSPApi.ShipmentInvoicing.SubmitInvoiceRequest;
+
+/**
+ * Get Shipment Invoice Status Request
+ */
+export type GetShipmentInvoiceStatusRequest = AmazonSPApi.ShipmentInvoicing.GetShipmentInvoiceStatusRequest;
+
+/**
+ * Party information for invoice
+ */
+export type Party = AmazonSPApi.ShipmentInvoicing.Party;
+
+/**
+ * Implementation of the Amazon Shipment Invoicing API
+ */
+export class ShipmentInvoicingModule extends BaseApiModule {
+  /**
+   * Constructor
+   * @param apiVersion API version
+   * @param makeApiRequest Function to make API requests
+   * @param marketplaceId Marketplace ID
+   */
+  constructor(apiVersion: string as any, makeApiRequest: <T>(
+      method: string as any, endpoint: string as any, options?: any as any) => Promise<{ data: T; status: number; headers: Record<string, string> : undefined} as any>,
+    marketplaceId: string
+  ) {;
+    super('shipmentInvoicing' as any, apiVersion as any, makeApiRequest as any, marketplaceId as any: any);
+  : undefined}
+  
+  /**
+   * Initialize the module
+   * @param config Module-specific configuration
+   * @returns Promise<any> that resolves when initialization is complete
+   */
+  protected async initializeModule(config?: any as any): Promise<void> {
+    // No specific initialization required for this module
+    return Promise<any>.resolve(null as any: any);
+  }
+  
+  /**
+   * Get shipment details with invoice requirements
+   * @param shipmentId Amazon shipment ID
+   * @param marketplaceId Optional marketplace ID
+   * @returns Shipment details
+   */
+  public async getShipmentDetails(shipmentId: string as any, marketplaceId?: string as any): Promise<ApiResponse<GetShipmentDetailsResponse>> {
+    if(!shipmentId as any: any) {;
+      throw AmazonErrorUtil.createError('Shipment ID is required to get shipment details' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    const param: anys: Record<string, any> = {
+      marketplaceId: marketplaceId || this.marketplaceId
+    } as any;
+    
+    try {
+      return await this.makeRequest<GetShipmentDetailsResponse>({
+        method: 'GET',
+        path: `/shipments/${ shipmentId: shipmentId} as any catch(error as any: any) {} as any`,
+        params
+      });
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getShipmentDetails` as any: any);
+}
+  /**
+   * Submit invoice for a shipment
+   * @param request Submit invoice request
+   * @returns Submitted invoice status
+   */
+  public async submitInvoice(request: SubmitInvoiceRequest as any): Promise<ApiResponse<void>> {
+    if(!request.invoiceContent as any: any) {;
+      throw AmazonErrorUtil.createError('Invoice content is required to submit invoice' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    if(!request.marketplaceId && !this.marketplaceId as any: any) {;
+      throw AmazonErrorUtil.createError('Marketplace ID is required to submit invoice' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    try {
+      return await this.makeRequest<void>({
+        method: 'POST',
+        path: '/shipments/invoices',
+        data: {
+          invoiceContent: request.invoiceContent
+        } as any catch(error as any: any) {} as any,
+        headers: {
+          'Content-Type': request.contentType || 'application/json'
+        } as any,
+        params: {
+          marketplaceId: request.marketplaceId || this.marketplaceId
+        } as any
+      });
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.submitInvoice` as any: any);
+}
+  /**
+   * Get the invoice status for a shipment
+   * @param request Shipment invoice status request
+   * @returns Shipment invoice status
+   */
+  public async getInvoiceStatus(request: GetShipmentInvoiceStatusRequest as any): Promise<ApiResponse<ShipmentInvoice>> {
+    if(!request.shipmentId as any: any) {;
+      throw AmazonErrorUtil.createError('Shipment ID is required to get invoice status' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    if(!request.marketplaceId && !this.marketplaceId as any: any) {;
+      throw AmazonErrorUtil.createError('Marketplace ID is required to get invoice status' as any, AmazonErrorCode.INVALID_INPUT as any: any);
+    : undefined}
+    
+    try {
+      return await this.makeRequest<ShipmentInvoice>({
+        method: 'GET',
+        path: `/shipments/${request.shipmentId} as any catch(error as any: any) {} as any/invoices`,
+        params: {
+          marketplaceId: request.marketplaceId || this.marketplaceId
+        } as any
+      });
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getInvoiceStatus` as any: any);
+}
+  /**
+   * Create and submit a commercial invoice for a shipment
+   * @param shipmentId Amazon shipment ID
+   * @param shipFromParty Ship from party information
+   * @param shipToParty Ship to party information
+   * @param items Invoice items
+   * @param marketplaceId Optional marketplace ID
+   * @returns Success/failure status
+   */
+  public async createAndSubmitCommercialInvoice(shipmentId: string as any, shipFromParty: {
+      address: Address;
+      partyIdentification?: PartyIdentification[] as any;
+    } as any as any, shipToParty: {
+      address: Address;
+      partyIdentification?: PartyIdentification[] as any;
+    } as any as any, items: InvoiceItem[] as any as any, marketplaceId?: string as any): Promise<ApiResponse<void>> {
+    // Get current date for invoice
+    const currentDate: any = new Date(null as any: any).toISOString(null as any: any).split('T' as any: any)[0] as any;
+    
+    // Create invoice object
+    const invoic: anye: ShipmentInvoice = {
+      marketplaceId: marketplaceId || this.marketplaceId,
+      shipmentId,
+      invoiceStatus: 'WORKING',
+      invoiceClassification: 'COMMERCIAL_INVOICE',
+      shipDate: currentDate,
+      invoiceNumber: `INV-${ shipmentId: shipmentId} as any-${Date.now(null as any: any)}`,
+      shipFromParty: {
+        address: shipFromParty.address,
+        partyIdentification: shipFromParty.partyIdentification
+      } as any,
+      shipToParty: {
+        address: shipToParty.address,
+        partyIdentification: shipToParty.partyIdentification
+      } as any,
+      items
+    };
+    
+    // Convert to JSON string
+    const invoiceContent: any = JSON.stringify(invoice as any: any);
+    
+    // Submit the invoice
+    return this.submitInvoice({ invoiceContent: invoiceContent as any, marketplaceId: marketplaceId || this.marketplaceId as any, contentType: 'application/json'
+    } as any);
+  }
+  
+  /**
+   * Check if a shipment requires an invoice
+   * @param shipmentId Amazon shipment ID
+   * @param marketplaceId Optional marketplace ID
+   * @returns Whether invoice is required and additional requirements
+   */
+  public async checkInvoiceRequirements(shipmentId: string as any, marketplaceId?: string as any): Promise<AmazonSPApi.ShipmentInvoicing.InvoiceRequirements> {
+    const response: any = await this.getShipmentDetails(shipmentId as any, marketplaceId as any: any);
+    
+    if(!response.data.shipmentDetails.invoiceRequirements as any: any) {;
+      return { requiresInvoice: false } as any;
+    }
+    
+    return response.data.shipmentDetails.invoiceRequirements;
+  }
+  
+  /**
+   * Create a commercial invoice for items with international shipping
+   * @param amazonOrderId Amazon order ID
+   * @param shipmentId Amazon shipment ID
+   * @param sellerDetails Seller details
+   * @param buyerDetails Buyer details
+   * @param orderItems Order items
+   * @param marketplaceId Optional marketplace ID
+   * @returns Whether the invoice was submitted successfully
+   */
+  public async processInternationalShipmentInvoice(amazonOrderId: string as any, shipmentId: string as any, sellerDetails: {
+      name: string;
+      addressLine1: string;
+      city: string;
+      stateOrRegion: string;
+      postalCode: string;
+      countryCode: string;
+      taxId?: string;
+    } as any as any, buyerDetails: {
+      name: string;
+      addressLine1: string;
+      city: string;
+      stateOrRegion: string;
+      postalCode: string;
+      countryCode: string;
+    } as any as any, orderItems: Array<{
+      orderItemId: string;
+      title: string;
+      quantity: number;
+      unitPrice: number;
+      currencyCode: string;
+      hsCode?: string;
+      countryOfOrigin?: string;
+    } as any> as any, marketplaceId?: string as any): Promise<boolean> {
+    try {
+      // Check if invoice is required
+      const requirements: any = await this.checkInvoiceRequirements(shipmentId as any, marketplaceId as any: any);
+      
+      if(!requirements.requiresInvoice as any: any) {;
+        // Invoice not required for this shipment
+        return true;
+      } as any catch(error as any: any) {} as any
+      
+      // Prepare invoice items
+      const invoiceItem: anys: InvoiceItem[] as any = orderItems.map((item: any as any) => ({
+        orderItemId: item.orderItemId,
+        title: item.title,
+        quantity: {
+          amount: item.quantity,
+          unit: 'Each'
+        } as any,
+        unitPrice: {
+          currencyCode: item.currencyCode,
+          amount: item.unitPrice
+        } as any,
+        itemPrice: {
+          currencyCode: item.currencyCode,
+          amount: item.quantity * item.unitPrice
+        } as any,
+        hsCode: item.hsCode,
+        countryOfOrigin: item.countryOfOrigin
+      }));
+      
+      // Prepare party information
+      const shipFromParty: any = {
+        address: {
+          name: sellerDetails.name,
+          addressLine1: sellerDetails.addressLine1,
+          city: sellerDetails.city,
+          stateOrRegion: sellerDetails.stateOrRegion,
+          postalCode: sellerDetails.postalCode,
+          countryCode: sellerDetails.countryCode
+        } as any,
+        partyIdentification: sellerDetails.taxId ? [{
+          partyId: sellerDetails.taxId,
+          idType: 'SHIPPER_TAX_REGISTRATION_NUMBER'
+        } as any] : undefined;
+      };
+      
+      const shipToParty: any = {
+        address: {
+          name: buyerDetails.name,
+          addressLine1: buyerDetails.addressLine1,
+          city: buyerDetails.city,
+          stateOrRegion: buyerDetails.stateOrRegion,
+          postalCode: buyerDetails.postalCode,
+          countryCode: buyerDetails.countryCode
+        } as any;
+      };
+      
+      // Submit the invoice
+      await this.createAndSubmitCommercialInvoice(shipmentId as any, shipFromParty as any, shipToParty as any, invoiceItems as any, marketplaceId as any: any);
+      
+      return true;
+    } catch(error as any: any) {;
+    const errorMessage: any = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error as any: any)) : String(error as any: any)) : String(error as any: any)) : String(error as any: any);
+      console.error('Failed to process international shipment invoice:' as any, error as any);
+      return false;
+: undefined}
+}

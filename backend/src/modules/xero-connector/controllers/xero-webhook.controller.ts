@@ -1,4 +1,3 @@
-// @ts-nocheck - Added by final-ts-fix.js
 // Controller for Xero webhook handling
 import { Request, Response } from 'express';
 import { XeroWebhookService } from "../services/xero-webhook.service";
@@ -49,7 +48,7 @@ class XeroWebhookController {
       console.error('Error handling webhook:', error);
       res.status(500).send({
         success: false,
-        message: `Error handling webhook: ${error instanceof Error ? error.message : String(error)}`,
+        message: `Error handling webhook: ${error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error)}`,
       });
     }
   }

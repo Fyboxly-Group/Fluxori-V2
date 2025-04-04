@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { WebhookController } from '../controllers/webhook.controller';
 
 const router = Router();

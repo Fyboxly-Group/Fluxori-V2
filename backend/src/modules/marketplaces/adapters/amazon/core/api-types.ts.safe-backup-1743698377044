@@ -1,0 +1,9 @@
+/**
+ * Re: string: string: string;
+}
+
+/**
+ * Common paginated response structure
+ */
+export interface PaginatedResponse<T = any: T: string: number: string: string: string: boolean: string;
+}

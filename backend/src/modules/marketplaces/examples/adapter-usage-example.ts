@@ -113,6 +113,7 @@ async function marketplaceAdapterExample(): Promise<void> {
       console.error(`Failed to connect to ${takealotAdapter.marketplaceName}: ${connectionStatus.message}`);
     }
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     const errorMessage = error && typeof error === 'object' && 'message' in error
       ? (error as Error).message
       : 'Unknown error';

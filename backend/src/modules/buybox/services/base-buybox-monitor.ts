@@ -102,8 +102,9 @@ export abstract class BaseBuyBoxMonitor implements IBuyBoxMonitor {
       this.logger.info(`Initialized Buy Box monitoring for ${product.sku} on ${/* @ts-ignore */ this.marketplaceId}`);
       return buyBoxHistory;
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error(`Failed to initialize Buy Box monitoring for ${product.sku}`, error);
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
   
@@ -127,6 +128,7 @@ export abstract class BaseBuyBoxMonitor implements IBuyBoxMonitor {
       this.logger.info(`Stopped Buy Box monitoring for ${productId} on ${/* @ts-ignore */ this.marketplaceId}`);
       return true;
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error(`Failed to stop Buy Box monitoring for ${productId}`, error);
       return false;
     }
@@ -186,46 +188,46 @@ export abstract class BaseBuyBoxMonitor implements IBuyBoxMonitor {
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const timestamp30DaysAgo = Timestamp.fromDate(thirtyDaysAgo);
       
-      const recentSnapshots = [...history.snapshots, snapshot].filter(
-        snap => snap.timestamp.toDate() >= timestamp30DaysAgo.toDate()
+      const recentSnapshots = [...history.snapshots, snapshot].filter((snap: any) => 
+        snap.timestamp.toDate() >= timestamp30DaysAgo.toDate()
       );
       
       if (recentSnapshots.length > 0) {
-        const winSnapshots = recentSnapshots.filter(
-          snap => snap.ownBuyBoxStatus === BuyBoxOwnershipStatus.OWNED || 
-                 snap.ownBuyBoxStatus === BuyBoxOwnershipStatus.SHARED
+        const winSnapshots = recentSnapshots.filter((snap: any) => 
+          snap.ownBuyBoxStatus === BuyBoxOwnershipStatus.OWNED || 
+          snap.ownBuyBoxStatus === BuyBoxOwnershipStatus.SHARED
         );
         
         updates.buyBoxWinPercentage = (winSnapshots.length / recentSnapshots.length) * 100;
       }
       
       // Calculate average price difference
-      const relevantSnapshots = recentSnapshots.filter(
-        snap => snap.buyBoxPrice !== undefined && 
-               snap.buyBoxPrice > 0 && 
-               snap.ownSellerPrice > 0
+      const relevantSnapshots = recentSnapshots.filter((snap: any) => 
+        snap.buyBoxPrice !== undefined && 
+        snap.buyBoxPrice > 0 && 
+        snap.ownSellerPrice > 0
       );
       
       if (relevantSnapshots.length > 0) {
-        const priceDifferences = relevantSnapshots.map(
-          snap => (snap.buyBoxPrice || 0) - snap.ownSellerPrice
+        const priceDifferences = relevantSnapshots.map((snap: any) => 
+          (snap.buyBoxPrice || 0) - snap.ownSellerPrice
         );
         
         const totalDifference = priceDifferences.reduce((sum, diff) => sum + diff, 0);
         updates.averagePriceDifference = totalDifference / priceDifferences.length;
         
         // Calculate lowest price needed to win Buy Box
-        const winningSnapshots = relevantSnapshots.filter(
-          snap => snap.ownBuyBoxStatus === BuyBoxOwnershipStatus.OWNED
+        const winningSnapshots = relevantSnapshots.filter((snap: any) => 
+          snap.ownBuyBoxStatus === BuyBoxOwnershipStatus.OWNED
         );
         
         if (winningSnapshots.length > 0) {
           const lowestWinningDifference = Math.min(
-            ...winningSnapshots.map(snap => snap.ownSellerPrice - (snap.buyBoxPrice || 0))
+            ...winningSnapshots.map((snap: any) => snap.ownSellerPrice - (snap.buyBoxPrice || 0))
           );
           
           const highestCompetitorPrice = Math.max(
-            ...relevantSnapshots.map(snap => snap.buyBoxPrice || 0)
+            ...relevantSnapshots.map((snap: any) => snap.buyBoxPrice || 0)
           );
           
           updates.lowestPriceToWin = highestCompetitorPrice - Math.abs(lowestWinningDifference);
@@ -239,6 +241,7 @@ export abstract class BaseBuyBoxMonitor implements IBuyBoxMonitor {
       const updatedHistory = await repository.getById(historyId);
       return updatedHistory || null;
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error(`Failed to add Buy Box snapshot for ${productId}`, error);
       return null;
     }

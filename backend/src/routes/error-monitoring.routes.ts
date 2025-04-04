@@ -5,6 +5,16 @@ import isAuthenticated from '../middleware/auth.middleware';
 import isAdmin from '../middleware/admin.middleware';
 import { asyncHandler } from '../utils/error.utils';
 
+// Authenticated request type
+type AuthenticatedRequest = Request & {
+  user?: {
+    id: string;
+    organizationId: string;
+    email?: string;
+    role?: string;
+  };
+};
+
 const router = express.Router();
 
 /**
@@ -256,7 +266,7 @@ router.post(
         id: errorId,
         resolved: true,
         resolvedAt: new Date().toISOString(),
-        resolvedBy: req.user.id
+        resolvedBy: req.user?.id
       }
     });
   })

@@ -132,7 +132,7 @@ export class ProductPushService {
             result.details.price = { success: true };
             successCount++;
           } else {
-            const errorMessage = priceDetails?.failed.find(f => f.sku === product.sku)?.reason || 'Unknown error';
+            const errorMessage = priceDetails?.failed.find((f: any) => f.sku === product.sku)?.reason || 'Unknown error';
             result.details.price = { success: false, message: errorMessage };
           }
         } else {
@@ -169,7 +169,7 @@ export class ProductPushService {
             result.details.stock = { success: true };
             successCount++;
           } else {
-            const errorMessage = stockDetails?.failed.find(f => f.sku === product.sku)?.reason || 'Unknown error';
+            const errorMessage = stockDetails?.failed.find((f: any) => f.sku === product.sku)?.reason || 'Unknown error';
             result.details.stock = { success: false, message: errorMessage };
           }
         } else {
@@ -206,7 +206,7 @@ export class ProductPushService {
             result.details.status = { success: true };
             successCount++;
           } else {
-            const errorMessage = statusDetails?.failed.find(f => f.sku === product.sku)?.reason || 'Unknown error';
+            const errorMessage = statusDetails?.failed.find((f: any) => f.sku === product.sku)?.reason || 'Unknown error';
             result.details.status = { success: false, message: errorMessage };
           }
         } else {

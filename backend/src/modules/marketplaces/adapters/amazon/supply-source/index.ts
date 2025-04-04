@@ -1,6 +1,7 @@
 /**
- * Amazon Supply Sources API Modules
- * Exports all supply source-related modules and interfaces
+ * Amazon Supply Sources API Module Index
+ * 
+ * Exports all supply source-related modules, interfaces, and factories
  */
 
 export * from './supply-source';

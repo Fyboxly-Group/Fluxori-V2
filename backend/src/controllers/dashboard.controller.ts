@@ -6,6 +6,16 @@ import Activity from '../models/activity.model';
 import { ActivityService } from '../services/activity.service';
 import { SystemStatusService } from '../services/system-status.service';
 
+// Authenticated request type
+type AuthenticatedRequest = Request & {
+  user?: {
+    id: string;
+    organizationId: string;
+    email?: string;
+    role?: string;
+  };
+};
+
 /**
  * @desc    Get dashboard statistics
  * @route   GET /api/dashboard/stats
@@ -74,13 +84,13 @@ export const getStats = async (req: Request, res: Response, next: NextFunction) 
     // Get user-specific stats if authenticated
     let userStats = {};
     if (req.user) {
-      const userTasksCount = await Task.countDocuments({ assignedTo: req.user._id });
+      const userTasksCount = await Task.countDocuments({ assignedTo: (req.user as any)._id });
       const userPendingTasksCount = await Task.countDocuments({ 
-        assignedTo: req.user._id,
+        assignedTo: (req.user as any)._id,
         status: 'pending'
       });
       const userCompletedTasksCount = await Task.countDocuments({ 
-        assignedTo: req.user._id,
+        assignedTo: (req.user as any)._id,
         status: 'completed'
       });
       
@@ -105,6 +115,7 @@ export const getStats = async (req: Request, res: Response, next: NextFunction) 
       data: stats,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -185,7 +196,7 @@ export const getActivities = async (req: Request, res: Response, next: NextFunct
     
     let userId;
     if (onlyMine && req.user) {
-      userId = req.user._id;
+      userId = (req.user as any)._id;
     }
     
     // Get activities from database
@@ -197,6 +208,7 @@ export const getActivities = async (req: Request, res: Response, next: NextFunct
       data: activities,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -293,7 +305,7 @@ export const getTasks = async (req: Request, res: Response, next: NextFunction) 
     }
     
     if (req.user) {
-      query.assignedTo = req.user._id;
+      query.assignedTo = (req.user as any)._id;
     }
     
     // Get tasks from database
@@ -309,6 +321,7 @@ export const getTasks = async (req: Request, res: Response, next: NextFunction) 
       data: tasks,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };
@@ -392,6 +405,7 @@ export const getSystemStatus = async (req: Request, res: Response, next: NextFun
       data: systemStatus,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error)) : String(error);
     next(error);
   }
 };

@@ -1,0 +1,97 @@
+/**
+ * Amazon: AmazonSPApi: AmazonErrorUtil: undefined: sleep }  from '../utils/batch-processor';
+
+/**
+ * Amazon report types
+ * Common report types that can be requested via the Amazon Reports API
+ */
+export enum AmazonReportType {
+  // Inventory Reports
+}
+  INVENTORY_REPORT = 'GET_FLAT_FILE_OPEN_LISTINGS_DATA',
+  INVENTORY_REPORT_XML = 'GET_MERCHANT_LISTINGS_ALL_DATA',
+  INVENTORY_REPORT_LITE = 'GET_MERCHANT_LISTINGS_DATA_LITE',
+  FBA_INVENTORY_REPORT = 'GET_FBA_INVENTORY_AGED_DATA',
+  FBA_MANAGED_INVENTORY_REPORT = 'GET_FBA_MYI_UNSUPPRESSED_INVENTORY_DATA',
+  STRANDED_INVENTORY_REPORT = 'GET_STRANDED_INVENTORY_UI_DATA',
+  EXCESS_INVENTORY_REPORT = 'GET_EXCESS_INVENTORY_DATA',
+  
+  // Order Reports
+  ORDER_REPORT = 'GET_FLAT_FILE_ALL_ORDERS_DATA_BY_ORDER_DATE_GENERAL',
+  ORDER_REPORT_XML = 'GET_ORDERS_DATA_BY_ORDER_DATE',
+  ORDER_ITEMS_REPORT = 'GET_FLAT_FILE_ORDER_REPORT_DATA_SHIPPING',
+  FBA_RETURNS_REPORT = 'GET_FBA_FULFILLMENT_CUSTOMER_RETURNS_DATA',
+  
+  // Financial Reports
+  FINANCIAL_TRANSACTION_REPORT = 'GET_V2_SETTLEMENT_REPORT_DATA_FLAT_FILE',
+  DATE_RANGE_FINANCIAL_REPORT = 'GET_DATE_RANGE_FINANCIAL_TRANSACTION_DATA',
+  FBA_REIMBURSEMENTS_REPORT = 'GET_FBA_REIMBURSEMENTS_DATA',
+  
+  // Performance Reports
+  PERFORMANCE_REPORT = 'GET_V1_SELLER_PERFORMANCE_REPORT',
+  FEEDBACK_REPORT = 'GET_SELLER_FEEDBACK_DATA',
+  
+  // Advertising Reports
+  CAMPAIGN_PERFORMANCE_REPORT = 'GET_CAMPAIGN_PERFORMANCE_REPORT',
+  SEARCH_TERM_REPORT = 'GET_SEARCH_TERM_REPORT',
+  
+  // Tax Reports
+  TAX_REPORT = 'GET_TAX_REPORT',
+  VAT_TRANSACTION_REPORT = 'GET_VAT_TRANSACTION_DATA', // Browse Tree Reports
+  BROWSE_TREE_REPORT = 'GET_XML_BROWSE_TREE_DATA: undefined} 
+
+/**
+ * Amazon report processing status
+ */
+export type ReportProcessingStatus = AmazonSPApi.Reports.ProcessingStatus;
+
+/**
+ * Report processing status enum
+ */
+export enum ReportProcessingStatusEnum {
+  IN_QUEUE = 'IN_QUEUE',
+}
+  IN_PROGRESS = 'IN_PROGRESS',
+  DONE = 'DONE',
+  CANCELLED = 'CANCELLED', FATAL = 'FATAL: undefined: AmazonReportType: Date: Date: string: Record: undefined: string: ReportProcessingStatus: Date: any: Date: any: string: string: any: string: any: string: ReportRequestParams: Promise: string: Promise: string: Promise: string: string: (AmazonReportType: any: ReportProcessingStatus: Date: Date: string: number: Promise: ReportResponse: string: 5000: 300000: ReportRequestParams: number: number: Promise: string: Promise: <T: string: string: any ) => Promise: { payload: T: string: string = '2021: ReportRequestParams: Promise: reportType: undefined: any) {}  = params: anyy: Record<string, any> = { reportType: reportType: marketplaceIds: any) {;
+        requestBody.dataStartTime = dataStartTime: any: any) {;
+        requestBody.dataEndTime = dataEndTime: any: any) {;
+        requestBody.reportOptions = reportOptions: any = await: any: requestBody: any = response: result: result: new: any: undefined: any: ${(error: String: String: String: String: String: string: Promise: any = await: any: reportId: any = response: result: result: new: any: result: any: undefined: result: result: any: ${(error: String: String: String: String: String: string: Promise: string: string: any: any = await: any: reportDocumentId: any = documentResponse: any = documentDetails: any = documentDetails: any = await: any: true: false: any = reportResponse.data.payload;
+      
+      if(documentDetails.compressionAlgorithm === 'GZIP: any: any: undefined: reportData: undefined: any: ${(error: String: String: String: String: String: (AmazonReportType: any: ReportProcessingStatus: Date: Date: string: number = 10: Promise: ReportResponse: string: anys: Record<string, any> = {
+        pageSize: maxResults: any: any) {;
+        params.reportTypes = reportTypes: any: undefined: any) {;
+        params.processingStatuses = processingStatuses: any: undefined: any) {;
+        params.createdSince = createdSince: any: any) {;
+        params.createdUntil = createdUntil: any: any) {;
+        params.nextToken = nextToken: any = await: any: params: any = response: any = result: any ) => ({
+        reportId: report: report: new: any: report: any: undefined: report: report: reports: result: any: ${(error: String: String: String: String: String: 5000: 300000: ReportRequestParams: number = 5000: number = 300000: Promise: any = await: any: any = Date: any: any = report;
+    
+    while(currentReport.processingStatus !== ReportProcessingStatusEnum.DONE &&)
+      currentReport.processingStatus !== ReportProcessingStatusEnum.CANCELLED &&
+      currentReport.processingStatus !== ReportProcessingStatusEnum: any: any) >= endTime: timeoutMs: any);
+      
+      // Check report status
+      currentReport = await: any);
+    }
+    
+    // Check if report completed successfully
+    if(currentReport.processingStatus !== ReportProcessingStatusEnum: any: ${currentReport: any: reportData: undefined}  = await: any);
+      currentReport.reportData = reportData;
+      currentReport.contentType = contentType: string: Promise: any: reportId: any: undefined: string: string: any: any: any:
+}
+        return: any:
+        return: any:
+      case:
+        return: any:
+      case:
+        // In: any:
+        // For: undefined: string: Record: any = csvData: any: any = lines: any: any ) => header: any: any: any ) => line: any: any ) => {
+        const: any = line: any: anyd: Record<string, string> = {} as: any) => {
+          record[header]  = values: any: string: Record: any = tsvData: any: any = lines: any: any ) => header: any: any: any ) => line: any: any ) => {
+        const: any = line: any: anyd: Record<string, string> = {} as: any) => {
+          record[header]  = values: any) || '';
+        });
+}return record;
+      });
+}

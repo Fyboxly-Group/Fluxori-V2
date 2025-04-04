@@ -2,13 +2,13 @@
  * Amazon Vendor API Module
  * 
  * Implements the Amazon SP-API Vendor API functionality.
- * This module allows vendors(direct suppliers to Amazon as any: any) to manage
+ * This module allows vendors (direct suppliers to Amazon) to manage
  * their product catalog, orders, shipping information, and inventory.
  */
 
-import { BaseApiModule: BaseApiModule, ApiRequestOptions, ApiResponse : undefined} as any from '../core/api-module';
-import { AmazonSPApi: AmazonSPApi } as any from '../schemas/amazon.generated';
-import { AmazonErrorUtil: AmazonErrorUtil, AmazonErrorCode : undefined} as any from '../utils/amazon-error';
+import { BaseApiModule, ApiRequestOptions, ApiResponse, ApiRequestFunction } from '../core/api-module';
+import { AmazonSPApi } from '../schemas/amazon.generated';
+import { AmazonErrorUtil, AmazonErrorCode } from '../utils/amazon-error';
 
 /**
  * Order status types
@@ -20,19 +20,19 @@ export type VendorOrderStatus = AmazonSPApi.VendorOrders.OrderStatus;
  */
 export interface VendorOrderSearchCriteria {
   /**
-   * Earliest purchase date(ISO 8601 format as any: any)
+   * Earliest purchase date (ISO 8601 format)
    */
   purchaseDateFrom?: string;
   
   /**
-   * Latest purchase date(ISO 8601 format as any: any)
+   * Latest purchase date (ISO 8601 format)
    */
   purchaseDateTo?: string;
   
   /**
    * Order status to filter by
    */
-  status?: VendorOrderStatus[] as any;
+  status?: VendorOrderStatus[];
   
   /**
    * Amazon order identifier
@@ -51,6 +51,41 @@ export interface VendorOrderSearchCriteria {
 }
 
 /**
+ * Item in a shipping confirmation
+ */
+export interface ShippingItem {
+  /**
+   * Amazon's product identifier
+   */
+  buyerProductIdentifier: string;
+  
+  /**
+   * Vendor's product identifier
+   */
+  vendorProductIdentifier?: string;
+  
+  /**
+   * Quantity shipped
+   */
+  shippedQuantity: number;
+}
+
+/**
+ * Tracking information for a shipment
+ */
+export interface TrackingInfo {
+  /**
+   * Carrier name
+   */
+  carrierName: string;
+  
+  /**
+   * Tracking number
+   */
+  trackingNumber: string;
+}
+
+/**
  * Shipping information for an order
  */
 export interface ShippingInfo {
@@ -60,29 +95,14 @@ export interface ShippingInfo {
   shipmentId: string;
   
   /**
-   * Estimated delivery date(ISO 8601 format as any: any)
+   * Estimated delivery date (ISO 8601 format)
    */
   estimatedDeliveryDate: string;
   
   /**
    * Shipment details
    */
-  items: Array<{
-    /**
-     * Amazon's product identifier
-     */
-    buyerProductIdentifier: string;
-    
-    /**
-     * Vendor's product identifier
-     */
-    vendorProductIdentifier?: string;
-    
-    /**
-     * Quantity shipped
-     */
-    shippedQuantity: number;
-  } as any>;
+  items: ShippingItem[];
   
   /**
    * Shipment method
@@ -92,17 +112,97 @@ export interface ShippingInfo {
   /**
    * Tracking information
    */
-  trackingInfo?: {
-    /**
-     * Carrier name
-     */
-    carrierName: string;
-    
-    /**
-     * Tracking number
-     */
-    trackingNumber: string;
-  } as any;
+  trackingInfo?: TrackingInfo;
+}
+
+/**
+ * Acknowledgement item details
+ */
+export interface AcknowledgementItem {
+  /**
+   * Amazon product identifier
+   */
+  buyerProductIdentifier?: string;
+  
+  /**
+   * Vendor product identifier
+   */
+  vendorProductIdentifier?: string;
+  
+  /**
+   * Acknowledged quantity
+   */
+  acknowledgedQuantity: number;
+}
+
+/**
+ * Acknowledgement details
+ */
+export interface OrderAcknowledgement {
+  /**
+   * Vendor purchase order number
+   */
+  vendorOrderNumber?: string;
+  
+  /**
+   * Acknowledgement date (ISO 8601 format)
+   */
+  acknowledgementDate: string;
+  
+  /**
+   * Acknowledgement status
+   */
+  acknowledgementStatus: 'ACCEPTED' | 'REJECTED';
+  
+  /**
+   * Rejection reason (required if status is REJECTED)
+   */
+  rejectionReason?: string;
+  
+  /**
+   * Items to acknowledge
+   */
+  items?: AcknowledgementItem[];
+}
+
+/**
+ * Inventory item for update
+ */
+export interface InventoryItem {
+  /**
+   * Vendor product identifier
+   */
+  sellerSku: string;
+  
+  /**
+   * Available quantity
+   */
+  availableQuantity: number;
+  
+  /**
+   * Restock date if not currently available (ISO 8601 format)
+   */
+  restockDate?: string;
+}
+
+/**
+ * Acknowledgement result for bulk operations
+ */
+export interface AcknowledgementResult {
+  /**
+   * Order number
+   */
+  orderNumber: string;
+  
+  /**
+   * Success indicator
+   */
+  success: boolean;
+  
+  /**
+   * Error message if applicable
+   */
+  message?: string;
 }
 
 /**
@@ -115,21 +215,22 @@ export class VendorsModule extends BaseApiModule {
    * @param makeApiRequest Function to make API requests
    * @param marketplaceId Marketplace ID
    */
-  constructor(apiVersion: string as any, makeApiRequest: <T>(
-      method: string as any, endpoint: string as any, options?: any as any) => Promise<{ data: T; status: number; headers: Record<string, string> : undefined} as any>,
+  constructor(
+    apiVersion: string,
+    makeApiRequest: ApiRequestFunction,
     marketplaceId: string
-  ) {;
-    super('vendors' as any, apiVersion as any, makeApiRequest as any, marketplaceId as any: any);
-  : undefined}
+  ) {
+    super('vendors', apiVersion, makeApiRequest, marketplaceId);
+  }
   
   /**
    * Initialize the module
    * @param config Module-specific configuration
-   * @returns Promise<any> that resolves when initialization is complete
+   * @returns Promise that resolves when initialization is complete
    */
-  protected async initializeModule(config?: any as any): Promise<void> {
+  protected async initializeModule(config?: unknown): Promise<void> {
     // No specific initialization required for this module
-    return Promise<any>.resolve(null as any: any);
+    return Promise.resolve();
   }
   
   /**
@@ -137,122 +238,89 @@ export class VendorsModule extends BaseApiModule {
    * @param criteria Search criteria
    * @returns List of purchase orders
    */
-  public async getOrders(criteria: VendorOrderSearchCriteria = {} as any as any): Promise<ApiResponse<AmazonSPApi.VendorOrders.GetPurchaseOrdersResponse>> {
-    const param: anys: Record<string, any> = {} as any;
+  public async getOrders(criteria: VendorOrderSearchCriteria = {}): Promise<ApiResponse<AmazonSPApi.VendorOrders.GetPurchaseOrdersResponse>> {
+    const params: Record<string, any> = {};
     
-    if(criteria.purchaseDateFrom as any: any) {;
+    if (criteria.purchaseDateFrom) {
       params.createdAfter = criteria.purchaseDateFrom;
-    } as any
+    }
     
-    if(criteria.purchaseDateTo as any: any) {;
+    if (criteria.purchaseDateTo) {
       params.createdBefore = criteria.purchaseDateTo;
-    } as any
+    }
     
-    if(criteria.status && criteria.status.length > 0 as any: any) {;
-      params.orderStatus = criteria.status.join(' as any, ' as any: any);
-    : undefined}
+    if (criteria.status && criteria.status.length > 0) {
+      params.orderStatus = criteria.status.join(',');
+    }
     
-    if(criteria.orderNumber as any: any) {;
+    if (criteria.orderNumber) {
       params.orderNumber = criteria.orderNumber;
-    } as any
+    }
     
-    if(criteria.nextToken as any: any) {;
+    if (criteria.nextToken) {
       params.nextToken = criteria.nextToken;
-    } as any
+    }
     
-    if(criteria.maxResults as any: any) {;
+    if (criteria.maxResults) {
       params.limit = criteria.maxResults;
-    } as any
+    }
     
     try {
       return await this.makeRequest<AmazonSPApi.VendorOrders.GetPurchaseOrdersResponse>({
         method: 'GET',
-        path: '/vendorOrders/v1/purchaseOrders', params
-      : undefined} as any catch(error as any: any) {} as any);
-    } catch(error as any: any) {;
-      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getOrders` as any: any);
-}
+        path: '/vendorOrders/v1/purchaseOrders',
+        params
+      });
+    } catch (error) {
+      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getOrders`);
+    }
+  }
+  
   /**
    * Get details for a specific purchase order
    * @param orderNumber Amazon purchase order number
    * @returns Purchase order details
    */
-  public async getOrder(orderNumber: string as any): Promise<ApiResponse<AmazonSPApi.VendorOrders.GetPurchaseOrderResponse>> {
-    if(!orderNumber as any: any) {;
-      throw AmazonErrorUtil.createError('Order number is required to get order details' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
+  public async getOrder(orderNumber: string): Promise<ApiResponse<AmazonSPApi.VendorOrders.GetPurchaseOrderResponse>> {
+    if (!orderNumber) {
+      throw AmazonErrorUtil.createError('Order number is required to get order details', AmazonErrorCode.INVALID_INPUT);
+    }
     
     try {
       return await this.makeRequest<AmazonSPApi.VendorOrders.GetPurchaseOrderResponse>({
         method: 'GET',
-        path: `/vendorOrders/v1/purchaseOrders/${ orderNumber: orderNumber} as any catch(error as any: any) {} as any`
+        path: `/vendorOrders/v1/purchaseOrders/${orderNumber}`
       });
-    } catch(error as any: any) {;
-      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getOrder` as any: any);
-}
+    } catch (error) {
+      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getOrder`);
+    }
+  }
+  
   /**
    * Acknowledge a purchase order
    * @param orderNumber Amazon purchase order number
    * @param acknowledgement Acknowledgement details
    * @returns Acknowledgement result
    */
-  public async acknowledgeOrder(orderNumber: string as any, acknowledgement: {
-      /**
-       * Vendor purchase order number
-       */
-      vendorOrderNumber?: string;
-      
-      /**
-       * Acknowledgement date (ISO 8601 format as any: any)
-       */
-      acknowledgementDate: string;
-      
-      /**
-       * Acknowledgement status
-       */
-      acknowledgementStatus: 'ACCEPTED' | 'REJECTED';
-      
-      /**
-       * Rejection reason(required if status is REJECTED as any: any)
-       */
-      rejectionReason?: string;
-      
-      /**
-       * Items to acknowledge
-       */
-      items?: Array<{
-        /**
-         * Amazon product identifier
-         */
-        buyerProductIdentifier?: string;
-        
-        /**
-         * Vendor product identifier
-         */
-        vendorProductIdentifier?: string;
-        
-        /**
-         * Acknowledged quantity
-         */
-        acknowledgedQuantity: number;
-      } as any>;
-    }
+  public async acknowledgeOrder(
+    orderNumber: string,
+    acknowledgement: OrderAcknowledgement
   ): Promise<ApiResponse<AmazonSPApi.VendorOrders.SubmitAcknowledgementResponse>> {
-    if(!orderNumber as any: any) {;
-      throw AmazonErrorUtil.createError('Order number is required to acknowledge an order' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
+    if (!orderNumber) {
+      throw AmazonErrorUtil.createError('Order number is required to acknowledge an order', AmazonErrorCode.INVALID_INPUT);
+    }
     
-    if(!acknowledgement.acknowledgementDate as any: any) {;
-      throw AmazonErrorUtil.createError('Acknowledgement date is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
+    if (!acknowledgement.acknowledgementDate) {
+      throw AmazonErrorUtil.createError('Acknowledgement date is required', AmazonErrorCode.INVALID_INPUT);
+    }
     
-    if(!acknowledgement.acknowledgementStatus as any: any) {;
-      throw AmazonErrorUtil.createError('Acknowledgement status is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
+    if (!acknowledgement.acknowledgementStatus) {
+      throw AmazonErrorUtil.createError('Acknowledgement status is required', AmazonErrorCode.INVALID_INPUT);
+    }
     
-    if(acknowledgement.acknowledgementStatus === 'REJECTED' && !acknowledgement.rejectionReason as any: any) {;
-      throw AmazonErrorUtil.createError('Rejection reason is required when status is REJECTED' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
+    if (acknowledgement.acknowledgementStatus === 'REJECTED' && !acknowledgement.rejectionReason) {
+      throw AmazonErrorUtil.createError('Rejection reason is required when status is REJECTED', AmazonErrorCode.INVALID_INPUT);
+    }
     
     try {
       return await this.makeRequest<AmazonSPApi.VendorOrders.SubmitAcknowledgementResponse>({
@@ -261,36 +329,42 @@ export class VendorsModule extends BaseApiModule {
         data: {
           acknowledgements: [
             {
-              purchaseOrderNumber: orderNumber, ...acknowledgement
-            : undefined} as any catch(error as any: any) {} as any
+              purchaseOrderNumber: orderNumber,
+              ...acknowledgement
+            }
           ]
         }
       });
-    } catch(error as any: any) {;
-      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.acknowledgeOrder` as any: any);
-}
+    } catch (error) {
+      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.acknowledgeOrder`);
+    }
+  }
+  
   /**
    * Submit shipment confirmations for orders
    * @param orderNumber Amazon purchase order number
    * @param shippingInfo Shipping information
    * @returns Shipment confirmation result
    */
-  public async confirmShipment(orderNumber: string as any, shippingInfo: ShippingInfo as any): Promise<ApiResponse<AmazonSPApi.VendorShipments.SubmitShipmentConfirmationsResponse>> {
-    if(!orderNumber as any: any) {;
-      throw AmazonErrorUtil.createError('Order number is required to confirm shipment' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
+  public async confirmShipment(
+    orderNumber: string,
+    shippingInfo: ShippingInfo
+  ): Promise<ApiResponse<AmazonSPApi.VendorShipments.SubmitShipmentConfirmationsResponse>> {
+    if (!orderNumber) {
+      throw AmazonErrorUtil.createError('Order number is required to confirm shipment', AmazonErrorCode.INVALID_INPUT);
+    }
     
-    if(!shippingInfo.shipmentId as any: any) {;
-      throw AmazonErrorUtil.createError('Shipment ID is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
+    if (!shippingInfo.shipmentId) {
+      throw AmazonErrorUtil.createError('Shipment ID is required', AmazonErrorCode.INVALID_INPUT);
+    }
     
-    if(!shippingInfo.estimatedDeliveryDate as any: any) {;
-      throw AmazonErrorUtil.createError('Estimated delivery date is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
+    if (!shippingInfo.estimatedDeliveryDate) {
+      throw AmazonErrorUtil.createError('Estimated delivery date is required', AmazonErrorCode.INVALID_INPUT);
+    }
     
-    if(!shippingInfo.items || shippingInfo.items.length === 0 as any: any) {;
-      throw AmazonErrorUtil.createError('At least one item is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
+    if (!shippingInfo.items || shippingInfo.items.length === 0) {
+      throw AmazonErrorUtil.createError('At least one item is required', AmazonErrorCode.INVALID_INPUT);
+    }
     
     try {
       return await this.makeRequest<AmazonSPApi.VendorShipments.SubmitShipmentConfirmationsResponse>({
@@ -301,63 +375,55 @@ export class VendorsModule extends BaseApiModule {
             {
               purchaseOrderNumber: orderNumber,
               shipmentDetails: {
-                shippedDate: new Date(null as any: any).toISOString(null as any: any), ...shippingInfo
-              : undefined} catch(error as any: any) {} as any
+                shippedDate: new Date().toISOString(),
+                ...shippingInfo
+              }
             }
           ]
         }
       });
-    } catch(error as any: any) {;
-      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.confirmShipment` as any: any);
-}
+    } catch (error) {
+      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.confirmShipment`);
+    }
+  }
+  
   /**
    * Get detailed transaction status for an order
    * @param transactionId Transaction ID
    * @returns Transaction status
    */
-  public async getTransactionStatus(transactionId: string as any): Promise<ApiResponse<AmazonSPApi.VendorTransactionStatus.GetTransactionResponse>> {
-    if(!transactionId as any: any) {;
-      throw AmazonErrorUtil.createError('Transaction ID is required to get transaction status' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
+  public async getTransactionStatus(transactionId: string): Promise<ApiResponse<AmazonSPApi.VendorTransactionStatus.GetTransactionResponse>> {
+    if (!transactionId) {
+      throw AmazonErrorUtil.createError('Transaction ID is required to get transaction status', AmazonErrorCode.INVALID_INPUT);
+    }
     
     try {
       return await this.makeRequest<AmazonSPApi.VendorTransactionStatus.GetTransactionResponse>({
         method: 'GET',
-        path: `/vendor/transactions/v1/transactions/${ transactionId: transactionId} as any catch(error as any: any) {} as any`
+        path: `/vendor/transactions/v1/transactions/${transactionId}`
       });
-    } catch(error as any: any) {;
-      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getTransactionStatus` as any: any);
-}
+    } catch (error) {
+      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getTransactionStatus`);
+    }
+  }
+  
   /**
    * Submit inventory update information
    * @param warehouseId Warehouse ID
    * @param items Inventory items
    * @returns Inventory update result
    */
-  public async updateInventory(warehouseId: string as any, items: Array<{
-      /**
-       * Vendor product identifier
-       */
-      sellerSku: string;
-      
-      /**
-       * Available quantity
-       */
-      availableQuantity: number;
-      
-      /**
-       * Restock date if not currently available (ISO 8601 format as any: any)
-       */
-      restockDate?: string;
-    }>
+  public async updateInventory(
+    warehouseId: string,
+    items: InventoryItem[]
   ): Promise<ApiResponse<AmazonSPApi.VendorInventory.SubmitInventoryUpdateResponse>> {
-    if(!warehouseId as any: any) {;
-      throw AmazonErrorUtil.createError('Warehouse ID is required to update inventory' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
+    if (!warehouseId) {
+      throw AmazonErrorUtil.createError('Warehouse ID is required to update inventory', AmazonErrorCode.INVALID_INPUT);
+    }
     
-    if(!items || items.length === 0 as any: any) {;
-      throw AmazonErrorUtil.createError('At least one inventory item is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
+    if (!items || items.length === 0) {
+      throw AmazonErrorUtil.createError('At least one inventory item is required', AmazonErrorCode.INVALID_INPUT);
+    }
     
     try {
       return await this.makeRequest<AmazonSPApi.VendorInventory.SubmitInventoryUpdateResponse>({
@@ -367,17 +433,20 @@ export class VendorsModule extends BaseApiModule {
           inventory: {
             sellingParty: {
               partyId: warehouseId
-            } as any catch(error as any: any) {} as any,
-            items: items.map((item: any as any) => ({
+            },
+            items: items.map(item => ({
               sellerSku: item.sellerSku,
               availableQuantity: item.availableQuantity,
               restockDate: item.restockDate
-            } as any))
-}
+            }))
+          }
+        }
       });
-    } catch(error as any: any) {;
-      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.updateInventory` as any: any);
-}
+    } catch (error) {
+      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.updateInventory`);
+    }
+  }
+  
   /**
    * Get the delivery window for a specific location
    * @param shipFromLocationId Ship from location ID
@@ -385,52 +454,67 @@ export class VendorsModule extends BaseApiModule {
    * @param itemCount Number of items
    * @returns Available delivery windows
    */
-  public async getDeliveryWindow(shipFromLocationId: string as any, shipToLocationId: string as any, itemCount: number as any): Promise<ApiResponse<AmazonSPApi.VendorDirectFulfillmentShipping.GetPackingSlipResponse>> {
-    if(!shipFromLocationId as any: any) {;
-      throw AmazonErrorUtil.createError('Ship from location ID is required to get delivery window' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
+  public async getDeliveryWindow(
+    shipFromLocationId: string,
+    shipToLocationId: string,
+    itemCount: number
+  ): Promise<ApiResponse<AmazonSPApi.VendorDirectFulfillmentShipping.GetPackingSlipResponse>> {
+    if (!shipFromLocationId) {
+      throw AmazonErrorUtil.createError('Ship from location ID is required to get delivery window', AmazonErrorCode.INVALID_INPUT);
+    }
     
-    if(!shipToLocationId as any: any) {;
-      throw AmazonErrorUtil.createError('Ship to location ID is required to get delivery window' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
+    if (!shipToLocationId) {
+      throw AmazonErrorUtil.createError('Ship to location ID is required to get delivery window', AmazonErrorCode.INVALID_INPUT);
+    }
     
     try {
       return await this.makeRequest<AmazonSPApi.VendorDirectFulfillmentShipping.GetPackingSlipResponse>({
         method: 'GET',
         path: '/vendor/directFulfillment/shipping/v1/deliveryWindows',
-        params: { shipFromLocationId: shipFromLocationId,
+        params: {
+          shipFromLocationId,
           shipToLocationId,
-          itemCount: itemCount.toString(null as any: any);
-        } catch(error as any: any) {} as any
+          itemCount: itemCount.toString()
+        }
       });
-    } catch(error as any: any) {;
-      throw AmazonErrorUtil.mapHttpError(error as any, `${this.moduleName} as any.getDeliveryWindow` as any: any);
-}
+    } catch (error) {
+      throw AmazonErrorUtil.mapHttpError(error, `${this.moduleName}.getDeliveryWindow`);
+    }
+  }
+  
   /**
    * Get a list of all vendor orders for a specific time period
-   * @param startDate Start date(ISO 8601 format as any: any)
-   * @param endDate End date(ISO 8601 format as any: any)
+   * @param startDate Start date (ISO 8601 format)
+   * @param endDate End date (ISO 8601 format)
    * @param maxResults Maximum number of results
    * @returns All vendor orders
    */
-  public async getAllOrders(startDate: string as any, endDate: string as any, maxResults = 100 as any): Promise<AmazonSPApi.VendorOrders.Order[] as any> {
-    const allOrder: anys: AmazonSPApi.VendorOrders.Order[] as any = [] as any;
-    let nextToke: anyn: string | undefined = undefined;
+  public async getAllOrders(
+    startDate: string,
+    endDate: string,
+    maxResults = 100
+  ): Promise<AmazonSPApi.VendorOrders.Order[]> {
+    const allOrders: AmazonSPApi.VendorOrders.Order[] = [];
+    let nextToken: string | undefined = undefined;
     
     do {
-      const response: any = await this.getOrders({
-        purchaseDateFrom: startDate as any, purchaseDateTo: endDate as any, maxResults as any, nextToken;
-      : undefined} as any);
-}// Add orders to our collection
-      if(response.data.payload && response.data.payload.orders as any: any) {;
-        allOrders.push(...response.data.payload.orders as any: any);
+      const response = await this.getOrders({
+        purchaseDateFrom: startDate,
+        purchaseDateTo: endDate,
+        maxResults,
+        nextToken
+      });
+      
+      // Add orders to our collection
+      if (response.data.payload && response.data.payload.orders) {
+        allOrders.push(...response.data.payload.orders);
       }
       
       // Get next token for pagination
       nextToken = response.data.payload?.nextToken;
       
       // Stop if there are no more pages
-    } while(nextToken as any: any);
+    } while (nextToken);
     
     return allOrders;
   }
@@ -441,37 +525,43 @@ export class VendorsModule extends BaseApiModule {
    * @param status Acknowledgement status
    * @returns Acknowledgement results
    */
-  public async bulkAcknowledgeOrders(orderNumbers: string[] as any as any, status: 'ACCEPTED' | 'REJECTED' as any, rejectionReason?: string as any): Promise<Array<{
-    orderNumber: string;
-    success: boolean;
-    message?: string;
-  } as any>> {
-    if(!orderNumbers || orderNumbers.length === 0 as any: any) {;
-      throw AmazonErrorUtil.createError('At least one order number is required' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
+  public async bulkAcknowledgeOrders(
+    orderNumbers: string[],
+    status: 'ACCEPTED' | 'REJECTED',
+    rejectionReason?: string
+  ): Promise<AcknowledgementResult[]> {
+    if (!orderNumbers || orderNumbers.length === 0) {
+      throw AmazonErrorUtil.createError('At least one order number is required', AmazonErrorCode.INVALID_INPUT);
+    }
     
-    if(status === 'REJECTED' && !rejectionReason as any: any) {;
-      throw AmazonErrorUtil.createError('Rejection reason is required when status is REJECTED' as any, AmazonErrorCode.INVALID_INPUT as any: any);
-    : undefined}
+    if (status === 'REJECTED' && !rejectionReason) {
+      throw AmazonErrorUtil.createError('Rejection reason is required when status is REJECTED', AmazonErrorCode.INVALID_INPUT);
+    }
     
-    const result: anys: Array<{
-      orderNumber: string;
-      success: boolean;
-      message?: string;
-    } as any> = [] as any;
+    const results: AcknowledgementResult[] = [];
     
     // Process each order individually
-    for(const orderNumber: any of orderNumbers as any) {;
+    for (const orderNumber of orderNumbers) {
       try {
-        await this.acknowledgeOrder(orderNumber as any: any, {
-          acknowledgementDate: new Date(null as any: any).toISOString(null as any: any),
-          acknowledgementStatus: status, rejectionReason
-        : undefined} catch(error as any: any) {} as any);
-}results.push({ orderNumber: orderNumber as any, success: true
-        } as any);
-      } catch(error as any: any) {;
-        results.push({ orderNumber: orderNumber as any, success: false as any, message: (error instanceof Error ? (error instanceof Error ? (error instanceof Error ? error.message : String(error)) : String(error)) : String(error))
-        } as any);
-}
+        await this.acknowledgeOrder(orderNumber, {
+          acknowledgementDate: new Date().toISOString(),
+          acknowledgementStatus: status,
+          rejectionReason
+        });
+        
+        results.push({
+          orderNumber,
+          success: true
+        });
+      } catch (error) {
+        results.push({
+          orderNumber,
+          success: false,
+          message: error instanceof Error ? error.message : String(error)
+        });
+      }
+    }
+    
     return results;
+  }
 }
