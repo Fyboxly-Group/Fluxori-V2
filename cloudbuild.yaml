@@ -1,0 +1,26 @@
+steps:
+  # Build the container image for frontend
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/fluxori-frontend:$COMMIT_SHA', './frontend']
+  
+  # Push the frontend container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/fluxori-frontend:$COMMIT_SHA']
+  
+  # Deploy frontend container image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'fluxori-frontend'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/fluxori-frontend:$COMMIT_SHA'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+
+images:
+  - 'gcr.io/$PROJECT_ID/fluxori-frontend:$COMMIT_SHA'
